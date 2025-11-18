@@ -1,0 +1,404 @@
+/* AdminDashboard.css - Updated for narrower gap */
+/* Color Scheme - Sein Gay Har Red Theme */
+:root {
+  --primary-red: #dc2626;
+  --primary-red-light: #fef2f2;
+  --primary-red-dark: #b91c1c;
+  --accent-blue: #2563eb;
+  --accent-green: #059669;
+  --accent-purple: #7c3aed;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+}
+
+/* Admin Dashboard Layout */
+.admin-dashboard {
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  min-height: 100vh;
+  background: var(--gray-50);
+}
+
+/* Main Content Area - REDUCED margin for narrower gap */
+.admin-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin-left: 0;
+  transition: margin-left 0.3s ease;
+}
+
+@media (min-width: 1024px) {
+  .admin-main-content {
+    margin-left: 280px; /* REDUCED from 320px to 280px for narrower gap */
+  }
+}
+
+/* Header Styles - More compact */
+.admin-header {
+  background: white;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid var(--gray-200);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding: 0 1.25rem; /* Reduced padding */
+}
+
+.admin-header .flex {
+  min-height: 65px; /* Reduced height */
+}
+
+.menu-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gray-600);
+  padding: 6px; /* Reduced padding */
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  border: 1px solid var(--gray-200);
+}
+
+.menu-toggle:hover {
+  background: var(--gray-100);
+  border-color: var(--gray-300);
+}
+
+/* Main Content - Reduced padding and narrower layout */
+.admin-main {
+  flex: 1;
+  padding: 1rem 1.25rem; /* Reduced padding */
+  background: var(--gray-50);
+  min-height: calc(100vh - 65px);
+  max-width: calc(100vw - 280px); /* Ensure content doesn't overflow */
+}
+
+/* Management Pages Layout Adjustments */
+.management-container {
+  max-width: none; /* Remove any max-width constraints */
+  margin: 0; /* Remove margins */
+}
+
+/* Header adjustments for management pages */
+.branch-header,
+.building-header,
+.level-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem; /* Reduced margin */
+  padding: 0;
+}
+
+.branch-title h1,
+.building-title h1,
+.level-title h1 {
+  font-size: 1.75rem !important; /* Slightly smaller */
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* Grid adjustments for management pages */
+.branches-grid,
+.buildings-grid,
+.levels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Slightly smaller cards */
+  gap: 1.25rem; /* Reduced gap */
+  margin-top: 1rem;
+}
+
+/* Card adjustments */
+.branch-card,
+.building-card,
+.level-card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  padding: 1.25rem; /* Reduced padding */
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Search container adjustments */
+.search-container,
+.building-search-container,
+.level-search-container {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  padding: 0.875rem; /* Reduced padding */
+  margin-bottom: 1.25rem; /* Reduced margin */
+}
+
+/* Button Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px; /* Reduced padding */
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 13px; /* Slightly smaller */
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-red), var(--primary-red-dark));
+  color: white;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--primary-red-dark), #991b1b);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+}
+
+/* Form Styles */
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 10px 12px; /* Reduced padding */
+  border: 1px solid var(--gray-300);
+  border-radius: 8px;
+  font-size: 13px; /* Slightly smaller */
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: var(--primary-red);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* Card Styles - More compact */
+.stat-card {
+  background: white;
+  padding: 16px; /* Reduced padding */
+  border-radius: 10px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--gray-200);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-icon {
+  width: 45px; /* Reduced size */
+  height: 45px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon.red { background: #fef2f2; color: var(--primary-red); }
+.stat-icon.blue { background: #eff6ff; color: var(--accent-blue); }
+.stat-icon.green { background: #f0fdf4; color: var(--accent-green); }
+.stat-icon.purple { background: #faf5ff; color: var(--accent-purple); }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Smaller cards */
+  gap: 16px; /* Reduced gap */
+  margin-bottom: 16px;
+}
+
+/* Quick Actions */
+.quick-actions {
+  background: white;
+  padding: 16px; /* Reduced padding */
+  border-radius: 10px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--gray-200);
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Reduced gap */
+  width: 100%;
+  padding: 12px 14px; /* Reduced padding */
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  color: var(--gray-700);
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: button;
+}
+
+.action-button:hover {
+  background: var(--primary-red-light);
+  border-color: var(--primary-red);
+  color: var(--primary-red);
+  transform: translateX(4px);
+}
+
+/* Recent Activity */
+.recent-activity {
+  background: white;
+  padding: 16px; /* Reduced padding */
+  border-radius: 10px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--gray-200);
+}
+
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px; /* Reduced gap */
+  padding: 10px 0; /* Reduced padding */
+}
+
+.activity-dot {
+  width: 8px; /* Smaller dot */
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.activity-dot.red { background: var(--primary-red); }
+.activity-dot.blue { background: var(--accent-blue); }
+.activity-dot.green { background: var(--accent-green); }
+
+/* Table Styles */
+.data-table {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--gray-200);
+  overflow: hidden;
+}
+
+.table-header {
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.table-header th {
+  padding: 14px 16px; /* Reduced padding */
+  text-align: left;
+  font-weight: 600;
+  color: var(--gray-700);
+  font-size: 12px; /* Smaller font */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table-body td {
+  padding: 14px 16px; /* Reduced padding */
+  font-size: 13px; /* Smaller font */
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 5px 10px; /* Reduced padding */
+  border-radius: 16px;
+  font-size: 11px; /* Smaller font */
+  font-weight: 500;
+}
+
+.status-active {
+  background: #f0fdf4;
+  color: var(--accent-green);
+  border: 1px solid #bbf7d0;
+}
+
+.status-inactive {
+  background: #fef2f2;
+  color: var(--primary-red);
+  border: 1px solid #fecaca;
+}
+
+/* Grid Layout for Management Pages */
+.grid {
+  display: grid;
+  gap: 16px; /* Reduced gap */
+}
+
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+@media (min-width: 768px) {
+  .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Utility Classes - Reduced spacing */
+.space-y-6 > * + * {
+  margin-top: 16px; /* Reduced spacing */
+}
+
+.space-y-4 > * + * {
+  margin-top: 12px; /* Reduced spacing */
+}
+
+.space-y-3 > * + * {
+  margin-top: 8px; /* Reduced spacing */
+}
+
+.space-y-2 > * + * {
+  margin-top: 4px; /* Reduced spacing */
+}
+
+/* Compact management page headers */
+.management-header {
+  margin-bottom: 1.25rem !important; /* Reduced margin */
+}
+
+.management-header h1 {
+  font-size: 1.5rem !important; /* Smaller font */
+  margin-bottom: 0.25rem !important;
+}
+
+.management-header p {
+  font-size: 0.85rem !important; /* Smaller font */
+}
+
+/* Responsive adjustments for very small screens */
+@media (max-width: 1400px) {
+  .admin-main {
+    padding: 1rem 1rem; /* Even smaller padding on smaller screens */
+  }
+  
+  .branches-grid,
+  .buildings-grid,
+  .levels-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* Even smaller cards */
+    gap: 1rem;
+  }
+}
+
+/* Ensure content uses full available width */
+.admin-main > * {
+  max-width: none !important;
+  width: 100% !important;
+}
