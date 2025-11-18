@@ -88,10 +88,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({ room, onEdit, onDelete }) =>
               <p className="text-sm text-gray-600">Space</p>
               <p className="font-medium text-gray-900">{room.roomSpace} sqm</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Meter Type</p>
-              <p className="font-medium text-gray-900 capitalize">{room.meterType.toLowerCase()}</p>
-            </div>
+            
             <div>
               <p className="text-sm text-gray-600">Rental Fee</p>
               <p className="font-medium text-gray-900">{room.rentalFee} MMK</p>

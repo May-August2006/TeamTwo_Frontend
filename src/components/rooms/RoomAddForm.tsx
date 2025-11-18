@@ -1,11 +1,13 @@
-// components/rooms/RoomAddForm.tsx
+// components/rooms/RoomAddForm.tsx (Fixed - Utility IDs format)
 import React, { useState, useEffect } from 'react';
 import { branchApi } from '../../api/BranchAPI';
 import { buildingApi } from '../../api/BuildingAPI';
 import { levelApi } from '../../api/LevelAPI';
-import { roomTypeApi } from '../../api/RoomAPI';
+import { roomTypeApi, roomApi } from '../../api/RoomAPI';
+import { utilityApi } from '../../api/UtilityAPI';
 import { Button } from '../common/ui/Button';
-import { LoadingSpinner } from '../common/ui/LoadingSpinner';
+import { LoadingSpinner } from '../manager/LoadingSpinner';
+import type { UtilityType } from '../../types/room';
 
 interface RoomAddFormProps {
   onSubmit: (data: FormData) => void;
@@ -23,12 +25,12 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
     levelId: '',
     roomTypeId: '',
     roomSpace: '',
-    meterType: 'ELECTRICITY',
     rentalFee: '',
     branchId: '',
     buildingId: ''
   });
 
+  const [selectedUtilityIds, setSelectedUtilityIds] = useState<number[]>([]);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
@@ -36,11 +38,13 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
   const [buildings, setBuildings] = useState<any[]>([]);
   const [levels, setLevels] = useState<any[]>([]);
   const [roomTypes, setRoomTypes] = useState<any[]>([]);
+  const [utilities, setUtilities] = useState<UtilityType[]>([]);
   
   const [branchesLoading, setBranchesLoading] = useState(false);
   const [buildingsLoading, setBuildingsLoading] = useState(false);
   const [levelsLoading, setLevelsLoading] = useState(false);
   const [typesLoading, setTypesLoading] = useState(false);
+  const [utilitiesLoading, setUtilitiesLoading] = useState(false);
   
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -49,19 +53,23 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
     const loadInitialData = async () => {
       setBranchesLoading(true);
       setTypesLoading(true);
+      setUtilitiesLoading(true);
       
       try {
-        const [branchesData, typesData] = await Promise.all([
+        const [branchesData, typesData, utilitiesData] = await Promise.all([
           branchApi.getAllBranches(),
-          roomTypeApi.getAll()
+          roomTypeApi.getAll(),
+          utilityApi.getAll()
         ]);
         setBranches(branchesData.data);
         setRoomTypes(typesData.data);
+        setUtilities(utilitiesData.data);
       } catch (error) {
         console.error('Error loading initial data:', error);
       } finally {
         setBranchesLoading(false);
         setTypesLoading(false);
+        setUtilitiesLoading(false);
       }
     };
 
@@ -115,6 +123,14 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
     }
   };
 
+  const handleUtilityToggle = (utilityId: number) => {
+    setSelectedUtilityIds(prev => 
+      prev.includes(utilityId)
+        ? prev.filter(id => id !== utilityId)
+        : [...prev, utilityId]
+    );
+  };
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -147,7 +163,7 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
     }
 
     if (!formData.roomTypeId) {
-      newErrors.roomTypeId = 'Please select a room type';
+      newErrors.roomTypeId = 'Please selection a room type';
     }
 
     if (!formData.roomSpace || parseFloat(formData.roomSpace) <= 0) {
@@ -182,13 +198,21 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
       submitFormData.append('levelId', formData.levelId);
       submitFormData.append('roomTypeId', formData.roomTypeId);
       submitFormData.append('roomSpace', formData.roomSpace);
-      submitFormData.append('meterType', formData.meterType);
       submitFormData.append('rentalFee', formData.rentalFee);
+      
+      // ✅ FIXED: Append utility type IDs - Correct format
+      selectedUtilityIds.forEach((utilityId) => {
+        submitFormData.append('utilityTypeIds', utilityId.toString());
+      });
       
       // Append selected images
       selectedImages.forEach((image) => {
         submitFormData.append('images', image);
       });
+
+      console.log('Submitting room data:');
+      console.log('Utility IDs:', selectedUtilityIds);
+      console.log('Form Data:', Object.fromEntries(submitFormData.entries()));
 
       // Submit FormData
       onSubmit(submitFormData);
@@ -209,7 +233,7 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
     }
   };
 
-  const allLoading = branchesLoading || typesLoading;
+  const allLoading = branchesLoading || typesLoading || utilitiesLoading;
 
   if (allLoading) {
     return (
@@ -353,22 +377,8 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
           )}
         </div>
 
-        {/* Meter Type */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Meter Type *
-          </label>
-          <select
-            name="meterType"
-            value={formData.meterType}
-            onChange={handleChange}
-            required
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="ELECTRICITY">Electricity</option>
-            <option value="WATER">Water</option>
-          </select>
-        </div>
+        {/* Empty div to maintain grid layout */}
+        <div></div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -417,6 +427,51 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
             <p className="text-red-500 text-sm mt-1">{errors.rentalFee}</p>
           )}
         </div>
+      </div>
+
+      {/* Utility Types Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Available Utilities
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {utilities.map(utility => (
+            <div key={utility.id} className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                id={`utility-${utility.id}`}
+                checked={selectedUtilityIds.includes(utility.id)}
+                onChange={() => handleUtilityToggle(utility.id)}
+                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <div className="flex-1 min-w-0">
+                <label 
+                  htmlFor={`utility-${utility.id}`}
+                  className="block text-sm font-medium text-gray-700 cursor-pointer"
+                >
+                  {utility.utilityName}
+                </label>
+                <p className="text-sm text-gray-500 mt-1">
+                  {utility.description}
+                </p>
+                <div className="flex items-center mt-1 text-xs text-gray-600">
+                  <span className="font-medium">
+                    {utility.ratePerUnit?.toLocaleString() || '0'} MMK
+                  </span>
+                  <span className="mx-2">•</span>
+                  <span className="capitalize bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    {utility.calculationMethod?.toLowerCase() || 'fixed'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {selectedUtilityIds.length > 0 && (
+          <p className="text-sm text-green-600 mt-2">
+            {selectedUtilityIds.length} utility type(s) selected
+          </p>
+        )}
       </div>
 
       {/* Image Upload Section */}

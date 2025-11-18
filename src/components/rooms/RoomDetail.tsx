@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { Room } from '../../types/room';
 import { roomApi } from '../../api/RoomAPI';
-import { LoadingSpinner } from '../common/ui/LoadingSpinner';
+import { LoadingSpinner } from '../manager/LoadingSpinner';
 import { Button } from '../common/ui/Button';
-
 
 interface RoomDetailProps {
   roomId: number;
@@ -24,6 +23,7 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [updatingUtility, setUpdatingUtility] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen && roomId) {
@@ -40,6 +40,22 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
       console.error('Error fetching room details:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // ✅ FIXED: Always show all utilities, not just active ones
+  const toggleUtilityStatus = async (utilityTypeId: number, currentStatus: boolean) => {
+    setUpdatingUtility(utilityTypeId);
+    try {
+      await roomApi.toggleRoomUtility(roomId, utilityTypeId, !currentStatus);
+      
+      // Re-fetch the complete room data to get updated utilities
+      await fetchRoomDetails();
+      
+    } catch (error) {
+      console.error('Error toggling utility status:', error);
+    } finally {
+      setUpdatingUtility(null);
     }
   };
 
@@ -203,12 +219,62 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
                           <p className="text-sm text-gray-500">Space Area</p>
                           <p className="font-medium">{room.roomSpace} sqm</p>
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Meter Type</p>
-                          <p className="font-medium capitalize">{room.meterType.toLowerCase()}</p>
-                        </div>
                       </div>
                     </div>
+
+                    {/* ✅ FIXED: Utilities Section - Show ALL utilities regardless of isActive status */}
+                    {room.utilities && room.utilities.length > 0 && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                          Utilities ({room.utilities.filter(u => u.isActive).length} active / {room.utilities.length} total)
+                        </h3>
+                        <div className="space-y-3">
+                          {room.utilities.map((utility) => (
+                            <div 
+                              key={utility.id}
+                              className={`flex items-center justify-between p-3 rounded-lg border ${
+                                utility.isActive 
+                                  ? 'bg-white border-green-200' 
+                                  : 'bg-gray-50 border-gray-300 opacity-70'
+                              }`}
+                            >
+                              <div className="flex items-center space-x-3">
+                                <div className={`w-3 h-3 rounded-full ${
+                                  utility.isActive ? 'bg-green-500' : 'bg-gray-400'
+                                }`}></div>
+                                <div>
+                                  <p className={`font-medium ${
+                                    utility.isActive ? 'text-gray-900' : 'text-gray-500'
+                                  }`}>
+                                    {utility.utilityName}
+                                  </p>
+                                  <p className="text-sm text-gray-500">
+                                    {utility.ratePerUnit} MMK per unit • {utility.calculationMethod}
+                                  </p>
+                                  {!utility.isActive && (
+                                    <p className="text-xs text-red-500 mt-1">Currently inactive</p>
+                                  )}
+                                </div>
+                              </div>
+                              <Button
+                                onClick={() => toggleUtilityStatus(utility.id, utility.isActive)}
+                                variant={utility.isActive ? "secondary" : "primary"}
+                                size="sm"
+                                disabled={updatingUtility === utility.id}
+                              >
+                                {updatingUtility === utility.id ? (
+                                  <LoadingSpinner size="sm" />
+                                ) : utility.isActive ? (
+                                  'Deactivate'  
+                                ) : (
+                                  'Activate'    
+                                )}
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Building Information */}
                     <div className="bg-gray-50 rounded-lg p-4">

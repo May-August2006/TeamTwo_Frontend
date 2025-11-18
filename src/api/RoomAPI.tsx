@@ -31,7 +31,7 @@ export const roomApi = {
   // getAvailable: () => API.get<Room[]>('/api/rooms/available'),
 
   // Enhanced getAvailable with response handling
-  getAvailable: () => API.get<any>('/api/rooms/available').then((response: { data: any; }) => {
+  getAvailable: () => API.get<any>('/api/rooms/available').then(response => {
     console.log('Raw API Response:', response);
     
     // Handle different response structures

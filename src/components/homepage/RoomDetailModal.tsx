@@ -55,7 +55,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
     >
       <div className="space-y-6">
         {/* Image Gallery */}
-        <div className="relative bg-[#E5E8EB] rounded-lg overflow-hidden border border-[#0D1B2A]/10">
+        <div className="relative bg-gray-100 rounded-lg overflow-hidden">
           <img
             src={currentImage}
             alt={`${room.roomNumber} - Image ${selectedImage + 1}`}
@@ -67,7 +67,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
             <>
               <button
                 onClick={prevImage}
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-[#0D1B2A] bg-opacity-70 text-white rounded-full p-2 hover:bg-opacity-90 transition-all duration-200"
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-70 transition-all"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -75,7 +75,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
               </button>
               <button
                 onClick={nextImage}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-[#0D1B2A] bg-opacity-70 text-white rounded-full p-2 hover:bg-opacity-90 transition-all duration-200"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-70 transition-all"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -86,7 +86,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
           
           {/* Image Counter */}
           {imageUrls.length > 1 && (
-            <div className="absolute bottom-3 right-3 bg-[#0D1B2A] bg-opacity-80 text-white px-3 py-1 rounded-full text-sm font-medium">
+            <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded-full text-sm">
               {selectedImage + 1} / {imageUrls.length}
             </div>
           )}
@@ -94,13 +94,13 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
 
         {/* Thumbnail Gallery */}
         {imageUrls.length > 1 && (
-          <div className="flex space-x-3 overflow-x-auto pb-2">
+          <div className="flex space-x-2 overflow-x-auto pb-2">
             {imageUrls.map((url, index) => (
               <button
                 key={index}
                 onClick={() => setSelectedImage(index)}
-                className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 transition-all duration-200 ${
-                  index === selectedImage ? 'border-[#D32F2F]' : 'border-[#E5E8EB] hover:border-[#0D1B2A]/30'
+                className={`flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 ${
+                  index === selectedImage ? 'border-blue-500' : 'border-gray-300'
                 }`}
               >
                 <img
@@ -113,60 +113,77 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
           </div>
         )}
 
-        {/* Room Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-          <div className="space-y-4">
-            <div className="flex justify-between items-center py-2 border-b border-[#E5E8EB]">
-              <span className="font-semibold text-[#0D1B2A]">Space:</span>
-              <span className="text-[#0D1B2A] font-medium">{room.roomSpace} sqm</span>
+        {/* Rest of your existing RoomDetailModal content remains the same */}
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="space-y-3">
+            <div>
+              <span className="font-semibold text-gray-700">Space:</span>
+              <span className="ml-2 text-gray-600">{room.roomSpace} sqm</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-[#E5E8EB]">
-              <span className="font-semibold text-[#0D1B2A]">Rental Fee:</span>
-              <span className="text-[#D32F2F] font-bold">{room.rentalFee.toLocaleString()} MMK/month</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-[#E5E8EB]">
-              <span className="font-semibold text-[#0D1B2A]">Meter Type:</span>
-              <span className="text-[#0D1B2A] font-medium capitalize">{room.meterType.toLowerCase()}</span>
+            <div>
+              <span className="font-semibold text-gray-700">Rental Fee:</span>
+              <span className="ml-2 text-gray-600">{room.rentalFee} MMK/month</span>
             </div>
           </div>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center py-2 border-b border-[#E5E8EB]">
-              <span className="font-semibold text-[#0D1B2A]">Building:</span>
-              <span className="text-[#0D1B2A] font-medium">{room.level?.building?.buildingName}</span>
+          <div className="space-y-3">
+            <div>
+              <span className="font-semibold text-gray-700">Building:</span>
+              <span className="ml-2 text-gray-600">{room.level?.building?.buildingName}</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-[#E5E8EB]">
-              <span className="font-semibold text-[#0D1B2A]">Floor:</span>
-              <span className="text-[#0D1B2A] font-medium">{room.level?.levelName} (Level {room.level?.levelNumber})</span>
+            <div>
+              <span className="font-semibold text-gray-700">Floor:</span>
+              <span className="ml-2 text-gray-600">{room.level?.levelName} (Level {room.level?.levelNumber})</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-[#E5E8EB]">
-              <span className="font-semibold text-[#0D1B2A]">Branch:</span>
-              <span className="text-[#0D1B2A] font-medium">{room.level?.building?.branchName}</span>
+            <div>
+              <span className="font-semibold text-gray-700">Branch:</span>
+              <span className="ml-2 text-gray-600">{room.level?.building?.branchName}</span>
             </div>
           </div>
         </div>
 
+        {/* Utilities Section - Add this after the Description section */}
+{room.utilities && room.utilities.filter(util => util.isActive).length > 0 && (
+  <div>
+    <h4 className="font-semibold text-gray-900 mb-2">Available Utilities</h4>
+    <div className="grid grid-cols-2 gap-2">
+      {room.utilities
+        .filter(utility => utility.isActive)
+        .map((utility) => (
+          <div 
+            key={utility.id}
+            className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg"
+          >
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className="text-sm text-gray-700">{utility.utilityName}</span>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+)}
+
         {/* Description */}
-        <div className="bg-[#F8F9FA] rounded-lg p-4 border border-[#E5E8EB]">
-          <h4 className="font-semibold text-[#0D1B2A] mb-3">Description</h4>
-          <p className="text-[#0D1B2A] opacity-80 text-sm leading-relaxed">
-            This {room.roomSpace} sqm {room.roomType.typeName.toLowerCase()} is perfect for {getBusinessSuggestion(room.roomSpace, room.roomType.typeName)}. 
-            Located in {room.level?.building?.buildingName} on {room.level?.levelName}, this premium space offers excellent visibility 
-            and accessibility to help your business thrive in a high-traffic environment.
+        <div>
+          <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
+          <p className="text-gray-600 text-sm">
+            This {room.roomSpace} sqm space is perfect for {getBusinessSuggestion(room.roomSpace, room.roomType.typeName)}. 
+            Located in {room.level?.building?.buildingName} on {room.level?.levelName}, this space offers excellent visibility 
+            and accessibility for your business.
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex space-x-4 pt-6 border-t border-[#E5E8EB]">
+        <div className="flex space-x-3 pt-4 border-t border-gray-200">
           <Button
             onClick={onClose}
             variant="secondary"
-            className="flex-1 border-[#0D1B2A] hover:bg-[#0D1B2A] hover:text-white"
+            className="flex-1"
           >
             Close
           </Button>
           <Button
             onClick={handleBookAppointment}
-            className="flex-1 bg-[#D32F2F] hover:bg-[#B71C1C] text-white"
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
           >
             {isLoggedIn ? 'Book Appointment' : 'Login to Book'}
           </Button>

@@ -1,9 +1,10 @@
-// components/rooms/RoomEditForm.tsx (Complete Fixed Version)
-import React, { useState, useEffect } from 'react';
+// components/rooms/RoomEditForm.tsx (COMPLETELY FIXED - No more duplicates)
+import React, { useState, useEffect, useCallback } from 'react';
 import { roomTypeApi } from '../../api/RoomAPI';
+import { utilityApi } from '../../api/UtilityAPI';
 import { Button } from '../common/ui/Button';
-import { LoadingSpinner } from '../common/ui/LoadingSpinner';
-import type { Room } from '../../types/room';
+import { LoadingSpinner } from '../manager/LoadingSpinner';
+import type { Room, UtilityType } from '../../types/room';
 
 interface RoomEditFormProps {
   room: Room;
@@ -22,54 +23,118 @@ export const RoomEditForm: React.FC<RoomEditFormProps> = ({
     roomNumber: '',
     roomTypeId: '',
     roomSpace: '',
-    meterType: 'ELECTRICITY',
     rentalFee: '',
   });
 
+  // 🔥 COMPLETELY FIXED: Use Set for utilities to automatically handle duplicates
+  const [originalUtilityIds, setOriginalUtilityIds] = useState<Set<number>>(new Set());
+  const [currentUtilityIds, setCurrentUtilityIds] = useState<Set<number>>(new Set());
+  
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [imagesToRemove, setImagesToRemove] = useState<string[]>([]);
 
   const [roomTypes, setRoomTypes] = useState<any[]>([]);
+  const [utilities, setUtilities] = useState<UtilityType[]>([]);
   const [typesLoading, setTypesLoading] = useState(false);
+  const [utilitiesLoading, setUtilitiesLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [dataLoaded, setDataLoaded] = useState(false);
 
-  // Load room types
+  // Load room types and utilities
   useEffect(() => {
-    const loadRoomTypes = async () => {
+    const loadData = async () => {
       setTypesLoading(true);
+      setUtilitiesLoading(true);
       try {
-        const response = await roomTypeApi.getAll();
-        setRoomTypes(response.data);
+        const [typesData, utilitiesData] = await Promise.all([
+          roomTypeApi.getAll(),
+          utilityApi.getAll()
+        ]);
+        setRoomTypes(typesData.data);
+        setUtilities(utilitiesData.data);
+        setDataLoaded(true);
       } catch (error) {
-        console.error('Error loading room types:', error);
+        console.error('Error loading data:', error);
       } finally {
         setTypesLoading(false);
+        setUtilitiesLoading(false);
       }
     };
 
-    loadRoomTypes();
+    loadData();
   }, []);
 
-  // Set initial data when component mounts
+  // 🔥 COMPLETELY FIXED: Properly handle utility IDs with Set
   useEffect(() => {
-    if (room) {
+    if (room && dataLoaded) {
       console.log('Editing room:', room);
+      console.log('Room utilities:', room.utilities);
       
       const initialData = {
         roomNumber: room.roomNumber || '',
         roomTypeId: room.roomType?.id?.toString() || '',
         roomSpace: room.roomSpace?.toString() || '',
-        meterType: room.meterType || 'ELECTRICITY',
         rentalFee: room.rentalFee?.toString() || '',
       };
       
       setFormData(initialData);
       setExistingImages(room.imageUrls || []);
       setImagesToRemove([]);
+      
+      // 🔥 FIXED: Use Set to automatically remove duplicates
+      if (room.utilities && room.utilities.length > 0) {
+        const utilityIds = room.utilities.map(utility => utility.id);
+        const uniqueUtilityIds = new Set(utilityIds); // Set automatically removes duplicates
+        
+        console.log('Raw utility IDs from room:', utilityIds);
+        console.log('Unique utility IDs (Set):', Array.from(uniqueUtilityIds));
+        
+        setOriginalUtilityIds(new Set(uniqueUtilityIds));
+        setCurrentUtilityIds(new Set(uniqueUtilityIds));
+      } else {
+        console.log('No utilities found in room data');
+        setOriginalUtilityIds(new Set());
+        setCurrentUtilityIds(new Set());
+      }
     }
-  }, [room]);
+  }, [room, dataLoaded]);
+
+  // 🔥 FIXED: Use Set operations for changes
+  const getUtilityChanges = useCallback(() => {
+    const added = Array.from(currentUtilityIds).filter(id => !originalUtilityIds.has(id));
+    const removed = Array.from(originalUtilityIds).filter(id => !currentUtilityIds.has(id));
+    
+    console.log('Utility changes - Added:', added, 'Removed:', removed);
+    console.log('Original:', Array.from(originalUtilityIds), 'Current:', Array.from(currentUtilityIds));
+    
+    return { added, removed };
+  }, [currentUtilityIds, originalUtilityIds]);
+
+  // 🔥 FIXED: Proper Set operations for toggling
+  const handleUtilityToggle = (utilityId: number) => {
+    setCurrentUtilityIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(utilityId)) {
+        newSet.delete(utilityId);
+      } else {
+        newSet.add(utilityId);
+      }
+      console.log('Utility toggled. New selection:', Array.from(newSet));
+      return newSet;
+    });
+  };
+
+  // 🔥 FIXED: Check if utility is selected using Set
+  const isUtilitySelected = (utilityId: number): boolean => {
+    return currentUtilityIds.has(utilityId);
+  };
+
+  // 🔥 FIXED: Check if utility was originally selected using Set
+  const wasUtilityOriginallySelected = (utilityId: number): boolean => {
+    return originalUtilityIds.has(utilityId);
+  };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -78,7 +143,6 @@ export const RoomEditForm: React.FC<RoomEditFormProps> = ({
     const newImages = Array.from(files);
     setSelectedImages(prev => [...prev, ...newImages]);
 
-    // Create preview URLs
     const newPreviews = newImages.map(file => URL.createObjectURL(file));
     setImagePreviews(prev => [...prev, ...newPreviews]);
   };
@@ -89,18 +153,15 @@ export const RoomEditForm: React.FC<RoomEditFormProps> = ({
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Mark image for removal (only remove on submit)
   const markImageForRemoval = (index: number) => {
     const imageUrlToRemove = existingImages[index];
     
     if (!imageUrlToRemove) return;
 
-    // Add to removal list and remove from display
     setImagesToRemove(prev => [...prev, imageUrlToRemove]);
     setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Restore removed image
   const restoreImage = (imageUrl: string, index: number) => {
     setImagesToRemove(prev => prev.filter(url => url !== imageUrl));
     setExistingImages(prev => {
@@ -137,31 +198,33 @@ export const RoomEditForm: React.FC<RoomEditFormProps> = ({
     e.preventDefault();
     
     if (validateForm()) {
-      // Create FormData for file upload
       const submitFormData = new FormData();
       
-      // Append all required fields including levelId
       submitFormData.append('roomNumber', formData.roomNumber);
       submitFormData.append('levelId', room.level?.id?.toString() || '');
       submitFormData.append('roomTypeId', formData.roomTypeId);
       submitFormData.append('roomSpace', formData.roomSpace);
-      submitFormData.append('meterType', formData.meterType);
       submitFormData.append('rentalFee', formData.rentalFee);
       
-      // Append selected images
+      // 🔥 FIXED: Convert Set to array for submission
+      const finalUtilityIds = Array.from(currentUtilityIds);
+      finalUtilityIds.forEach((utilityId) => {
+        submitFormData.append('utilityTypeIds', utilityId.toString());
+      });
+      
       selectedImages.forEach((image) => {
         submitFormData.append('images', image);
       });
 
-      // Append images to remove (as JSON string)
       if (imagesToRemove.length > 0) {
         submitFormData.append('imagesToRemove', JSON.stringify(imagesToRemove));
       }
 
       console.log('Submitting edit form data:');
-      console.log('Images to remove:', imagesToRemove);
+      console.log('Final utility selection:', finalUtilityIds);
+      console.log('Original utilities:', Array.from(originalUtilityIds));
+      console.log('Utility changes:', getUtilityChanges());
       
-      // Submit FormData
       onSubmit(submitFormData);
     }
   };
@@ -174,27 +237,37 @@ export const RoomEditForm: React.FC<RoomEditFormProps> = ({
       [name]: value
     }));
 
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
-  // Reset form when canceling
   const handleCancel = () => {
-    // Clean up preview URLs
+    console.log('Canceling - restoring original state');
+    
     imagePreviews.forEach(url => URL.revokeObjectURL(url));
     
-    // Reset all state
     setSelectedImages([]);
     setImagePreviews([]);
     setImagesToRemove([]);
+    setExistingImages(room.imageUrls || []);
+    setCurrentUtilityIds(new Set(originalUtilityIds)); // Restore original utilities
     
-    // Call the original onCancel
     onCancel();
   };
 
-  if (typesLoading) {
+  const hasChanges = useCallback(() => {
+    const { added, removed } = getUtilityChanges();
+    return added.length > 0 || removed.length > 0 || 
+           selectedImages.length > 0 || 
+           imagesToRemove.length > 0 ||
+           formData.roomNumber !== room.roomNumber ||
+           formData.roomTypeId !== room.roomType?.id?.toString() ||
+           formData.roomSpace !== room.roomSpace?.toString() ||
+           formData.rentalFee !== room.rentalFee?.toString();
+  }, [getUtilityChanges, selectedImages, imagesToRemove, formData, room]);
+
+  if (typesLoading || utilitiesLoading) {
     return (
       <div className="flex justify-center py-8">
         <LoadingSpinner size="lg" />
@@ -202,8 +275,28 @@ export const RoomEditForm: React.FC<RoomEditFormProps> = ({
     );
   }
 
+  const { added, removed } = getUtilityChanges();
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Changes Indicator */}
+      {hasChanges() && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <span className="text-blue-700 font-medium">You have unsaved changes</span>
+          </div>
+          {(added.length > 0 || removed.length > 0) && (
+            <div className="mt-2 text-sm text-blue-600">
+              {added.length > 0 && <span>{added.length} utility(s) added </span>}
+              {removed.length > 0 && <span>{removed.length} utility(s) removed</span>}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Location Info (Read-only) */}
       <div className="bg-gray-50 p-4 rounded-lg">
         <h3 className="text-sm font-medium text-gray-700 mb-2">Location Information</h3>
@@ -273,22 +366,7 @@ export const RoomEditForm: React.FC<RoomEditFormProps> = ({
           )}
         </div>
 
-        {/* Meter Type */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Meter Type *
-          </label>
-          <select
-            name="meterType"
-            value={formData.meterType}
-            onChange={handleChange}
-            required
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="ELECTRICITY">Electricity</option>
-            <option value="WATER">Water</option>
-          </select>
-        </div>
+        <div></div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -339,7 +417,92 @@ export const RoomEditForm: React.FC<RoomEditFormProps> = ({
         </div>
       </div>
 
-      {/* Image Upload Section */}
+      {/* Utility Types Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Available Utilities
+          {added.length > 0 || removed.length > 0 ? (
+            <span className="ml-2 text-sm font-normal text-blue-600">
+              ({added.length} added, {removed.length} removed)
+            </span>
+          ) : null}
+        </label>
+        {utilities.length === 0 ? (
+          <div className="text-center py-4 bg-gray-50 rounded-lg">
+            <p className="text-gray-500">No utilities available</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {utilities.map(utility => {
+                // 🔥 FIXED: Use Set methods for checking selection status
+                const isOriginallySelected = wasUtilityOriginallySelected(utility.id);
+                const isCurrentlySelected = isUtilitySelected(utility.id);
+                const isAdded = !isOriginallySelected && isCurrentlySelected;
+                const isRemoved = isOriginallySelected && !isCurrentlySelected;
+                
+                return (
+                  <div 
+                    key={`utility-${utility.id}`}
+                    className={`flex items-start space-x-3 p-3 border rounded-lg transition-colors ${
+                      isCurrentlySelected 
+                        ? 'border-blue-500 bg-blue-50' 
+                        : 'border-gray-200 hover:bg-gray-50'
+                    } ${isAdded ? 'ring-2 ring-green-200' : ''} ${isRemoved ? 'ring-2 ring-red-200' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      id={`utility-${utility.id}`}
+                      checked={isCurrentlySelected}
+                      onChange={() => handleUtilityToggle(utility.id)}
+                      className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center">
+                        <label 
+                          htmlFor={`utility-${utility.id}`}
+                          className="block text-sm font-medium text-gray-700 cursor-pointer"
+                        >
+                          {utility.utilityName}
+                        </label>
+                        {isAdded && (
+                          <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+                            Added
+                          </span>
+                        )}
+                        {isRemoved && (
+                          <span className="ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
+                            Removed
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {utility.description}
+                      </p>
+                      <div className="flex items-center mt-1 text-xs text-gray-600">
+                        <span className="font-medium">
+                          {utility.ratePerUnit?.toLocaleString() || '0'} MMK
+                        </span>
+                        <span className="mx-2">•</span>
+                        <span className="capitalize bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                          {utility.calculationMethod?.toLowerCase() || 'fixed'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {currentUtilityIds.size > 0 && (
+              <p className="text-sm text-green-600 mt-2">
+                {currentUtilityIds.size} utility type(s) selected
+              </p>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Rest of the image upload section remains the same */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Room Images
@@ -465,7 +628,7 @@ export const RoomEditForm: React.FC<RoomEditFormProps> = ({
         <Button
           type="submit"
           loading={isLoading}
-          disabled={isLoading}
+          disabled={isLoading || !hasChanges()}
         >
           Update Room
         </Button>

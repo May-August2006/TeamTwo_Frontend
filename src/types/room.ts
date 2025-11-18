@@ -4,12 +4,13 @@ export interface Room {
   level: Level;
   roomType: RoomType;
   roomSpace: number;
-  meterType: 'ELECTRICITY' | 'WATER';
   isAvailable: boolean;
   rentalFee: number;
   imageUrls: string[];
+  utilities: UtilityType[];
   createdAt: string;
   updatedAt: string;
+  
 }
 
 export interface RoomType {
@@ -32,7 +33,6 @@ export interface Level {
 }
 
 export interface Building {
-  branch: any;
   id: number;
   branchId: number;
   branchName: string;
@@ -58,7 +58,7 @@ export interface CreateRoomRequest {
   levelId: number;
   roomTypeId: number;
   roomSpace: number;
-  meterType: 'ELECTRICITY' | 'WATER';
+  utilityTypeIds?: number[];
   rentalFee: number;
   images?: File[];
 }
@@ -96,4 +96,30 @@ export interface RoomSearchParams {
   maxSpace?: number;
   minRent?: number;
   maxRent?: number;
+}
+
+export interface UtilityType {
+  id: number;
+  utilityName: string;
+  ratePerUnit: number;
+  calculationMethod: 'FIXED' | 'METERED' | 'ALLOCATED';
+  description: string;
+isActive: boolean;
+  createdAt: string;
+}
+
+export interface RoomUtility {
+  id: number;
+  roomId: number;
+  utilityTypeId: number;
+  isActive: boolean;
+  createdAt: string;
+  utilityType: UtilityType;
+}
+
+export interface UtilityTypeRequest {
+  utilityName: string;
+  ratePerUnit: number;
+  calculationMethod: 'FIXED' | 'METERED' | 'ALLOCATED';
+  description: string;
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Room } from '../../types/room';
 import { RoomCard } from './RoomCard';
-import { LoadingSpinner } from '../common/ui/LoadingSpinner';
+import { LoadingSpinner } from '../manager/LoadingSpinner';
 
 interface RoomListProps {
   rooms: Room[];
