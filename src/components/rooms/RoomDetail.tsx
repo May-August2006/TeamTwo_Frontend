@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Room } from '../../types/room';
 import { roomApi } from '../../api/RoomAPI';
-import { LoadingSpinner } from '../manager/LoadingSpinner';
+import { LoadingSpinner } from '../common/ui/LoadingSpinner';
 import { Button } from '../common/ui/Button';
 
 interface RoomDetailProps {
