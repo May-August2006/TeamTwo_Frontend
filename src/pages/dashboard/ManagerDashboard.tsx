@@ -8,6 +8,7 @@ import { ReportsPage } from "../manager/ReportsPage";
 import LeaseManagementPage from "../manager/LeaseManagementPage";
 import { ManagerDashboardLayout } from "../../components/manager/ManagerDashboardLayout";
 import TenantManagement from "../manager/TenantManagement";
+import LeaseManagement from "../manager/LeaseManagement";
 
 export default function ManagerDashboard() {
   return (
@@ -15,7 +16,7 @@ export default function ManagerDashboard() {
       <Routes>
         <Route path="overview" element={<OverviewPage />} />
         <Route path="tenants" element={<TenantManagement />} />
-        <Route path="leases" element={<LeaseManagementPage />} />
+        <Route path="leases" element={<LeaseManagement />} />
         <Route path="billing" element={<BillingUtilitiesPage />} />
         <Route path="payments" element={<PaymentManagementPage />} />
         <Route path="reports" element={<ReportsPage />} />
