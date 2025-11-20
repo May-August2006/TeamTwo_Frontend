@@ -18,6 +18,7 @@ const menuItems = [
   { value: "leases", label: "Lease Management", path: "/manager/leases" },
   { value: "billing", label: "Billing & Utilities", path: "/manager/billing" },
   { value: "payments", label: "Payments", path: "/manager/payments" },
+  { value: "maintenance", label: "Maintenance", path: "/manager/maintenance" },
   { value: "reports", label: "Reports", path: "/manager/reports" },
 ];
 
@@ -117,7 +118,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                     : "text-gray-500 group-hover:text-blue-600"
                 }`}
               >
-                {/* you can keep icons here if needed */}
                 ●
               </span>
 

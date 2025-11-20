@@ -1,3 +1,4 @@
+// AdminDashboard.tsx - Updated
 /** @format */
 
 import React, { useState } from "react";
@@ -11,11 +12,13 @@ import LevelManagement from "../LevelManagement";
 import BillingConfiguration from "../../components/admin/BillingConfiguration";
 import UserManagement from "../../components/admin/UserManagement";
 import RoomManagement from "../RoomManagement";
+import { useTranslation } from "react-i18next";
 
 const AdminDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
 
   const handleLogout = () => {
     navigate("/logout");
@@ -27,14 +30,14 @@ const AdminDashboard: React.FC = () => {
   };
 
   const getPageTitle = () => {
-    if (location.pathname === "/admin") return "Admin Dashboard";
-    if (location.pathname.includes("branches")) return "Branch Management";
-    if (location.pathname.includes("buildings")) return "Building Management";
-    if (location.pathname.includes("levels")) return "Level Management";
-    if (location.pathname.includes("billing")) return "Billing Configuration";
-    if (location.pathname.includes("users")) return "User Management";
-    if (location.pathname.includes("rooms")) return "Room Management";
-    return "Admin Dashboard";
+    if (location.pathname === "/admin") return t('admin.dashboard');
+    if (location.pathname.includes("branches")) return t('sidebar.branchManagement');
+    if (location.pathname.includes("buildings")) return t('sidebar.buildingManagement');
+    if (location.pathname.includes("levels")) return t('sidebar.levelManagement');
+    if (location.pathname.includes("billing")) return t('sidebar.billing');
+    if (location.pathname.includes("users")) return t('sidebar.users');
+    if (location.pathname.includes("rooms")) return t('sidebar.roomManagement');
+    return t('admin.dashboard');
   };
 
   return (
@@ -64,7 +67,7 @@ const AdminDashboard: React.FC = () => {
                 {getPageTitle()}
               </h1>
               <p className="text-gray-600 mt-2">
-                Manage your mall operations and configurations
+                {t('admin.operations')}
               </p>
             </div>
 

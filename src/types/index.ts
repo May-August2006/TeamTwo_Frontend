@@ -8,6 +8,8 @@ export interface Branch {
   contactEmail: string;
   createdAt: string;
   updatedAt: string;
+  accountantId?: number;
+  accountantName?: string;
 }
 
 export interface BranchRequest {
@@ -27,6 +29,8 @@ export interface Building {
   totalLeasableArea: number;
   createdAt: string;
   updatedAt: string;
+  managerId?: number;
+  managerName?: string;
 }
 
 export interface BuildingRequest {
