@@ -1,26 +1,15 @@
-// api/BillingFeeAPI.ts
-import API from "./api";
-import type { BillingFee, BillingFeeRequest } from "../types/billing";
+/** @format */
+import API from './api';
+import type { BillingFee, BillingFeeRequest } from '../types/billing';
+
+const API_BASE_URL = 'http://localhost:8080/api';
 
 export const billingFeeApi = {
-  // Get all billing fees
-  getAll: () => API.get<BillingFee[]>('/api/billing-fees'),
-  
-  // Get active billing fees only
-  getActive: () => API.get<BillingFee[]>('/api/billing-fees/active'),
-  
-  // Get billing fee by ID
-  getById: (id: number) => API.get<BillingFee>(`/api/billing-fees/${id}`),
-  
-  // Get billing fees by type
-  getByType: (feeType: string) => API.get<BillingFee[]>(`/api/billing-fees/type/${feeType}`),
-  
-  // Create new billing fee
-  create: (data: BillingFeeRequest) => API.post<BillingFee>('/api/billing-fees', data),
-  
-  // Update billing fee
-  update: (id: number, data: BillingFeeRequest) => API.put<BillingFee>(`/api/billing-fees/${id}`, data),
-  
-  // Delete billing fee
-  delete: (id: number) => API.delete<void>(`/api/billing-fees/${id}`),
+  getAll: () => API.get<BillingFee[]>(`${API_BASE_URL}/billing-fees`),
+  getActive: () => API.get<BillingFee[]>(`${API_BASE_URL}/billing-fees/active`),
+  getById: (id: number) => API.get<BillingFee>(`${API_BASE_URL}/billing-fees/${id}`),
+  create: (data: BillingFeeRequest) => API.post<BillingFee>(`${API_BASE_URL}/billing-fees`, data),
+  update: (id: number, data: BillingFeeRequest) => API.put<BillingFee>(`${API_BASE_URL}/billing-fees/${id}`, data),
+  delete: (id: number) => API.delete(`${API_BASE_URL}/billing-fees/${id}`),
+  getByUtilityType: (utilityTypeId: number) => API.get<BillingFee[]>(`${API_BASE_URL}/billing-fees/type/${utilityTypeId}`), 
 };

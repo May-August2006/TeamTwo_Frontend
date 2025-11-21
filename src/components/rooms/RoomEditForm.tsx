@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { roomTypeApi } from '../../api/RoomAPI';
 import { utilityApi } from '../../api/UtilityAPI';
 import { Button } from '../common/ui/Button';
-import { LoadingSpinner } from '../manager/LoadingSpinner';
+import { LoadingSpinner } from '../common/ui/LoadingSpinner';
 import type { Room, UtilityType } from '../../types/room';
 
 interface RoomEditFormProps {

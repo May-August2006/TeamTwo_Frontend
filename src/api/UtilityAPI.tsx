@@ -1,6 +1,7 @@
 // api/UtilityAPI.ts
 import API from "./api";
 import type { UtilityType, UtilityTypeRequest } from "../types/room";
+import axios from "axios";
 
 export const utilityApi = {
   // Get all utility types
@@ -20,4 +21,7 @@ export const utilityApi = {
   
   // Delete utility type
   delete: (id: number) => API.delete<void>(`/api/utility-types/${id}`),
+
+  getByCalculationMethod: (method: string) => 
+    axios.get<UtilityType[]>(`/api/utility-types/calculation-method/${method}`),
 };

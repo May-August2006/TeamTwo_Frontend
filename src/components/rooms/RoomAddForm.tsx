@@ -6,7 +6,7 @@ import { levelApi } from '../../api/LevelAPI';
 import { roomTypeApi, roomApi } from '../../api/RoomAPI';
 import { utilityApi } from '../../api/UtilityAPI';
 import { Button } from '../common/ui/Button';
-import { LoadingSpinner } from '../manager/LoadingSpinner';
+import { LoadingSpinner } from '../common/ui/LoadingSpinner';
 import type { UtilityType } from '../../types/room';
 
 interface RoomAddFormProps {

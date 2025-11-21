@@ -9,10 +9,11 @@ import AdminHome from "../../components/admin/AdminHome";
 import BranchManagement from "../BranchManagement";
 import BuildingManagement from "../BuildingManagement";
 import LevelManagement from "../LevelManagement";
-import BillingConfiguration from "../../components/admin/BillingConfiguration";
+import AdminBillingConfiguration from "../../components/admin/BillingConfiguration";
 import UserManagement from "../../components/admin/UserManagement";
 import RoomManagement from "../RoomManagement";
 import { useTranslation } from "react-i18next";
+import UtilityTypeManagement from "../../components/admin/UtilityTypeManagement";
 
 const AdminDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -34,6 +35,7 @@ const AdminDashboard: React.FC = () => {
     if (location.pathname.includes("branches")) return t('sidebar.branchManagement');
     if (location.pathname.includes("buildings")) return t('sidebar.buildingManagement');
     if (location.pathname.includes("levels")) return t('sidebar.levelManagement');
+    if (location.pathname.includes("utilityTypeManagement")) return t('sidebar.utilityTypeManagement');
     if (location.pathname.includes("billing")) return t('sidebar.billing');
     if (location.pathname.includes("users")) return t('sidebar.users');
     if (location.pathname.includes("rooms")) return t('sidebar.roomManagement');
@@ -81,7 +83,8 @@ const AdminDashboard: React.FC = () => {
                 <Route path="/branches" element={<BranchManagement />} />
                 <Route path="/buildings" element={<BuildingManagement />} />
                 <Route path="/levels" element={<LevelManagement />} />
-                <Route path="/billing" element={<BillingConfiguration />} />
+                <Route path="utility-types" element={<UtilityTypeManagement />} />
+                 <Route path="/billing" element={<AdminBillingConfiguration />} />
                 <Route path="/users" element={<UserManagement />} />
                 <Route path="/rooms" element={<RoomManagement />} />
               </Routes>

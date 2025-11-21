@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import type { Branch, Building, Level, RoomSearchParams, RoomType } from '../../types/room';
+import type { RoomSearchParams, RoomType } from '../../types/room';
 import { branchApi } from '../../api/BranchAPI';
 import { buildingApi } from '../../api/BuildingAPI';
 import { levelApi } from '../../api/LevelAPI';
 import { roomTypeApi } from '../../api/RoomAPI';
 import { Button } from '../common/ui/Button';
+import type { Branch, Building, Level } from '../../types';
 
 interface RoomSearchProps {
   onSearch: (params: RoomSearchParams) => void;

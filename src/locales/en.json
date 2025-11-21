@@ -24,13 +24,15 @@
     "hoursAgo": "hours ago",
     "daysAgo": "days ago"
   },
+  
   "sidebar": {
     "dashboard": "Dashboard",
     "masterData": "Master Data Management",
     "branchManagement": "Branch Management",
-    "buildingManagement": "Building Management",
+    "buildingManagement": "Building Management", 
     "levelManagement": "Level Management",
     "roomManagement": "Room Management",
+    "utilityTypeManagement": "Utility Types",
     "billing": "Billing Configuration",
     "users": "User Management"
   },

@@ -12,6 +12,7 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  Zap,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -65,6 +66,11 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
         },
       ],
     },
+    {
+          name: t('sidebar.utilityTypeManagement'),
+          path: "/admin/utility-types",
+          icon: <Zap className="w-4 h-4" />,
+        },
     {
       name: t('sidebar.billing'),
       icon: <DollarSign className="w-5 h-5" />,

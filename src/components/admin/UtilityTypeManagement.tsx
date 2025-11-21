@@ -3,16 +3,16 @@ import React, { useState, useEffect } from "react";
 import { utilityApi } from "../../api/UtilityAPI";
 import type { UtilityType, UtilityTypeRequest } from "../../types/room";
 
-export const UtilityTypePage: React.FC = () => {
+const UtilityTypeManagement: React.FC = () => {
   const [utilityTypes, setUtilityTypes] = useState<UtilityType[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingUtility, setEditingUtility] = useState<UtilityType | null>(null);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<UtilityTypeRequest>({
     utilityName: "",
-    calculationMethod: "METERED",
+    calculationMethod: "FIXED",
     ratePerUnit: 0,
-    description: ""
+    description: "",
   });
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export const UtilityTypePage: React.FC = () => {
       setEditingUtility(null);
       setFormData({ 
         utilityName: "", 
-        calculationMethod: "METERED", 
+        calculationMethod: "FIXED", 
         ratePerUnit: 0, 
         description: "" 
       });
@@ -61,9 +61,9 @@ export const UtilityTypePage: React.FC = () => {
     setEditingUtility(utility);
     setFormData({
       utilityName: utility.utilityName,
-      calculationMethod: utility.calculationMethod,
-      ratePerUnit: utility.ratePerUnit,
-      description: utility.description
+      calculationMethod: utility.calculationMethod || "FIXED",
+      ratePerUnit: utility.ratePerUnit || 0,
+      description: utility.description || ""
     });
     setShowForm(true);
   };
@@ -88,19 +88,26 @@ export const UtilityTypePage: React.FC = () => {
 
       const updateData: UtilityTypeRequest = {
         utilityName: utility.utilityName,
-        calculationMethod: utility.calculationMethod,
-        ratePerUnit: utility.ratePerUnit,
-        description: utility.description
+        calculationMethod: utility.calculationMethod || "FIXED",
+        ratePerUnit: utility.ratePerUnit || 0,
+        description: utility.description || ""
       };
 
-      // Note: You'll need to add an update endpoint that handles isActive
-      // For now, we'll just refetch
       await utilityApi.update(id, updateData);
       fetchUtilityTypes();
       alert(`Utility type ${currentStatus ? 'deactivated' : 'activated'} successfully!`);
     } catch (error: any) {
       console.error("Error updating utility type:", error);
       alert(error.response?.data?.message || "Failed to update utility type");
+    }
+  };
+
+  const getCalculationMethodDescription = (method: string) => {
+    switch (method) {
+      case 'FIXED': return 'Fixed rate per billing period';
+      case 'METERED': return 'Based on actual consumption (meter reading)';
+      case 'ALLOCATED': return 'Allocated based on usage or area';
+      default: return method;
     }
   };
 
@@ -115,55 +122,65 @@ export const UtilityTypePage: React.FC = () => {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Utility Types</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Utility Type Management</h1>
+          <p className="text-gray-600 mt-1">Manage utility types and calculation methods</p>
+        </div>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2"
         >
+          <span>+</span>
           Add Utility Type
         </button>
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">
               {editingUtility ? "Edit Utility Type" : "Add Utility Type"}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Utility Name</label>
+                <label className="block text-sm font-medium text-gray-700">Utility Name *</label>
                 <input
                   type="text"
                   required
                   value={formData.utilityName}
                   onChange={(e) => setFormData({ ...formData, utilityName: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-green-500 focus:border-green-500"
+                  placeholder="e.g., Electricity, Water, CAM"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700">Calculation Method</label>
+                <label className="block text-sm font-medium text-gray-700">Calculation Method *</label>
                 <select
+                  required
                   value={formData.calculationMethod}
                   onChange={(e) => setFormData({ ...formData, calculationMethod: e.target.value as any })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-green-500 focus:border-green-500"
                 >
-                  <option value="METERED">Metered</option>
-                  <option value="FIXED">Fixed</option>
+                  <option value="FIXED">Fixed Rate</option>
+                  <option value="METERED">Metered (Consumption-based)</option>
                   <option value="ALLOCATED">Allocated</option>
                 </select>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700">Rate Per Unit</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Rate Per Unit
+                  <span className="text-gray-500 text-sm ml-2">
+                    (base rate for calculations)
+                  </span>
+                </label>
                 <input
                   type="number"
                   step="0.0001"
-                  required
                   value={formData.ratePerUnit}
-                  onChange={(e) => setFormData({ ...formData, ratePerUnit: parseFloat(e.target.value) })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  onChange={(e) => setFormData({ ...formData, ratePerUnit: parseFloat(e.target.value) || 0 })}
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-green-500 focus:border-green-500"
                 />
               </div>
               
@@ -173,17 +190,23 @@ export const UtilityTypePage: React.FC = () => {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-green-500 focus:border-green-500"
+                  placeholder="Describe this utility type and how it should be calculated..."
                 />
               </div>
               
-              <div className="flex gap-2 justify-end">
+              <div className="flex gap-2 justify-end pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setShowForm(false);
                     setEditingUtility(null);
-                    setFormData({ utilityName: "", calculationMethod: "METERED", ratePerUnit: 0, description: "" });
+                    setFormData({ 
+                      utilityName: "", 
+                      calculationMethod: "FIXED", 
+                      ratePerUnit: 0, 
+                      description: "" 
+                    });
                   }}
                   className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
                 >
@@ -191,7 +214,7 @@ export const UtilityTypePage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
                 >
                   {editingUtility ? "Update" : "Create"}
                 </button>
@@ -227,15 +250,15 @@ export const UtilityTypePage: React.FC = () => {
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {utilityTypes.map((utility) => (
-              <tr key={utility.id}>
+              <tr key={utility.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {utility.utilityName}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {utility.calculationMethod}
+                  {getCalculationMethodDescription(utility.calculationMethod || "FIXED")}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {utility.ratePerUnit}
+                  {utility.ratePerUnit || '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -247,7 +270,7 @@ export const UtilityTypePage: React.FC = () => {
                   </span>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-500">
-                  {utility.description}
+                  {utility.description || '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <button
@@ -276,11 +299,15 @@ export const UtilityTypePage: React.FC = () => {
           </tbody>
         </table>
         {utilityTypes.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No utility types found
+          <div className="text-center py-12 text-gray-500">
+            <div className="text-4xl mb-2">⚡</div>
+            <div className="text-lg">No utility types configured</div>
+            <p className="text-sm mt-1">Click "Add Utility Type" to create your first utility configuration</p>
           </div>
         )}
       </div>
     </div>
   );
 };
+
+export default UtilityTypeManagement;
