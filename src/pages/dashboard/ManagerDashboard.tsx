@@ -16,9 +16,12 @@ import { UsageEntryPage } from "../manager/UsageEntryPage";
 import ManagerMaintenancePage from "../manager/MaintenancePage"; // Add this import
 import LeaseManagement from "../manager/LeaseManagement";
 
+import { AlertsDropdown } from "../../components/AlertsDropdown";
+
 export default function ManagerDashboard() {
   return (
     <ManagerDashboardLayout>
+      <AlertsDropdown />
       <Routes>
         <Route path="overview" element={<OverviewPage />} />
         <Route path="tenants" element={<TenantManagement />} />

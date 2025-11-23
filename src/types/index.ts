@@ -283,3 +283,10 @@ export type AnnouncementRequest = {
   message: string;
   scheduledAt?: string;
 };
+
+export interface ContractAlert {
+  id: number; // Unique ID of the alert
+  message: string; // Alert message content
+  read: boolean; // Whether the alert has been read
+  createdAt: string; // Timestamp of creation in ISO format
+}
