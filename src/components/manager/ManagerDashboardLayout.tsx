@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardHeader } from "./ManagerHeader";
 import { DashboardSidebar } from "./ManagerSidebar";
+import { ToastProvider } from "../../context/ToastContext";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -67,44 +68,46 @@ export const ManagerDashboardLayout: React.FC<DashboardLayoutProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
-      {/* Sidebar */}
-      <DashboardSidebar
-        mobileOpen={mobileOpen}
-        isCollapsed={isCollapsed}
-        isMobile={isMobile}
-        onDrawerClose={handleDrawerClose}
-        onDrawerTransitionEnd={handleDrawerTransitionEnd}
-        onToggleSidebar={handleDrawerToggle}
-        onNavigation={handleNavigation}
-      />
-
-      {/* Main Content */}
-      <div
-        className={`flex-1 flex flex-col min-h-screen transition-all duration-300
-          ${isMobile ? "" : isCollapsed ? "lg:ml-24" : "lg:ml-80"}
-        `}
-      >
-        {/* Header */}
-        <DashboardHeader
-          onMenuToggle={handleDrawerToggle}
-          sidebarCollapsed={isCollapsed}
+    <ToastProvider>
+      <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
+        {/* Sidebar */}
+        <DashboardSidebar
+          mobileOpen={mobileOpen}
+          isCollapsed={isCollapsed}
           isMobile={isMobile}
+          onDrawerClose={handleDrawerClose}
+          onDrawerTransitionEnd={handleDrawerTransitionEnd}
+          onToggleSidebar={handleDrawerToggle}
+          onNavigation={handleNavigation}
         />
 
-        {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-6 mt-16 lg:mt-0 overflow-auto">
-          <div className="w-full max-w-full">{children}</div>
-        </main>
-      </div>
-
-      {/* Mobile overlay */}
-      {isMobile && mobileOpen && (
+        {/* Main Content */}
         <div
-          className="fixed inset-0 bg-black/40 z-30 lg:hidden"
-          onClick={handleDrawerClose}
-        ></div>
-      )}
-    </div>
+          className={`flex-1 flex flex-col min-h-screen transition-all duration-300
+          ${isMobile ? "" : isCollapsed ? "lg:ml-24" : "lg:ml-80"}
+        `}
+        >
+          {/* Header */}
+          <DashboardHeader
+            onMenuToggle={handleDrawerToggle}
+            sidebarCollapsed={isCollapsed}
+            isMobile={isMobile}
+          />
+
+          {/* Page Content */}
+          <main className="flex-1 p-4 sm:p-6 mt-16 lg:mt-0 overflow-auto">
+            <div className="w-full max-w-full">{children}</div>
+          </main>
+        </div>
+
+        {/* Mobile overlay */}
+        {isMobile && mobileOpen && (
+          <div
+            className="fixed inset-0 bg-black/40 z-30 lg:hidden"
+            onClick={handleDrawerClose}
+          ></div>
+        )}
+      </div>
+    </ToastProvider>
   );
 };

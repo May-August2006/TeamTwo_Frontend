@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.2.1",
     "axios": "^1.13.2",
     "framer-motion": "^12.23.24",
     "i18next": "^25.6.2",
@@ -20,8 +21,10 @@
     "lucide-react": "^0.553.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-hot-toast": "^2.6.0",
     "react-i18next": "^16.2.4",
     "react-router-dom": "^7.9.5",
+    "sockjs-client": "^1.6.1"
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
