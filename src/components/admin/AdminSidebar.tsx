@@ -12,7 +12,9 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  Zap,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -27,49 +29,55 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   currentPath,
   onNavigate,
 }) => {
+  const { t } = useTranslation();
   const [openSections, setOpenSections] = React.useState<Set<string>>(
     new Set(["Master Data Management"])
   );
 
   const menuItems = [
     {
-      name: "Dashboard",
+      name: t('sidebar.dashboard'),
       icon: <Home className="w-5 h-5" />,
       path: "/admin",
     },
     {
-      name: "Master Data Management",
+      name: t('sidebar.masterData'),
       icon: <Settings className="w-5 h-5" />,
       children: [
         {
-          name: "Branch Management",
+          name: t('sidebar.branchManagement'),
           path: "/admin/branches",
           icon: <Building2 className="w-4 h-4" />,
         },
         {
-          name: "Building Management",
+          name: t('sidebar.buildingManagement'),
           path: "/admin/buildings",
           icon: <Building2 className="w-4 h-4" />,
         },
         {
-          name: "Level Management",
+          name: t('sidebar.levelManagement'),
           path: "/admin/levels",
           icon: <Layers className="w-4 h-4" />,
         },
         {
-          name: "Room Management",
+          name: t('sidebar.roomManagement'),
           path: "/admin/rooms",
           icon: <Layers className="w-4 h-4" />,
         },
       ],
     },
     {
-      name: "Billing Configuration",
+          name: t('sidebar.utilityTypeManagement'),
+          path: "/admin/utility-types",
+          icon: <Zap className="w-4 h-4" />,
+        },
+    {
+      name: t('sidebar.billing'),
       icon: <DollarSign className="w-5 h-5" />,
       path: "/admin/billing",
     },
     {
-      name: "User Management",
+      name: t('sidebar.users'),
       icon: <Users className="w-5 h-5" />,
       path: "/admin/users",
     },
@@ -116,7 +124,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
               <span className="text-lg font-bold text-gray-900">
                 Sein Gay Har
               </span>
-              <p className="text-xs text-gray-500">Admin Panel</p>
+              <p className="text-xs text-gray-500">{t('admin.dashboard')}</p>
             </div>
           </div>
           <button

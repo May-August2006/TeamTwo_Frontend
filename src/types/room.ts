@@ -110,6 +110,13 @@ export interface UtilityType {
   createdAt: string;
 }
 
+export interface UtilityTypeRequest {
+  utilityName: string;
+  calculationMethod: 'FIXED' | 'METERED' | 'ALLOCATED';
+  ratePerUnit: number;
+  description: string;
+}
+
 export interface RoomUtility {
   id: number;
   roomId: number;

@@ -9,6 +9,12 @@ export const buildingApi = {
   update: (id: number, building: BuildingRequest) => API.put<Building>(`/api/buildings/${id}`, building),
   delete: (id: number) => API.delete<void>(`/api/buildings/${id}`),
   search: (branchId: number, name: string) => API.get<Building[]>(`/api/buildings/search?branchId=${branchId}&name=${name}`),
-
-   getBuildingsByBranch: (branchId: number) => API.get<Building[]>(`/api/buildings/branch/${branchId}`),
+  getBuildingsByBranch: (branchId: number) => API.get<Building[]>(`/api/buildings/branch/${branchId}`),
+  
+  // New methods for assignment
+  getAvailableBuildings: () => API.get<Building[]>('/api/buildings/available'),
+  assignManager: (buildingId: number, managerId: number) => 
+    API.post<Building>(`/api/buildings/${buildingId}/assign-manager/${managerId}`, {}),
+  removeManager: (buildingId: number) => 
+    API.post<void>(`/api/buildings/${buildingId}/remove-manager`, {})
 };
