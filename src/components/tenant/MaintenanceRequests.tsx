@@ -1,362 +1,335 @@
 /** @format */
 
-import React, { useState } from "react";
-import {
-  Wrench,
-  Plus,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Camera,
-  Paperclip,
-} from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { maintenanceApi } from "../../api/maintenanceApi";
+import { useAuth } from "../../context/AuthContext";
+import type { MaintenanceRequest, CreateMaintenanceRequest } from "../../types/maintenance";
 
-const MaintenanceRequests: React.FC = () => {
-  const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    priority: "medium",
-    category: "general",
+const TenantMaintenancePage: React.FC = () => {
+  const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [newRequest, setNewRequest] = useState<CreateMaintenanceRequest>({
+    requestTitle: "",
+    requestDescription: "",
+    priority: "MEDIUM",
+    tenantId: 0,
+    roomId: 0,
   });
 
-  const requests = [
-    {
-      id: "MR-2024-001",
-      title: "AC Not Cooling",
-      description: "Air conditioning unit in main area is not cooling properly",
-      category: "HVAC",
-      priority: "high",
-      status: "in-progress",
-      date: "Jan 5, 2024",
-      updated: "Jan 6, 2024",
-    },
-    {
-      id: "MR-2023-045",
-      title: "Light Fixture Replacement",
-      description: "Back room light fixture flickering and needs replacement",
-      category: "Electrical",
-      priority: "medium",
-      status: "completed",
-      date: "Dec 15, 2023",
-      updated: "Dec 18, 2023",
-    },
-    {
-      id: "MR-2023-044",
-      title: "Plumbing Leak",
-      description: "Small leak under sink in employee bathroom",
-      category: "Plumbing",
-      priority: "high",
-      status: "completed",
-      date: "Nov 20, 2023",
-      updated: "Nov 22, 2023",
-    },
-  ];
+  const { username, isAuthenticated } = useAuth();
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "submitted":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            Submitted
-          </span>
-        );
-      case "in-progress":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            In Progress
-          </span>
-        );
-      case "completed":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            Completed
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            {status}
-          </span>
-        );
+  useEffect(() => {
+    if (isAuthenticated) {
+      const mockTenantId = 1;
+      const mockRoomId = 2;
+      
+      setNewRequest(prev => ({
+        ...prev,
+        tenantId: mockTenantId,
+        roomId: mockRoomId
+      }));
+      fetchRequests(mockTenantId);
+    }
+  }, [isAuthenticated]);
+
+  const fetchRequests = async (tenantId: number) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await maintenanceApi.getRequestsByTenant(tenantId);
+      setRequests(response.data);
+    } catch (err: any) {
+      console.error("Error fetching maintenance requests:", err);
+      setError(err.response?.data?.message || "Failed to load maintenance requests");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            High
-          </span>
-        );
-      case "medium":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            Medium
-          </span>
-        );
-      case "low":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            Low
-          </span>
-        );
-      default:
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            {priority}
-          </span>
-        );
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log("Maintenance request submitted:", formData);
-    setShowForm(false);
-    setFormData({
-      title: "",
-      description: "",
-      priority: "medium",
-      category: "general",
-    });
+    if (!isAuthenticated) {
+      setError("You must be logged in to submit a request");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      await maintenanceApi.createRequest(newRequest);
+      setIsModalOpen(false);
+      setNewRequest({
+        requestTitle: "",
+        requestDescription: "",
+        priority: "MEDIUM",
+        tenantId: newRequest.tenantId,
+        roomId: newRequest.roomId,
+      });
+      fetchRequests(newRequest.tenantId);
+    } catch (err: any) {
+      console.error("Error submitting maintenance request:", err);
+      setError(err.response?.data?.message || "Failed to submit maintenance request");
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleAddFeedback = async (requestId: number, feedback: string) => {
+    try {
+      setError(null);
+      await maintenanceApi.updateRequestStatus(requestId, {
+        status: "COMPLETED",
+        feedback: feedback,
+      });
+      fetchRequests(newRequest.tenantId);
+    } catch (err: any) {
+      console.error("Error adding feedback:", err);
+      setError(err.response?.data?.message || "Failed to add feedback");
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800";
+      case "IN_PROGRESS":
+        return "bg-blue-100 text-blue-800";
+      case "COMPLETED":
+        return "bg-green-100 text-green-800";
+      case "CANCELLED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "LOW":
+        return "bg-gray-100 text-gray-800";
+      case "MEDIUM":
+        return "bg-blue-100 text-blue-800";
+      case "HIGH":
+        return "bg-orange-100 text-orange-800";
+      case "URGENT":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="p-6 flex justify-center items-center">
+        <div className="text-lg text-red-600">Please log in to access maintenance requests</div>
+      </div>
+    );
+  }
+
+  if (isLoading && requests.length === 0) {
+    return (
+      <div className="p-6 flex justify-center items-center">
+        <div className="text-lg">Loading maintenance requests...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            Maintenance Requests
-          </h2>
-          <p className="text-gray-600 mt-1">
-            Submit and track maintenance requests for your space
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Maintenance Requests</h1>
+          <p className="text-gray-600">Submit and track your maintenance requests</p>
+          <p className="text-sm text-gray-500">Welcome, {username}</p>
         </div>
         <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors mt-4 sm:mt-0"
+          onClick={() => setIsModalOpen(true)}
+          disabled={isLoading}
+          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Plus className="w-4 h-4" />
-          <span>New Request</span>
+          {isLoading ? "Submitting..." : "New Request"}
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-          <p className="text-sm text-gray-600">Total Requests</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">3</p>
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-          <p className="text-sm text-gray-600">In Progress</p>
-          <p className="text-2xl font-bold text-yellow-600 mt-1">1</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-          <p className="text-sm text-gray-600">Completed</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">2</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center">
-          <p className="text-sm text-gray-600">Response Time</p>
-          <p className="text-2xl font-bold text-blue-600 mt-1">2.1 days</p>
-        </div>
-      </div>
+      )}
 
-      {/* Maintenance Requests List */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Request Details
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Priority
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {requests.map((request) => (
-                <tr key={request.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {request.title}
-                      </p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {request.description}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {request.category}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getPriorityBadge(request.priority)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getStatusBadge(request.status)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-4 h-4" />
-                      <span>{request.date}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className="text-blue-600 hover:text-blue-900">
-                      View Details
-                    </button>
-                  </td>
+      {/* Requests List */}
+      <div className="bg-white rounded-lg shadow border overflow-hidden">
+        {requests.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            No maintenance requests found. Create your first request!
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Request
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Priority
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Assigned To
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {requests.map((request) => (
+                  <tr key={request.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {request.requestTitle}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {request.requestDescription}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(
+                          request.priority
+                        )}`}
+                      >
+                        {request.priority}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                          request.status
+                        )}`}
+                      >
+                        {request.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {request.assignedToName || "Not assigned"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(request.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {request.status === "COMPLETED" && !request.tenantFeedback && (
+                        <button
+                          onClick={() => {
+                            const feedback = prompt("Please provide your feedback:");
+                            if (feedback) {
+                              handleAddFeedback(request.id, feedback);
+                            }
+                          }}
+                          className="text-green-600 hover:text-green-900"
+                        >
+                          Add Feedback
+                        </button>
+                      )}
+                      {request.tenantFeedback && (
+                        <span className="text-gray-500">Feedback provided</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Maintenance Request Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      {/* New Request Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full">
             <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  New Maintenance Request
-                </h3>
-                <button
-                  onClick={() => setShowForm(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ×
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Issue Title
+              <h3 className="text-lg font-semibold mb-4">New Maintenance Request</h3>
+              <form onSubmit={handleSubmitRequest}>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title
                   </label>
                   <input
                     type="text"
-                    value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    placeholder="Brief description of the issue"
                     required
+                    value={newRequest.requestTitle}
+                    onChange={(e) =>
+                      setNewRequest({ ...newRequest, requestTitle: e.target.value })
+                    }
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Brief description of the issue"
+                    disabled={isLoading}
                   />
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Detailed Description
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
                   </label>
                   <textarea
-                    value={formData.description}
+                    required
+                    value={newRequest.requestDescription}
                     onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
+                      setNewRequest({ ...newRequest, requestDescription: e.target.value })
                     }
                     rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    placeholder="Please provide detailed information about the issue..."
-                    required
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Detailed description of the maintenance issue..."
+                    disabled={isLoading}
                   />
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Category
-                    </label>
-                    <select
-                      value={formData.category}
-                      onChange={(e) =>
-                        setFormData({ ...formData, category: e.target.value })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    >
-                      <option value="general">General</option>
-                      <option value="electrical">Electrical</option>
-                      <option value="plumbing">Plumbing</option>
-                      <option value="hvac">HVAC</option>
-                      <option value="structural">Structural</option>
-                      <option value="pest-control">Pest Control</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Priority
-                    </label>
-                    <select
-                      value={formData.priority}
-                      onChange={(e) =>
-                        setFormData({ ...formData, priority: e.target.value })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                    >
-                      <option value="low">Low - No urgency</option>
-                      <option value="medium">Medium - Normal priority</option>
-                      <option value="high">
-                        High - Urgent attention needed
-                      </option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Attach Photos (Optional)
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Priority
                   </label>
-                  <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Camera className="w-8 h-8 mb-3 text-gray-400" />
-                        <p className="mb-2 text-sm text-gray-500">
-                          Click to upload photos
-                        </p>
-                      </div>
-                      <input
-                        type="file"
-                        className="hidden"
-                        multiple
-                        accept="image/*"
-                      />
-                    </label>
-                  </div>
+                  <select
+                    value={newRequest.priority}
+                    onChange={(e) =>
+                      setNewRequest({
+                        ...newRequest,
+                        priority: e.target.value as "LOW" | "MEDIUM" | "HIGH" | "URGENT",
+                      })
+                    }
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={isLoading}
+                  >
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM">Medium</option>
+                    <option value="HIGH">High</option>
+                    <option value="URGENT">Urgent</option>
+                  </select>
                 </div>
-
-                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <div className="flex justify-end space-x-3">
                   <button
                     type="button"
-                    onClick={() => setShowForm(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                    onClick={() => setIsModalOpen(false)}
+                    disabled={isLoading}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700"
+                    disabled={isLoading}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   >
-                    Submit Request
+                    {isLoading ? "Submitting..." : "Submit Request"}
                   </button>
                 </div>
               </form>
@@ -368,4 +341,4 @@ const MaintenanceRequests: React.FC = () => {
   );
 };
 
-export default MaintenanceRequests;
+export default TenantMaintenancePage;
