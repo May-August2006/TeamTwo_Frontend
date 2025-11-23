@@ -1,4 +1,7 @@
+/** @format */
+
 export interface Room {
+  meterType: string;
   id: number;
   roomNumber: string;
   level: Level;
@@ -10,7 +13,6 @@ export interface Room {
   utilities: UtilityType[];
   createdAt: string;
   updatedAt: string;
-  
 }
 
 export interface RoomType {
@@ -102,9 +104,9 @@ export interface UtilityType {
   id: number;
   utilityName: string;
   ratePerUnit: number;
-  calculationMethod: 'FIXED' | 'METERED' | 'ALLOCATED';
+  calculationMethod: "FIXED" | "METERED" | "ALLOCATED";
   description: string;
-isActive: boolean;
+  isActive: boolean;
   createdAt: string;
 }
 
@@ -120,6 +122,6 @@ export interface RoomUtility {
 export interface UtilityTypeRequest {
   utilityName: string;
   ratePerUnit: number;
-  calculationMethod: 'FIXED' | 'METERED' | 'ALLOCATED';
+  calculationMethod: "FIXED" | "METERED" | "ALLOCATED";
   description: string;
 }

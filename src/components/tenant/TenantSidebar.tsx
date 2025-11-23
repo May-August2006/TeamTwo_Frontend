@@ -52,6 +52,11 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
       icon: <Wrench className="w-5 h-5" />,
       path: "/tenant/maintenance",
     },
+    {
+      name: "Announcements",
+      icon: <Bell className="w-5 h-5" />,
+      path: "/tenant/announcements",
+    },
   ];
 
   const isActivePath = (path: string) => {

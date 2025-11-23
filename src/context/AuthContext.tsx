@@ -1,10 +1,17 @@
 /** @format */
 /* eslint-disable react-refresh/only-export-components */
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   saveAuthData,
   clearAuthData,
+  getUserId,
   getUsername,
   getAccessToken,
   getRefreshToken,
@@ -12,6 +19,7 @@ import {
 } from "../Auth.tsx";
 
 interface AuthData {
+  userId: number;
   username: string;
   accessToken: string;
   refreshToken: string;
@@ -19,6 +27,7 @@ interface AuthData {
 }
 
 interface AuthContextType {
+  userId: number | null;
   username: string | null;
   accessToken: string | null;
   refreshToken: string | null;
@@ -30,22 +39,28 @@ interface AuthContextType {
 }
 
 const defaultAuth: AuthContextType = {
+  userId: null,
   username: getUsername(),
   accessToken: getAccessToken(),
   refreshToken: getRefreshToken(),
   roles: getRoles(),
-  login: () => { },
-  logout: () => { },
+  login: () => {},
+  logout: () => {},
   loading: false,
-  isAuthenticated: false
+  isAuthenticated: false,
 };
 
 const AuthContext = createContext<AuthContextType>(defaultAuth);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [userId, setUserId] = useState<number | null>(getUserId());
   const [username, setUsername] = useState<string | null>(getUsername());
-  const [accessToken, setAccessToken] = useState<string | null>(getAccessToken());
-  const [refreshToken, setRefreshToken] = useState<string | null>(getRefreshToken());
+  const [accessToken, setAccessToken] = useState<string | null>(
+    getAccessToken()
+  );
+  const [refreshToken, setRefreshToken] = useState<string | null>(
+    getRefreshToken()
+  );
   const [roles, setRoles] = useState<string[]>(getRoles());
   const [loading, setLoading] = useState(true);
   const isAuthenticated = !!accessToken;
@@ -55,15 +70,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, []);
 
-  const login = ({ username, accessToken, refreshToken, roles }: AuthData) => {
+  const login = ({
+    userId,
+    username,
+    accessToken,
+    refreshToken,
+    roles,
+  }: AuthData) => {
+    setUserId(userId);
     setUsername(username);
     setAccessToken(accessToken);
     setRefreshToken(refreshToken);
     setRoles(roles);
-    saveAuthData({ username, accessToken, refreshToken, roles });
+    saveAuthData({ userId, username, accessToken, refreshToken, roles });
   };
 
   const logout = () => {
+    setUserId(null);
     setUsername(null);
     setAccessToken(null);
     setRefreshToken(null);
@@ -73,7 +96,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ username, accessToken, refreshToken, roles, login, logout, loading, isAuthenticated }}
+      value={{
+        userId,
+        username,
+        accessToken,
+        refreshToken,
+        roles,
+        login,
+        logout,
+        loading,
+        isAuthenticated,
+      }}
     >
       {children}
     </AuthContext.Provider>
