@@ -15,6 +15,16 @@ interface DashboardSidebarProps {
 const menuItems = [
   { value: "overview", label: "Overview", path: "/manager/overview" },
   { value: "tenants", label: "Tenant Management", path: "/manager/tenants" },
+  {
+    value: "appointments",
+    label: "Appointments",
+    path: "/manager/appointments",
+  },
+  {
+    value: "announcements",
+    label: "Announcements",
+    path: "/manager/announcements",
+  },
   { value: "leases", label: "Lease Management", path: "/manager/leases" },
   { value: "billing", label: "Billing & Utilities", path: "/manager/billing" },
   { value: "payments", label: "Payments", path: "/manager/payments" },
@@ -118,6 +128,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                     : "text-gray-500 group-hover:text-blue-600"
                 }`}
               >
+                {/* you can keep icons here if needed */}●
                 ●
               </span>
 
@@ -157,7 +168,13 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       <aside
         className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out
         ${isMobile ? "w-64" : isCollapsed ? "lg:w-24" : "lg:w-80"}
-        ${isMobile ? (mobileOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0"}
+        ${
+          isMobile
+            ? mobileOpen
+              ? "translate-x-0"
+              : "-translate-x-full"
+            : "translate-x-0"
+        }
         bg-white border-r border-gray-200 flex flex-col shadow-xl`}
         onTransitionEnd={onDrawerTransitionEnd}
       >

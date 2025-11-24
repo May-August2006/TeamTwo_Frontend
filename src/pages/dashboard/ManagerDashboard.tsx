@@ -6,6 +6,9 @@ import { PaymentManagementPage } from "../manager/PaymentManagementPage";
 import { ReportsPage } from "../manager/ReportsPage";
 import { ManagerDashboardLayout } from "../../components/manager/ManagerDashboardLayout";
 import TenantManagement from "../manager/TenantManagement";
+import AppointmentManagementPage from "../manager/AppointmentManagementPage";
+import AppointmentDetailPage from "../manager/AppointmentDetailPage";
+import SendAnnouncementPage from "../manager/SendAnnouncementPage";
 import { UtilityTypePage } from "../manager/UtilityTypePage";
 import { BillingFeePage } from "../manager/BillingFeePage";
 import { InvoiceListPage } from "../manager/InvoiceListPage";
@@ -26,6 +29,9 @@ export default function ManagerDashboard() {
         <Route path="billing/invoices" element={<InvoiceListPage />} />
         <Route path="billing/usage" element={<UsageEntryPage />} />
         <Route path="payments" element={<PaymentManagementPage />} />
+        <Route path="appointments" element={<AppointmentManagementPage />} />
+        <Route path="appointments/:id" element={<AppointmentDetailPage />} />
+        <Route path="announcements" element={<SendAnnouncementPage />} />
         <Route path="reports" element={<ReportsPage />} />
         {/* Add the Maintenance route */}
         <Route path="maintenance" element={<ManagerMaintenancePage />} />

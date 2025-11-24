@@ -1,6 +1,7 @@
 /** @format */
 
 // Key constants
+export const USER_ID_KEY = "userId";
 export const ACCESS_TOKEN_KEY = "accessToken";
 export const REFRESH_TOKEN_KEY = "refreshToken";
 export const USERNAME_KEY = "username";
@@ -13,31 +14,40 @@ interface JwtPayload {
 }
 
 // Auth data structure for saving
-interface AuthData {
-  username: string;
-  accessToken: string;
-  refreshToken: string;
-  roles: string[];
-}
+// interface AuthData {
+//   userId: number;
+//   username: string;
+//   accessToken: string;
+//   refreshToken: string;
+//   roles: string[];
+// }
 
 /**
  * Save tokens & username to localStorage
  */
-export const saveAuthData = ({
-  username,
-  accessToken,
-  refreshToken,
-  roles,
-}: AuthData): void => {
-  localStorage.setItem(USERNAME_KEY, username);
-  localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
-  localStorage.setItem(ROLES_KEY, JSON.stringify(roles)); // save array
-};
+export function saveAuthData(data: {
+  userId: number;
+  username: string;
+  accessToken: string;
+  refreshToken: string;
+  roles: string[];
+}) {
+  localStorage.setItem(USER_ID_KEY, data.userId.toString());
+  localStorage.setItem(USERNAME_KEY, data.username);
+  localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
+  localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
+  localStorage.setItem(ROLES_KEY, JSON.stringify(data.roles));
+}
 
 /**
  * Getters for stored auth data
  */
+
+export const getUserId = (): number | null => {
+  const id = localStorage.getItem(USER_ID_KEY);
+  return id ? parseInt(id, 10) : null;
+};
+
 export const getUsername = (): string | null =>
   localStorage.getItem(USERNAME_KEY);
 
@@ -56,6 +66,7 @@ export const getRoles = (): string[] => {
  * Clear all auth data
  */
 export const clearAuthData = (): void => {
+  localStorage.removeItem(USER_ID_KEY);
   localStorage.removeItem(USERNAME_KEY);
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
