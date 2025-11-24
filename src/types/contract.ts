@@ -15,6 +15,7 @@ export interface CreateContractRequest {
   utilityTypeIds?: number[];
   agreedToTerms?: boolean;
   termsAgreementVersion?: string;
+  contractFile?: File;
 }
 
 export interface Contract {
@@ -32,7 +33,16 @@ export interface Contract {
   renewalNoticeDays?: number;
   contractTerms?: string;
   contractStatus: ContractStatus;
-  contractFilePath?: string;
+  
+  // File information - FIXED: Updated to match backend fields
+  fileName?: string;
+  fileOriginalName?: string;
+  fileUrl?: string;
+  fileSize?: number;
+  fileType?: string;
+  mimeType?: string;
+  contractFilePath?: string; // Keep for backward compatibility
+  
   createdAt?: string;
   updatedAt?: string;
   includedUtilities?: UtilityType[];
@@ -95,3 +105,19 @@ export interface UtilityType {
 export type ContractStatus = 'ACTIVE' | 'EXPIRING' | 'TERMINATED' | 'EXPIRED';
 
 export type ContractDurationType = 'THREE_MONTHS' | 'SIX_MONTHS' | 'ONE_YEAR' | 'TWO_YEARS';
+
+export interface RenewContractRequest extends CreateContractRequest {
+  originalContractId?: number;
+  renewalReason?: string;
+}
+
+export interface TerminateContractRequest {
+  terminationReason?: string;
+  terminationDate?: string;
+}
+
+// File download response type
+export interface FileDownloadResponse {
+  blob: Blob;
+  filename: string;
+}

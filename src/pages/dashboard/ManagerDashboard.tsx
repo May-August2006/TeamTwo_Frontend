@@ -5,7 +5,6 @@ import { OverviewPage } from "../manager/OverviewPage";
 import { BillingUtilitiesPage } from "../manager/BillingUtilitiesPage";
 import { PaymentManagementPage } from "../manager/PaymentManagementPage";
 import { ReportsPage } from "../manager/ReportsPage";
-import LeaseManagementPage from "../manager/LeaseManagementPage";
 import { ManagerDashboardLayout } from "../../components/manager/ManagerDashboardLayout";
 import TenantManagement from "../manager/TenantManagement";
 import LeaseManagement from "../manager/LeaseManagement";
