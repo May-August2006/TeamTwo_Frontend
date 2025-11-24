@@ -24,6 +24,7 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'financial' | 'utilities' | 'timeline'>('overview');
+  const [fileLoading, setFileLoading] = useState<string | null>(null);
 
   useEffect(() => {
     loadContract();
@@ -34,7 +35,6 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
       setLoading(true);
       setError(null);
       const response = await contractApi.getById(contractId);
-      console.log('Contract detail response:', response);
       
       let contractData: Contract;
       if (response.data) {
@@ -45,7 +45,6 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
         throw new Error('Invalid contract data structure');
       }
       
-      console.log('Processed contract data:', contractData);
       setContract(contractData);
     } catch (err) {
       console.error('Error loading contract:', err);
@@ -53,6 +52,195 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  // File download handler - FIXED: Better error handling and file naming
+  const handleDownloadFile = async () => {
+    if (!contract) return;
+    
+    try {
+      setFileLoading('download');
+      const response = await contractApi.downloadFile(contract.id);
+      
+      // Create blob URL for download
+      const blob = new Blob([response.data], { 
+        type: contract.mimeType || 'application/octet-stream' 
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Use fileOriginalName if available, otherwise generate filename
+      const filename = contract.fileOriginalName || 
+        `contract-${contract.contractNumber}.${getFileExtension(contract.fileType)}`;
+      
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Failed to download contract file');
+    } finally {
+      setFileLoading(null);
+    }
+  };
+
+  // File preview handler - FIXED: Better PDF handling
+  const handlePreviewFile = async () => {
+    if (!contract) return;
+    
+    try {
+      setFileLoading('preview');
+      const response = await contractApi.previewFile(contract.id);
+      
+      // Create blob URL for preview
+      const blob = new Blob([response.data], { 
+        type: contract.mimeType || 'application/octet-stream' 
+      });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Check if file is PDF
+      const isPDF = contract.mimeType === 'application/pdf' || 
+                   contract.fileType?.toLowerCase() === 'pdf' ||
+                   response.data.type === 'application/pdf';
+      
+      if (isPDF) {
+        // Open PDF in new tab
+        window.open(url, '_blank');
+      } else {
+        // For non-PDF files, download instead
+        const link = document.createElement('a');
+        link.href = url;
+        const filename = contract.fileOriginalName || 
+          `contract-${contract.contractNumber}-preview.${getFileExtension(contract.fileType)}`;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      
+      // Clean up URL after some time
+      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      console.error('Error previewing file:', error);
+      alert('Failed to preview contract file');
+    } finally {
+      setFileLoading(null);
+    }
+  };
+
+  // Helper function to get file extension
+  const getFileExtension = (fileType?: string): string => {
+    if (!fileType) return 'pdf';
+    
+    const typeMap: { [key: string]: string } = {
+      'pdf': 'pdf',
+      'doc': 'doc',
+      'docx': 'docx',
+      'xls': 'xls',
+      'xlsx': 'xlsx',
+      'PDF': 'pdf',
+      'DOC': 'doc',
+      'DOCX': 'docx',
+      'XLS': 'xls',
+      'XLSX': 'xlsx'
+    };
+    
+    return typeMap[fileType] || 'pdf';
+  };
+
+  // FIXED: Correct days remaining calculation
+  const getDaysRemaining = (endDate: string): number => {
+    try {
+      const end = new Date(endDate);
+      const today = new Date();
+      
+      // Set both dates to start of day for accurate calculation
+      const endDateOnly = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      
+      // Calculate difference in days (end date is inclusive)
+      const diffTime = endDateOnly.getTime() - todayOnly.getTime();
+      const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      return Math.max(days + 1, 0); // +1 because end date is inclusive
+    } catch (error) {
+      console.error('Error calculating days remaining:', error);
+      return 0;
+    }
+  };
+
+  // FIXED: Correct contract duration calculation
+  const calculateContractDuration = () => {
+    if (!contract?.startDate || !contract?.endDate) {
+      return { months: 0, days: 0, totalDays: 0 };
+    }
+
+    try {
+      const start = new Date(contract.startDate);
+      const end = new Date(contract.endDate);
+      
+      // Calculate total days (end date is inclusive)
+      const startDateOnly = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const endDateOnly = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      const diffTime = endDateOnly.getTime() - startDateOnly.getTime();
+      const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      
+      // Calculate years and months difference
+      let years = end.getFullYear() - start.getFullYear();
+      let months = end.getMonth() - start.getMonth();
+      let days = end.getDate() - start.getDate();
+      
+      // Adjust for negative days
+      if (days < 0) {
+        months--;
+        // Get days in the previous month
+        const prevMonth = new Date(end.getFullYear(), end.getMonth(), 0);
+        days += prevMonth.getDate();
+      }
+      
+      // Adjust for negative months
+      if (months < 0) {
+        years--;
+        months += 12;
+      }
+      
+      const totalMonths = years * 12 + months;
+      
+      // For display, if it's approximately one year, show as 12 months
+      if (totalDays >= 360 && totalDays <= 370) {
+        return {
+          months: 12,
+          days: 0,
+          totalDays: totalDays
+        };
+      }
+      
+      return {
+        months: totalMonths,
+        days: days,
+        totalDays: totalDays
+      };
+    } catch (error) {
+      console.error('Error calculating contract duration:', error);
+      return { months: 0, days: 0, totalDays: 0 };
+    }
+  };
+
+  // FIXED: Correct total contract value calculation
+  const calculateTotalContractValue = (): number => {
+    if (!contract?.rentalFee) return 0;
+    
+    const duration = calculateContractDuration();
+    const monthlyRate = contract.rentalFee;
+    
+    // Calculate based on actual duration in months (including partial months)
+    const totalMonths = duration.months + (duration.days > 0 ? duration.days / 30 : 0);
+    const totalValue = monthlyRate * totalMonths;
+    
+    return Math.round(totalValue);
   };
 
   const getStatusBadge = (status: ContractStatus) => {
@@ -70,18 +258,6 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
         {config.label}
       </span>
     );
-  };
-
-  const getDaysRemaining = (endDate: string): number => {
-    try {
-      const end = new Date(endDate);
-      const today = new Date();
-      const diffTime = end.getTime() - today.getTime();
-      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    } catch (error) {
-      console.error('Error calculating days remaining:', error);
-      return 0;
-    }
   };
 
   const formatCurrency = (amount: number | undefined): string => {
@@ -108,15 +284,16 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
     }
   };
 
-  const calculateTotalInitialPayment = (): number => {
-    if (!contract) return 0;
-    return (contract.securityDeposit || 0);
-  };
-
   // Format contract duration type for display
   const formatDurationType = (durationType: string | undefined): string => {
     if (!durationType) return '-';
     return durationType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+  };
+
+  // FIXED: Safe status formatter to handle null values
+  const formatStatus = (status: string | undefined | null): string => {
+    if (!status) return 'Unknown';
+    return status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
   };
 
   // Check if value exists and should be displayed
@@ -129,10 +306,19 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
     return shouldDisplay(value) ? value.toString() : null;
   };
 
-  // Render field only if value exists
+  // FIXED: Render field with better null handling
   const renderField = (label: string, value: any, formatter?: (val: any) => string) => {
-    const displayValue = formatter ? formatter(value) : getSafeValue(value);
-    if (!displayValue) return null;
+    if (!shouldDisplay(value)) return null;
+
+    let displayValue: string;
+    try {
+      displayValue = formatter ? formatter(value) : getSafeValue(value) || '-';
+    } catch (error) {
+      console.error(`Error formatting field "${label}":`, error);
+      displayValue = '-';
+    }
+
+    if (!displayValue || displayValue === '-') return null;
 
     return (
       <div>
@@ -140,6 +326,32 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
         <p className="text-gray-900">{displayValue}</p>
       </div>
     );
+  };
+
+  // Format duration for display
+  const formatDurationDisplay = (duration: { months: number; days: number }) => {
+    if (duration.months === 12 && duration.days === 0) {
+      return '12 months';
+    }
+    if (duration.months > 0 && duration.days > 0) {
+      return `${duration.months} months ${duration.days} days`;
+    }
+    if (duration.months > 0) {
+      return `${duration.months} months`;
+    }
+    return `${duration.days} days`;
+  };
+
+  // Format file size for display
+  const formatFileSize = (bytes: number | undefined): string => {
+    if (!bytes) return '-';
+    if (bytes === 0) return '0 Bytes';
+    
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   if (loading) {
@@ -169,7 +381,8 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
 
   const daysRemaining = getDaysRemaining(contract.endDate);
   const isExpiringSoon = daysRemaining <= 30 && daysRemaining > 0;
-  const isOverdue = daysRemaining < 0;
+  const isOverdue = contract.contractStatus === 'ACTIVE' && daysRemaining === 0;
+  const contractDuration = calculateContractDuration();
 
   return (
     <div className="space-y-6">
@@ -192,7 +405,7 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                 </Button>
               )}
               <h1 className="text-2xl font-bold text-gray-900">{contract.contractNumber || 'No Contract Number'}</h1>
-              {getStatusBadge(contract.contractStatus)}
+              {getStatusBadge(contract.contractStatus as ContractStatus)}
             </div>
             {shouldDisplay(contract.createdAt) && (
               <p className="text-gray-600">
@@ -203,6 +416,37 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {/* File Actions - FIXED: Always show if file exists */}
+            {(contract.fileUrl || contract.fileName || contract.fileOriginalName) && (
+              <div className="flex gap-2">
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  onClick={handlePreviewFile}
+                  loading={fileLoading === 'preview'}
+                  disabled={!!fileLoading}
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  Preview
+                </Button>
+                <Button 
+                  variant="primary" 
+                  size="sm"
+                  onClick={handleDownloadFile}
+                  loading={fileLoading === 'download'}
+                  disabled={!!fileLoading}
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download
+                </Button>
+              </div>
+            )}
+            
             {onEdit && contract.contractStatus !== 'TERMINATED' && contract.contractStatus !== 'EXPIRED' && (
               <Button variant="primary" onClick={() => onEdit(contract)}>
                 Edit Contract
@@ -217,9 +461,11 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
               </Button>
             )}
             
-            {onTerminate && 
-             (contract.contractStatus === 'ACTIVE') && (
-              <Button variant="danger" onClick={() => onTerminate(contract)}>
+            {onTerminate && contract.contractStatus === 'ACTIVE' && (
+              <Button 
+                variant="danger" 
+                onClick={() => onTerminate(contract)}
+              >
                 Terminate Contract
               </Button>
             )}
@@ -241,15 +487,66 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
         </div>
       )}
 
-      {isOverdue && contract.contractStatus === 'ACTIVE' && (
+      {isOverdue && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center">
             <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
             </svg>
             <span className="text-red-800 font-medium">
-              Contract expired {Math.abs(daysRemaining)} days ago
+              Contract has expired today
             </span>
+          </div>
+        </div>
+      )}
+
+      {/* File Information Card - FIXED: Show if any file info exists */}
+      {(contract.fileUrl || contract.fileName || contract.fileOriginalName) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <div>
+                <h3 className="font-medium text-blue-900">
+                  {contract.fileOriginalName || contract.fileName || 'Contract Document'}
+                </h3>
+                <div className="flex items-center space-x-4 text-sm text-blue-700">
+                  {contract.fileType && (
+                    <span className="bg-blue-100 px-2 py-1 rounded-full text-xs font-medium">
+                      {contract.fileType.toUpperCase()}
+                    </span>
+                  )}
+                  {contract.fileSize && (
+                    <span>{formatFileSize(contract.fileSize)}</span>
+                  )}
+                  {contract.mimeType && (
+                    <span>{contract.mimeType}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={handlePreviewFile}
+                loading={fileLoading === 'preview'}
+                disabled={!!fileLoading}
+              >
+                Preview
+              </Button>
+              <Button 
+                variant="primary" 
+                size="sm"
+                onClick={handleDownloadFile}
+                loading={fileLoading === 'download'}
+                disabled={!!fileLoading}
+              >
+                Download
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -319,6 +616,7 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                   {renderField('Start Date', contract.startDate, formatDate)}
                   {renderField('End Date', contract.endDate, formatDate)}
                   {renderField('Duration Type', contract.contractDurationType, formatDurationType)}
+                  {renderField('Actual Duration', formatDurationDisplay(contractDuration))}
                 </div>
                 <div className="space-y-3">
                   {renderField('Grace Period', contract.gracePeriodDays, (val) => `${val} days`)}
@@ -326,23 +624,29 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                   {renderField('Renewal Notice', contract.renewalNoticeDays, (val) => `${val} days`)}
                 </div>
                 <div className="space-y-3">
-                  {renderField('Contract Status', contract.contractStatus, (val) => 
-                    val.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())
-                  )}
+                  {/* FIXED: Use safe status formatter */}
+                  {renderField('Contract Status', contract.contractStatus, formatStatus)}
                   {renderField('Days Remaining', daysRemaining, (val) => `${val} days`)}
-                  {contract.contractFilePath && (
+                  {/* File Information */}
+                  {(contract.fileUrl || contract.fileName || contract.fileOriginalName) && (
                     <div>
                       <label className="text-sm font-medium text-gray-500">Contract Document</label>
-                      <p>
-                        <a 
-                          href={contract.contractFilePath} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 font-medium"
+                      <div className="flex space-x-2 mt-1">
+                        <button
+                          onClick={handlePreviewFile}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          disabled={!!fileLoading}
                         >
-                          View Document
-                        </a>
-                      </p>
+                          Preview
+                        </button>
+                        <button
+                          onClick={handleDownloadFile}
+                          className="text-green-600 hover:text-green-800 text-sm font-medium"
+                          disabled={!!fileLoading}
+                        >
+                          Download
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -383,17 +687,6 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                   </div>
                 )}
 
-                {(contract.securityDeposit && contract.securityDeposit > 0) && (
-                  <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                    <div className="text-sm text-yellow-800 font-medium">Total Initial Payment Required</div>
-                    <div className="text-xl font-bold text-yellow-900">
-                      {formatCurrency(calculateTotalInitialPayment())}
-                    </div>
-                    <div className="text-xs text-yellow-700 mt-1">
-                      Due upon contract signing
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -403,49 +696,56 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 bg-green-50 rounded-lg">
-                    <div className="text-sm text-green-600">Contract Value</div>
+                    <div className="text-sm text-green-600">Total Contract Value</div>
                     <div className="text-lg font-semibold text-green-900">
-                      {formatCurrency(contract.rentalFee * 
-                        (contract.contractDurationType === 'THREE_MONTHS' ? 3 :
-                         contract.contractDurationType === 'SIX_MONTHS' ? 6 :
-                         contract.contractDurationType === 'ONE_YEAR' ? 12 :
-                         contract.contractDurationType === 'TWO_YEARS' ? 24 : 12)
-                      )}
+                      {formatCurrency(calculateTotalContractValue())}
+                    </div>
+                    <div className="text-xs text-green-700 mt-1">
+                      {formatDurationDisplay(contractDuration)}
                     </div>
                   </div>
                   
                   <div className="p-3 bg-purple-50 rounded-lg">
                     <div className="text-sm text-purple-600">Duration</div>
                     <div className="text-lg font-semibold text-purple-900">
-                      {contract.contractDurationType === 'THREE_MONTHS' ? '3 Months' :
-                       contract.contractDurationType === 'SIX_MONTHS' ? '6 Months' :
-                       contract.contractDurationType === 'ONE_YEAR' ? '1 Year' :
-                       contract.contractDurationType === 'TWO_YEARS' ? '2 Years' : '1 Year'}
+                      {contractDuration.months} Months
+                    </div>
+                    <div className="text-xs text-purple-700 mt-1">
+                      {contractDuration.totalDays} total days
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  {renderField('Status', contract.contractStatus, (val) => 
-                    val.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())
-                  )}
+                  {/* FIXED: Use safe status formatter */}
+                  {renderField('Status', contract.contractStatus, formatStatus)}
                   {renderField('Start Date', contract.startDate, formatDate)}
                   {renderField('End Date', contract.endDate, formatDate)}
                   {renderField('Days Remaining', daysRemaining, (val) => `${val} days`)}
                   
-                  {contract.contractFilePath && (
+                  {/* File Actions */}
+                  {(contract.fileUrl || contract.fileName || contract.fileOriginalName) && (
                     <div className="pt-3 border-t border-gray-200">
-                      <a 
-                        href={contract.contractFilePath} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        View Contract Document
-                      </a>
+                      <div className="flex space-x-3">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={handlePreviewFile}
+                          loading={fileLoading === 'preview'}
+                          disabled={!!fileLoading}
+                        >
+                          Preview Document
+                        </Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={handleDownloadFile}
+                          loading={fileLoading === 'download'}
+                          disabled={!!fileLoading}
+                        >
+                          Download Document
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -541,7 +841,7 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                     <span className="text-sm text-gray-500">{formatDate(contract.createdAt)}</span>
                   </div>
                   <p className="text-sm text-gray-600 mt-1">
-                    Contract was created and initialized with status: <span className="font-medium">{contract.contractStatus}</span>
+                    Contract was created and initialized with status: <span className="font-medium">{formatStatus(contract.contractStatus)}</span>
                     {contract.createdBy && ` by ${contract.createdBy.username}`}
                   </p>
                 </div>
@@ -562,6 +862,43 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                   </p>
                 </div>
               </div>
+
+              {/* File Upload */}
+              {(contract.fileUrl || contract.fileName || contract.fileOriginalName) && (
+                <div className="flex items-start space-x-4 p-4 border border-gray-200 rounded-lg">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-gray-900">Contract Document</span>
+                      <span className="text-sm text-gray-500">Available</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Contract document uploaded: {contract.fileOriginalName || contract.fileName}
+                      {contract.fileSize && ` (${formatFileSize(contract.fileSize)})`}
+                    </p>
+                    <div className="flex space-x-2 mt-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handlePreviewFile}
+                        loading={fileLoading === 'preview'}
+                        disabled={!!fileLoading}
+                      >
+                        Preview
+                      </Button>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={handleDownloadFile}
+                        loading={fileLoading === 'download'}
+                        disabled={!!fileLoading}
+                      >
+                        Download
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Last Updated */}
               {contract.updatedAt && contract.updatedAt !== contract.createdAt && (
@@ -586,11 +923,11 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                     <span className="text-sm text-gray-500">Now</span>
                   </div>
                   <p className="text-sm text-gray-600 mt-1">
-                    Contract is currently <span className="font-medium">{contract.contractStatus.replace(/_/g, ' ').toLowerCase()}</span>
+                    Contract is currently <span className="font-medium">{formatStatus(contract.contractStatus)}</span>
                     {isExpiringSoon && contract.contractStatus === 'ACTIVE' && (
                       <span className="text-orange-600 font-medium"> - Expiring soon</span>
                     )}
-                    {isOverdue && contract.contractStatus === 'ACTIVE' && (
+                    {isOverdue && (
                       <span className="text-red-600 font-medium"> - Overdue</span>
                     )}
                   </p>
@@ -604,10 +941,10 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                   {contract.contractStatus === 'ACTIVE' && isExpiringSoon && (
                     <li>• Consider renewing the contract before it expires</li>
                   )}
-                  {contract.contractStatus === 'ACTIVE' && isOverdue && (
+                  {isOverdue && (
                     <li>• Contract has expired - take action to renew or terminate</li>
                   )}
-                  {!contract.contractFilePath && (
+                  {!contract.fileUrl && !contract.fileName && !contract.fileOriginalName && (
                     <li>• Upload contract document for record keeping</li>
                   )}
                 </ul>
@@ -630,14 +967,27 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
           </div>
           
           <div className="flex flex-wrap gap-2">
-            {contract.contractFilePath && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => window.open(contract.contractFilePath, '_blank')}
-              >
-                View Document
-              </Button>
+            {(contract.fileUrl || contract.fileName || contract.fileOriginalName) && (
+              <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handlePreviewFile}
+                  loading={fileLoading === 'preview'}
+                  disabled={!!fileLoading}
+                >
+                  Preview Document
+                </Button>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleDownloadFile}
+                  loading={fileLoading === 'download'}
+                  disabled={!!fileLoading}
+                >
+                  Download Document
+                </Button>
+              </>
             )}
             <Button
               variant="secondary"

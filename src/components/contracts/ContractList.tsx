@@ -175,6 +175,32 @@ export const ContractList: React.FC<ContractListProps> = ({
     return value !== null && value !== undefined && value !== '';
   };
 
+  // Check if contract can be renewed
+  // const canRenewContract = (contract: Contract): boolean => {
+  //   if (contract.contractStatus !== 'ACTIVE' && contract.contractStatus !== 'EXPIRING') {
+  //     return false;
+  //   }
+    
+  //   const daysRemaining = getDaysRemaining(contract.endDate);
+  //   return daysRemaining <= 90; // Allow renewal within 90 days of expiry
+  // };
+  
+   // Check if contract can be renewed - SIMPLIFIED VERSION
+  const canRenewContract = (contract: Contract): boolean => {
+    // Allow renewal for ACTIVE and EXPIRING contracts regardless of days remaining
+    return contract.contractStatus === 'ACTIVE' || contract.contractStatus === 'EXPIRING';
+  };
+
+  // Check if contract can be terminated
+  const canTerminateContract = (contract: Contract): boolean => {
+    return contract.contractStatus === 'ACTIVE';
+  };
+
+  // Check if contract can be edited
+  const canEditContract = (contract: Contract): boolean => {
+    return contract.contractStatus === 'ACTIVE' || contract.contractStatus === 'EXPIRING';
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -197,6 +223,37 @@ export const ContractList: React.FC<ContractListProps> = ({
 
   return (
     <div className="space-y-6">
+
+      {/* Stats Summary */}
+      {contracts.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
+            <div className="text-2xl font-bold text-blue-600">{contracts.length}</div>
+            <div className="text-sm text-gray-600">Total Contracts</div>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
+            <div className="text-2xl font-bold text-green-600">
+              {contracts.filter(c => c.contractStatus === 'ACTIVE').length}
+            </div>
+            <div className="text-sm text-gray-600">Active</div>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
+            <div className="text-2xl font-bold text-orange-600">
+              {contracts.filter(c => c.contractStatus === 'EXPIRING').length}
+            </div>
+            <div className="text-sm text-gray-600">Expiring Soon</div>
+          </div>
+          <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
+            <div className="text-2xl font-bold text-red-600">
+              {contracts.filter(c => 
+                c.contractStatus === 'EXPIRED' || 
+                c.contractStatus === 'TERMINATED'
+              ).length}
+            </div>
+            <div className="text-sm text-gray-600">Ended</div>
+          </div>
+        </div>
+      )}
       {/* Header and Filters */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -425,7 +482,7 @@ export const ContractList: React.FC<ContractListProps> = ({
                             </Button>
                           )}
                           
-                          {onEditContract && contract.contractStatus !== 'TERMINATED' && contract.contractStatus !== 'EXPIRED' && (
+                          {onEditContract && canEditContract(contract) && (
                             <Button
                               variant="primary"
                               size="sm"
@@ -435,9 +492,7 @@ export const ContractList: React.FC<ContractListProps> = ({
                             </Button>
                           )}
                           
-                          {onRenewContract && 
-                           (contract.contractStatus === 'ACTIVE' || contract.contractStatus === 'EXPIRING') && 
-                           daysRemaining <= 60 && (
+                          {onRenewContract && canRenewContract(contract) && (
                             <Button
                               variant="primary"
                               size="sm"
@@ -447,8 +502,7 @@ export const ContractList: React.FC<ContractListProps> = ({
                             </Button>
                           )}
                           
-                          {onTerminateContract && 
-                           (contract.contractStatus === 'ACTIVE') && (
+                          {onTerminateContract && canTerminateContract(contract) && (
                             <Button
                               variant="danger"
                               size="sm"
@@ -468,36 +522,7 @@ export const ContractList: React.FC<ContractListProps> = ({
         )}
       </div>
 
-      {/* Stats Summary */}
-      {contracts.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
-            <div className="text-2xl font-bold text-blue-600">{contracts.length}</div>
-            <div className="text-sm text-gray-600">Total Contracts</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {contracts.filter(c => c.contractStatus === 'ACTIVE').length}
-            </div>
-            <div className="text-sm text-gray-600">Active</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
-            <div className="text-2xl font-bold text-orange-600">
-              {contracts.filter(c => c.contractStatus === 'EXPIRING').length}
-            </div>
-            <div className="text-sm text-gray-600">Expiring Soon</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
-            <div className="text-2xl font-bold text-red-600">
-              {contracts.filter(c => 
-                c.contractStatus === 'EXPIRED' || 
-                c.contractStatus === 'TERMINATED'
-              ).length}
-            </div>
-            <div className="text-sm text-gray-600">Ended</div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 };
