@@ -3,10 +3,12 @@ import type { CreateTenantRequest, Tenant, TenantCategory, TenantSearchParams, U
 import { tenantApi } from '../../api/TenantAPI';
 import TenantList from '../../components/tenant/TenantList';
 import TenantForm from '../../components/tenant/TenantForm';
-import TenantSearch from '../../components/manager/TenantSearch';
 import TenantCategoryList from '../../components/tenant/TenantCategoryList';
+import InactiveTenants from '../../components/tenant/InactiveTenants';
 import TenantCategoryForm from '../../components/tenant/TenantCategoryForm';
 import DeleteConfirmationModal from '../../components/tenant/DeleteConfirmationModal';
+import TenantSearch from '../../components/tenant/TenantSearch';
+import TenantDetail from '../../components/tenant/TenantDetail';
 
 const TenantManagement: React.FC = () => {
   // Tenant states
@@ -33,20 +35,38 @@ const TenantManagement: React.FC = () => {
   const [categoryFormLoading, setCategoryFormLoading] = useState<boolean>(false);
   const [categoryDeleteLoading, setCategoryDeleteLoading] = useState<boolean>(false);
 
+  // Inactive tenants state
+  const [inactiveTenantsCount, setInactiveTenantsCount] = useState<number>(0);
+
   // Tab state
-  const [activeTab, setActiveTab] = useState<'tenants' | 'categories'>('tenants');
+  const [activeTab, setActiveTab] = useState<'tenants' | 'categories' | 'inactive'>('tenants');
 
   const [searchParams, setSearchParams] = useState<TenantSearchParams>({});
+
+  const [showDetail, setShowDetail] = useState<boolean>(false);
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | undefined>();
+
+  // Debug effect
+  useEffect(() => {
+    console.log('Tenants state updated:', tenants.length, 'tenants');
+  }, [tenants]);
 
   useEffect(() => {
     loadTenants();
     loadCategories();
+    loadInactiveTenantsCount();
   }, []);
 
   const loadTenants = async (params: TenantSearchParams = {}) => {
     try {
       setLoading(true);
-      const data = await tenantApi.search(params);
+      console.log('Loading tenants with params:', params);
+      
+      const data = params.name || params.categoryId || params.email || params.phone
+        ? await tenantApi.search(params)
+        : await tenantApi.getAll();
+      
+      console.log('Loaded tenants:', data.length);
       setTenants(data);
       setError('');
     } catch (err: any) {
@@ -69,19 +89,42 @@ const TenantManagement: React.FC = () => {
     }
   };
 
-  // Tenant handlers
+  const loadInactiveTenantsCount = async () => {
+    try {
+      const inactiveTenants = await tenantApi.getInactive();
+      setInactiveTenantsCount(inactiveTenants.length);
+    } catch (err) {
+      console.error('Error loading inactive tenants count:', err);
+    }
+  };
+
+  // Tenant handlers - FIXED VERSIONS
   const handleCreateTenant = async (tenantData: CreateTenantRequest) => {
     try {
       setFormLoading(true);
       setError('');
-      await tenantApi.create(tenantData);
+      console.log('Creating tenant with data:', tenantData);
+      
+      const newTenant = await tenantApi.create(tenantData);
+      console.log('Created tenant:', newTenant);
+      
       setShowForm(false);
       setSuccess('Tenant created successfully!');
-      loadTenants(searchParams);
+      
+      // Update state immediately
+      if (newTenant && newTenant.id) {
+        setTenants(prev => [...prev, newTenant]);
+      } else {
+        // Fallback: reload from server if API response is incomplete
+        await loadTenants(searchParams);
+      }
+      
+      loadInactiveTenantsCount();
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to create tenant');
+      console.error('Create tenant error:', err);
     } finally {
       setFormLoading(false);
     }
@@ -93,12 +136,19 @@ const TenantManagement: React.FC = () => {
     try {
       setFormLoading(true);
       setError('');
-      await tenantApi.update(editingTenant.id, tenantData);
+      const updatedTenant = await tenantApi.update(editingTenant.id, tenantData);
+      
       setShowForm(false);
       setEditingTenant(undefined);
       setIsEditing(false);
       setSuccess('Tenant updated successfully!');
-      loadTenants(searchParams);
+      
+      // Update state immediately
+      setTenants(prev => 
+        prev.map(tenant => 
+          tenant.id === editingTenant.id ? { ...tenant, ...updatedTenant } : tenant
+        )
+      );
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -116,9 +166,13 @@ const TenantManagement: React.FC = () => {
       setError('');
       await tenantApi.delete(deletingTenantId);
       setShowDeleteModal(false);
+      
+      // Update state immediately
+      setTenants(prev => prev.filter(tenant => tenant.id !== deletingTenantId));
+      setInactiveTenantsCount(prev => prev + 1);
+      
       setDeletingTenantId(null);
       setSuccess('Tenant deleted successfully!');
-      loadTenants(searchParams);
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -129,9 +183,19 @@ const TenantManagement: React.FC = () => {
   };
 
   const handleEditTenant = (tenant: Tenant) => {
+    // Close detail view first
+    setShowDetail(false);
+    setSelectedTenant(undefined);
+    
+    // Then open edit form
     setEditingTenant(tenant);
     setIsEditing(true);
     setShowForm(true);
+  };
+
+  const handleViewTenant = (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    setShowDetail(true);
   };
 
   const handleDeleteTenantClick = (id: number) => {
@@ -144,10 +208,12 @@ const TenantManagement: React.FC = () => {
     try {
       setCategoryFormLoading(true);
       setError('');
-      await tenantApi.category.create(categoryData);
+      const newCategory = await tenantApi.category.create(categoryData);
       setShowCategoryForm(false);
       setSuccess('Category created successfully!');
-      loadCategories();
+      
+      // Update state immediately
+      setCategories(prev => [...prev, newCategory]);
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -163,12 +229,18 @@ const TenantManagement: React.FC = () => {
     try {
       setCategoryFormLoading(true);
       setError('');
-      await tenantApi.category.update(editingCategory.id, categoryData);
+      const updatedCategory = await tenantApi.category.update(editingCategory.id, categoryData);
       setShowCategoryForm(false);
       setEditingCategory(undefined);
       setIsEditingCategory(false);
       setSuccess('Category updated successfully!');
-      loadCategories();
+      
+      // Update state immediately
+      setCategories(prev => 
+        prev.map(category => 
+          category.id === editingCategory.id ? { ...category, ...updatedCategory } : category
+        )
+      );
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -186,9 +258,12 @@ const TenantManagement: React.FC = () => {
       setError('');
       await tenantApi.category.delete(deletingCategoryId);
       setShowCategoryDeleteModal(false);
+      
+      // Update state immediately
+      setCategories(prev => prev.filter(category => category.id !== deletingCategoryId));
+      
       setDeletingCategoryId(null);
       setSuccess('Category deleted successfully!');
-      loadCategories();
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -223,12 +298,14 @@ const TenantManagement: React.FC = () => {
     setShowForm(false);
     setEditingTenant(undefined);
     setIsEditing(false);
+    setFormLoading(false);
   };
 
   const handleCancelCategoryForm = () => {
     setShowCategoryForm(false);
     setEditingCategory(undefined);
     setIsEditingCategory(false);
+    setCategoryFormLoading(false);
   };
 
   const handleCancelDelete = () => {
@@ -275,7 +352,7 @@ const TenantManagement: React.FC = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Tenant Management</h1>
-              <p className="text-gray-600 mt-2">Manage your tenants and categories</p>
+              <p className="text-gray-600 mt-2">Manage your tenants, categories, and inactive accounts</p>
             </div>
             {activeTab === 'tenants' && (
               <button
@@ -308,7 +385,7 @@ const TenantManagement: React.FC = () => {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Tenants ({tenants.length})
+                Active Tenants ({tenants.length})
               </button>
               <button
                 onClick={() => setActiveTab('categories')}
@@ -319,6 +396,16 @@ const TenantManagement: React.FC = () => {
                 }`}
               >
                 Categories ({categories.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('inactive')}
+                className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'inactive'
+                    ? 'border-red-500 text-red-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                Inactive Tenants ({inactiveTenantsCount})
               </button>
             </nav>
           </div>
@@ -367,12 +454,28 @@ const TenantManagement: React.FC = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Tenants</p>
+                <p className="text-sm font-medium text-gray-600">Active Tenants</p>
                 <p className="text-2xl font-semibold text-gray-900">{tenants.length}</p>
               </div>
             </div>
           </div>
           
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">Inactive Tenants</p>
+                <p className="text-2xl font-semibold text-gray-900">{inactiveTenantsCount}</p>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -407,6 +510,7 @@ const TenantManagement: React.FC = () => {
               tenants={tenants}
               onEdit={handleEditTenant}
               onDelete={handleDeleteTenantClick}
+              onView={handleViewTenant}
               loading={loading}
             />
 
@@ -421,6 +525,18 @@ const TenantManagement: React.FC = () => {
                 isLoading={formLoading}
               />
             )}
+
+            {/* Tenant Detail Modal */}
+            {showDetail && selectedTenant && (
+              <TenantDetail
+                tenant={selectedTenant}
+                onClose={() => {
+                  setShowDetail(false);
+                  setSelectedTenant(undefined);
+                }}
+                onEdit={handleEditTenant}
+              />
+            )}
           </>
         )}
 
@@ -432,6 +548,11 @@ const TenantManagement: React.FC = () => {
             onDelete={handleDeleteCategoryClick}
             loading={categoriesLoading}
           />
+        )}
+
+        {/* Inactive Tenants Tab Content */}
+        {activeTab === 'inactive' && (
+          <InactiveTenants />
         )}
 
         {/* Delete Confirmation Modals */}
