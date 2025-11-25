@@ -1,6 +1,6 @@
 // api/InvoiceAPI.ts
 import API from "./api";
-import type { Invoice } from "../types/billing";
+import type { Invoice } from "../types/payment";
 
 export const invoiceApi = {
   // Get all invoices
@@ -14,6 +14,9 @@ export const invoiceApi = {
   
   // Get invoices by status
   getByStatus: (status: string) => API.get<Invoice[]>(`/api/invoices/status/${status}`),
+  
+  // Get unpaid and partially paid invoices
+  getUnpaidInvoices: () => API.get<Invoice[]>('/api/invoices/unpaid'),
   
   // Generate rent invoices
   generateRentInvoices: () => API.post<Invoice[]>('/api/invoices/generate-rent'),

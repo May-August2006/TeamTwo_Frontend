@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { PaymentRequest, Invoice } from '../../types';
-import { paymentApi, invoiceApi } from '../../api/paymentApi';
+import { paymentApi } from '../../api/paymentApi';
+import { invoiceApi } from '../../api/InvoiceAPI';
+import { useAuth } from '../../context/AuthContext';
 
 interface PaymentFormProps {
   onPaymentRecorded: () => void;
@@ -13,23 +15,26 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   onCancel,
   initialInvoiceId 
 }) => {
-  const [formData, setFormData] = useState<PaymentRequest>({
-    invoiceId: initialInvoiceId || 0,
-    paymentDate: new Date().toISOString().split('T')[0],
-    paymentMethod: 'CASH',
-    amount: 0,
-    referenceNumber: '',
-    notes: '',
-    receivedById: 1 // Default to current user
-  });
+  const { user } = useAuth();
+const [formData, setFormData] = useState<PaymentRequest>({
+  invoiceId: initialInvoiceId || 0,
+  paymentDate: new Date().toISOString().split('T')[0],
+  paymentMethod: 'CASH',
+  amount: 0,
+  referenceNumber: '',
+  notes: '',
+  receivedById: user?.id  
+});
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingInvoices, setLoadingInvoices] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    loadOverdueInvoices();
+    loadUnpaidInvoices();
   }, []);
 
   useEffect(() => {
@@ -38,59 +43,148 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     }
   }, [formData.invoiceId]);
 
-  const loadOverdueInvoices = async () => {
+  const loadUnpaidInvoices = async () => {
     try {
-      const overdueInvoices = await invoiceApi.getOverdueInvoices();
-      setInvoices(overdueInvoices);
+      setLoadingInvoices(true);
+      setError('');
+      const response = await invoiceApi.getUnpaidInvoices();
+      
+      // Handle different response structures
+      let unpaidInvoices: Invoice[] = [];
+      
+      if (Array.isArray(response)) {
+        unpaidInvoices = response;
+      } else if (response && Array.isArray(response.data)) {
+        unpaidInvoices = response.data;
+      } else if (response && response.data) {
+        // If it's a single object, wrap it in an array
+        unpaidInvoices = [response.data];
+      }
+      
+      console.log('Loaded invoices:', unpaidInvoices); // Debug log
+      setInvoices(unpaidInvoices);
     } catch (err) {
-      setError('Failed to load invoices');
+      console.error('Error loading invoices:', err);
+      setError('Failed to load invoices. Please try again.');
+      setInvoices([]);
+    } finally {
+      setLoadingInvoices(false);
     }
   };
 
-  const loadInvoiceDetails = async () => {
-    try {
-      const invoice = await invoiceApi.getInvoiceById(formData.invoiceId);
+const loadInvoiceDetails = async () => {
+  try {
+    setError('');
+    // Use the correct method name from invoiceApi
+    const response = await invoiceApi.getById(formData.invoiceId);
+    
+    // Handle different response structures
+    const invoice = response.data || response;
+    
+    if (invoice) {
       setSelectedInvoice(invoice);
       setFormData(prev => ({
         ...prev,
-        amount: invoice.balanceAmount
+        amount: invoice.balanceAmount || invoice.totalAmount || 0
       }));
-    } catch (err) {
-      setError('Failed to load invoice details');
     }
-  };
+  } catch (err) {
+    console.error('Error loading invoice details:', err);
+    setError('Failed to load invoice details');
+  }
+};
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === 'amount' ? parseFloat(value) || 0 : value
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      await paymentApi.recordPayment({
-        ...formData,
-        amount: Number(formData.amount),
-        receivedById: 1 // In real app, get from auth context
-      });
-      
-      onPaymentRecorded();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to record payment');
-    } finally {
-      setLoading(false);
+  const validateForm = (): boolean => {
+    if (formData.invoiceId === 0) {
+      setError('Please select an invoice');
+      return false;
     }
+    if (formData.amount <= 0) {
+      setError('Amount must be greater than 0');
+      return false;
+    }
+    if (!formData.paymentDate) {
+      setError('Payment date is required');
+      return false;
+    }
+
+    // Validate amount doesn't exceed invoice balance
+    if (selectedInvoice && formData.amount > (selectedInvoice.balanceAmount || selectedInvoice.totalAmount)) {
+      setError('Payment amount cannot exceed the invoice balance');
+      return false;
+    }
+
+    return true;
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
+  setSuccess('');
+
+  if (!validateForm()) return;
+
+  setLoading(true);
+
+  try {
+    const paymentData: PaymentRequest = {
+      ...formData,
+      receivedById: user?.id || 0 // Ensure we're sending the current logged-in user's ID
+    };
+
+    // Log for debugging
+    console.log('Submitting payment with receivedById:', paymentData.receivedById, 'User:', user);
+
+    const result = await paymentApi.recordPayment(paymentData);
+    
+    setSuccess(`Payment recorded successfully! Payment Number: ${result.paymentNumber}`);
+    
+    // Reset form
+    setFormData({
+      invoiceId: 0,
+      paymentDate: new Date().toISOString().split('T')[0],
+      paymentMethod: 'CASH',
+      amount: 0,
+      referenceNumber: '',
+      notes: '',
+      receivedById: user?.id || 0
+    });
+    setSelectedInvoice(null);
+
+    // Refresh invoices list
+    loadUnpaidInvoices();
+
+    // Notify parent component
+    setTimeout(() => {
+      onPaymentRecorded();
+    }, 2000);
+
+  } catch (err: any) {
+    setError(err.response?.data?.message || 'Failed to record payment');
+  } finally {
+    setLoading(false);
+  }
+};
+  const paymentMethods = [
+    { value: 'CASH', label: 'Cash' },
+    { value: 'CHECK', label: 'Check' },
+    { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
+    { value: 'CREDIT_CARD', label: 'Credit Card' },
+    { value: 'DEBIT_CARD', label: 'Debit Card' },
+    { value: 'MOBILE_PAYMENT', label: 'Mobile Payment' }
+  ];
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold mb-4">Record New Payment</h2>
+    <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Record New Payment</h2>
       
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
@@ -98,32 +192,50 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {success && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+          {success}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Invoice Selection */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Select Invoice *
             </label>
-            <select
-              name="invoiceId"
-              value={formData.invoiceId}
-              onChange={handleInputChange}
-              required
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value={0}>Select an invoice</option>
-              {invoices.map(invoice => (
-                <option key={invoice.id} value={invoice.id}>
-                  {invoice.invoiceNumber} - {invoice.tenantName} - {invoice.balanceAmount} MMK
-                </option>
-              ))}
-            </select>
+            {loadingInvoices ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span className="ml-2 text-gray-600">Loading invoices...</span>
+              </div>
+            ) : (
+              <>
+                <select
+                  name="invoiceId"
+                  value={formData.invoiceId}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value={0}>Select an invoice</option>
+                  {invoices.map(invoice => (
+                    <option key={invoice.id} value={invoice.id}>
+                      {invoice.invoiceNumber} - {invoice.tenantName} - {(invoice.balanceAmount || invoice.totalAmount)?.toLocaleString()} MMK
+                    </option>
+                  ))}
+                </select>
+                <p className="text-sm text-gray-500 mt-1">
+                  {invoices.length === 0 ? 'No unpaid invoices found' : 'Only unpaid and partially paid invoices are shown'}
+                </p>
+              </>
+            )}
           </div>
 
           {/* Payment Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Payment Date *
             </label>
             <input
@@ -132,13 +244,14 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               value={formData.paymentDate}
               onChange={handleInputChange}
               required
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              max={new Date().toISOString().split('T')[0]}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           {/* Payment Method */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Payment Method *
             </label>
             <select
@@ -146,17 +259,19 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               value={formData.paymentMethod}
               onChange={handleInputChange}
               required
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="CASH">Cash</option>
-              <option value="CHECK">Check</option>
-              <option value="BANK_TRANSFER">Bank Transfer</option>
+              {paymentMethods.map(method => (
+                <option key={method.value} value={method.value}>
+                  {method.label}
+                </option>
+              ))}
             </select>
           </div>
 
           {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Amount (MMK) *
             </label>
             <input
@@ -167,13 +282,19 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               required
               min="0"
               step="0.01"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              max={selectedInvoice ? (selectedInvoice.balanceAmount || selectedInvoice.totalAmount) : undefined}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            {selectedInvoice && (
+              <p className="text-sm text-gray-500 mt-1">
+                Maximum allowed: {(selectedInvoice.balanceAmount || selectedInvoice.totalAmount)?.toLocaleString()} MMK
+              </p>
+            )}
           </div>
 
           {/* Reference Number */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Reference Number
             </label>
             <input
@@ -182,14 +303,28 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               value={formData.referenceNumber}
               onChange={handleInputChange}
               placeholder="Check number, transaction ID, etc."
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+          </div>
+
+          {/* Received By */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Received By
+            </label>
+            <input
+              type="text"
+              value={user?.name || 'Current User'}
+              disabled
+              className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 text-gray-600"
+            />
+            <input type="hidden" name="receivedById" value={user?.id || 1} />
           </div>
         </div>
 
         {/* Notes */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Notes
           </label>
           <textarea
@@ -197,41 +332,126 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             value={formData.notes}
             onChange={handleInputChange}
             rows={3}
-            placeholder="Additional payment details..."
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Additional payment details, remarks, or comments..."
+            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
 
         {/* Invoice Details */}
         {selectedInvoice && (
-          <div className="bg-gray-50 p-4 rounded-md">
-            <h3 className="font-medium mb-2">Invoice Details:</h3>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>Invoice Number: <strong>{selectedInvoice.invoiceNumber}</strong></div>
-              <div>Tenant: <strong>{selectedInvoice.tenantName}</strong></div>
-              <div>Room: <strong>{selectedInvoice.roomNumber}</strong></div>
-              <div>Due Date: <strong>{selectedInvoice.dueDate}</strong></div>
-              <div>Total Amount: <strong>{selectedInvoice.totalAmount} MMK</strong></div>
-              <div>Balance: <strong>{selectedInvoice.balanceAmount} MMK</strong></div>
+          <div className="bg-gray-50 p-4 rounded-md border">
+            <h3 className="font-semibold text-lg mb-3 text-gray-800">Invoice Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="font-medium">Invoice Number:</span>
+                <div className="font-semibold">{selectedInvoice.invoiceNumber}</div>
+              </div>
+              <div>
+                <span className="font-medium">Tenant:</span>
+                <div className="font-semibold">{selectedInvoice.tenantName}</div>
+              </div>
+              <div>
+                <span className="font-medium">Room:</span>
+                <div className="font-semibold">{selectedInvoice.roomNumber}</div>
+              </div>
+              <div>
+                <span className="font-medium">Due Date:</span>
+                <div className="font-semibold">
+                  {new Date(selectedInvoice.dueDate).toLocaleDateString()}
+                </div>
+              </div>
+              <div>
+                <span className="font-medium">Total Amount:</span>
+                <div className="font-semibold">
+                  {selectedInvoice.totalAmount?.toLocaleString()} MMK
+                </div>
+              </div>
+              <div>
+                <span className="font-medium">Balance Due:</span>
+                <div className="font-semibold text-blue-600">
+                  {(selectedInvoice.balanceAmount || selectedInvoice.totalAmount)?.toLocaleString()} MMK
+                </div>
+              </div>
+              <div>
+                <span className="font-medium">Invoice Status:</span>
+                <div className="font-semibold">
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    selectedInvoice.invoiceStatus === 'PAID' 
+                      ? 'bg-green-100 text-green-800'
+                      : selectedInvoice.invoiceStatus === 'PARTIAL'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {selectedInvoice.invoiceStatus}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Summary */}
+        {formData.amount > 0 && selectedInvoice && (
+          <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
+            <h3 className="font-semibold text-lg mb-3 text-blue-800">Payment Summary</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="font-medium">Current Balance:</span>
+                <div className="font-semibold">
+                  {(selectedInvoice.balanceAmount || selectedInvoice.totalAmount)?.toLocaleString()} MMK
+                </div>
+              </div>
+              <div>
+                <span className="font-medium">Payment Amount:</span>
+                <div className="font-semibold text-green-600">
+                  {formData.amount.toLocaleString()} MMK
+                </div>
+              </div>
+              <div>
+                <span className="font-medium">Remaining Balance:</span>
+                <div className="font-semibold">
+                  {((selectedInvoice.balanceAmount || selectedInvoice.totalAmount) - formData.amount).toLocaleString()} MMK
+                </div>
+              </div>
+              <div>
+                <span className="font-medium">New Status:</span>
+                <div className="font-semibold">
+                  {formData.amount >= (selectedInvoice.balanceAmount || selectedInvoice.totalAmount) 
+                    ? 'PAID' 
+                    : 'PARTIAL'
+                  }
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {/* Action Buttons */}
-        <div className="flex justify-end space-x-3 pt-4">
+        <div className="flex justify-end space-x-4 pt-6 border-t">
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            disabled={loading}
+            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200"
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            disabled={loading || loadingInvoices || formData.invoiceId === 0}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors duration-200"
           >
-            {loading ? 'Recording...' : 'Record Payment'}
+            {loading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              'Record Payment'
+            )}
           </button>
         </div>
       </form>
