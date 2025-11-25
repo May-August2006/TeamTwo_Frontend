@@ -109,9 +109,9 @@ export interface Tenant {
   name: string;
   roomNumber: string;
   businessType: string;
-  contractStatus: 'active' | 'expiring' | 'terminated';
+  contractStatus: "active" | "expiring" | "terminated";
   monthlyRent: number;
-  paymentStatus: 'paid' | 'overdue' | 'pending';
+  paymentStatus: "paid" | "overdue" | "pending";
   email?: string;
   phone?: string;
 }
@@ -122,18 +122,17 @@ export interface Lease {
   tenantName: string;
   startDate: string;
   endDate: string;
-  status: 'active' | 'expired' | 'terminated';
+  status: "active" | "expired" | "terminated";
   rentAmount: number;
   securityDeposit: number;
 }
 
-
 export interface Alert {
   id: string;
-  type: 'overdue' | 'expiry' | 'maintenance';
+  type: "overdue" | "expiry" | "maintenance";
   title: string;
   description: string;
-  priority: 'low' | 'medium' | 'high';
+  priority: "low" | "medium" | "high";
   date: string;
 }
 
@@ -141,7 +140,7 @@ export interface KPI {
   title: string;
   value: number | string;
   subtitle?: string;
-  trend?: 'up' | 'down' | 'neutral';
+  trend?: "up" | "down" | "neutral";
 }
 
 export interface Report {
@@ -158,12 +157,12 @@ export interface Payment {
   paymentNumber: string;
   invoiceId: number;
   paymentDate: string;
-  paymentMethod: 'CASH' | 'CHECK' | 'BANK_TRANSFER';
+  paymentMethod: "CASH" | "CHECK" | "BANK_TRANSFER";
   amount: number;
   referenceNumber?: string;
   notes?: string;
   receivedById: number;
-  paymentStatus: 'COMPLETED' | 'PENDING' | 'VOIDED';
+  paymentStatus: "COMPLETED" | "PENDING" | "VOIDED";
   tenantName: string;
   roomNumber: string;
   invoiceNumber: string;
@@ -172,37 +171,38 @@ export interface Payment {
 export interface PaymentRequest {
   invoiceId: number;
   paymentDate: string;
-  paymentMethod: 'CASH' | 'CHECK' | 'BANK_TRANSFER';
+  paymentMethod: "CASH" | "CHECK" | "BANK_TRANSFER";
   amount: number;
   referenceNumber?: string;
   notes?: string;
   receivedById: number;
 }
 
-export interface Invoice {
+export interface InvoiceDTO {
   id: number;
   invoiceNumber: string;
-  contractId: number;
-  issueDate: string;
-  dueDate: string;
+  issueDate: string; // LocalDate → string
+  dueDate: string; // LocalDate → string
   totalAmount: number;
   paidAmount: number;
   balanceAmount: number;
-  invoiceStatus: 'DRAFT' | 'ISSUED' | 'PARTIAL' | 'PAID' | 'OVERDUE' | 'CANCELLED';
-  items?: InvoiceItem[];
-  lateFees?: LateFee[];
+  invoiceStatus: string; // could be: DRAFT, ISSUED, PARTIAL, PAID, OVERDUE, CANCELLED, UNPAID
+  pdfUrl: string;
+  contractId: number;
   tenantName: string;
   roomNumber: string;
+  invoiceItems: InvoiceItemDTO[]; // matches "invoiceItems" (not items)
+  createdAt: string; // LocalDate → string
+  updatedAt: string; // LocalDate → string
 }
 
-export interface InvoiceItem {
+export interface InvoiceItemDTO {
   id: number;
-  invoiceId: number;
+  itemType: string; // Java uses string (enum stored as String)
   itemDescription: string;
-  itemType: 'RENT' | 'ELECTRICITY' | 'WATER' | 'CAM' | 'MAINTENANCE' | 'TRANSFORMER' | 'GENERATOR' | 'ADJUSTMENT' | 'OTHER';
-  quantity: number;
-  unitPrice: number;
-  amount: number;
+  quantity: number; // BigDecimal → number
+  unitPrice: number; // BigDecimal → number
+  amount: number; // BigDecimal → number
 }
 
 export interface LateFee {
@@ -218,7 +218,7 @@ export interface LateFee {
 export interface PaymentAuditLog {
   id: number;
   paymentId: number;
-  actionType: 'CREATED' | 'EDITED' | 'VOIDED';
+  actionType: "CREATED" | "EDITED" | "VOIDED";
   changedById: number;
   changedByName?: string;
   changeReason: string;
@@ -231,4 +231,48 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
   success: boolean;
+}
+
+export interface AppointmentRequest {
+  roomId: number;
+  appointmentDate: string;
+  appointmentTime: string;
+  purpose: string;
+  notes: string;
+  guestPhone?: string;
+}
+
+export interface AppointmentDTO {
+  id: number;
+  guestName: string;
+  guestEmail: string;
+  guestPhone?: string;
+  appointmentDate: string;
+  appointmentTime: string;
+  purpose: string;
+  notes: string;
+  roomId: number;
+  status: string;
+}
+
+export type Announcement = {
+  id: number;
+  title: string;
+  message: string;
+  createdAt: string; // ISO datetime
+  scheduledAt?: string;
+  sent: boolean;
+};
+
+export type AnnouncementRequest = {
+  title: string;
+  message: string;
+  scheduledAt?: string;
+};
+
+export interface ContractAlert {
+  id: number; // Unique ID of the alert
+  message: string; // Alert message content
+  read: boolean; // Whether the alert has been read
+  createdAt: string; // Timestamp of creation in ISO format
 }

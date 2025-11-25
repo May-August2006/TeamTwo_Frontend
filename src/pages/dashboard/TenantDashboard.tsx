@@ -9,6 +9,7 @@ import MyInvoices from "../../components/tenant/MyInvoices";
 import PaymentHistory from "../../components/tenant/PaymentHistory";
 import MyContract from "../../components/tenant/MyContract";
 import MaintenanceRequests from "../../components/tenant/MaintenanceRequests";
+import { TenantAnnouncements } from "../../components/tenant/TenantAnnouncements";
 
 const TenantDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -29,6 +30,7 @@ const TenantDashboard: React.FC = () => {
     if (location.pathname.includes("invoices")) return "My Invoices";
     if (location.pathname.includes("payment-history")) return "Payment History";
     if (location.pathname.includes("contract")) return "My Contract";
+    if (location.pathname.includes("announcements")) return "Announcements";
     if (location.pathname.includes("maintenance"))
       return "Maintenance Requests";
     return "Tenant Dashboard";
@@ -72,6 +74,10 @@ const TenantDashboard: React.FC = () => {
                 <Route path="/invoices" element={<MyInvoices />} />
                 <Route path="/payment-history" element={<PaymentHistory />} />
                 <Route path="/contract" element={<MyContract />} />
+                <Route
+                  path="/announcements"
+                  element={<TenantAnnouncements />}
+                />
                 <Route path="/maintenance" element={<MaintenanceRequests />} />
               </Routes>
             </div>

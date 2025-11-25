@@ -12,6 +12,7 @@ import {
   saveAuthData,
   clearAuthData,
   isTokenExpired,
+  getUserId,
   getUsername,
   getRoles,
 } from "../Auth.js";
@@ -31,6 +32,7 @@ const API: AxiosInstance = axios.create({
 // Helper: refresh access token using refresh token
 export const tryRefreshToken = async (): Promise<boolean> => {
   const refreshToken = getRefreshToken();
+  const userId = getUserId();
   const username = getUsername();
 
   if (!refreshToken || !username) return false;
@@ -47,6 +49,7 @@ export const tryRefreshToken = async (): Promise<boolean> => {
     const newRoles = res.data.roles || getRoles() || ["ROLE_GUEST"];
 
     saveAuthData({
+      userId: userId || 0,
       username,
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
