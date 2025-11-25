@@ -19,6 +19,7 @@ export const invoiceApi = {
   getByStatus: (status: string) =>
     API.get<InvoiceDTO[]>(`/api/invoices/status/${status}`),
 
+  
   // Generate rent invoices
   generateRentInvoices: () =>
     API.post<InvoiceDTO[]>("/api/invoices/generate-rent"),
