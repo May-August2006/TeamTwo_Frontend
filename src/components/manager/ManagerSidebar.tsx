@@ -30,6 +30,7 @@ const menuItems = [
   { value: "payments", label: "Payments", path: "/manager/payments" },
   { value: "maintenance", label: "Maintenance", path: "/manager/maintenance" },
   { value: "reports", label: "Reports", path: "/manager/reports" },
+  { value: "invoices", label: "Invoices", path: "/manager/invoices" },
 ];
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
@@ -128,8 +129,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                     : "text-gray-500 group-hover:text-blue-600"
                 }`}
               >
-                {/* you can keep icons here if needed */}●
-                ●
+                {/* you can keep icons here if needed */}● ●
               </span>
 
               {!isCollapsed && (

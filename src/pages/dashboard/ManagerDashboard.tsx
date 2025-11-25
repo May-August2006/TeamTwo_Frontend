@@ -15,13 +15,11 @@ import { InvoiceListPage } from "../manager/InvoiceListPage";
 import { UsageEntryPage } from "../manager/UsageEntryPage";
 import ManagerMaintenancePage from "../manager/MaintenancePage"; // Add this import
 import LeaseManagement from "../manager/LeaseManagement";
-
-import { AlertsDropdown } from "../../components/AlertsDropdown";
+import InvoicesPage from "../manager/InvoicesPage";
 
 export default function ManagerDashboard() {
   return (
     <ManagerDashboardLayout>
-      <AlertsDropdown />
       <Routes>
         <Route path="overview" element={<OverviewPage />} />
         <Route path="tenants" element={<TenantManagement />} />
@@ -36,6 +34,7 @@ export default function ManagerDashboard() {
         <Route path="appointments/:id" element={<AppointmentDetailPage />} />
         <Route path="announcements" element={<SendAnnouncementPage />} />
         <Route path="reports" element={<ReportsPage />} />
+        <Route path="invoices" element={<InvoicesPage />} />
         {/* Add the Maintenance route */}
         <Route path="maintenance" element={<ManagerMaintenancePage />} />
 

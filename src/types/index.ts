@@ -178,45 +178,31 @@ export interface PaymentRequest {
   receivedById: number;
 }
 
-export interface Invoice {
+export interface InvoiceDTO {
   id: number;
   invoiceNumber: string;
-  contractId: number;
-  issueDate: string;
-  dueDate: string;
+  issueDate: string; // LocalDate → string
+  dueDate: string; // LocalDate → string
   totalAmount: number;
   paidAmount: number;
   balanceAmount: number;
-  invoiceStatus:
-    | "DRAFT"
-    | "ISSUED"
-    | "PARTIAL"
-    | "PAID"
-    | "OVERDUE"
-    | "CANCELLED";
-  items?: InvoiceItem[];
-  lateFees?: LateFee[];
+  invoiceStatus: string; // could be: DRAFT, ISSUED, PARTIAL, PAID, OVERDUE, CANCELLED, UNPAID
+  pdfUrl: string;
+  contractId: number;
   tenantName: string;
   roomNumber: string;
+  invoiceItems: InvoiceItemDTO[]; // matches "invoiceItems" (not items)
+  createdAt: string; // LocalDate → string
+  updatedAt: string; // LocalDate → string
 }
 
-export interface InvoiceItem {
+export interface InvoiceItemDTO {
   id: number;
-  invoiceId: number;
+  itemType: string; // Java uses string (enum stored as String)
   itemDescription: string;
-  itemType:
-    | "RENT"
-    | "ELECTRICITY"
-    | "WATER"
-    | "CAM"
-    | "MAINTENANCE"
-    | "TRANSFORMER"
-    | "GENERATOR"
-    | "ADJUSTMENT"
-    | "OTHER";
-  quantity: number;
-  unitPrice: number;
-  amount: number;
+  quantity: number; // BigDecimal → number
+  unitPrice: number; // BigDecimal → number
+  amount: number; // BigDecimal → number
 }
 
 export interface LateFee {
