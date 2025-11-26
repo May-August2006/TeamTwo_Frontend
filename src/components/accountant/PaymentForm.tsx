@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { PaymentRequest, Invoice } from '../../types';
+import type { PaymentRequest, Invoice } from '../../types/payment';
 import { paymentApi } from '../../api/paymentApi';
 import { invoiceApi } from '../../api/InvoiceAPI';
 import { useAuth } from '../../context/AuthContext';
@@ -23,7 +23,7 @@ const [formData, setFormData] = useState<PaymentRequest>({
   amount: 0,
   referenceNumber: '',
   notes: '',
-  receivedById: user?.id  
+  receivedById: user?.id || 0 
 });
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -72,27 +72,26 @@ const [formData, setFormData] = useState<PaymentRequest>({
     }
   };
 
-const loadInvoiceDetails = async () => {
-  try {
-    setError('');
-    // Use the correct method name from invoiceApi
-    const response = await invoiceApi.getById(formData.invoiceId);
-    
-    // Handle different response structures
-    const invoice = response.data || response;
-    
-    if (invoice) {
-      setSelectedInvoice(invoice);
-      setFormData(prev => ({
-        ...prev,
-        amount: invoice.balanceAmount || invoice.totalAmount || 0
-      }));
+  const loadInvoiceDetails = async () => {
+    try {
+      setError('');
+      const response = await invoiceApi.getInvoiceById(formData.invoiceId);
+      
+      // Handle different response structures
+      const invoice = response.data || response;
+      
+      if (invoice) {
+        setSelectedInvoice(invoice);
+        setFormData(prev => ({
+          ...prev,
+          amount: invoice.balanceAmount || invoice.totalAmount || 0
+        }));
+      }
+    } catch (err) {
+      console.error('Error loading invoice details:', err);
+      setError('Failed to load invoice details');
     }
-  } catch (err) {
-    console.error('Error loading invoice details:', err);
-    setError('Failed to load invoice details');
-  }
-};
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -126,53 +125,51 @@ const loadInvoiceDetails = async () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError('');
-  setSuccess('');
+    e.preventDefault();
+    setError('');
+    setSuccess('');
 
-  if (!validateForm()) return;
+    if (!validateForm()) return;
 
-  setLoading(true);
+    setLoading(true);
 
-  try {
-    const paymentData: PaymentRequest = {
-      ...formData,
-      receivedById: user?.id || 0 // Ensure we're sending the current logged-in user's ID
-    };
+    try {
+      const paymentData: PaymentRequest = {
+        ...formData,
+        receivedById: user.id 
+      };
 
-    // Log for debugging
-    console.log('Submitting payment with receivedById:', paymentData.receivedById, 'User:', user);
+      const result = await paymentApi.recordPayment(paymentData);
+      
+      setSuccess(`Payment recorded successfully! Payment Number: ${result.paymentNumber}`);
+      
+      // Reset form
+      setFormData({
+        invoiceId: 0,
+        paymentDate: new Date().toISOString().split('T')[0],
+        paymentMethod: 'CASH',
+        amount: 0,
+        referenceNumber: '',
+        notes: '',
+        receivedById: user?.id || 0
+      });
+      setSelectedInvoice(null);
 
-    const result = await paymentApi.recordPayment(paymentData);
-    
-    setSuccess(`Payment recorded successfully! Payment Number: ${result.paymentNumber}`);
-    
-    // Reset form
-    setFormData({
-      invoiceId: 0,
-      paymentDate: new Date().toISOString().split('T')[0],
-      paymentMethod: 'CASH',
-      amount: 0,
-      referenceNumber: '',
-      notes: '',
-      receivedById: user?.id || 0
-    });
-    setSelectedInvoice(null);
+      // Refresh invoices list
+      loadUnpaidInvoices();
 
-    // Refresh invoices list
-    loadUnpaidInvoices();
+      // Notify parent component
+      setTimeout(() => {
+        onPaymentRecorded();
+      }, 2000);
 
-    // Notify parent component
-    setTimeout(() => {
-      onPaymentRecorded();
-    }, 2000);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to record payment');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  } catch (err: any) {
-    setError(err.response?.data?.message || 'Failed to record payment');
-  } finally {
-    setLoading(false);
-  }
-};
   const paymentMethods = [
     { value: 'CASH', label: 'Cash' },
     { value: 'CHECK', label: 'Check' },
