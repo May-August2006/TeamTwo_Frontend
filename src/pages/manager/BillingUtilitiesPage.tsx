@@ -1,5 +1,6 @@
 /** @format */
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface Invoice {
   id: string;
@@ -13,6 +14,7 @@ interface Invoice {
 
 export const BillingUtilitiesPage: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Mock data (replace with API)
@@ -79,6 +81,22 @@ export const BillingUtilitiesPage: React.FC = () => {
     }
   };
 
+  const handleGenerateInvoices = () => {
+    navigate("/manager/billing/invoices");
+  };
+
+  const handleUtilityMeterInput = () => {
+    navigate("/manager/billing/usage");
+  };
+
+  const handleUtilityTypes = () => {
+    navigate("/manager/billing/utility-types");
+  };
+
+  const handleBillingFees = () => {
+    navigate("/manager/billing/fees");
+  };
+
   return (
     <div className="p-4 sm:p-6">
       {/* Header */}
@@ -87,7 +105,10 @@ export const BillingUtilitiesPage: React.FC = () => {
           Billing & Utilities
         </h1>
         <div className="flex flex-col sm:flex-row gap-2">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 text-sm">
+          <button 
+            onClick={handleGenerateInvoices}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 text-sm"
+          >
             <svg
               className="w-5 h-5"
               fill="none"
@@ -103,7 +124,10 @@ export const BillingUtilitiesPage: React.FC = () => {
             </svg>
             Generate Invoices
           </button>
-          <button className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm">
+          <button 
+            onClick={handleUtilityMeterInput}
+            className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm"
+          >
             <svg
               className="w-5 h-5"
               fill="none"
@@ -149,20 +173,18 @@ export const BillingUtilitiesPage: React.FC = () => {
             desc: "$12,500 Outstanding",
             color: "text-red-600",
             highlight: true,
-}
-,
+          },
         ].map((card, index) => (
           <div
-  key={index}
-  className={`bg-white rounded-lg border border-gray-200 p-4 shadow-sm ${
-    card.highlight ? "border-l-4 border-red-500" : ""
-  }`}
->
-  <h3 className="text-sm text-gray-600 mb-2">{card.label}</h3>
-  <p className={`text-2xl font-bold ${card.color}`}>{card.value}</p>
-  <p className="text-xs text-gray-500 mt-1">{card.desc}</p>
-</div>
-
+            key={index}
+            className={`bg-white rounded-lg border border-gray-200 p-4 shadow-sm ${
+              card.highlight ? "border-l-4 border-red-500" : ""
+            }`}
+          >
+            <h3 className="text-sm text-gray-600 mb-2">{card.label}</h3>
+            <p className={`text-2xl font-bold ${card.color}`}>{card.value}</p>
+            <p className="text-xs text-gray-500 mt-1">{card.desc}</p>
+          </div>
         ))}
       </div>
 
@@ -242,22 +264,25 @@ export const BillingUtilitiesPage: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {[
           {
-            title: "Utility Calculation",
-            desc: "Calculate electricity, water, and CAM fees",
+            title: "Utility Types",
+            desc: "Manage electricity, water, and other utility types",
             color: "bg-blue-100 text-blue-600",
-            btn: "Calculate",
+            btn: "Manage",
+            onClick: handleUtilityTypes,
           },
           {
-            title: "Manual Adjustments",
-            desc: "Adjust bills for special circumstances",
+            title: "Billing Fees",
+            desc: "Configure rent, CAM, and other billing fees",
             color: "bg-purple-100 text-purple-600",
-            btn: "Adjust",
+            btn: "Configure",
+            onClick: handleBillingFees,
           },
           {
-            title: "Batch Operations",
-            desc: "Generate all monthly invoices at once",
-            color: "bg-blue-100 text-blue-600",
-            btn: "Generate All",
+            title: "Invoice Management",
+            desc: "View and manage all invoices",
+            color: "bg-green-100 text-green-600",
+            btn: "View All",
+            onClick: () => navigate("/manager/billing/invoices"),
           },
         ].map((action, i) => (
           <div
@@ -273,7 +298,10 @@ export const BillingUtilitiesPage: React.FC = () => {
               {action.title}
             </h3>
             <p className="text-sm text-gray-600 mb-4">{action.desc}</p>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+            <button 
+              onClick={action.onClick}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
+            >
               {action.btn}
             </button>
           </div>

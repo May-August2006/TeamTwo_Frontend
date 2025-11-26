@@ -104,8 +104,15 @@ export interface UtilityType {
   ratePerUnit: number;
   calculationMethod: 'FIXED' | 'METERED' | 'ALLOCATED';
   description: string;
-isActive: boolean;
+  isActive: boolean;
   createdAt: string;
+}
+
+export interface UtilityTypeRequest {
+  utilityName: string;
+  calculationMethod: 'FIXED' | 'METERED' | 'ALLOCATED';
+  ratePerUnit: number;
+  description: string;
 }
 
 export interface RoomUtility {
@@ -115,11 +122,4 @@ export interface RoomUtility {
   isActive: boolean;
   createdAt: string;
   utilityType: UtilityType;
-}
-
-export interface UtilityTypeRequest {
-  utilityName: string;
-  ratePerUnit: number;
-  calculationMethod: 'FIXED' | 'METERED' | 'ALLOCATED';
-  description: string;
 }
