@@ -15,16 +15,16 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   onCancel,
   initialInvoiceId 
 }) => {
-  const { user } = useAuth();
-const [formData, setFormData] = useState<PaymentRequest>({
-  invoiceId: initialInvoiceId || 0,
-  paymentDate: new Date().toISOString().split('T')[0],
-  paymentMethod: 'CASH',
-  amount: 0,
-  referenceNumber: '',
-  notes: '',
-  receivedById: user?.id || 0 
-});
+  const { userId, username, loading: authLoading, isAuthenticated } = useAuth();
+  const [formData, setFormData] = useState<PaymentRequest>({
+    invoiceId: initialInvoiceId || 0,
+    paymentDate: new Date().toISOString().split('T')[0],
+    paymentMethod: 'CASH',
+    amount: 0,
+    referenceNumber: '',
+    notes: '',
+    receivedById: userId || 0
+  });
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -33,9 +33,21 @@ const [formData, setFormData] = useState<PaymentRequest>({
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // Update formData when userId becomes available
   useEffect(() => {
-    loadUnpaidInvoices();
-  }, []);
+    if (userId) {
+      setFormData(prev => ({
+        ...prev,
+        receivedById: userId
+      }));
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      loadUnpaidInvoices();
+    }
+  }, [authLoading, isAuthenticated]);
 
   useEffect(() => {
     if (formData.invoiceId > 0) {
@@ -47,6 +59,14 @@ const [formData, setFormData] = useState<PaymentRequest>({
     try {
       setLoadingInvoices(true);
       setError('');
+      
+      // Check if user is authenticated
+      if (!isAuthenticated || !userId) {
+        setError('User not authenticated. Please log in again.');
+        setLoadingInvoices(false);
+        return;
+      }
+
       const response = await invoiceApi.getUnpaidInvoices();
       
       // Handle different response structures
@@ -57,11 +77,10 @@ const [formData, setFormData] = useState<PaymentRequest>({
       } else if (response && Array.isArray(response.data)) {
         unpaidInvoices = response.data;
       } else if (response && response.data) {
-        // If it's a single object, wrap it in an array
         unpaidInvoices = [response.data];
       }
       
-      console.log('Loaded invoices:', unpaidInvoices); // Debug log
+      console.log('Loaded invoices:', unpaidInvoices);
       setInvoices(unpaidInvoices);
     } catch (err) {
       console.error('Error loading invoices:', err);
@@ -75,9 +94,8 @@ const [formData, setFormData] = useState<PaymentRequest>({
   const loadInvoiceDetails = async () => {
     try {
       setError('');
-      const response = await invoiceApi.getInvoiceById(formData.invoiceId);
+      const response = await invoiceApi.getById(formData.invoiceId);
       
-      // Handle different response structures
       const invoice = response.data || response;
       
       if (invoice) {
@@ -87,9 +105,13 @@ const [formData, setFormData] = useState<PaymentRequest>({
           amount: invoice.balanceAmount || invoice.totalAmount || 0
         }));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading invoice details:', err);
-      setError('Failed to load invoice details');
+      if (err.response?.status === 401) {
+        setError('Unauthorized: You do not have permission to view invoice details');
+      } else {
+        setError('Failed to load invoice details');
+      }
     }
   };
 
@@ -131,12 +153,18 @@ const [formData, setFormData] = useState<PaymentRequest>({
 
     if (!validateForm()) return;
 
+    // Check if user exists before proceeding
+    if (!isAuthenticated || !userId) {
+      setError('User information not available. Please log in again.');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const paymentData: PaymentRequest = {
         ...formData,
-        receivedById: user.id 
+        receivedById: userId
       };
 
       const result = await paymentApi.recordPayment(paymentData);
@@ -151,7 +179,7 @@ const [formData, setFormData] = useState<PaymentRequest>({
         amount: 0,
         referenceNumber: '',
         notes: '',
-        receivedById: user?.id || 0
+        receivedById: userId
       });
       setSelectedInvoice(null);
 
@@ -164,7 +192,18 @@ const [formData, setFormData] = useState<PaymentRequest>({
       }, 2000);
 
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to record payment');
+      console.error('Payment error details:', err);
+      
+      // Extract meaningful error message
+      let errorMessage = 'Failed to record payment';
+      if (err.response?.data) {
+        // Try to get error message from response
+        errorMessage = err.response.data.message || err.response.data || errorMessage;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -178,6 +217,41 @@ const [formData, setFormData] = useState<PaymentRequest>({
     { value: 'DEBIT_CARD', label: 'Debit Card' },
     { value: 'MOBILE_PAYMENT', label: 'Mobile Payment' }
   ];
+
+  // Add loading state for authentication
+  if (authLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">Loading authentication...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user is authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+        <div className="text-center py-8">
+          <div className="text-red-600 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">Authentication Required</h3>
+          <p className="text-gray-600 mb-4">You need to be logged in to record payments.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
@@ -311,11 +385,11 @@ const [formData, setFormData] = useState<PaymentRequest>({
             </label>
             <input
               type="text"
-              value={user?.name || 'Current User'}
+              value={username || 'Current User'}
               disabled
               className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 text-gray-600"
             />
-            <input type="hidden" name="receivedById" value={user?.id || 1} />
+            <input type="hidden" name="receivedById" value={userId || 0} />
           </div>
         </div>
 
@@ -435,7 +509,7 @@ const [formData, setFormData] = useState<PaymentRequest>({
           </button>
           <button
             type="submit"
-            disabled={loading || loadingInvoices || formData.invoiceId === 0}
+            disabled={loading || loadingInvoices || formData.invoiceId === 0 || !isAuthenticated || !userId}
             className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors duration-200"
           >
             {loading ? (

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import type { Payment } from '../../types';
+import type { Payment } from '../../types/';
 import { paymentApi } from '../../api/paymentApi';
 import StatusChip from './StatusChip';
 import axios from 'axios';
+import { generatePaymentReceipt } from '../../utils/pdfGenerator';
+
 
 const PaymentListPage: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -85,27 +87,28 @@ const handleVoidPayment = async (paymentId: number) => {
   }
 };
 
-  const handleGenerateReceipt = async (payment: Payment) => {
-    try {
-      const blob = await paymentApi.generateReceipt(payment.id);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `receipt-${payment.paymentNumber}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        console.error('Axios error:', err.response?.data || err.message);
-        setError('Failed to generate receipt: ' + (err.response?.data?.message || err.message));
-      } else {
-        console.error('Unexpected error:', err);
-        setError('Failed to generate receipt');
-      }
+const handleGenerateReceipt = async (payment: Payment) => {
+  try {
+    // Generate PDF receipt
+    const pdfBlob = await generatePaymentReceipt(payment);
+    const url = window.URL.createObjectURL(pdfBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `receipt-${payment.paymentNumber}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      console.error('Axios error:', err.response?.data || err.message);
+      setError('Failed to generate receipt: ' + (err.response?.data?.message || err.message));
+    } else {
+      console.error('Unexpected error:', err);
+      setError('Failed to generate receipt');
     }
-  };
+  }
+};
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

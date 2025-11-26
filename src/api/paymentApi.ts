@@ -40,9 +40,8 @@ export const paymentApi = {
     return response.data;
   },
 
-  // Void payment
-voidPayment: async (paymentId: number, reason: string) => {
-  const response = await API.put(`/payments/${paymentId}/void?reason=${encodeURIComponent(reason)}`);
+voidPayment: async (paymentId: number, reason: string, changedByUserId: number) => {
+  const response = await API.put(`/api/payments/${paymentId}/void?reason=${encodeURIComponent(reason)}&changedByUserId=${changedByUserId}`);
   return response.data;
 },
 
