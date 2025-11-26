@@ -35,6 +35,7 @@ export default function ManagerDashboard() {
         <Route path="announcements" element={<SendAnnouncementPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="invoices" element={<InvoicesPage />} />
+
         {/* Add the Maintenance route */}
         <Route path="maintenance" element={<ManagerMaintenancePage />} />
 
