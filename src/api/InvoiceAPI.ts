@@ -8,6 +8,9 @@ export const invoiceApi = {
   // Get all invoices
   getAll: () => API.get<InvoiceDTO[]>("/api/invoices"),
 
+ getUnpaidInvoices: () => API.get<InvoiceDTO[]>('/api/invoices/unpaid'),
+ 
+
   // Get invoice by ID
   getById: (id: number) => API.get<InvoiceDTO>(`/api/invoices/${id}`),
 

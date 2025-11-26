@@ -1,203 +1,75 @@
-import type { Payment, PaymentRequest, Invoice, PaymentAuditLog } from '../types';
-
-const API_BASE_URL = 'http://localhost:8080/api';
+import API from "./api"; // Use your centralized API instance
+import type { Payment, PaymentRequest, PaymentAuditLog } from '../types';
 
 export const paymentApi = {
-  // Record Payment
-  recordPayment: async (paymentData: PaymentRequest): Promise<Payment> => {
-    const response = await fetch(`${API_BASE_URL}/payments`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(paymentData)
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to record payment');
-    }
-    
-    return response.json();
+  // MMS-14: Record a Tenant Payment
+  async recordPayment(paymentData: PaymentRequest): Promise<Payment> {
+    const response = await API.post<Payment>('/api/payments', paymentData);
+    return response.data;
   },
 
-  // Get Payments by Invoice
-  getPaymentsByInvoice: async (invoiceId: number): Promise<Payment[]> => {
-    const response = await fetch(`${API_BASE_URL}/payments/invoice/${invoiceId}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch payments');
-    }
-    
-    const data = await response.json();
-    return data;
-  },
-
-  // Get Payments by Tenant
-  getPaymentsByTenant: async (tenantId: number): Promise<Payment[]> => {
-    const response = await fetch(`${API_BASE_URL}/payments/tenant/${tenantId}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch payments');
-    }
-    
-    const data = await response.json();
-    return data;
-  },
-
-  // Get All Payments with filters
-  getPayments: async (startDate?: string, endDate?: string): Promise<Payment[]> => {
-    let url = `${API_BASE_URL}/payments`;
+  // Get all payments
+  async getPayments(startDate?: string, endDate?: string): Promise<Payment[]> {
+    const params: any = {};
     if (startDate && endDate) {
-      url += `/date-range?startDate=${startDate}&endDate=${endDate}`;
+      params.startDate = startDate;
+      params.endDate = endDate;
     }
     
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch payments');
-    }
-    
-    const data = await response.json();
-    return data;
+    const response = await API.get<Payment[]>('/api/payments', { params });
+    return response.data;
   },
 
-  // Get Payment by ID
-  getPaymentById: async (paymentId: number): Promise<Payment> => {
-    const response = await fetch(`${API_BASE_URL}/payments/${paymentId}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch payment');
-    }
-    
-    return response.json();
+  // Get payments by invoice ID
+  async getPaymentsByInvoiceId(invoiceId: number): Promise<Payment[]> {
+    const response = await API.get<Payment[]>(`/api/payments/invoice/${invoiceId}`);
+    return response.data;
   },
 
-  // Void Payment
-  voidPayment: async (paymentId: number, reason: string, userId: number): Promise<Payment> => {
-    const response = await fetch(`${API_BASE_URL}/payments/${paymentId}/void?reason=${encodeURIComponent(reason)}&userId=${userId}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to void payment');
-    }
-    
-    return response.json();
+  // Get payments by tenant ID
+  async getPaymentsByTenantId(tenantId: number): Promise<Payment[]> {
+    const response = await API.get<Payment[]>(`/api/payments/tenant/${tenantId}`);
+    return response.data;
   },
 
-  // Generate Receipt
-  generateReceipt: async (paymentId: number): Promise<Blob> => {
-    const response = await fetch(`${API_BASE_URL}/payments/${paymentId}/receipt`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
+  // MMS-15: Generate Payment Receipt
+  async generateReceipt(paymentId: number): Promise<Blob> {
+    const response = await API.get(`/api/payments/${paymentId}/receipt`, {
+      responseType: 'blob'
     });
-    
-    if (!response.ok) {
-      throw new Error('Failed to generate receipt');
-    }
-    
-    return response.blob();
+    return response.data;
   },
 
-  // Get Payment Audit Log
-  getPaymentAuditLog: async (paymentId: number): Promise<PaymentAuditLog[]> => {
-    const response = await fetch(`${API_BASE_URL}/payment-audit-logs/payment/${paymentId}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch audit log');
-    }
-    
-    const data = await response.json();
-    return data;
+voidPayment: async (paymentId: number, reason: string, changedByUserId: number) => {
+  const response = await API.put(`/api/payments/${paymentId}/void?reason=${encodeURIComponent(reason)}&changedByUserId=${changedByUserId}`);
+  return response.data;
+},
+
+  // MMS-43: Get Payment Audit Logs
+  async getAllAuditLogs(): Promise<PaymentAuditLog[]> {
+    const response = await API.get<PaymentAuditLog[]>('/api/payment-audit-logs');
+    return response.data;
   },
 
-  // Get All Audit Logs
-  getAllAuditLogs: async (): Promise<PaymentAuditLog[]> => {
-    const response = await fetch(`${API_BASE_URL}/payment-audit-logs`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch audit logs');
-    }
-    
-    const data = await response.json();
-    return data;
-  }
-};
-
-export const invoiceApi = {
-  // Get Invoices by Tenant
-  getInvoicesByTenant: async (tenantId: number): Promise<Invoice[]> => {
-    const response = await fetch(`${API_BASE_URL}/invoices/tenant/${tenantId}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch invoices');
-    }
-    
-    const data = await response.json();
-    return data;
+  async getAuditLogsByPaymentId(paymentId: number): Promise<PaymentAuditLog[]> {
+    const response = await API.get<PaymentAuditLog[]>(`/api/payment-audit-logs/payment/${paymentId}`);
+    return response.data;
   },
 
-  // Get Overdue Invoices
-  getOverdueInvoices: async (): Promise<Invoice[]> => {
-    const response = await fetch(`${API_BASE_URL}/invoices/overdue`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch overdue invoices');
-    }
-    
-    const data = await response.json();
-    return data;
+  async getAuditLogsByUserId(userId: number): Promise<PaymentAuditLog[]> {
+    const response = await API.get<PaymentAuditLog[]>(`/api/payment-audit-logs/user/${userId}`);
+    return response.data;
   },
 
-  // Get Invoice by ID
-  getInvoiceById: async (invoiceId: number): Promise<Invoice> => {
-    const response = await fetch(`${API_BASE_URL}/invoices/${invoiceId}`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch invoice');
-    }
-    
-    return response.json();
+  // Search payments
+  async searchPaymentsByTenantName(tenantName: string): Promise<Payment[]> {
+    const response = await API.get<Payment[]>(`/api/payments/search?tenantName=${encodeURIComponent(tenantName)}`);
+    return response.data;
+  },
+
+  // Get total paid amount for invoice
+  async getTotalPaidAmount(invoiceId: number): Promise<number> {
+    const response = await API.get<number>(`/api/payments/invoice/${invoiceId}/total-paid`);
+    return response.data;
   }
 };
