@@ -1,4 +1,4 @@
-// Fixed LeaseManagement.tsx
+// components/contracts/LeaseManagement.tsx
 import React, { useState } from 'react';
 import type { Contract } from '../../types/contract';
 import { contractApi } from '../../api/ContractAPI';
@@ -6,7 +6,8 @@ import { ContractList } from '../../components/contracts/ContractList';
 import { Button } from '../../components/common/ui/Button';
 import { ContractForm } from '../../components/contracts/ContractForm';
 import { ContractDetail } from '../../components/contracts/ContractDetail';
-import DeleteConfirmationModal from '../../components/tenant/DeleteConfirmationModal';
+import { TerminationModal } from '../../components/contracts/TerminationModal';
+
 
 type ViewMode = 'list' | 'create' | 'edit' | 'view' | 'renew';
 
@@ -16,70 +17,17 @@ export const LeaseManagement: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [listRefreshKey, setListRefreshKey] = useState(0);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [contractToDelete, setContractToDelete] = useState<Contract | null>(null);
+  const [showTerminationModal, setShowTerminationModal] = useState(false);
+  const [contractToTerminate, setContractToTerminate] = useState<Contract | null>(null);
 
-  const refreshList = () => setListRefreshKey(Date.now());
+  const refreshList = () => setListRefreshKey(prev => prev + 1);
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
     setTimeout(() => setMessage(null), 5000);
   };
 
-  // Handle terminate contract with confirmation modal
-  const handleTerminateContract = (contract: Contract) => {
-    setContractToDelete(contract);
-    setShowDeleteModal(true);
-  };
-
-  const handleConfirmTerminate = async () => {
-    if (!contractToDelete) return;
-
-    setLoading(true);
-    try {
-      await contractApi.terminate(contractToDelete.id);
-      showMessage('success', `Contract ${contractToDelete.contractNumber} terminated successfully!`);
-      refreshList();
-      setCurrentView('list');
-      setSelectedContract(null);
-    } catch (error: any) {
-      console.error('Error terminating contract:', error);
-      showMessage('error', error.response?.data?.error || 'Failed to terminate contract');
-    } finally {
-      setLoading(false);
-      setShowDeleteModal(false);
-      setContractToDelete(null);
-    }
-  };
-
-  const handleCancelTerminate = () => {
-    setShowDeleteModal(false);
-    setContractToDelete(null);
-  };
-
-  const handleRenewContract = (contract: Contract) => {
-    setSelectedContract(contract);
-    setCurrentView('renew');
-  };
-
-  const handleRenewContractSubmit = async (formData: FormData) => {
-    if (!selectedContract) return;
-
-    setLoading(true);
-    try {
-      await contractApi.renew(selectedContract.id, formData);
-      showMessage('success', `Contract ${selectedContract.contractNumber} renewed successfully!`);
-      refreshList();
-      setCurrentView('list');
-      setSelectedContract(null);
-    } catch (error: any) {
-      console.error('Error renewing contract:', error);
-      showMessage('error', error.response?.data?.error || 'Failed to renew contract');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Contract Creation
   const handleCreateContract = async (formData: FormData) => {
     setLoading(true);
     try {
@@ -95,6 +43,7 @@ export const LeaseManagement: React.FC = () => {
     }
   };
 
+  // Contract Editing
   const handleEditContract = async (formData: FormData) => {
     if (!selectedContract) return;
 
@@ -113,6 +62,44 @@ export const LeaseManagement: React.FC = () => {
     }
   };
 
+  // Contract Renewal
+  const handleRenewContract = async (formData: FormData) => {
+    if (!selectedContract) return;
+
+    setLoading(true);
+    try {
+      await contractApi.renew(selectedContract.id, formData);
+      showMessage('success', `Contract ${selectedContract.contractNumber} renewed successfully!`);
+      refreshList();
+      setCurrentView('list');
+      setSelectedContract(null);
+    } catch (error: any) {
+      console.error('Error renewing contract:', error);
+      showMessage('error', error.response?.data?.error || 'Failed to renew contract');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // MMS-6: Contract Termination
+  const handleTerminateContract = (contract: Contract) => {
+    setContractToTerminate(contract);
+    setShowTerminationModal(true);
+  };
+
+  const handleTerminationSuccess = (terminatedContract: Contract) => {
+    showMessage('success', `Contract ${terminatedContract.contractNumber} terminated successfully!`);
+    refreshList();
+    setShowTerminationModal(false);
+    setContractToTerminate(null);
+    
+    // If we're currently viewing the terminated contract, update the view
+    if (selectedContract && selectedContract.id === terminatedContract.id) {
+      setSelectedContract(terminatedContract);
+    }
+  };
+
+  // Navigation Handlers
   const handleViewContract = (contract: Contract) => {
     setSelectedContract(contract);
     setCurrentView('view');
@@ -123,9 +110,9 @@ export const LeaseManagement: React.FC = () => {
     setCurrentView('edit');
   };
 
-  const handleBackToList = () => {
-    setCurrentView('list');
-    setSelectedContract(null);
+  const handleRenewContractView = (contract: Contract) => {
+    setSelectedContract(contract);
+    setCurrentView('renew');
   };
 
   const handleCreateNew = () => {
@@ -133,12 +120,17 @@ export const LeaseManagement: React.FC = () => {
     setSelectedContract(null);
   };
 
+  const handleBackToList = () => {
+    setCurrentView('list');
+    setSelectedContract(null);
+  };
+
   const getViewTitle = () => {
     switch (currentView) {
       case 'create': return 'Create New Contract';
-      case 'edit': return 'Edit Contract';
-      case 'renew': return 'Renew Contract';
-      case 'view': return 'Contract Details';
+      case 'edit': return `Edit Contract ${selectedContract?.contractNumber}`;
+      case 'renew': return `Renew Contract ${selectedContract?.contractNumber}`;
+      case 'view': return `Contract Details - ${selectedContract?.contractNumber}`;
       default: return 'Contracts Management';
     }
   };
@@ -148,8 +140,8 @@ export const LeaseManagement: React.FC = () => {
       case 'create': return 'Fill in the details to create a new rental contract';
       case 'edit': return `Update contract details for ${selectedContract?.contractNumber}`;
       case 'renew': return `Renew contract ${selectedContract?.contractNumber} with new terms`;
-      case 'view': return `Viewing details for ${selectedContract?.contractNumber}`;
-      default: return 'Manage all rental contracts';
+      case 'view': return `Viewing details for contract ${selectedContract?.contractNumber}`;
+      default: return 'Manage all rental contracts and lease agreements';
     }
   };
 
@@ -180,17 +172,19 @@ export const LeaseManagement: React.FC = () => {
           </div>
         )}
 
+        {/* Main Content */}
         {currentView === 'list' && (
           <ContractList
             key={listRefreshKey}
             onViewContract={handleViewContract}
             onEditContract={handleEditContractView}
-            onRenewContract={handleRenewContract}
+            onRenewContract={handleRenewContractView}
             onTerminateContract={handleTerminateContract}
             onCreateContract={handleCreateNew}
           />
         )}
 
+        {/* Form Views (Create, Edit, Renew) */}
         {(currentView === 'create' || currentView === 'edit' || currentView === 'renew') && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="p-6 border-b border-gray-200">
@@ -210,7 +204,7 @@ export const LeaseManagement: React.FC = () => {
                 onSubmit={
                   currentView === 'create' ? handleCreateContract :
                   currentView === 'edit' ? handleEditContract :
-                  handleRenewContractSubmit
+                  handleRenewContract
                 }
                 onCancel={handleBackToList}
                 isLoading={loading}
@@ -222,26 +216,42 @@ export const LeaseManagement: React.FC = () => {
           </div>
         )}
 
+        {/* Contract Detail View */}
         {currentView === 'view' && selectedContract && (
-          <ContractDetail
-            contractId={selectedContract.id}
-            onBack={handleBackToList}
-            onEdit={handleEditContractView}
-            onRenew={handleRenewContract}
-            onTerminate={handleTerminateContract}
-          />
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{getViewTitle()}</h1>
+                  <p className="text-gray-600 mt-1">{getViewDescription()}</p>
+                </div>
+                <Button onClick={handleBackToList} variant="secondary">
+                  Back to List
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <ContractDetail
+                contractId={selectedContract.id}
+                onBack={handleBackToList}
+                onEdit={handleEditContractView}
+                onRenew={handleRenewContractView}
+                onTerminate={handleTerminateContract}
+              />
+            </div>
+          </div>
         )}
 
-        {/* Delete Confirmation Modal */}
-        <DeleteConfirmationModal
-          isOpen={showDeleteModal}
-          onConfirm={handleConfirmTerminate}
-          onCancel={handleCancelTerminate}
-          title="Terminate Contract"
-          message={`Are you sure you want to terminate contract "${contractToDelete?.contractNumber}"? This action cannot be undone.`}
-          isLoading={loading}
-          confirmText="Terminate"
-        />
+        {/* MMS-6: Termination Modal */}
+        {showTerminationModal && contractToTerminate && (
+          <TerminationModal
+            isOpen={showTerminationModal}
+            onClose={() => setShowTerminationModal(false)}
+            onSuccess={handleTerminationSuccess}
+            contract={contractToTerminate}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 // api/ContractAPI.ts
 import API from "./api";
-import type { Contract, CreateContractRequest, ContractStatus } from "../types/contract";
+import type { Contract, CreateContractRequest, ContractStatus, LeaseTerminationRequest, TerminationResult, TerminationPreview } from "../types/contract";
 
 export const contractApi = {
   // Create new contract with file upload
@@ -44,7 +44,7 @@ export const contractApi = {
   checkRoomAvailability: (roomId: number) => 
     API.get<boolean>(`/api/contracts/room/${roomId}/available`),
 
-  // Terminate contract
+  // Terminate contract(old method)
   terminate: (id: number) => 
     API.patch<Contract>(`/api/contracts/${id}/terminate`),
 
@@ -104,4 +104,8 @@ export const contractApi = {
   // Delete file from contract
   deleteFile: (id: number) => 
     API.delete<Contract>(`/api/contracts/${id}/file`),
+
+  terminateWithDetails: (id: number, terminationData: LeaseTerminationRequest) =>
+    API.post<TerminationResult>(`/api/contracts/${id}/terminate`, terminationData),
+
 };
