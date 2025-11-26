@@ -10,6 +10,7 @@ import PaymentHistory from "../../components/tenant/PaymentHistory";
 import MyContract from "../../components/tenant/MyContract";
 import MaintenanceRequests from "../../components/tenant/MaintenanceRequests";
 import { TenantAnnouncements } from "../../components/tenant/TenantAnnouncements";
+import MyReminders from "../../components/tenant/MyReminders";
 
 const TenantDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -31,6 +32,7 @@ const TenantDashboard: React.FC = () => {
     if (location.pathname.includes("payment-history")) return "Payment History";
     if (location.pathname.includes("contract")) return "My Contract";
     if (location.pathname.includes("announcements")) return "Announcements";
+    if (location.pathname.includes("reminders")) return "Reminders";
     if (location.pathname.includes("maintenance"))
       return "Maintenance Requests";
     return "Tenant Dashboard";
@@ -78,6 +80,7 @@ const TenantDashboard: React.FC = () => {
                   path="/announcements"
                   element={<TenantAnnouncements />}
                 />
+                <Route path="/reminders" element={<MyReminders />} />
                 <Route path="/maintenance" element={<MaintenanceRequests />} />
               </Routes>
             </div>

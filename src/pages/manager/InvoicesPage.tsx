@@ -48,6 +48,8 @@ export default function InvoicesPage() {
   const viewPdf = async (invoice: InvoiceDTO) => {
     if (!invoice.id) return toast.error("PDF not available");
 
+    const apiUrl = `/api/invoices/download/${invoice.id}`;
+
     try {
       const res = await invoiceApi.downloadPDF(invoice.id);
       const url = window.URL.createObjectURL(
@@ -55,6 +57,10 @@ export default function InvoicesPage() {
       );
       const newWindow = window.open(url, "_blank");
       if (!newWindow) toast.error("Popup blocked by browser");
+      else
+        console.log(
+          `Successfully opened PDF for invoice ${invoice.invoiceNumber}.  API URL: ${apiUrl}`
+        );
     } catch (err) {
       console.error("Failed to view PDF:", err);
       toast.error("PDF not available");
@@ -64,6 +70,8 @@ export default function InvoicesPage() {
   /** Download PDF using API */
   const downloadPdf = async (invoice: InvoiceDTO) => {
     if (!invoice.id) return toast.error("PDF not available");
+
+    const apiUrl = `/api/invoices/download/${invoice.id}`;
 
     try {
       const res = await invoiceApi.downloadPDF(invoice.id);
@@ -76,6 +84,9 @@ export default function InvoicesPage() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      console.log(
+        `Successfully downloaded PDF for invoice ${invoice.invoiceNumber}. API URL: ${apiUrl}`
+      );
     } catch (err) {
       console.error("Failed to download PDF:", err);
       toast.error("Download failed");

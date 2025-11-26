@@ -276,3 +276,13 @@ export interface ContractAlert {
   read: boolean; // Whether the alert has been read
   createdAt: string; // Timestamp of creation in ISO format
 }
+
+export interface ReminderDTO {
+  id: number;
+  tenantId: number;
+  invoiceId: number;
+  dueDate: string; // LocalDate → string
+  amount: number; // BigDecimal → number
+  message: string;
+  invoiceNumber: string;
+}
