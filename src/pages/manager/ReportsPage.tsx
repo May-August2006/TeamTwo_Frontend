@@ -3,10 +3,12 @@ import React, { useState } from 'react';
 import { TenantContractSummary } from '../../components/reports/TenantContractSummary';
 import { VacantOccupiedUnitsReport } from '../../components/reports/VacantOccupiedUnitsReport';
 import { ExpiringContractsReport } from '../../components/reports/ExpiringContractsReport';
+import { ContractHistoryReport } from '../../components/reports/ContractHistoryReport';
 type ReportType = 
   | 'TENANT_CONTRACT_SUMMARY' 
   | 'EXPIRING_CONTRACTS' 
   | 'VACANT_OCCUPIED_UNITS' 
+  | 'CONTRACT_HISTORY'
   | 'MONTHLY_BILLING_SUMMARY' 
   | 'UTILITY_CONSUMPTION' 
   | 'OUTSTANDING_BALANCES' 
@@ -36,6 +38,15 @@ export const ReportsPage: React.FC = () => {
       description: "Occupancy statistics for the mall",
       icon: "🏢"
     },
+
+// Add to the reportTypes array
+{
+  id: 'CONTRACT_HISTORY' as ReportType,
+  title: "Contract History Report",
+  description: "Complete history of contract changes, renewals, and terminations",
+  icon: "📋"
+},
+
     {
       id: 'MONTHLY_BILLING_SUMMARY' as ReportType,
       title: "Monthly Billing Summary",
@@ -83,7 +94,8 @@ export const ReportsPage: React.FC = () => {
         return <TenantContractSummary onBack={handleBackToReports} />;
       case 'EXPIRING_CONTRACTS':
   return <ExpiringContractsReport onBack={handleBackToReports} />;
- 
+ case 'CONTRACT_HISTORY':
+  return <ContractHistoryReport onBack={handleBackToReports} />;
 
 // Update the renderActiveReport function:
 case 'VACANT_OCCUPIED_UNITS':

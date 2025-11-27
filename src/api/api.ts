@@ -26,7 +26,7 @@ interface RefreshTokenResponse {
 
 // Create Axios instance
 const API: AxiosInstance = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: "http://localhost:8081",
 });
 
 // Helper: refresh access token using refresh token
@@ -39,7 +39,7 @@ export const tryRefreshToken = async (): Promise<boolean> => {
 
   try {
     const res = await axios.post<RefreshTokenResponse>(
-      "http://localhost:8080/api/auth/refresh-token",
+      "http://localhost:8081/api/auth/refresh-token",
       { refreshToken }
     );
 
