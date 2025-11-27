@@ -2,19 +2,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { appointmentApi } from "../../api/appointmentApi";
-import type { AppointmentDTO } from "../../types";
 import { useAppointmentsWebSocket } from "../../hooks/useAppointmentsWebSocket";
+import type { AppointmentDTO } from "../../types";
 import { AppointmentNotifications } from "../../components/notifications/AppointmentNotifications";
 
 export default function AppointmentManagementPage() {
   const managerId = Number(localStorage.getItem("userId"));
   const jwtToken = localStorage.getItem("accessToken") || "";
+  const navigate = useNavigate();
 
-  const { appointments, setAppointments, sendStatusUpdate, connected } =
-    useAppointmentsWebSocket(jwtToken, managerId);
+  const {
+    appointments,
+    setAppointments,
+    sendStatusUpdate,
+    connected,
+    newAppointment,
+  } = useAppointmentsWebSocket(jwtToken, managerId);
 
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   const statusOptions: AppointmentDTO["status"][] = [
     "CONFIRMED",
@@ -22,33 +27,34 @@ export default function AppointmentManagementPage() {
     "CANCELLED",
   ];
 
-  // Load initial appointments
   const loadAppointments = async () => {
     try {
       const res = await appointmentApi.getByManager(managerId);
       setAppointments(res.data);
     } catch (err) {
-      console.error("Failed to load appointments", err);
+      console.error("Failed to load appointments:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (managerId) loadAppointments();
-  }, [managerId]);
+    loadAppointments();
+  }, []);
 
   const updateStatus = async (id: number, status: string) => {
     try {
       await appointmentApi.updateStatus(id, status as any, managerId);
 
+      // Update UI immediately
       setAppointments((prev) =>
         prev.map((a) => (a.id === id ? { ...a, status } : a))
       );
 
+      // Notify WebSocket listeners
       sendStatusUpdate(id, status);
-    } catch (error) {
-      console.error("Status update failed:", error);
+    } catch (err) {
+      console.error("Status update failed:", err);
     }
   };
 
@@ -58,7 +64,7 @@ export default function AppointmentManagementPage() {
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">Appointments</h2>
-        <AppointmentNotifications socketAppointments={appointments} />
+        <AppointmentNotifications newAppointment={newAppointment} />
       </div>
 
       <div className="bg-white shadow rounded-lg divide-y">
@@ -85,7 +91,7 @@ export default function AppointmentManagementPage() {
                 <button
                   key={status}
                   onClick={(e) => {
-                    e.stopPropagation(); // Prevent row navigation
+                    e.stopPropagation();
                     updateStatus(a.id, status);
                   }}
                   className={`px-3 py-1 rounded text-white text-sm font-medium ${
@@ -102,13 +108,14 @@ export default function AppointmentManagementPage() {
             </div>
           </div>
         ))}
+
         {appointments.length === 0 && (
-          <p className="p-4 text-gray-500 text-center">No appointments found</p>
+          <p className="p-4 text-gray-500 text-center">No appointments</p>
         )}
       </div>
 
       <p className="mt-4 text-sm text-gray-500">
-        WebSocket status: {connected ? "Connected" : "Disconnected"}
+        WebSocket: {connected ? "🟢 Connected" : "🔴 Disconnected"}
       </p>
     </div>
   );

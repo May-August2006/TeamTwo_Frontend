@@ -4,30 +4,28 @@ import { useState, useEffect, useRef } from "react";
 import type { AppointmentDTO } from "../../types";
 
 interface Props {
-  socketAppointments: AppointmentDTO[];
+  newAppointment: AppointmentDTO | null;
 }
 
-export function AppointmentNotifications({ socketAppointments }: Props) {
+export function AppointmentNotifications({ newAppointment }: Props) {
   const [notifications, setNotifications] = useState<AppointmentDTO[]>([]);
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
 
-  // Track IDs we've already shown in notifications
+  // Track shown IDs
   const seenIds = useRef<Set<number>>(new Set());
 
   useEffect(() => {
-    if (socketAppointments.length === 0) return;
+    if (!newAppointment) return;
 
-    const latest = socketAppointments[socketAppointments.length - 1];
+    // Avoid duplicates
+    if (!seenIds.current.has(newAppointment.id)) {
+      seenIds.current.add(newAppointment.id);
 
-    // Only add if it's truly new
-    if (!seenIds.current.has(latest.id)) {
-      seenIds.current.add(latest.id);
-
-      setNotifications((prev) => [latest, ...prev]); // prepend to show newest on top
+      setNotifications((prev) => [newAppointment, ...prev]);
       setUnread((prev) => prev + 1);
     }
-  }, [socketAppointments]);
+  }, [newAppointment]);
 
   const markAsRead = () => {
     setUnread(0);
@@ -36,10 +34,8 @@ export function AppointmentNotifications({ socketAppointments }: Props) {
 
   return (
     <div className="relative">
-      {/* Bell Icon */}
       <button onClick={markAsRead} className="relative p-2">
         <Bell size={24} />
-
         {unread > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">
             {unread}
@@ -47,7 +43,6 @@ export function AppointmentNotifications({ socketAppointments }: Props) {
         )}
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div className="absolute right-0 mt-2 w-80 bg-white shadow-lg rounded-lg border p-3 z-50">
           <h3 className="font-semibold mb-2">Recent Appointments</h3>
