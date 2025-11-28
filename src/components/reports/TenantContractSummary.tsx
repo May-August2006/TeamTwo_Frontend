@@ -4,7 +4,6 @@ import { contractApi } from '../../api/ContractAPI';
 import type { Contract, ContractStatus } from '../../types/contract';
 import { Button } from '../common/ui/Button';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
-
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -71,12 +70,12 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
     }
   };
 
-  // Get unique business types from contracts
   const businessTypes = useMemo(() => {
-    return Array.from(new Set(contracts
-      .map(contract => contract.tenant?.businessType)
-      .filter(Boolean) as string[]
-    )).sort();
+    const types = contracts
+      .map(contract => contract.tenant?.businessType || 'Unknown Business Type')
+      .filter(type => type !== 'Unknown Business Type');
+    
+    return Array.from(new Set(types)).sort();
   }, [contracts]);
 
   // Filter contracts based on selected filters and search
@@ -88,8 +87,8 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
       }
 
       // Business type filter
-      const businessType = contract.tenant?.businessType;
-      if (businessType && businessTypeFilter[businessType] === false) {
+      const businessType = contract.tenant?.businessType || 'Unknown';
+      if (businessTypeFilter[businessType] === false) {
         return false;
       }
 
@@ -100,7 +99,7 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
           contract.tenant?.tenantName?.toLowerCase().includes(searchLower) ||
           contract.contractNumber?.toLowerCase().includes(searchLower) ||
           contract.room?.roomNumber?.toLowerCase().includes(searchLower) ||
-          contract.tenant?.businessType?.toLowerCase().includes(searchLower)
+          (businessType && businessType.toLowerCase().includes(searchLower))
         );
       }
 
@@ -174,143 +173,167 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
     );
   };
 
+  const exportToExcel = () => {
+    const data = filteredContracts.map(contract => ({
+      'Tenant Name': contract.tenant?.tenantName || '',
+      'Contract No.': contract.contractNumber || '',
+      'Room No.': contract.room?.roomNumber || '',
+      'Size (sqm)': contract.room?.roomSpace || '',
+      'Start Date': contract.startDate ? new Date(contract.startDate) : '',
+      'End Date': contract.endDate ? new Date(contract.endDate) : '',
+      'Rental Fee (MMK)': contract.rentalFee || 0,
+      'Business Type': contract.tenant?.businessType || '',
+      'Contract Status': contract.contractStatus?.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || ''
+    }));
 
-// Your existing Excel export (with improvements)
-const exportToExcel = () => {
-  const data = filteredContracts.map(contract => ({
-    'Tenant Name': contract.tenant?.tenantName || '',
-    'Contract No.': contract.contractNumber || '',
-    'Room No.': contract.room?.roomNumber || '',
-    'Size (sqm)': contract.room?.roomSpace || '',
-    'Start Date': contract.startDate ? new Date(contract.startDate) : '',
-    'End Date': contract.endDate ? new Date(contract.endDate) : '',
-    'Rental Fee (MMK)': contract.rentalFee || 0,
-    'Business Type': contract.tenant?.businessType || '',
-    'Contract Status': contract.contractStatus?.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || ''
-  }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    
+    // Auto-adjust column widths
+    const colWidths = [
+      { wch: 25 }, // Tenant Name
+      { wch: 15 }, // Contract No.
+      { wch: 10 }, // Room No.
+      { wch: 12 }, // Size
+      { wch: 12 }, // Start Date
+      { wch: 12 }, // End Date
+      { wch: 15 }, // Rental Fee
+      { wch: 20 }, // Business Type
+      { wch: 15 }  // Contract Status
+    ];
+    worksheet['!cols'] = colWidths;
 
-  const worksheet = XLSX.utils.json_to_sheet(data);
-  
-  // Auto-adjust column widths
-  const colWidths = [
-    { wch: 25 }, // Tenant Name
-    { wch: 15 }, // Contract No.
-    { wch: 10 }, // Room No.
-    { wch: 12 }, // Size
-    { wch: 12 }, // Start Date
-    { wch: 12 }, // End Date
-    { wch: 15 }, // Rental Fee
-    { wch: 20 }, // Business Type
-    { wch: 15 }  // Contract Status
-  ];
-  worksheet['!cols'] = colWidths;
+    // Set date formatting
+    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+    for (let row = range.s.r + 1; row <= range.e.r; row++) {
+      ['E', 'F'].forEach(col => { // E=Start Date, F=End Date
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col.charCodeAt(0) - 65 });
+        if (worksheet[cellAddress]) {
+          worksheet[cellAddress].z = 'yyyy-mm-dd';
+        }
+      });
+    }
 
-  // Set date formatting
-  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-  for (let row = range.s.r + 1; row <= range.e.r; row++) {
-    ['E', 'F'].forEach(col => { // E=Start Date, F=End Date
-      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col.charCodeAt(0) - 65 });
-      if (worksheet[cellAddress]) {
-        worksheet[cellAddress].z = 'yyyy-mm-dd';
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tenant Contracts');
+    
+    XLSX.writeFile(workbook, `tenant-contract-summary-${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const exportToPDF = async () => {
+    const doc = new jsPDF();
+    
+    // Logo configuration
+    const logoUrl = '/src/assets/SeinGayHarLogo.png';
+    const logoWidth = 30;
+    const logoHeight = 15;
+    const logoX = doc.internal.pageSize.width - logoWidth - 14;
+    const logoY = 10;
+
+    try {
+      if (logoUrl) {
+        doc.addImage(logoUrl, 'PNG', logoX, logoY, logoWidth, logoHeight);
       }
-    });
-  }
+    } catch (error) {
+      console.warn('Could not load logo:', error);
+    }
 
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Tenant Contracts');
-  
-  XLSX.writeFile(workbook, `tenant-contract-summary-${new Date().toISOString().split('T')[0]}.xlsx`);
-};
-
-// NEW: PDF Export function
-const exportToPDF = () => {
-  // Create new PDF document
-  const doc = new jsPDF();
-  
-  // Title
-  doc.setFontSize(16);
-  doc.setTextColor(40, 40, 40);
-  doc.text('Tenant Contract Summary Report', 14, 15);
-  
-  // Subtitle
-  doc.setFontSize(10);
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Generated on: ${new Date().toLocaleDateString()} | Total Records: ${filteredContracts.length}`, 14, 22);
-  
-  // Prepare table data
-  const tableData = filteredContracts.map(contract => [
-    contract.tenant?.tenantName || '-',
-    contract.contractNumber || '-',
-    contract.room?.roomNumber || '-',
-    contract.room?.roomSpace ? `${contract.room.roomSpace}` : '-',
-    contract.startDate ? new Date(contract.startDate).toLocaleDateString() : '-',
-    contract.endDate ? new Date(contract.endDate).toLocaleDateString() : '-',
-    contract.rentalFee ? contract.rentalFee.toLocaleString() + ' MMK' : '-',
-    contract.tenant?.businessType || '-',
-    contract.contractStatus?.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '-'
-  ]);
-
-  // Define table columns
-  const tableColumns = [
-    { header: 'Tenant Name', dataKey: 'tenantName' },
-    { header: 'Contract No.', dataKey: 'contractNumber' },
-    { header: 'Room No.', dataKey: 'roomNumber' },
-    { header: 'Size (sqm)', dataKey: 'size' },
-    { header: 'Start Date', dataKey: 'startDate' },
-    { header: 'End Date', dataKey: 'endDate' },
-    { header: 'Rental Fee', dataKey: 'rentalFee' },
-    { header: 'Business Type', dataKey: 'businessType' },
-    { header: 'Status', dataKey: 'status' }
-  ];
-
-  // Add table to PDF
-  autoTable(doc, {
-    head: [tableColumns.map(col => col.header)],
-    body: tableData,
-    startY: 30,
-    styles: {
-      fontSize: 8,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [59, 130, 246], // Blue color
-      textColor: 255,
-      fontStyle: 'bold',
-    },
-    alternateRowStyles: {
-      fillColor: [249, 250, 251], // Light gray
-    },
-    columnStyles: {
-      0: { cellWidth: 25 }, // Tenant Name
-      1: { cellWidth: 20 }, // Contract No.
-      2: { cellWidth: 14 }, // Room No.
-      3: { cellWidth: 18 }, // Size
-      4: { cellWidth: 20 }, // Start Date
-      5: { cellWidth: 20 }, // End Date
-      6: { cellWidth: 25 }, // Rental Fee
-      7: { cellWidth: 25 }, // Business Type
-      8: { cellWidth: 18 }, // Contract Status
-    },
-    margin: { top: 30 },
-  });
-
-  // Add footer with page numbers
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
+    // Title
+    const titleX = 14;
+    
+    doc.setFontSize(16);
+    doc.setTextColor(40, 40, 40);
+    doc.text('Tenant Contract Summary Report', titleX, 20);
+    
+    // Subtitle
+    doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    doc.text(
-      `Page ${i} of ${pageCount} | Generated on ${new Date().toLocaleDateString()}`,
-      doc.internal.pageSize.width / 2,
-      doc.internal.pageSize.height - 10,
-      { align: 'center' }
-    );
-  }
+    doc.text(`Generated on: ${new Date().toLocaleDateString()} | Total Records: ${filteredContracts.length}`, titleX, 27);
+    
+    // Prepare table data
+    const tableData = filteredContracts.map(contract => [
+      contract.tenant?.tenantName || '-',
+      contract.contractNumber || '-',
+      contract.room?.roomNumber || '-',
+      contract.room?.roomSpace ? `${contract.room.roomSpace}` : '-',
+      contract.startDate ? new Date(contract.startDate).toLocaleDateString() : '-',
+      contract.endDate ? new Date(contract.endDate).toLocaleDateString() : '-',
+      contract.rentalFee ? contract.rentalFee.toLocaleString() + ' MMK' : '-',
+      contract.tenant?.businessType || '-',
+      contract.contractStatus?.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '-'
+    ]);
 
-  // Save the PDF
-  doc.save(`tenant-contract-summary-${new Date().toISOString().split('T')[0]}.pdf`);
-};
+    // Define table columns
+    const tableColumns = [
+      { header: 'Tenant Name', dataKey: 'tenantName' },
+      { header: 'Contract No.', dataKey: 'contractNumber' },
+      { header: 'Room No.', dataKey: 'roomNumber' },
+      { header: 'Size (sqm)', dataKey: 'size' },
+      { header: 'Start Date', dataKey: 'startDate' },
+      { header: 'End Date', dataKey: 'endDate' },
+      { header: 'Rental Fee', dataKey: 'rentalFee' },
+      { header: 'Business Type', dataKey: 'businessType' },
+      { header: 'Status', dataKey: 'status' }
+    ];
+
+    // Add table to PDF
+    const startY = 35;
+    
+    autoTable(doc, {
+      head: [tableColumns.map(col => col.header)],
+      body: tableData,
+      startY: startY,
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
+      },
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: 255,
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [249, 250, 251],
+      },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 14 },
+        3: { cellWidth: 18 },
+        4: { cellWidth: 20 },
+        5: { cellWidth: 20 },
+        6: { cellWidth: 25 },
+        7: { cellWidth: 25 },
+        8: { cellWidth: 18 },
+      },
+      margin: { top: startY },
+    });
+
+    // Add footer with page numbers
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      
+      if (i > 1 && logoUrl) {
+        try {
+          const pageLogoX = doc.internal.pageSize.width - logoWidth - 14;
+          doc.addImage(logoUrl, 'PNG', pageLogoX, logoY, logoWidth, logoHeight);
+        } catch (error) {
+          // Continue without logo
+        }
+      }
+      
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text(
+        `Page ${i} of ${pageCount} | Generated on ${new Date().toLocaleDateString()}`,
+        doc.internal.pageSize.width / 2,
+        doc.internal.pageSize.height - 10,
+        { align: 'center' }
+      );
+    }
+
+    doc.save(`tenant-contract-summary-${new Date().toISOString().split('T')[0]}.pdf`);
+  };
 
   if (loading) {
     return (
@@ -367,35 +390,35 @@ const exportToPDF = () => {
           </div>
 
           <div className="flex flex-wrap gap-2">
-  <Button
-    variant="primary"
-    onClick={exportToExcel}
-    className="flex items-center gap-2"
-  >
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-    </svg>
-    Export Excel
-  </Button>
+            <Button
+              variant="primary"
+              onClick={exportToExcel}
+              className="flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Export Excel
+            </Button>
 
-  <Button
-    variant="danger"
-    onClick={exportToPDF}
-    className="flex items-center gap-2"
-  >
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-    </svg>
-    Export PDF
-  </Button>
+            <Button
+              variant="danger"
+              onClick={exportToPDF}
+              className="flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export PDF
+            </Button>
 
-  <Button
-    variant="secondary"
-    onClick={loadContracts}
-  >
-    Refresh Data
-  </Button>
-</div>
+            <Button
+              variant="secondary"
+              onClick={loadContracts}
+            >
+              Refresh Data
+            </Button>
+          </div>
         </div>
       </div>
 

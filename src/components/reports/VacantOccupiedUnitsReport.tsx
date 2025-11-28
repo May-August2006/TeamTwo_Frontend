@@ -305,16 +305,35 @@ const exportToExcel = () => {
   XLSX.writeFile(workbook, `occupancy-report-${new Date().toISOString().split('T')[0]}.xlsx`);
 };
 
-// Export to PDF function  
-const exportToPDF = () => {
+// Export to PDF function with logo on right side
+const exportToPDF = async () => {
   // Create new PDF document
   const doc = new jsPDF('l', 'mm', 'a4');
   
-  // Title
+  // Logo configuration - moved to right side
+  const logoUrl = '/src/assets/SeinGayHarLogo.png';
+  const logoWidth = 30;
+  const logoHeight = 15;
+  const logoX = doc.internal.pageSize.width - logoWidth - 14; // Right side with 14mm margin
+  const logoY = 10;
+
+  try {
+    // Add logo if available
+    if (logoUrl) {
+      doc.addImage(logoUrl, 'PNG', logoX, logoY, logoWidth, logoHeight);
+    }
+  } catch (error) {
+    console.warn('Could not load logo:', error);
+    // Continue without logo if there's an error
+  }
+
+  // Title - remains on left side
+  const titleX = 14;
+  
   doc.setFontSize(18);
   doc.setTextColor(30, 64, 175);
   doc.setFont('helvetica', 'bold');
-  doc.text('VACANT VS OCCUPIED UNITS REPORT', 14, 20);
+  doc.text('VACANT VS OCCUPIED UNITS REPORT', titleX, 20);
   
   // Subtitle
   doc.setFontSize(10);
@@ -324,23 +343,26 @@ const exportToPDF = () => {
     year: 'numeric', 
     month: 'long', 
     day: 'numeric'
-  })}`, 14, 28);
+  })}`, titleX, 28);
   
-  doc.text(`Total Units: ${occupancyStats.totalUnits} | Occupied: ${occupancyStats.occupiedUnits} | Vacant: ${occupancyStats.vacantUnits} | Occupancy Rate: ${occupancyStats.occupancyRate.toFixed(1)}%`, 14, 34);
+  doc.text(`Total Units: ${occupancyStats.totalUnits} | Occupied: ${occupancyStats.occupiedUnits} | Vacant: ${occupancyStats.vacantUnits} | Occupancy Rate: ${occupancyStats.occupancyRate.toFixed(1)}%`, titleX, 34);
 
+  // Rest of your existing PDF code remains the same...
   // Summary Stats
   doc.setFillColor(239, 246, 255);
-  doc.rect(14, 38, 260, 8, 'F');
+  doc.rect(titleX, 38, 260, 8, 'F');
   doc.setFontSize(9);
   doc.setTextColor(30, 64, 175);
   doc.setFont('helvetica', 'bold');
-  doc.text(`OCCUPIED: ${occupancyStats.occupiedUnits} | VACANT: ${occupancyStats.vacantUnits} | OCCUPANCY RATE: ${occupancyStats.occupancyRate.toFixed(1)}%`, 16, 43);
+  doc.text(`OCCUPIED: ${occupancyStats.occupiedUnits} | VACANT: ${occupancyStats.vacantUnits} | OCCUPANCY RATE: ${occupancyStats.occupancyRate.toFixed(1)}%`, titleX + 2, 43);
 
   // Building-wise Table
+  const startY = 50;
+  
   doc.setFontSize(12);
   doc.setTextColor(30, 64, 175);
   doc.setFont('helvetica', 'bold');
-  doc.text('Building-wise Occupancy', 14, 55);
+  doc.text('Building-wise Occupancy', titleX, startY);
 
   const buildingTableData = buildingOccupancy.map(building => [
     building.buildingName,
@@ -354,7 +376,7 @@ const exportToPDF = () => {
   autoTable(doc, {
     head: [['Building', 'Branch', 'Total Units', 'Occupied', 'Vacant', 'Occupancy Rate']],
     body: buildingTableData,
-    startY: 60,
+    startY: startY + 5,
     styles: {
       fontSize: 8,
       cellPadding: 3,
@@ -379,15 +401,24 @@ const exportToPDF = () => {
   
   if (finalY > 180) {
     doc.addPage();
+    // Add logo to new page on right side
+    if (logoUrl) {
+      try {
+        const newPageLogoX = doc.internal.pageSize.width - logoWidth - 14;
+        doc.addImage(logoUrl, 'PNG', newPageLogoX, logoY, logoWidth, logoHeight);
+      } catch (error) {
+        // Continue without logo
+      }
+    }
     doc.setFontSize(12);
     doc.setTextColor(30, 64, 175);
     doc.setFont('helvetica', 'bold');
-    doc.text('Floor-wise Occupancy', 14, 20);
+    doc.text('Floor-wise Occupancy', titleX, 20);
   } else {
     doc.setFontSize(12);
     doc.setTextColor(30, 64, 175);
     doc.setFont('helvetica', 'bold');
-    doc.text('Floor-wise Occupancy', 14, finalY);
+    doc.text('Floor-wise Occupancy', titleX, finalY);
   }
 
   const floorTableData = floorOccupancy.map(floor => [
@@ -424,10 +455,19 @@ const exportToPDF = () => {
 
   // Room Details Table (on new page)
   doc.addPage();
+  // Add logo to new page on right side
+  if (logoUrl) {
+    try {
+      const newPageLogoX = doc.internal.pageSize.width - logoWidth - 14;
+      doc.addImage(logoUrl, 'PNG', newPageLogoX, logoY, logoWidth, logoHeight);
+    } catch (error) {
+      // Continue without logo
+    }
+  }
   doc.setFontSize(12);
   doc.setTextColor(30, 64, 175);
   doc.setFont('helvetica', 'bold');
-  doc.text('Detailed Room Status', 14, 20);
+  doc.text('Detailed Room Status', titleX, 20);
 
   const roomTableData = roomStatus.map(room => [
     room.roomNumber,
