@@ -1,10 +1,11 @@
 /** @format */
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { DashboardHeader } from "./ManagerHeader";
-import { DashboardSidebar } from "./ManagerSidebar";
+import { useNavigate, useLocation } from "react-router-dom";
+import { ManagerHeader } from "./ManagerHeader";
+import { ManagerSidebar } from "./ManagerSidebar";
 import { ToastProvider } from "../../context/ToastContext";
+import { useAuth } from "../../context/AuthContext";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -19,6 +20,8 @@ export const ManagerDashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const { logout } = useAuth();
 
   // ✅ Resize handler (keeps sidebar responsive)
   const handleResize = useCallback(() => {
@@ -67,31 +70,37 @@ export const ManagerDashboardLayout: React.FC<DashboardLayoutProps> = ({
     if (isMobile) handleDrawerClose();
   };
 
+  // ✅ Logout handler
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
     <ToastProvider>
       <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
         {/* Sidebar */}
-        <DashboardSidebar
-          mobileOpen={mobileOpen}
+        <ManagerSidebar
+          isOpen={mobileOpen}
+          onClose={handleDrawerClose}
+          currentPath={location.pathname}
+          onNavigate={handleNavigation}
           isCollapsed={isCollapsed}
-          isMobile={isMobile}
-          onDrawerClose={handleDrawerClose}
-          onDrawerTransitionEnd={handleDrawerTransitionEnd}
-          onToggleSidebar={handleDrawerToggle}
-          onNavigation={handleNavigation}
+          onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         />
 
         {/* Main Content */}
         <div
           className={`flex-1 flex flex-col min-h-screen transition-all duration-300
-          ${isMobile ? "" : isCollapsed ? "lg:ml-24" : "lg:ml-80"}
+          ${isMobile ? "" : isCollapsed ? "lg:ml-20" : "lg:ml-64"}
         `}
         >
           {/* Header */}
-          <DashboardHeader
+          <ManagerHeader
             onMenuToggle={handleDrawerToggle}
             sidebarCollapsed={isCollapsed}
             isMobile={isMobile}
+            onLogout={handleLogout}
           />
 
           {/* Page Content */}
