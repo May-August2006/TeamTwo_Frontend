@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import type { Branch } from '../types';
 import { branchApi } from '../api/BranchAPI';
-import '../assets/css/BranchForm.css';
 
 interface BranchFormProps {
   branch?: Branch | null;
@@ -57,23 +56,23 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
   };
 
   return (
-    <div className="branch-form-overlay">
-      <div className="branch-form-container">
-        <div className="branch-form-header">
-          <h2 className="branch-form-title">
+    <div className="fixed inset-0 bg-stone-900 bg-opacity-70 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl shadow-2xl p-6 sm:p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6 pb-4 border-b border-stone-200">
+          <h2 className="text-xl sm:text-2xl font-bold text-stone-900">
             {branch ? 'Edit Branch' : 'Add New Branch'}
           </h2>
           <button
             onClick={onClose}
-            className="branch-form-close-btn"
+            className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition duration-150"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="branch-form">
-          <div className="form-group">
-            <label className="form-label">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">
               Branch Name *
             </label>
             <input
@@ -82,12 +81,13 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
               value={formData.branchName}
               onChange={handleChange}
               required
-              className="form-input"
+              className="w-full border border-stone-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm sm:text-base transition duration-150 shadow-sm"
+              placeholder="Enter branch name"
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">
               Address
             </label>
             <textarea
@@ -95,12 +95,13 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
               value={formData.address}
               onChange={handleChange}
               rows={3}
-              className="form-textarea"
+              className="w-full border border-stone-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm sm:text-base transition duration-150 shadow-sm resize-none"
+              placeholder="Enter branch address"
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">
               Contact Phone
             </label>
             <input
@@ -108,12 +109,13 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
               name="contactPhone"
               value={formData.contactPhone}
               onChange={handleChange}
-              className="form-input"
+              className="w-full border border-stone-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm sm:text-base transition duration-150 shadow-sm"
+              placeholder="Enter contact phone number"
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">
               Contact Email
             </label>
             <input
@@ -121,24 +123,25 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
               name="contactEmail"
               value={formData.contactEmail}
               onChange={handleChange}
-              className="form-input"
+              className="w-full border border-stone-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm sm:text-base transition duration-150 shadow-sm"
+              placeholder="Enter contact email"
             />
           </div>
 
-          <div className="form-actions">
+          <div className="flex flex-col sm:flex-row gap-3 justify-end pt-6 border-t border-stone-200">
             <button
               type="button"
               onClick={onClose}
-              className="cancel-btn"
+              className="px-6 py-3 text-stone-600 border border-stone-300 rounded-lg hover:bg-stone-100 transition duration-150 font-medium text-sm sm:text-base shadow-sm w-full sm:w-auto"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="submit-btn"
+              className="px-6 py-3 bg-red-600 text-white rounded-lg shadow-lg hover:bg-red-700 transition duration-150 font-semibold text-sm sm:text-base focus:outline-none focus:ring-4 focus:ring-red-300 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
             >
-              {loading ? 'Saving...' : branch ? 'Update' : 'Create'}
+              {loading ? 'Saving...' : branch ? 'Update Branch' : 'Create Branch'}
             </button>
           </div>
         </form>

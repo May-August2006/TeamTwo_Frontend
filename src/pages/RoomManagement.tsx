@@ -10,6 +10,7 @@ import type { Room, RoomSearchParams, RoomType } from '../types/room';
 import { useRooms } from '../hooks/useRooms';
 import { getAccessToken, isTokenExpired, clearAuthData } from '../Auth';
 import { Modal } from '../components/common/ui/Modal';
+import { Layers } from 'lucide-react';
 
 export const RoomManagement: React.FC = () => {
   const {
@@ -34,12 +35,11 @@ export const RoomManagement: React.FC = () => {
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [roomTypesLoading, setRoomTypesLoading] = useState(false);
 
-  // Simple auth check - useRoom hook ကနေ auto handle ဖြစ်သွားမယ်
+  // Simple auth check
   useEffect(() => {
     const token = getAccessToken();
     if (!token || isTokenExpired(token)) {
       console.log('Authentication required...');
-      // useRoom hook ကနေ auto redirect ဖြစ်သွားမယ်
     }
   }, []);
 
@@ -77,7 +77,6 @@ export const RoomManagement: React.FC = () => {
     }
   };
 
-  // Handle room creation with FormData
   const handleCreateRoom = async (formData: FormData) => {
     setFormLoading(true);
     const success = await createRoom(formData);
@@ -88,7 +87,6 @@ export const RoomManagement: React.FC = () => {
     }
   };
 
-  // Handle room update with FormData
   const handleUpdateRoom = async (formData: FormData) => {
     if (!editingRoom) return;
     
@@ -102,7 +100,6 @@ export const RoomManagement: React.FC = () => {
     }
   };
 
-  // Handle image removal
   const handleImageRemove = async (roomId: number, imageUrl: string) => {
     try {
       await roomApi.removeImage(roomId, imageUrl);
@@ -270,7 +267,6 @@ export const RoomManagement: React.FC = () => {
     setError(null);
   };
 
-  // Render correct form based on context
   const renderRoomForm = () => {
     if (editingRoom) {
       return (
@@ -293,25 +289,37 @@ export const RoomManagement: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
+        <div className="text-xl font-medium text-stone-700 animate-pulse">Loading Room Management...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6">
-      {/* Main Controls Section - Tabs and Add Button in same line */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+    <div className="p-4 sm:p-8 min-h-screen bg-stone-50">
+      
+      {/* Header and Tabs */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">Room Management</h1>
+          <p className="text-stone-600 mt-1 text-sm sm:text-base">Manage all rooms and room types in your properties.</p>
+        </div>
+
         {/* Tabs Navigation */}
-        <div className="border-b border-gray-200 flex-1">
+        <div className="border-b border-stone-200 flex-1">
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('rooms')}
               className={`py-3 px-4 border-b-2 font-medium text-sm rounded-t-lg transition-colors ${
                 activeTab === 'rooms'
-                  ? 'border-blue-500 text-blue-600 bg-blue-50'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  ? 'border-red-500 text-red-600 bg-red-50'
+                  : 'border-transparent text-stone-500 hover:text-stone-700 hover:bg-stone-100'
               }`}
             >
               <div className="flex items-center">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
+                <Layers className="w-4 h-4 mr-2" />
                 Rooms ({filteredRooms.length})
               </div>
             </button>
@@ -319,8 +327,8 @@ export const RoomManagement: React.FC = () => {
               onClick={() => setActiveTab('roomTypes')}
               className={`py-3 px-4 border-b-2 font-medium text-sm rounded-t-lg transition-colors ${
                 activeTab === 'roomTypes'
-                  ? 'border-green-500 text-green-600 bg-green-50'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  ? 'border-red-500 text-red-600 bg-red-50'
+                  : 'border-transparent text-stone-500 hover:text-stone-700 hover:bg-stone-100'
               }`}
             >
               <div className="flex items-center">
@@ -333,26 +341,26 @@ export const RoomManagement: React.FC = () => {
           </nav>
         </div>
 
-        {/* Add Button - Changes based on active tab */}
+        {/* Add Button */}
         {activeTab === 'rooms' ? (
           <Button
             onClick={openCreateModal}
-            size="sm"
-            className="whitespace-nowrap bg-blue-600 hover:bg-blue-700 text-white"
+            className="whitespace-nowrap bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl shadow-lg transition duration-150 font-semibold focus:outline-none focus:ring-4 focus:ring-red-300 transform active:scale-95"
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14"/>
+              <path d="M12 5v14"/>
             </svg>
             Add Room
           </Button>
         ) : (
           <Button
             onClick={openCreateRoomTypeModal}
-            size="sm"
-            className="whitespace-nowrap bg-green-600 hover:bg-green-700 text-white"
+            className="whitespace-nowrap bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl shadow-lg transition duration-150 font-semibold focus:outline-none focus:ring-4 focus:ring-red-300 transform active:scale-95"
           >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14"/>
+              <path d="M12 5v14"/>
             </svg>
             Add Room Type
           </Button>
@@ -391,7 +399,7 @@ export const RoomManagement: React.FC = () => {
       )}
 
       {/* Content Area */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white shadow-xl rounded-xl overflow-hidden ring-1 ring-stone-200">
         {/* Rooms Tab Content */}
         {activeTab === 'rooms' && (
           <RoomList
@@ -408,18 +416,18 @@ export const RoomManagement: React.FC = () => {
           <div className="p-6">
             {roomTypesLoading ? (
               <div className="flex justify-center items-center py-12">
-                <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {roomTypes.map(roomType => (
-                  <div key={roomType.id} className="bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md transition-shadow p-6">
+                  <div key={roomType.id} className="bg-stone-50 rounded-xl border border-stone-200 hover:shadow-md transition-shadow p-6">
                     <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">{roomType.typeName}</h3>
-                      <div className="flex space-x-2">
+                      <h3 className="text-lg font-bold text-stone-900">{roomType.typeName}</h3>
+                      <div className="flex space-x-1">
                         <button
                           onClick={() => openEditRoomTypeModal(roomType)}
-                          className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Edit"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -428,7 +436,7 @@ export const RoomManagement: React.FC = () => {
                         </button>
                         <button
                           onClick={() => handleDeleteRoomType(roomType.id)}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                          className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Delete"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -437,14 +445,12 @@ export const RoomManagement: React.FC = () => {
                         </button>
                       </div>
                     </div>
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{roomType.description}</p>
-                    <div className="flex justify-between items-center text-xs text-gray-500">
+                    <p className="text-stone-600 text-sm mb-4 line-clamp-2">{roomType.description}</p>
+                    <div className="flex justify-between items-center text-xs text-stone-500">
                       <span>Created: {new Date(roomType.createdAt).toLocaleDateString()}</span>
                       <Button
                         onClick={() => openEditRoomTypeModal(roomType)}
-                        size="sm"
-                        variant="secondary"
-                        className="text-xs"
+                        className="text-xs bg-stone-200 hover:bg-stone-300 text-stone-700"
                       >
                         Edit
                       </Button>
@@ -455,21 +461,17 @@ export const RoomManagement: React.FC = () => {
             )}
 
             {roomTypes.length === 0 && !roomTypesLoading && (
-              <div className="text-center py-12">
-                <div className="text-gray-400 mb-4">
-                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No room types found</h3>
-                <p className="text-gray-500 mb-4">Create your first room type to get started.</p>
+              <div className="text-center py-16 text-stone-500 bg-stone-50 rounded-xl">
+                <div className="text-5xl mb-3">🏢</div>
+                <div className="text-xl font-semibold text-stone-700 mb-2">No Room Types Found</div>
+                <p className="text-sm mb-4">Create your first room type to get started.</p>
                 <Button
                   onClick={openCreateRoomTypeModal}
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-red-600 hover:bg-red-700 text-white"
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 12h14"/>
+                    <path d="M12 5v14"/>
                   </svg>
                   Create Room Type
                 </Button>

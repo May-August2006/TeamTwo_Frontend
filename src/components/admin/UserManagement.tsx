@@ -464,17 +464,20 @@ const UserManagement: React.FC = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6">
+    <div className="p-4 sm:p-6 bg-stone-100 min-h-screen">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">User Management</h2>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">
-            Manage system users and their permissions (MMS-44)
-          </p>
-        </div>
+  <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
+    User Management
+  </h1>
+  <p className="text-stone-600 mt-1 text-sm sm:text-base">
+    Manage system users and their assigned roles and permissions.
+  </p>
+</div>
+
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full sm:w-auto justify-center"
+          className="flex items-center space-x-2 bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-lg transition-colors w-full sm:w-auto justify-center shadow-md"
         >
           <Plus className="w-4 h-4" />
           <span>Add New User</span>
@@ -488,72 +491,72 @@ const UserManagement: React.FC = () => {
       )}
 
       {/* Users Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+      <div className="bg-white rounded-lg shadow-xl border border-stone-200 overflow-hidden mb-6">
         {/* Desktop Table */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-stone-200">
+            <thead className="bg-stone-100">
               <tr>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-neutral-800 uppercase tracking-wider">
                   User
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-neutral-800 uppercase tracking-wider">
                   Role
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-neutral-800 uppercase tracking-wider">
                   Assignment
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-neutral-800 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-neutral-800 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-stone-200">
               {users.map((user) => {
                 const buildingName = getUserBuildingName(user);
                 const branchName = getUserBranchName(user);
                 const hasAssignment = buildingName || branchName;
                 
                 return (
-                  <tr key={user.id} className="hover:bg-gray-50">
+                  <tr key={user.id} className="hover:bg-stone-50 transition-colors">
                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-neutral-800">
                           {user.fullName}
                         </p>
-                        <p className="text-sm text-gray-500">{user.email}</p>
-                        <p className="text-xs text-gray-400">@{user.username}</p>
+                        <p className="text-sm text-stone-500">{user.email}</p>
+                        <p className="text-xs text-stone-400">@{user.username}</p>
                       </div>
                     </td>
-                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-neutral-800">
                       {getRoleDisplayName(user.roleName)}
                     </td>
-                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-neutral-800">
                       {buildingName && (
-                        <div className="flex items-center space-x-1">
+                        <div className="flex items-center space-x-1 text-stone-700">
                           <Building className="w-4 h-4" />
                           <span>{buildingName}</span>
                         </div>
                       )}
                       {branchName && (
-                        <div className="flex items-center space-x-1">
+                        <div className="flex items-center space-x-1 text-stone-700">
                           <Briefcase className="w-4 h-4" />
                           <span>{branchName}</span>
                         </div>
                       )}
                       {!hasAssignment && (
-                        <span className="text-gray-400">Not assigned</span>
+                        <span className="text-stone-400">Not assigned</span>
                       )}
                     </td>
                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           user.isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
+                            ? "bg-green-100 text-green-800" // Kept green for "Active" as it's a standard positive status color
+                            : "bg-red-100 text-red-700" // Using red for "Inactive"
                         }`}
                       >
                         {user.isActive ? "Active" : "Inactive"}
@@ -566,7 +569,7 @@ const UserManagement: React.FC = () => {
                             {buildingName ? (
                               <button
                                 onClick={() => handleRemoveAssignment(user)}
-                                className="text-red-600 hover:text-red-900"
+                                className="text-red-700 hover:text-red-900 transition-colors"
                                 title="Remove from Building"
                               >
                                 <X className="w-4 h-4" />
@@ -574,7 +577,7 @@ const UserManagement: React.FC = () => {
                             ) : (
                               <button
                                 onClick={() => openAssignModal(user, "manager")}
-                                className="text-blue-600 hover:text-blue-900"
+                                className="text-red-700 hover:text-red-900 transition-colors"
                                 title="Assign to Building"
                               >
                                 <Building className="w-4 h-4" />
@@ -587,7 +590,7 @@ const UserManagement: React.FC = () => {
                             {branchName ? (
                               <button
                                 onClick={() => handleRemoveAssignment(user)}
-                                className="text-red-600 hover:text-red-900"
+                                className="text-red-700 hover:text-red-900 transition-colors"
                                 title="Remove from Branch"
                               >
                                 <X className="w-4 h-4" />
@@ -595,7 +598,7 @@ const UserManagement: React.FC = () => {
                             ) : (
                               <button
                                 onClick={() => openAssignModal(user, "accountant")}
-                                className="text-green-600 hover:text-green-900"
+                                className="text-red-700 hover:text-red-900 transition-colors"
                                 title="Assign to Branch"
                               >
                                 <Briefcase className="w-4 h-4" />
@@ -606,7 +609,7 @@ const UserManagement: React.FC = () => {
                         
                         <button 
                           onClick={() => handleEditClick(user)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-stone-600 hover:text-stone-800 transition-colors"
                           title="Edit User"
                         >
                           <Edit className="w-4 h-4" />
@@ -614,7 +617,8 @@ const UserManagement: React.FC = () => {
 
                         <button
                           onClick={() => handleDeleteUser(user.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-700 hover:text-red-900 transition-colors"
+                          title="Delete User"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -635,18 +639,18 @@ const UserManagement: React.FC = () => {
             const hasAssignment = buildingName || branchName;
             
             return (
-              <div key={user.id} className="border-b border-gray-200 p-4">
+              <div key={user.id} className="border-b border-stone-200 p-4 bg-white hover:bg-stone-50 transition-colors">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <p className="font-medium text-gray-900">{user.fullName}</p>
-                        <p className="text-sm text-gray-500">{user.email}</p>
-                        <p className="text-xs text-gray-400">@{user.username}</p>
+                        <p className="font-medium text-neutral-800">{user.fullName}</p>
+                        <p className="text-sm text-stone-500">{user.email}</p>
+                        <p className="text-xs text-stone-400">@{user.username}</p>
                       </div>
                       <button
                         onClick={() => toggleMobileMenu(user.id)}
-                        className="text-gray-400 hover:text-gray-600 ml-2"
+                        className="text-stone-400 hover:text-stone-600 ml-2"
                       >
                         <MoreVertical className="w-5 h-5" />
                       </button>
@@ -654,17 +658,17 @@ const UserManagement: React.FC = () => {
                     
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Role:</span>
-                        <span>{getRoleDisplayName(user.roleName)}</span>
+                        <span className="text-stone-500">Role:</span>
+                        <span className="text-neutral-800">{getRoleDisplayName(user.roleName)}</span>
                       </div>
                       
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Status:</span>
+                        <span className="text-stone-500">Status:</span>
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             user.isActive
                               ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
+                              : "bg-red-100 text-red-700"
                           }`}
                         >
                           {user.isActive ? "Active" : "Inactive"}
@@ -673,8 +677,8 @@ const UserManagement: React.FC = () => {
                       
                       {hasAssignment && (
                         <div className="flex justify-between">
-                          <span className="text-gray-500">Assignment:</span>
-                          <div className="text-right">
+                          <span className="text-stone-500">Assignment:</span>
+                          <div className="text-right text-stone-700">
                             {buildingName && (
                               <div className="flex items-center space-x-1 justify-end">
                                 <Building className="w-3 h-3" />
@@ -696,14 +700,14 @@ const UserManagement: React.FC = () => {
 
                 {/* Mobile Action Menu */}
                 {mobileMenuOpen === user.id && (
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <div className="flex flex-wrap gap-2">
+                  <div className="mt-3 pt-3 border-t border-stone-200">
+                    <div className="flex flex-wrap gap-3">
                       {user.roleName === "ROLE_MANAGER" && (
                         <>
                           {buildingName ? (
                             <button
                               onClick={() => handleRemoveAssignment(user)}
-                              className="flex items-center space-x-1 text-red-600 hover:text-red-900 text-xs"
+                              className="flex items-center space-x-1 text-red-700 hover:text-red-900 text-xs"
                             >
                               <X className="w-3 h-3" />
                               <span>Remove from Building</span>
@@ -711,7 +715,7 @@ const UserManagement: React.FC = () => {
                           ) : (
                             <button
                               onClick={() => openAssignModal(user, "manager")}
-                              className="flex items-center space-x-1 text-blue-600 hover:text-blue-900 text-xs"
+                              className="flex items-center space-x-1 text-red-700 hover:text-red-900 text-xs"
                             >
                               <Building className="w-3 h-3" />
                               <span>Assign to Building</span>
@@ -724,7 +728,7 @@ const UserManagement: React.FC = () => {
                           {branchName ? (
                             <button
                               onClick={() => handleRemoveAssignment(user)}
-                              className="flex items-center space-x-1 text-red-600 hover:text-red-900 text-xs"
+                              className="flex items-center space-x-1 text-red-700 hover:text-red-900 text-xs"
                             >
                               <X className="w-3 h-3" />
                               <span>Remove from Branch</span>
@@ -732,7 +736,7 @@ const UserManagement: React.FC = () => {
                           ) : (
                             <button
                               onClick={() => openAssignModal(user, "accountant")}
-                              className="flex items-center space-x-1 text-green-600 hover:text-green-900 text-xs"
+                              className="flex items-center space-x-1 text-red-700 hover:text-red-900 text-xs"
                             >
                               <Briefcase className="w-3 h-3" />
                               <span>Assign to Branch</span>
@@ -743,7 +747,7 @@ const UserManagement: React.FC = () => {
                       
                       <button 
                         onClick={() => handleEditClick(user)}
-                        className="flex items-center space-x-1 text-blue-600 hover:text-blue-900 text-xs"
+                        className="flex items-center space-x-1 text-stone-600 hover:text-stone-800 text-xs"
                       >
                         <Edit className="w-3 h-3" />
                         <span>Edit</span>
@@ -751,7 +755,7 @@ const UserManagement: React.FC = () => {
 
                       <button
                         onClick={() => handleDeleteUser(user.id)}
-                        className="flex items-center space-x-1 text-red-600 hover:text-red-900 text-xs"
+                        className="flex items-center space-x-1 text-red-700 hover:text-red-900 text-xs"
                       >
                         <Trash2 className="w-3 h-3" />
                         <span>Delete</span>
@@ -767,47 +771,47 @@ const UserManagement: React.FC = () => {
 
       {/* Add User Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">Add New User</h3>
+        <div className="fixed inset-0 bg-neutral-800 bg-opacity-70 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <h3 className="text-lg font-semibold mb-4 text-neutral-800">Add New User</h3>
             <form onSubmit={handleAddUser}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                  <label className="block text-sm font-medium text-stone-700">Full Name</label>
                   <input
                     type="text"
                     required
                     value={newUser.fullName}
                     onChange={(e) => setNewUser({...newUser, fullName: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <label className="block text-sm font-medium text-stone-700">Email</label>
                   <input
                     type="email"
                     required
                     value={newUser.email}
                     onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Username</label>
+                  <label className="block text-sm font-medium text-stone-700">Username</label>
                   <input
                     type="text"
                     required
                     value={newUser.username}
                     onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Role</label>
+                  <label className="block text-sm font-medium text-stone-700">Role</label>
                   <select
                     value={newUser.roleName}
                     onChange={(e) => setNewUser({...newUser, roleName: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
                   >
                     <option value="ROLE_GUEST">Guest</option>
                     <option value="ROLE_TENANT">Tenant</option>
@@ -820,11 +824,11 @@ const UserManagement: React.FC = () => {
                 {/* Building Selection for Managers - Only show available buildings */}
                 {showBuildingSelection && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Assign to Building</label>
+                    <label className="block text-sm font-medium text-stone-700">Assign to Building</label>
                     <select
                       value={newUser.buildingId || ""}
                       onChange={(e) => handleBuildingChange(e.target.value)}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
                     >
                       <option value="">Select a building (optional)</option>
                       {availableBuildings.map((building) => (
@@ -836,7 +840,7 @@ const UserManagement: React.FC = () => {
                         <option value="" disabled>No available buildings</option>
                       )}
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-stone-500 mt-1">
                       Only buildings without managers are shown
                     </p>
                   </div>
@@ -845,11 +849,11 @@ const UserManagement: React.FC = () => {
                 {/* Branch Selection for Accountants - Only show available branches */}
                 {showBranchSelection && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Assign to Branch</label>
+                    <label className="block text-sm font-medium text-stone-700">Assign to Branch</label>
                     <select
                       value={newUser.branchId || ""}
                       onChange={(e) => handleBranchChange(e.target.value)}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
                     >
                       <option value="">Select a branch (optional)</option>
                       {availableBranches.map((branch) => (
@@ -861,7 +865,7 @@ const UserManagement: React.FC = () => {
                         <option value="" disabled>No available branches</option>
                       )}
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-stone-500 mt-1">
                       Only branches without accountants are shown
                     </p>
                   </div>
@@ -871,14 +875,14 @@ const UserManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md"
+                  className="px-4 py-2 text-sm font-medium text-stone-700 hover:text-neutral-800 border border-stone-300 rounded-md transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-700 rounded-md hover:bg-red-800 disabled:opacity-50 transition-colors"
                 >
                   {loading ? "Creating..." : "Create User"}
                 </button>
@@ -890,40 +894,40 @@ const UserManagement: React.FC = () => {
 
       {/* Edit User Modal - Simplified with only basic info */}
       {showEditModal && editingUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">Edit User: {editingUser.fullName}</h3>
-            <p className="text-sm text-gray-600 mb-4">Role: {getRoleDisplayName(editingUser.roleName)}</p>
+        <div className="fixed inset-0 bg-neutral-800 bg-opacity-70 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <h3 className="text-lg font-semibold mb-4 text-neutral-800">Edit User: {editingUser.fullName}</h3>
+            <p className="text-sm text-stone-600 mb-4">Role: {getRoleDisplayName(editingUser.roleName)}</p>
             <form onSubmit={handleEditUser}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                  <label className="block text-sm font-medium text-stone-700">Full Name</label>
                   <input
                     type="text"
                     required
                     value={editUserData.fullName}
                     onChange={(e) => setEditUserData({...editUserData, fullName: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <label className="block text-sm font-medium text-stone-700">Email</label>
                   <input
                     type="email"
                     required
                     value={editUserData.email}
                     onChange={(e) => setEditUserData({...editUserData, email: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Username</label>
+                  <label className="block text-sm font-medium text-stone-700">Username</label>
                   <input
                     type="text"
                     required
                     value={editUserData.username}
                     onChange={(e) => setEditUserData({...editUserData, username: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800"
                   />
                 </div>
               </div>
@@ -934,14 +938,14 @@ const UserManagement: React.FC = () => {
                     setShowEditModal(false);
                     setEditingUser(null);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md"
+                  className="px-4 py-2 text-sm font-medium text-stone-700 hover:text-neutral-800 border border-stone-300 rounded-md transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-700 rounded-md hover:bg-red-800 disabled:opacity-50 transition-colors"
                 >
                   {loading ? "Updating..." : "Update User"}
                 </button>
@@ -953,21 +957,21 @@ const UserManagement: React.FC = () => {
 
       {/* Assign User Modal */}
       {showAssignModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">
+        <div className="fixed inset-0 bg-neutral-800 bg-opacity-70 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <h3 className="text-lg font-semibold mb-4 text-neutral-800">
               Assign {selectedUser?.fullName} as {assignment.assignmentType === "manager" ? "Building Manager" : "Branch Accountant"}
             </h3>
             <form onSubmit={handleAssignUser}>
               <div className="space-y-4">
                 {assignment.assignmentType === "manager" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Select Building</label>
+                    <label className="block text-sm font-medium text-stone-700">Select Building</label>
                     <select
                       required
                       value={assignment.buildingId}
                       onChange={(e) => handleAssignmentBuildingChange(e.target.value)}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
                     >
                       <option value="">Choose a building...</option>
                       {availableBuildings.map((building) => (
@@ -979,19 +983,19 @@ const UserManagement: React.FC = () => {
                         <option value="" disabled>No available buildings</option>
                       )}
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-stone-500 mt-1">
                       Only buildings without managers are shown
                     </p>
                   </div>
                 )}
                 {assignment.assignmentType === "accountant" && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Select Branch</label>
+                    <label className="block text-sm font-medium text-stone-700">Select Branch</label>
                     <select
                       required
                       value={assignment.branchId}
                       onChange={(e) => handleAssignmentBranchChange(e.target.value)}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
                     >
                       <option value="">Choose a branch...</option>
                       {availableBranches.map((branch) => (
@@ -1003,7 +1007,7 @@ const UserManagement: React.FC = () => {
                         <option value="" disabled>No available branches</option>
                       )}
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-stone-500 mt-1">
                       Only branches without accountants are shown
                     </p>
                   </div>
@@ -1013,14 +1017,14 @@ const UserManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowAssignModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md"
+                  className="px-4 py-2 text-sm font-medium text-stone-700 hover:text-neutral-800 border border-stone-300 rounded-md transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading || (assignment.assignmentType === "manager" && availableBuildings.length === 0) || (assignment.assignmentType === "accountant" && availableBranches.length === 0)}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-700 rounded-md hover:bg-red-800 disabled:opacity-50 transition-colors"
                 >
                   {loading ? "Assigning..." : "Assign"}
                 </button>
