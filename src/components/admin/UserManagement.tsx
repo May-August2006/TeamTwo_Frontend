@@ -1,12 +1,11 @@
 /** @format */
 
 import React, { useState, useEffect } from "react";
-import { Edit, Trash2, Plus, Building, Briefcase, X } from "lucide-react";
+import { Edit, Trash2, Plus, Building, Briefcase, X, MoreVertical } from "lucide-react";
 import { userApi } from "../../api/UserAPI";
 import { buildingApi } from "../../api/BuildingAPI";
 import { branchApi } from "../../api/BranchAPI";
 import { useTranslation } from "react-i18next";
-
 
 interface User {
   id: number;
@@ -70,6 +69,7 @@ const UserManagement: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<number | null>(null);
 
   const { t } = useTranslation();
 
@@ -309,6 +309,7 @@ const UserManagement: React.FC = () => {
     });
     setShowEditModal(true);
     setError(null);
+    setMobileMenuOpen(null);
   };
 
   const handleEditUser = async (e: React.FormEvent) => {
@@ -394,6 +395,7 @@ const UserManagement: React.FC = () => {
         setError(error.response?.data?.message || "Failed to remove assignment");
       }
     }
+    setMobileMenuOpen(null);
   };
 
   const handleDeleteUser = async (id: number) => {
@@ -406,6 +408,7 @@ const UserManagement: React.FC = () => {
         setError(error.response?.data?.message || "Failed to delete user");
       }
     }
+    setMobileMenuOpen(null);
   };
 
   const openAssignModal = (user: User, type: "manager" | "accountant") => {
@@ -418,6 +421,7 @@ const UserManagement: React.FC = () => {
     });
     setShowAssignModal(true);
     setError(null);
+    setMobileMenuOpen(null);
   };
 
   const getRoleDisplayName = (roleName: string) => {
@@ -455,18 +459,22 @@ const UserManagement: React.FC = () => {
   const showBuildingSelection = newUser.roleName === "ROLE_MANAGER";
   const showBranchSelection = newUser.roleName === "ROLE_ACCOUNTANT";
 
+  const toggleMobileMenu = (userId: number) => {
+    setMobileMenuOpen(mobileMenuOpen === userId ? null : userId);
+  };
+
   return (
-    <div className="p-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
-          <p className="text-gray-600 mt-1">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">User Management</h2>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">
             Manage system users and their permissions (MMS-44)
           </p>
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors mt-4 sm:mt-0"
+          className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full sm:w-auto justify-center"
         >
           <Plus className="w-4 h-4" />
           <span>Add New User</span>
@@ -474,100 +482,239 @@ const UserManagement: React.FC = () => {
       </div>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
           {error}
         </div>
       )}
 
       {/* Users Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                User
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Assignment
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {users.map((user) => {
-              const buildingName = getUserBuildingName(user);
-              const branchName = getUserBranchName(user);
-              const hasAssignment = buildingName || branchName;
-              
-              return (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {user.fullName}
-                      </p>
-                      <p className="text-sm text-gray-500">{user.email}</p>
-                      <p className="text-xs text-gray-400">@{user.username}</p>
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  User
+                </th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Role
+                </th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Assignment
+                </th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {users.map((user) => {
+                const buildingName = getUserBuildingName(user);
+                const branchName = getUserBranchName(user);
+                const hasAssignment = buildingName || branchName;
+                
+                return (
+                  <tr key={user.id} className="hover:bg-gray-50">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {user.fullName}
+                        </p>
+                        <p className="text-sm text-gray-500">{user.email}</p>
+                        <p className="text-xs text-gray-400">@{user.username}</p>
+                      </div>
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {getRoleDisplayName(user.roleName)}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {buildingName && (
+                        <div className="flex items-center space-x-1">
+                          <Building className="w-4 h-4" />
+                          <span>{buildingName}</span>
+                        </div>
+                      )}
+                      {branchName && (
+                        <div className="flex items-center space-x-1">
+                          <Briefcase className="w-4 h-4" />
+                          <span>{branchName}</span>
+                        </div>
+                      )}
+                      {!hasAssignment && (
+                        <span className="text-gray-400">Not assigned</span>
+                      )}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          user.isActive
+                            ? "bg-green-100 text-green-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {user.isActive ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        {user.roleName === "ROLE_MANAGER" && (
+                          <>
+                            {buildingName ? (
+                              <button
+                                onClick={() => handleRemoveAssignment(user)}
+                                className="text-red-600 hover:text-red-900"
+                                title="Remove from Building"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => openAssignModal(user, "manager")}
+                                className="text-blue-600 hover:text-blue-900"
+                                title="Assign to Building"
+                              >
+                                <Building className="w-4 h-4" />
+                              </button>
+                            )}
+                          </>
+                        )}
+                        {user.roleName === "ROLE_ACCOUNTANT" && (
+                          <>
+                            {branchName ? (
+                              <button
+                                onClick={() => handleRemoveAssignment(user)}
+                                className="text-red-600 hover:text-red-900"
+                                title="Remove from Branch"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => openAssignModal(user, "accountant")}
+                                className="text-green-600 hover:text-green-900"
+                                title="Assign to Branch"
+                              >
+                                <Briefcase className="w-4 h-4" />
+                              </button>
+                            )}
+                          </>
+                        )}
+                        
+                        <button 
+                          onClick={() => handleEditClick(user)}
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit User"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden">
+          {users.map((user) => {
+            const buildingName = getUserBuildingName(user);
+            const branchName = getUserBranchName(user);
+            const hasAssignment = buildingName || branchName;
+            
+            return (
+              <div key={user.id} className="border-b border-gray-200 p-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-medium text-gray-900">{user.fullName}</p>
+                        <p className="text-sm text-gray-500">{user.email}</p>
+                        <p className="text-xs text-gray-400">@{user.username}</p>
+                      </div>
+                      <button
+                        onClick={() => toggleMobileMenu(user.id)}
+                        className="text-gray-400 hover:text-gray-600 ml-2"
+                      >
+                        <MoreVertical className="w-5 h-5" />
+                      </button>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {getRoleDisplayName(user.roleName)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {buildingName && (
-                      <div className="flex items-center space-x-1">
-                        <Building className="w-4 h-4" />
-                        <span>{buildingName}</span>
+                    
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Role:</span>
+                        <span>{getRoleDisplayName(user.roleName)}</span>
                       </div>
-                    )}
-                    {branchName && (
-                      <div className="flex items-center space-x-1">
-                        <Briefcase className="w-4 h-4" />
-                        <span>{branchName}</span>
+                      
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Status:</span>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            user.isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {user.isActive ? "Active" : "Inactive"}
+                        </span>
                       </div>
-                    )}
-                    {!hasAssignment && (
-                      <span className="text-gray-400">Not assigned</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        user.isActive
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {user.isActive ? "Active" : "Inactive"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
+                      
+                      {hasAssignment && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Assignment:</span>
+                          <div className="text-right">
+                            {buildingName && (
+                              <div className="flex items-center space-x-1 justify-end">
+                                <Building className="w-3 h-3" />
+                                <span className="text-xs">{buildingName}</span>
+                              </div>
+                            )}
+                            {branchName && (
+                              <div className="flex items-center space-x-1 justify-end">
+                                <Briefcase className="w-3 h-3" />
+                                <span className="text-xs">{branchName}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile Action Menu */}
+                {mobileMenuOpen === user.id && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <div className="flex flex-wrap gap-2">
                       {user.roleName === "ROLE_MANAGER" && (
                         <>
                           {buildingName ? (
                             <button
                               onClick={() => handleRemoveAssignment(user)}
-                              className="text-red-600 hover:text-red-900"
-                              title="Remove from Building"
+                              className="flex items-center space-x-1 text-red-600 hover:text-red-900 text-xs"
                             >
-                              <X className="w-4 h-4" />
+                              <X className="w-3 h-3" />
+                              <span>Remove from Building</span>
                             </button>
                           ) : (
                             <button
                               onClick={() => openAssignModal(user, "manager")}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="Assign to Building"
+                              className="flex items-center space-x-1 text-blue-600 hover:text-blue-900 text-xs"
                             >
-                              <Building className="w-4 h-4" />
+                              <Building className="w-3 h-3" />
+                              <span>Assign to Building</span>
                             </button>
                           )}
                         </>
@@ -577,18 +724,18 @@ const UserManagement: React.FC = () => {
                           {branchName ? (
                             <button
                               onClick={() => handleRemoveAssignment(user)}
-                              className="text-red-600 hover:text-red-900"
-                              title="Remove from Branch"
+                              className="flex items-center space-x-1 text-red-600 hover:text-red-900 text-xs"
                             >
-                              <X className="w-4 h-4" />
+                              <X className="w-3 h-3" />
+                              <span>Remove from Branch</span>
                             </button>
                           ) : (
                             <button
                               onClick={() => openAssignModal(user, "accountant")}
-                              className="text-green-600 hover:text-green-900"
-                              title="Assign to Branch"
+                              className="flex items-center space-x-1 text-green-600 hover:text-green-900 text-xs"
                             >
-                              <Briefcase className="w-4 h-4" />
+                              <Briefcase className="w-3 h-3" />
+                              <span>Assign to Branch</span>
                             </button>
                           )}
                         </>
@@ -596,31 +743,32 @@ const UserManagement: React.FC = () => {
                       
                       <button 
                         onClick={() => handleEditClick(user)}
-                        className="text-blue-600 hover:text-blue-900"
-                        title="Edit User"
+                        className="flex items-center space-x-1 text-blue-600 hover:text-blue-900 text-xs"
                       >
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-3 h-3" />
+                        <span>Edit</span>
                       </button>
 
                       <button
                         onClick={() => handleDeleteUser(user.id)}
-                        className="text-red-600 hover:text-red-900"
+                        className="flex items-center space-x-1 text-red-600 hover:text-red-900 text-xs"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3" />
+                        <span>Delete</span>
                       </button>
                     </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Add User Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+          <div className="bg-white rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Add New User</h3>
             <form onSubmit={handleAddUser}>
               <div className="space-y-4">
@@ -631,7 +779,7 @@ const UserManagement: React.FC = () => {
                     required
                     value={newUser.fullName}
                     onChange={(e) => setNewUser({...newUser, fullName: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
                 <div>
@@ -641,7 +789,7 @@ const UserManagement: React.FC = () => {
                     required
                     value={newUser.email}
                     onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
                 <div>
@@ -651,7 +799,7 @@ const UserManagement: React.FC = () => {
                     required
                     value={newUser.username}
                     onChange={(e) => setNewUser({...newUser, username: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
                 <div>
@@ -659,7 +807,7 @@ const UserManagement: React.FC = () => {
                   <select
                     value={newUser.roleName}
                     onChange={(e) => setNewUser({...newUser, roleName: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                   >
                     <option value="ROLE_GUEST">Guest</option>
                     <option value="ROLE_TENANT">Tenant</option>
@@ -676,7 +824,7 @@ const UserManagement: React.FC = () => {
                     <select
                       value={newUser.buildingId || ""}
                       onChange={(e) => handleBuildingChange(e.target.value)}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                     >
                       <option value="">Select a building (optional)</option>
                       {availableBuildings.map((building) => (
@@ -701,7 +849,7 @@ const UserManagement: React.FC = () => {
                     <select
                       value={newUser.branchId || ""}
                       onChange={(e) => handleBranchChange(e.target.value)}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                     >
                       <option value="">Select a branch (optional)</option>
                       {availableBranches.map((branch) => (
@@ -719,11 +867,11 @@ const UserManagement: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div className="mt-6 flex justify-end space-x-3">
+              <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-end">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md"
                 >
                   Cancel
                 </button>
@@ -743,7 +891,7 @@ const UserManagement: React.FC = () => {
       {/* Edit User Modal - Simplified with only basic info */}
       {showEditModal && editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+          <div className="bg-white rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Edit User: {editingUser.fullName}</h3>
             <p className="text-sm text-gray-600 mb-4">Role: {getRoleDisplayName(editingUser.roleName)}</p>
             <form onSubmit={handleEditUser}>
@@ -755,7 +903,7 @@ const UserManagement: React.FC = () => {
                     required
                     value={editUserData.fullName}
                     onChange={(e) => setEditUserData({...editUserData, fullName: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
                 <div>
@@ -765,7 +913,7 @@ const UserManagement: React.FC = () => {
                     required
                     value={editUserData.email}
                     onChange={(e) => setEditUserData({...editUserData, email: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
                 <div>
@@ -775,18 +923,18 @@ const UserManagement: React.FC = () => {
                     required
                     value={editUserData.username}
                     onChange={(e) => setEditUserData({...editUserData, username: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
               </div>
-              <div className="mt-6 flex justify-end space-x-3">
+              <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-end">
                 <button
                   type="button"
                   onClick={() => {
                     setShowEditModal(false);
                     setEditingUser(null);
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md"
                 >
                   Cancel
                 </button>
@@ -806,7 +954,7 @@ const UserManagement: React.FC = () => {
       {/* Assign User Modal */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+          <div className="bg-white rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">
               Assign {selectedUser?.fullName} as {assignment.assignmentType === "manager" ? "Building Manager" : "Branch Accountant"}
             </h3>
@@ -819,7 +967,7 @@ const UserManagement: React.FC = () => {
                       required
                       value={assignment.buildingId}
                       onChange={(e) => handleAssignmentBuildingChange(e.target.value)}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                     >
                       <option value="">Choose a building...</option>
                       {availableBuildings.map((building) => (
@@ -843,7 +991,7 @@ const UserManagement: React.FC = () => {
                       required
                       value={assignment.branchId}
                       onChange={(e) => handleAssignmentBranchChange(e.target.value)}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                     >
                       <option value="">Choose a branch...</option>
                       {availableBranches.map((branch) => (
@@ -861,11 +1009,11 @@ const UserManagement: React.FC = () => {
                   </div>
                 )}
               </div>
-              <div className="mt-6 flex justify-end space-x-3">
+              <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-end">
                 <button
                   type="button"
                   onClick={() => setShowAssignModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md"
                 >
                   Cancel
                 </button>

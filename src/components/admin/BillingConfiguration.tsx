@@ -185,9 +185,9 @@ const AdminBillingConfiguration: React.FC = () => {
 
   const getCalculationBaseDescription = (base: string, rate: number) => {
     switch (base) {
-      case 'FIXED': return `Fixed amount: ${rate}`;
-      case 'PER_UNIT': return `Per unit: ${rate} per unit`;
-      case 'PER_SQ_FT': return `Per sq ft: ${rate} per sq ft`;
+      case 'FIXED': return `Fixed: ${rate}`;
+      case 'PER_UNIT': return `Per unit: ${rate}`;
+      case 'PER_SQ_FT': return `Per sq ft: ${rate}`;
       case 'PERCENTAGE': return `Percentage: ${rate}%`;
       default: return base;
     }
@@ -211,15 +211,15 @@ const AdminBillingConfiguration: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Billing Configuration</h1>
-          <p className="text-gray-600 mt-1">Manage billing fees and calculation formulas</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Billing Configuration</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Manage billing fees and calculation formulas</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 w-full sm:w-auto justify-center"
         >
           <span>+</span>
           Add Billing Fee
@@ -228,8 +228,8 @@ const AdminBillingConfiguration: React.FC = () => {
 
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <h2 className="text-lg sm:text-xl font-bold mb-4">
               {editingFee ? "Edit Billing Fee" : "Add Billing Fee"}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -240,7 +240,7 @@ const AdminBillingConfiguration: React.FC = () => {
                   required
                   value={formData.feeName}
                   onChange={(e) => setFormData({ ...formData, feeName: e.target.value })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                   placeholder="e.g., Electricity Charge, Water Fee"
                 />
               </div>
@@ -251,7 +251,7 @@ const AdminBillingConfiguration: React.FC = () => {
                   required
                   value={formData.utilityTypeId}
                   onChange={(e) => setFormData({ ...formData, utilityTypeId: parseInt(e.target.value) })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                 >
                   <option value={0}>Select Utility Type</option>
                   {utilityTypes.map((utility) => (
@@ -283,7 +283,7 @@ const AdminBillingConfiguration: React.FC = () => {
                   required
                   value={formData.calculationBase}
                   onChange={(e) => setFormData({ ...formData, calculationBase: e.target.value as any })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                 >
                   {availableBases.map((base) => (
                     <option key={base.value} value={base.value}>
@@ -313,7 +313,7 @@ const AdminBillingConfiguration: React.FC = () => {
                   required
                   value={formData.rate}
                   onChange={(e) => setFormData({ ...formData, rate: parseFloat(e.target.value) || 0 })}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                 />
               </div>
               
@@ -323,7 +323,7 @@ const AdminBillingConfiguration: React.FC = () => {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                   placeholder="Describe how this fee is calculated..."
                 />
               </div>
@@ -341,7 +341,7 @@ const AdminBillingConfiguration: React.FC = () => {
                 </label>
               </div>
               
-              <div className="flex gap-2 justify-end pt-4">
+              <div className="flex flex-col sm:flex-row gap-2 justify-end pt-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -356,13 +356,13 @@ const AdminBillingConfiguration: React.FC = () => {
                       isActive: true
                     });
                   }}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 text-sm sm:text-base"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm sm:text-base"
                 >
                   {editingFee ? "Update" : "Create"}
                 </button>
@@ -372,88 +372,103 @@ const AdminBillingConfiguration: React.FC = () => {
         </div>
       )}
 
-      {/* Rest of the component remains the same */}
+      {/* Responsive Table */}
       <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Fee Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Utility Type
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Calculation Method
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Rate
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Description
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {billingFees.map((fee) => (
-              <tr key={fee.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {fee.feeName}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">
-                  {fee.utilityTypeName}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {getCalculationBaseDescription(fee.calculationBase, fee.rate)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {fee.rate}
-                  {fee.calculationBase === 'PERCENTAGE' ? '%' : ''}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    fee.isActive 
-                      ? "bg-green-100 text-green-800" 
-                      : "bg-red-100 text-red-800"
-                  }`}>
-                    {fee.isActive ? "Active" : "Inactive"}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
-                  {fee.description || '-'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => handleEdit(fee)}
-                    className="text-blue-600 hover:text-blue-900 mr-3"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleToggleActive(fee.id, fee.isActive)}
-                    className={`mr-3 ${
-                      fee.isActive ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'
-                    }`}
-                  >
-                    {fee.isActive ? 'Deactivate' : 'Activate'}
-                  </button>
-                  <button
-                    onClick={() => handleDelete(fee.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Delete
-                  </button>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Fee Name
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                  Utility Type
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Calculation
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">
+                  Rate
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">
+                  Description
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {billingFees.map((fee) => (
+                <tr key={fee.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <div>
+                      <div className="font-medium">{fee.feeName}</div>
+                      <div className="text-gray-500 text-xs sm:hidden">{fee.utilityTypeName}</div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 capitalize hidden sm:table-cell">
+                    {fee.utilityTypeName}
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div className="text-xs">
+                      {getCalculationBaseDescription(fee.calculationBase, fee.rate)}
+                    </div>
+                    <div className="text-gray-500 text-xs md:hidden">
+                      {fee.rate}
+                      {fee.calculationBase === 'PERCENTAGE' ? '%' : ''}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">
+                    {fee.rate}
+                    {fee.calculationBase === 'PERCENTAGE' ? '%' : ''}
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      fee.isActive 
+                        ? "bg-green-100 text-green-800" 
+                        : "bg-red-100 text-red-800"
+                    }`}>
+                      {fee.isActive ? "Active" : "Inactive"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 text-sm text-gray-500 hidden lg:table-cell">
+                    <div className="truncate max-w-xs">
+                      {fee.description || '-'}
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
+                      <button
+                        onClick={() => handleEdit(fee)}
+                        className="text-blue-600 hover:text-blue-900 text-xs sm:text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleToggleActive(fee.id, fee.isActive)}
+                        className={`text-xs sm:text-sm ${
+                          fee.isActive ? 'text-orange-600 hover:text-orange-900' : 'text-green-600 hover:text-green-900'
+                        }`}
+                      >
+                        {fee.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(fee.id)}
+                        className="text-red-600 hover:text-red-900 text-xs sm:text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {billingFees.length === 0 && (
           <div className="text-center py-12 text-gray-500">
             <div className="text-4xl mb-2">⚡</div>
@@ -464,9 +479,9 @@ const AdminBillingConfiguration: React.FC = () => {
       </div>
 
       {/* Updated Sample Configuration Guide */}
-      <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-blue-900 mb-3">How Utility Types & Billing Bases Work Together</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div className="mt-6 sm:mt-8 bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold text-blue-900 mb-3">How Utility Types & Billing Bases Work Together</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
           <div className="bg-white p-3 rounded border">
             <strong>Electricity (METERED):</strong><br/>
             → <em>Auto-suggests: PER_UNIT</em><br/>
