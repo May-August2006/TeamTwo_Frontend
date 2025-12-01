@@ -11,6 +11,7 @@ import PerformanceMetrics from "../../components/bod/PerformanceMetrics";
 
 const BODDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -21,6 +22,10 @@ const BODDashboard: React.FC = () => {
   const handleNavigate = (path: string) => {
     navigate(path);
     setSidebarOpen(false); // Close sidebar on navigation for mobile
+  };
+
+  const handleToggleCollapse = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
   };
 
   const getPageTitle = () => {
@@ -36,13 +41,15 @@ const BODDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-stone-50">
       {/* Fixed Sidebar */}
       <BODSidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         currentPath={location.pathname}
         onNavigate={handleNavigate}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={handleToggleCollapse}
       />
 
       {/* Fixed Header */}
@@ -50,24 +57,27 @@ const BODDashboard: React.FC = () => {
         onMenuToggle={() => setSidebarOpen(true)}
         onLogout={handleLogout}
         pageTitle={getPageTitle()}
+        isSidebarCollapsed={sidebarCollapsed}
       />
 
-      {/* Main Content Area - Adjusted for fixed header and sidebar */}
-      <main className="lg:ml-64 pt-16 min-h-screen">
-        <div className="p-6">
+      {/* Main Content Area - Adjusted for collapsed sidebar */}
+      <main className={`pt-16 min-h-screen transition-all duration-300 ${
+        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      }`}>
+        <div className="p-4 sm:p-8">
           <div className="max-w-7xl mx-auto">
-            {/* Page Title */}
+            {/* Page Title - Matching Admin style */}
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-stone-900">
                 {getPageTitle()}
               </h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-stone-600 mt-2">
                 Strategic overview and financial performance insights
               </p>
             </div>
 
-            {/* Content Area */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            {/* Content Area - Matching Admin style */}
+            <div className="bg-white rounded-xl shadow-lg border border-stone-200 overflow-hidden">
               <Routes>
                 <Route path="/" element={<BODHome />} />
                 <Route
@@ -88,7 +98,7 @@ const BODDashboard: React.FC = () => {
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-50 z-30 lg:hidden"
+          className="fixed inset-0 bg-stone-900 bg-opacity-70 z-30 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}

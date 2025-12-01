@@ -71,11 +71,11 @@ const PerformanceMetrics: React.FC = () => {
       case "excellent":
         return "bg-green-100 text-green-800";
       case "on-track":
-        return "bg-blue-100 text-blue-800";
+        return "bg-red-100 text-red-800";
       case "slightly-above":
         return "bg-yellow-100 text-yellow-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-stone-100 text-stone-800";
     }
   };
 
@@ -86,82 +86,82 @@ const PerformanceMetrics: React.FC = () => {
       return (
         <TrendingUp className="w-4 h-4 text-red-600 transform rotate-180" />
       );
-    return <div className="w-4 h-4 bg-gray-300 rounded-full" />;
+    return <div className="w-4 h-4 bg-stone-300 rounded-full" />;
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-8 space-y-6 bg-stone-50 min-h-screen">
       {/* Key Metrics Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-stone-900">
               Overall Occupancy
             </h3>
-            <Building2 className="w-6 h-6 text-blue-600" />
+            <Building2 className="w-6 h-6 text-red-600" />
           </div>
-          <p className="text-3xl font-bold text-gray-900">96.5%</p>
-          <p className="text-sm text-green-600 mt-2">+2.3% from last quarter</p>
+          <p className="text-3xl font-bold text-stone-900">96.5%</p>
+          <p className="text-sm text-green-600 mt-2 font-medium">+2.3% from last quarter</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-stone-900">
               Collection Rate
             </h3>
             <DollarSign className="w-6 h-6 text-green-600" />
           </div>
-          <p className="text-3xl font-bold text-gray-900">94.8%</p>
-          <p className="text-sm text-green-600 mt-2">+1.7% improvement</p>
+          <p className="text-3xl font-bold text-stone-900">94.8%</p>
+          <p className="text-sm text-green-600 mt-2 font-medium">+1.7% improvement</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-stone-900">
               Tenant Retention
             </h3>
             <Users className="w-6 h-6 text-purple-600" />
           </div>
-          <p className="text-3xl font-bold text-gray-900">92%</p>
-          <p className="text-sm text-green-600 mt-2">+7% above industry avg</p>
+          <p className="text-3xl font-bold text-stone-900">92%</p>
+          <p className="text-sm text-green-600 mt-2 font-medium">+7% above industry avg</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-stone-900">
               Performance Score
             </h3>
             <Target className="w-6 h-6 text-orange-600" />
           </div>
-          <p className="text-3xl font-bold text-gray-900">8.7/10</p>
-          <p className="text-sm text-green-600 mt-2">Excellent performance</p>
+          <p className="text-3xl font-bold text-stone-900">8.7/10</p>
+          <p className="text-sm text-green-600 mt-2 font-medium">Excellent performance</p>
         </div>
       </div>
 
       {/* Occupancy Rates by Property */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">
+      <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
+        <h3 className="text-xl font-bold text-stone-900 mb-6 pb-3 border-b border-stone-200">
           Occupancy Rates by Property
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {metrics.occupancy.map((property, index) => (
-            <div key={index} className="bg-gray-50 rounded-lg p-4">
+            <div key={index} className="bg-stone-50 rounded-lg p-5 border border-stone-200 hover:bg-red-50/30 transition duration-150">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-gray-900">
+                <h4 className="font-bold text-stone-900">
                   {property.property}
                 </h4>
                 {getTrendIcon(property.trend)}
               </div>
-              <p className="text-2xl font-bold text-gray-900 mb-2">
+              <p className="text-2xl font-bold text-stone-900 mb-2">
                 {property.rate}
               </p>
               <p
-                className={`text-sm ${
+                className={`text-sm font-medium ${
                   property.trend === "up"
                     ? "text-green-600"
                     : property.trend === "down"
                     ? "text-red-600"
-                    : "text-gray-600"
+                    : "text-stone-600"
                 }`}
               >
                 {property.change} from last quarter
@@ -172,17 +172,17 @@ const PerformanceMetrics: React.FC = () => {
       </div>
 
       {/* Collection Performance */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">
+      <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
+        <h3 className="text-xl font-bold text-stone-900 mb-6 pb-3 border-b border-stone-200">
           Collection Performance Metrics
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {metrics.collection.map((item, index) => (
-            <div key={index} className="bg-gray-50 rounded-lg p-4">
+            <div key={index} className="bg-stone-50 rounded-lg p-5 border border-stone-200 hover:bg-red-50/30 transition duration-150">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-gray-900">{item.metric}</h4>
+                <h4 className="font-bold text-stone-900">{item.metric}</h4>
                 <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${getStatusColor(
                     item.status
                   )}`}
                 >
@@ -190,10 +190,10 @@ const PerformanceMetrics: React.FC = () => {
                 </span>
               </div>
               <div className="space-y-2">
-                <p className="text-xl font-bold text-gray-900">{item.value}</p>
+                <p className="text-xl font-bold text-stone-900">{item.value}</p>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Target</span>
-                  <span className="font-semibold text-blue-600">
+                  <span className="text-stone-600">Target</span>
+                  <span className="font-bold text-red-600">
                     {item.target}
                   </span>
                 </div>
@@ -204,24 +204,24 @@ const PerformanceMetrics: React.FC = () => {
       </div>
 
       {/* Tenant Metrics */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">
+      <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
+        <h3 className="text-xl font-bold text-stone-900 mb-6 pb-3 border-b border-stone-200">
           Tenant Relationship Metrics
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {metrics.tenant.map((metric, index) => (
-            <div key={index} className="bg-gray-50 rounded-lg p-4">
+            <div key={index} className="bg-stone-50 rounded-lg p-5 border border-stone-200 hover:bg-red-50/30 transition duration-150">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold text-gray-900">{metric.metric}</h4>
+                <h4 className="font-bold text-stone-900">{metric.metric}</h4>
                 {getTrendIcon(metric.trend)}
               </div>
               <div className="space-y-2">
-                <p className="text-xl font-bold text-gray-900">
+                <p className="text-xl font-bold text-stone-900">
                   {metric.value}
                 </p>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Industry Average</span>
-                  <span className="font-semibold text-purple-600">
+                  <span className="text-stone-600">Industry Average</span>
+                  <span className="font-bold text-purple-600">
                     {metric.industryAvg}
                   </span>
                 </div>
@@ -232,23 +232,23 @@ const PerformanceMetrics: React.FC = () => {
       </div>
 
       {/* Performance Summary */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-sm p-6 text-white">
+      <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-xl shadow-lg p-6 text-white">
         <h3 className="text-xl font-bold mb-4">Performance Summary</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="text-center">
             <p className="text-2xl font-bold">96.5%</p>
-            <p className="text-blue-200">Average Occupancy</p>
+            <p className="text-red-200">Average Occupancy</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold">94.8%</p>
-            <p className="text-blue-200">Collection Efficiency</p>
+            <p className="text-red-200">Collection Efficiency</p>
           </div>
           <div className="text-center">
             <p className="text-2xl font-bold">8.7/10</p>
-            <p className="text-blue-200">Overall Performance Score</p>
+            <p className="text-red-200">Overall Performance Score</p>
           </div>
         </div>
-        <p className="text-blue-200 text-center mt-4">
+        <p className="text-red-200 text-center mt-4 font-medium">
           All key metrics are performing above industry standards
         </p>
       </div>
