@@ -19,7 +19,7 @@ const TenantList: React.FC<TenantListProps> = ({
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -83,7 +83,7 @@ const TenantList: React.FC<TenantListProps> = ({
                 <tr key={tenant.id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 bg-blue-500 rounded-full flex items-center justify-center">
+                      <div className="flex-shrink-0 h-10 w-10 bg-red-500 rounded-full flex items-center justify-center">
                         <span className="text-white font-medium text-sm">{initial}</span>
                       </div>
                       <div className="ml-4">

@@ -361,246 +361,275 @@ export const ExpiringContractsReport: React.FC<
     );
   };
 
-  // Export to PDF function
-  const exportToPDF = () => {
-    // Create new PDF document
-    const doc = new jsPDF("l", "mm", "a4"); // landscape, millimeters, A4 size
+  // Export to PDF function with logo on right side
+const exportToPDF = async () => {
+  // Create new PDF document
+  const doc = new jsPDF("l", "mm", "a4"); // landscape, millimeters, A4 size
 
-    // Title
-    doc.setFontSize(18);
-    doc.setTextColor(30, 64, 175); // Blue-800
-    doc.setFont("helvetica", "bold");
-    doc.text("EXPIRING CONTRACTS REPORT", 14, 20);
+  // Logo configuration - moved to right side
+  const logoUrl = '/src/assets/SeinGayHarLogo.png';
+  const logoWidth = 30;
+  const logoHeight = 15;
+  const logoX = doc.internal.pageSize.width - logoWidth - 14; // Right side with 14mm margin
+  const logoY = 10;
 
-    // Subtitle
-    doc.setFontSize(10);
-    doc.setTextColor(75, 85, 99); // Gray-600
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      `Generated on: ${new Date().toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        weekday: "long",
-      })}`,
-      14,
-      28
-    );
+  try {
+    // Add logo if available
+    if (logoUrl) {
+      doc.addImage(logoUrl, 'PNG', logoX, logoY, logoWidth, logoHeight);
+    }
+  } catch (error) {
+    console.warn('Could not load logo:', error);
+    // Continue without logo if there's an error
+  }
 
-    doc.text(
-      `Total Contracts: ${expiringContracts.length} | Filter: ${daysFilter} days | Status: ${statusFilter}`,
-      14,
-      34
-    );
+  // Title - remains on left side
+  const titleX = 14;
+  
+  doc.setFontSize(18);
+  doc.setTextColor(30, 64, 175); // Blue-800
+  doc.setFont("helvetica", "bold");
+  doc.text("EXPIRING CONTRACTS REPORT", titleX, 20);
 
-    // Summary stats box
-    doc.setFillColor(239, 246, 255); // Light blue background
-    doc.rect(14, 38, 260, 8, "F");
-    doc.setFontSize(9);
-    doc.setTextColor(30, 64, 175);
-    doc.setFont("helvetica", "bold");
-    doc.text(
-      `EXPIRING SOON: ${stats.expiringSoon} | EXPIRED: ${stats.expired} | NEEDS RENEWAL: ${stats.needsRenewal} | TOTAL: ${stats.total}`,
-      16,
-      43
-    );
+  // Subtitle
+  doc.setFontSize(10);
+  doc.setTextColor(75, 85, 99); // Gray-600
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    `Generated on: ${new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      weekday: "long",
+    })}`,
+    titleX,
+    28
+  );
 
-    // Prepare table data
-    const tableData = expiringContracts.map((contract) => [
-      contract.contractNumber,
-      contract.tenantName,
-      contract.roomNumber,
-      contract.buildingName,
-      contract.branchName,
-      contract.businessType,
-      contract.startDate
-        ? new Date(contract.startDate).toLocaleDateString("en-US", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          })
-        : "-",
-      contract.endDate
-        ? new Date(contract.endDate).toLocaleDateString("en-US", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          })
-        : "-",
-      contract.daysUntilExpiry <= 0
-        ? "EXPIRED"
-        : `${contract.daysUntilExpiry} days`,
-      `${contract.rentalFee.toLocaleString()} MMK`,
-      contract.status === "EXPIRING_SOON"
-        ? "Expiring Soon"
-        : contract.status === "EXPIRED"
-        ? "Expired"
-        : contract.status === "NEEDS_RENEWAL"
-        ? "Needs Renewal"
-        : "Active",
-    ]);
+  doc.text(
+    `Total Contracts: ${expiringContracts.length} | Filter: ${daysFilter} days | Status: ${statusFilter}`,
+    titleX,
+    34
+  );
 
-    // Define table columns
-    const tableColumns = [
-      "Contract No.",
-      "Tenant Name",
-      "Room No.",
-      "Building",
-      "Branch",
-      "Business Type",
-      "Start Date",
-      "End Date",
-      "Days Left",
-      "Rental Fee",
-      "Status",
-    ];
+  // Summary stats box
+  doc.setFillColor(239, 246, 255); // Light blue background
+  doc.rect(titleX, 38, 260, 8, "F");
+  doc.setFontSize(9);
+  doc.setTextColor(30, 64, 175);
+  doc.setFont("helvetica", "bold");
+  doc.text(
+    `EXPIRING SOON: ${stats.expiringSoon} | EXPIRED: ${stats.expired} | NEEDS RENEWAL: ${stats.needsRenewal} | TOTAL: ${stats.total}`,
+    titleX + 2,
+    43
+  );
 
-    // Add table to PDF with enhanced styling
-    autoTable(doc, {
-      head: [tableColumns],
-      body: tableData,
-      startY: 50,
-      styles: {
-        fontSize: 7,
-        cellPadding: 3,
-        lineColor: [209, 213, 219], // Gray-300
-        lineWidth: 0.3,
-        font: "helvetica",
-        textColor: [31, 41, 55], // Gray-800
-      },
-      headStyles: {
-        fillColor: [239, 68, 68], // Red-500 for urgency
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-        fontSize: 8,
-        cellPadding: 4,
-        lineWidth: 0.3,
-        lineColor: [255, 255, 255],
-      },
-      bodyStyles: {
-        fontSize: 7,
-        cellPadding: 3,
-      },
-      alternateRowStyles: {
-        fillColor: [249, 250, 251], // Gray-50
-      },
-      columnStyles: {
-        0: { cellWidth: 20, fontStyle: "bold" }, // Contract No.
-        1: { cellWidth: 22 }, // Tenant Name
-        2: { cellWidth: 17, halign: "center" }, // Room No.
-        3: { cellWidth: 19 }, // Building
-        4: { cellWidth: 18 }, // Branch
-        5: { cellWidth: 24 }, // Business Type
-        6: { cellWidth: 15, halign: "center" }, // Start Date
-        7: { cellWidth: 15, halign: "center" }, // End Date
-        8: { cellWidth: 17, halign: "center", fontStyle: "bold" }, // Days Left
-        9: { cellWidth: 18, halign: "right" }, // Rental Fee
-        10: { cellWidth: 17, halign: "center", fontStyle: "bold" }, // Status
-      },
-      margin: { top: 50 },
-      tableLineColor: [209, 213, 219], // Gray-300
-      tableLineWidth: 0.3,
-      didDrawCell: (data) => {
-        // Color code status and days columns
-        if (data.section === "body") {
-          if (data.column.index === 8) {
-            // Days Left column
-            const days = parseInt(data.cell.raw.toString()) || 0;
-            let color: number[] = [100, 100, 100]; // Default gray
+  // Prepare table data
+  const tableData = expiringContracts.map((contract) => [
+    contract.contractNumber,
+    contract.tenantName,
+    contract.roomNumber,
+    contract.buildingName,
+    contract.branchName,
+    contract.businessType,
+    contract.startDate
+      ? new Date(contract.startDate).toLocaleDateString("en-US", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "-",
+    contract.endDate
+      ? new Date(contract.endDate).toLocaleDateString("en-US", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : "-",
+    contract.daysUntilExpiry <= 0
+      ? "EXPIRED"
+      : `${contract.daysUntilExpiry} days`,
+    `${contract.rentalFee.toLocaleString()} MMK`,
+    contract.status === "EXPIRING_SOON"
+      ? "Expiring Soon"
+      : contract.status === "EXPIRED"
+      ? "Expired"
+      : contract.status === "NEEDS_RENEWAL"
+      ? "Needs Renewal"
+      : "Active",
+  ]);
 
-            if (data.cell.raw === "EXPIRED") {
-              color = [239, 68, 68]; // Red
-            } else if (days <= 7) {
-              color = [239, 68, 68]; // Red
-            } else if (days <= 14) {
-              color = [249, 115, 22]; // Orange
-            } else if (days <= 30) {
-              color = [245, 158, 11]; // Yellow
-            } else {
-              color = [34, 197, 94]; // Green
+  // Define table columns
+  const tableColumns = [
+    "Contract No.",
+    "Tenant Name",
+    "Room No.",
+    "Building",
+    "Branch",
+    "Business Type",
+    "Start Date",
+    "End Date",
+    "Days Left",
+    "Rental Fee",
+    "Status",
+  ];
+
+  // Add table to PDF with enhanced styling
+  autoTable(doc, {
+    head: [tableColumns],
+    body: tableData,
+    startY: 50,
+    styles: {
+      fontSize: 7,
+      cellPadding: 3,
+      lineColor: [209, 213, 219], // Gray-300
+      lineWidth: 0.3,
+      font: "helvetica",
+      textColor: [31, 41, 55], // Gray-800
+    },
+    headStyles: {
+      fillColor: [239, 68, 68], // Red-500 for urgency
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 8,
+      cellPadding: 4,
+      lineWidth: 0.3,
+      lineColor: [255, 255, 255],
+    },
+    bodyStyles: {
+      fontSize: 7,
+      cellPadding: 3,
+    },
+    alternateRowStyles: {
+      fillColor: [249, 250, 251], // Gray-50
+    },
+    columnStyles: {
+      0: { cellWidth: 20, fontStyle: "bold" }, // Contract No.
+      1: { cellWidth: 22 }, // Tenant Name
+      2: { cellWidth: 17, halign: "center" }, // Room No.
+      3: { cellWidth: 19 }, // Building
+      4: { cellWidth: 18 }, // Branch
+      5: { cellWidth: 24 }, // Business Type
+      6: { cellWidth: 15, halign: "center" }, // Start Date
+      7: { cellWidth: 15, halign: "center" }, // End Date
+      8: { cellWidth: 17, halign: "center", fontStyle: "bold" }, // Days Left
+      9: { cellWidth: 18, halign: "right" }, // Rental Fee
+      10: { cellWidth: 17, halign: "center", fontStyle: "bold" }, // Status
+    },
+    margin: { top: 50 },
+    tableLineColor: [209, 213, 219], // Gray-300
+    tableLineWidth: 0.3,
+    didDrawCell: (data) => {
+      // Color code status and days columns
+      if (data.section === "body") {
+        if (data.column.index === 8) {
+          // Days Left column
+          const days = parseInt(data.cell.raw.toString()) || 0;
+          let color: number[] = [100, 100, 100]; // Default gray
+
+          if (data.cell.raw === "EXPIRED") {
+            color = [239, 68, 68]; // Red
+          } else if (days <= 7) {
+            color = [239, 68, 68]; // Red
+          } else if (days <= 14) {
+            color = [249, 115, 22]; // Orange
+          } else if (days <= 30) {
+            color = [245, 158, 11]; // Yellow
+          } else {
+            color = [34, 197, 94]; // Green
+          }
+
+          doc.setTextColor(color[0], color[1], color[2]);
+          doc.text(
+            data.cell.raw,
+            data.cell.x + data.cell.width / 2,
+            data.cell.y + data.cell.height / 2 + 2,
+            {
+              align: "center",
+              baseline: "middle",
             }
-
-            doc.setTextColor(color[0], color[1], color[2]);
-            doc.text(
-              data.cell.raw,
-              data.cell.x + data.cell.width / 2,
-              data.cell.y + data.cell.height / 2 + 2,
-              {
-                align: "center",
-                baseline: "middle",
-              }
-            );
-            doc.setTextColor(31, 41, 55);
-            return false;
-          }
-
-          if (data.column.index === 10) {
-            // Status column
-            const status = data.cell.raw as string;
-            let color: number[] = [100, 100, 100]; // Default gray
-
-            if (status === "Expired") color = [239, 68, 68]; // Red
-            else if (status === "Expiring Soon")
-              color = [249, 115, 22]; // Orange
-            else if (status === "Needs Renewal") color = [245, 158, 11]; // Yellow
-
-            doc.setTextColor(color[0], color[1], color[2]);
-            doc.text(
-              data.cell.raw,
-              data.cell.x + data.cell.width / 2,
-              data.cell.y + data.cell.height / 2 + 2,
-              {
-                align: "center",
-                baseline: "middle",
-              }
-            );
-            doc.setTextColor(31, 41, 55);
-            return false;
-          }
+          );
+          doc.setTextColor(31, 41, 55);
+          return false;
         }
-      },
-    });
 
-    // Add professional footer
-    const pageCount = doc.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
+        if (data.column.index === 10) {
+          // Status column
+          const status = data.cell.raw as string;
+          let color: number[] = [100, 100, 100]; // Default gray
 
-      // Footer line
-      doc.setDrawColor(209, 213, 219);
-      doc.setLineWidth(0.5);
-      doc.line(
-        14,
-        doc.internal.pageSize.height - 20,
-        doc.internal.pageSize.width - 14,
-        doc.internal.pageSize.height - 20
-      );
+          if (status === "Expired") color = [239, 68, 68]; // Red
+          else if (status === "Expiring Soon")
+            color = [249, 115, 22]; // Orange
+          else if (status === "Needs Renewal") color = [245, 158, 11]; // Yellow
 
-      // Footer text
-      doc.setFontSize(8);
-      doc.setTextColor(107, 114, 128); // Gray-500
-      doc.text(
-        `Page ${i} of ${pageCount} • Urgent Action Required • Generated on ${new Date().toLocaleDateString()}`,
-        doc.internal.pageSize.width / 2,
-        doc.internal.pageSize.height - 15,
-        { align: "center" }
-      );
+          doc.setTextColor(color[0], color[1], color[2]);
+          doc.text(
+            data.cell.raw,
+            data.cell.x + data.cell.width / 2,
+            data.cell.y + data.cell.height / 2 + 2,
+            {
+              align: "center",
+              baseline: "middle",
+            }
+          );
+          doc.setTextColor(31, 41, 55);
+          return false;
+        }
+      }
+    },
+  });
 
-      // Urgent watermark on first page
-      if (i === 1 && (stats.expiringSoon > 0 || stats.expired > 0)) {
-        doc.setFontSize(40);
-        doc.setTextColor(254, 226, 226); // Light red
-        doc.setFont("helvetica", "bold");
+  // Add professional footer
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
 
-        doc.setTextColor(31, 41, 55);
+    // Add logo to all pages on right side
+    if (i > 1 && logoUrl) {
+      try {
+        const pageLogoX = doc.internal.pageSize.width - logoWidth - 14;
+        doc.addImage(logoUrl, 'PNG', pageLogoX, logoY, logoWidth, logoHeight);
+      } catch (error) {
+        // Continue without logo
       }
     }
 
-    // Save the PDF
-    doc.save(
-      `expiring-contracts-${new Date().toISOString().split("T")[0]}.pdf`
+    // Footer line
+    doc.setDrawColor(209, 213, 219);
+    doc.setLineWidth(0.5);
+    doc.line(
+      14,
+      doc.internal.pageSize.height - 20,
+      doc.internal.pageSize.width - 14,
+      doc.internal.pageSize.height - 20
     );
-  };
+
+    // Footer text
+    doc.setFontSize(8);
+    doc.setTextColor(107, 114, 128); // Gray-500
+    doc.text(
+      `Page ${i} of ${pageCount} • Urgent Action Required • Generated on ${new Date().toLocaleDateString()}`,
+      doc.internal.pageSize.width / 2,
+      doc.internal.pageSize.height - 15,
+      { align: "center" }
+    );
+
+    // Urgent watermark on first page
+    if (i === 1 && (stats.expiringSoon > 0 || stats.expired > 0)) {
+      doc.setFontSize(40);
+      doc.setTextColor(254, 226, 226); // Light red
+      doc.setFont("helvetica", "bold");
+
+      doc.setTextColor(31, 41, 55);
+    }
+  }
+
+  // Save the PDF
+  doc.save(
+    `expiring-contracts-${new Date().toISOString().split("T")[0]}.pdf`
+  );
+};
 
   if (loading) {
     return (

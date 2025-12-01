@@ -38,17 +38,17 @@ const MyContract: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6 min-h-screen bg-stone-50">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">My Contract</h2>
-          <p className="text-gray-600 mt-1">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">My Contract</h2>
+          <p className="text-stone-600 mt-1">
             View your lease agreement and contract details
           </p>
         </div>
         <div className="flex space-x-3 mt-4 sm:mt-0">
-          <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+          <button className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg shadow-lg hover:shadow-xl transition duration-150 transform active:scale-95">
             <Download className="w-4 h-4" />
             <span>Download PDF</span>
           </button>
@@ -56,12 +56,12 @@ const MyContract: React.FC = () => {
       </div>
 
       {/* Contract Overview */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-stone-900 border-b border-stone-200 pb-2 w-full">
             Contract Overview
           </h3>
-          <div className="flex items-center space-x-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+          <div className="flex items-center space-x-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
             <FileText className="w-4 h-4" />
             <span>Active</span>
           </div>
@@ -70,24 +70,24 @@ const MyContract: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-gray-600">Contract Number</p>
-              <p className="font-semibold text-gray-900">
+              <p className="text-sm text-stone-600">Contract Number</p>
+              <p className="font-semibold text-stone-900">
                 {contractDetails.contractNumber}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Lease Period</p>
-              <div className="flex items-center space-x-2 text-gray-900">
-                <Calendar className="w-4 h-4 text-gray-400" />
+              <p className="text-sm text-stone-600">Lease Period</p>
+              <div className="flex items-center space-x-2 text-stone-900">
+                <Calendar className="w-4 h-4 text-stone-400" />
                 <span>
                   {contractDetails.startDate} to {contractDetails.endDate}
                 </span>
               </div>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Space</p>
-              <div className="flex items-center space-x-2 text-gray-900">
-                <Building2 className="w-4 h-4 text-gray-400" />
+              <p className="text-sm text-stone-600">Space</p>
+              <div className="flex items-center space-x-2 text-stone-900">
+                <Building2 className="w-4 h-4 text-stone-400" />
                 <span>{contractDetails.space}</span>
               </div>
             </div>
@@ -95,24 +95,24 @@ const MyContract: React.FC = () => {
 
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-gray-600">Monthly Rent</p>
-              <div className="flex items-center space-x-2 text-gray-900">
-                <DollarSign className="w-4 h-4 text-gray-400" />
+              <p className="text-sm text-stone-600">Monthly Rent</p>
+              <div className="flex items-center space-x-2 text-stone-900">
+                <DollarSign className="w-4 h-4 text-stone-400" />
                 <span className="font-semibold">
                   {contractDetails.monthlyRent}
                 </span>
               </div>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Security Deposit</p>
-              <div className="flex items-center space-x-2 text-gray-900">
-                <DollarSign className="w-4 h-4 text-gray-400" />
+              <p className="text-sm text-stone-600">Security Deposit</p>
+              <div className="flex items-center space-x-2 text-stone-900">
+                <DollarSign className="w-4 h-4 text-stone-400" />
                 <span>{contractDetails.securityDeposit}</span>
               </div>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Space Size</p>
-              <p className="font-semibold text-gray-900">
+              <p className="text-sm text-stone-600">Space Size</p>
+              <p className="font-semibold text-stone-900">
                 {contractDetails.size}
               </p>
             </div>
@@ -120,48 +120,48 @@ const MyContract: React.FC = () => {
 
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-gray-600">Business Type</p>
-              <p className="font-semibold text-gray-900">
+              <p className="text-sm text-stone-600">Business Type</p>
+              <p className="font-semibold text-stone-900">
                 {contractDetails.businessType}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Property Manager</p>
-              <div className="flex items-center space-x-2 text-gray-900">
-                <User className="w-4 h-4 text-gray-400" />
+              <p className="text-sm text-stone-600">Property Manager</p>
+              <div className="flex items-center space-x-2 text-stone-900">
+                <User className="w-4 h-4 text-stone-400" />
                 <span>{contractDetails.contactPerson}</span>
               </div>
             </div>
             <div>
-              <p className="text-sm text-gray-600">Contact</p>
-              <p className="text-gray-900">{contractDetails.contactEmail}</p>
-              <p className="text-gray-900">{contractDetails.contactPhone}</p>
+              <p className="text-sm text-stone-600">Contact</p>
+              <p className="text-stone-900">{contractDetails.contactEmail}</p>
+              <p className="text-stone-900">{contractDetails.contactPhone}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Key Terms */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">
+      <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
+        <h3 className="text-lg font-semibold text-stone-900 mb-6 border-b border-stone-200 pb-2">
           Key Contract Terms
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {contractTerms.map((term, index) => (
             <div
               key={index}
-              className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+              className="flex justify-between items-center p-3 bg-stone-50 rounded-lg border border-stone-200 hover:bg-stone-100 transition duration-150"
             >
-              <span className="font-medium text-gray-700">{term.term}</span>
-              <span className="text-gray-900">{term.value}</span>
+              <span className="font-medium text-stone-700">{term.term}</span>
+              <span className="text-stone-900 font-semibold">{term.value}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Important Notes */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h4 className="font-semibold text-blue-900 mb-3">
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+        <h4 className="font-semibold text-blue-900 mb-3 border-b border-blue-200 pb-2">
           Important Information
         </h4>
         <ul className="text-blue-800 space-y-2 text-sm">
@@ -186,11 +186,11 @@ const MyContract: React.FC = () => {
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
-        <button className="flex items-center justify-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+        <button className="flex items-center justify-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl shadow-lg hover:shadow-xl transition duration-150 transform active:scale-95">
           <FileText className="w-5 h-5" />
           <span>Request Lease Renewal</span>
         </button>
-        <button className="flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+        <button className="flex items-center justify-center space-x-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-lg hover:shadow-xl transition duration-150 transform active:scale-95">
           <Download className="w-5 h-5" />
           <span>Download Full Contract</span>
         </button>

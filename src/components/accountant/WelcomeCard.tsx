@@ -6,7 +6,7 @@ interface WelcomeCardProps {
 
 const WelcomeCard: React.FC<WelcomeCardProps> = ({ paymentsCount }) => {
   return (
-    <div className="bg-blue-600 text-white rounded-lg shadow-md p-6 mb-6">
+    <div className="bg-red-600 text-white rounded-lg shadow-md p-6 mb-6">
       <h2 className="text-xl font-semibold mb-2">
         Welcome back, Accountant!
       </h2>

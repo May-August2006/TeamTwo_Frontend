@@ -13,6 +13,7 @@ export interface Room {
   utilities: UtilityType[];
   createdAt: string;
   updatedAt: string;
+  currentTenantName?: string;
 }
 
 export interface RoomType {

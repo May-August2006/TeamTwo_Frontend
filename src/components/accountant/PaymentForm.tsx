@@ -223,7 +223,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     return (
       <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
           <span className="ml-3 text-gray-600">Loading authentication...</span>
         </div>
       </div>
@@ -244,7 +244,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           <p className="text-gray-600 mb-4">You need to be logged in to record payments.</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
           >
             Reload Page
           </button>
@@ -278,7 +278,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             </label>
             {loadingInvoices ? (
               <div className="flex items-center justify-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600"></div>
                 <span className="ml-2 text-gray-600">Loading invoices...</span>
               </div>
             ) : (
@@ -288,7 +288,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
                   value={formData.invoiceId}
                   onChange={handleInputChange}
                   required
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 >
                   <option value={0}>Select an invoice</option>
                   {invoices.map(invoice => (
@@ -316,7 +316,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               onChange={handleInputChange}
               required
               max={new Date().toISOString().split('T')[0]}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
 
@@ -330,7 +330,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               value={formData.paymentMethod}
               onChange={handleInputChange}
               required
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
               {paymentMethods.map(method => (
                 <option key={method.value} value={method.value}>
@@ -354,7 +354,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               min="0"
               step="0.01"
               max={selectedInvoice ? (selectedInvoice.balanceAmount || selectedInvoice.totalAmount) : undefined}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
             {selectedInvoice && (
               <p className="text-sm text-gray-500 mt-1">
@@ -374,7 +374,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               value={formData.referenceNumber}
               onChange={handleInputChange}
               placeholder="Check number, transaction ID, etc."
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
 
@@ -404,7 +404,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             onChange={handleInputChange}
             rows={3}
             placeholder="Additional payment details, remarks, or comments..."
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
           />
         </div>
 
@@ -439,7 +439,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               </div>
               <div>
                 <span className="font-medium">Balance Due:</span>
-                <div className="font-semibold text-blue-600">
+                <div className="font-semibold text-red-600">
                   {(selectedInvoice.balanceAmount || selectedInvoice.totalAmount)?.toLocaleString()} MMK
                 </div>
               </div>
@@ -510,7 +510,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           <button
             type="submit"
             disabled={loading || loadingInvoices || formData.invoiceId === 0 || !isAuthenticated || !userId}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors duration-200"
+            className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors duration-200"
           >
             {loading ? (
               <>

@@ -19,7 +19,7 @@ const RecentPaymentsTable: React.FC<RecentPaymentsTableProps> = ({ payments }) =
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">Recent Payments</h3>
-        <button className="flex items-center text-blue-600 hover:text-blue-800 text-sm">
+        <button className="flex items-center text-red-600 hover:text-red-800 text-sm">
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
@@ -49,7 +49,7 @@ const RecentPaymentsTable: React.FC<RecentPaymentsTableProps> = ({ payments }) =
                 </td>
                 <td className="py-3 px-4 border-b text-sm">{payment.dateTime}</td>
                 <td className="py-3 px-4 border-b">
-                  <button className="text-blue-600 hover:text-blue-800 p-1">
+                  <button className="text-red-600 hover:text-red-800 p-1">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>

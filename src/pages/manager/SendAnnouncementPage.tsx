@@ -1,4 +1,5 @@
 /** @format */
+
 import { useState, useEffect } from "react";
 import { announcementApi } from "../../api/announcementApi";
 import type { Announcement } from "../../types";
@@ -17,7 +18,7 @@ const Toast = ({
   }, [onClose]);
 
   return (
-    <div className="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded shadow-lg animate-fade-in z-[9999]">
+    <div className="fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in z-[9999]">
       {message}
     </div>
   );
@@ -80,18 +81,18 @@ export default function SendAnnouncementPage() {
   };
 
   return (
-    <div className="relative p-6 bg-white rounded-lg shadow space-y-8">
+    <div className="p-4 sm:p-8 bg-white rounded-xl border border-stone-200 shadow-sm space-y-8 min-h-screen bg-stone-50">
       {/* ==================== Composer ==================== */}
       <div>
-        <h1 className="text-2xl font-bold mb-4">Create Announcement</h1>
+        <h1 className="text-2xl font-bold text-stone-900 mb-6">Create Announcement</h1>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <input
             type="text"
             placeholder="Announcement title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full border p-2 rounded"
+            className="w-full border border-stone-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-150"
           />
 
           <textarea
@@ -99,21 +100,14 @@ export default function SendAnnouncementPage() {
             placeholder="Announcement message"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="w-full border p-2 rounded"
+            className="w-full border border-stone-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-150"
           />
-
-          {/* <input
-            type="datetime-local"
-            value={scheduledAt}
-            onChange={(e) => setScheduledAt(e.target.value)}
-            className="w-full border p-2 rounded"
-          /> */}
 
           <div className="flex gap-2">
             <button
               onClick={() => setPreviewOpen(true)}
               disabled={loading}
-              className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded"
+              className="px-4 py-2 bg-stone-500 hover:bg-stone-600 text-white rounded-lg transition duration-150 disabled:opacity-50"
             >
               Preview
             </button>
@@ -121,7 +115,7 @@ export default function SendAnnouncementPage() {
             <button
               onClick={handleSend}
               disabled={loading}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition duration-150 disabled:opacity-50 font-semibold"
             >
               {loading ? "Sending..." : "Send Announcement"}
             </button>
@@ -131,17 +125,17 @@ export default function SendAnnouncementPage() {
 
       {/* ==================== Preview Modal ==================== */}
       {previewOpen && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded-lg w-96 shadow-lg space-y-4">
-            <h2 className="text-xl font-semibold">Preview Announcement</h2>
-            <p>
+        <div className="fixed inset-0 bg-stone-900 bg-opacity-70 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded-xl w-96 shadow-lg space-y-4">
+            <h2 className="text-xl font-semibold text-stone-900">Preview Announcement</h2>
+            <p className="text-stone-700">
               <strong>Title:</strong> {title}
             </p>
-            <p>
+            <p className="text-stone-700">
               <strong>Message:</strong> {message}
             </p>
             {scheduledAt && (
-              <p>
+              <p className="text-stone-700">
                 <strong>Scheduled:</strong>{" "}
                 {new Date(scheduledAt).toLocaleString()}
               </p>
@@ -150,13 +144,13 @@ export default function SendAnnouncementPage() {
             <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setPreviewOpen(false)}
-                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded"
+                className="px-4 py-2 bg-stone-500 hover:bg-stone-600 text-white rounded-lg transition duration-150"
               >
                 Close
               </button>
               <button
                 onClick={handleSend}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition duration-150 font-semibold"
               >
                 Send
               </button>
@@ -167,24 +161,24 @@ export default function SendAnnouncementPage() {
 
       {/* ==================== Announcement List ==================== */}
       <div>
-        <h2 className="text-xl font-semibold mb-3">Announcement History</h2>
+        <h2 className="text-xl font-semibold text-stone-900 mb-4">Announcement History</h2>
 
-        <div className="divide-y border rounded-lg">
+        <div className="divide-y border border-stone-200 rounded-lg bg-white">
           {announcements.length === 0 && (
-            <p className="p-4 text-gray-500 text-center">
+            <p className="p-8 text-stone-500 text-center bg-stone-50 rounded-lg">
               No announcements yet.
             </p>
           )}
 
           {announcements.map((a) => (
-            <div key={a.id} className="p-4 hover:bg-gray-50 transition">
-              <h3 className="font-medium text-gray-900">{a.title}</h3>
-              <p className="text-gray-700 mt-1">{a.message}</p>
-              <p className="text-sm text-gray-500 mt-2">
+            <div key={a.id} className="p-6 hover:bg-stone-50 transition duration-150">
+              <h3 className="font-medium text-stone-900">{a.title}</h3>
+              <p className="text-stone-700 mt-2">{a.message}</p>
+              <p className="text-sm text-stone-500 mt-3">
                 Posted: {new Date(a.createdAt).toLocaleString()}
               </p>
               {a.scheduledAt && (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-stone-500">
                   Scheduled: {new Date(a.scheduledAt).toLocaleString()}
                 </p>
               )}
