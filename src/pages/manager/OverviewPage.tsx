@@ -120,31 +120,31 @@ export const OverviewPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-6 min-h-screen bg-stone-50">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="h-8 bg-stone-200 rounded w-1/4 mb-4"></div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} className="h-24 bg-stone-200 rounded-xl"></div>
             ))}
           </div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+          <div className="h-64 bg-stone-200 rounded-xl"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold text-blue-800 mb-6">Dashboard Overview</h1>
+    <div className="p-4 sm:p-8 min-h-screen bg-stone-50">
+      <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 mb-6">Dashboard Overview</h1>
       
       {/* KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {kpis.map((kpi) => (
-          <div key={kpi.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
-            <h3 className="text-sm font-medium text-gray-600 mb-2">{kpi.title}</h3>
+          <div key={kpi.id} className="bg-white rounded-xl border border-stone-200 p-4 shadow-sm">
+            <h3 className="text-sm font-medium text-stone-600 mb-2">{kpi.title}</h3>
             <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-bold text-gray-900">
+              <span className="text-2xl font-bold text-stone-900">
                 {formatValue(kpi)}
               </span>
               <div className={`flex items-center text-sm ${
@@ -167,11 +167,11 @@ export const OverviewPage: React.FC = () => {
       </div>
 
       {/* Alerts Section */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Recent Alerts</h2>
+      <div className="bg-white rounded-xl border border-stone-200 shadow-sm">
+        <div className="p-4 sm:p-6 border-b border-stone-200">
+          <h2 className="text-xl font-semibold text-stone-900">Recent Alerts</h2>
         </div>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <div className="space-y-4">
             {alerts.map((alert) => (
               <div
@@ -182,22 +182,22 @@ export const OverviewPage: React.FC = () => {
                     : alert.type === 'error'
                     ? 'border-red-400 bg-red-50'
                     : alert.type === 'info'
-                    ? 'border-blue-400 bg-blue-50'
+                    ? 'border-red-400 bg-red-50'
                     : 'border-green-400 bg-green-50'
                 }`}
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-medium text-gray-900">{alert.title}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{alert.message}</p>
-                    <span className="text-xs text-gray-500 mt-2 block">
+                    <h3 className="font-medium text-stone-900">{alert.title}</h3>
+                    <p className="text-sm text-stone-600 mt-1">{alert.message}</p>
+                    <span className="text-xs text-stone-500 mt-2 block">
                       {new Date(alert.timestamp).toLocaleDateString()}
                     </span>
                   </div>
                   {alert.actionRequired && (
                     <button
                       onClick={() => handleAlertAction(alert.id, 'view')}
-                      className="px-3 py-1 text-sm bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                      className="px-3 py-1 text-sm bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition duration-150"
                     >
                       View
                     </button>

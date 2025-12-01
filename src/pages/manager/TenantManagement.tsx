@@ -1,3 +1,5 @@
+/** @format */
+
 import React, { useState, useEffect } from 'react';
 import type { CreateTenantRequest, Tenant, TenantCategory, TenantSearchParams, UpdateTenantRequest } from '../../types/tenant';
 import { tenantApi } from '../../api/TenantAPI';
@@ -46,7 +48,6 @@ const TenantManagement: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const [selectedTenant, setSelectedTenant] = useState<Tenant | undefined>();
 
-  // Debug effect
   useEffect(() => {
     console.log('Tenants state updated:', tenants.length, 'tenants');
   }, [tenants]);
@@ -98,7 +99,7 @@ const TenantManagement: React.FC = () => {
     }
   };
 
-  // Tenant handlers - FIXED VERSIONS
+  // Tenant handlers
   const handleCreateTenant = async (tenantData: CreateTenantRequest) => {
     try {
       setFormLoading(true);
@@ -111,11 +112,9 @@ const TenantManagement: React.FC = () => {
       setShowForm(false);
       setSuccess('Tenant created successfully!');
       
-      // Update state immediately
       if (newTenant && newTenant.id) {
         setTenants(prev => [...prev, newTenant]);
       } else {
-        // Fallback: reload from server if API response is incomplete
         await loadTenants(searchParams);
       }
       
@@ -143,7 +142,6 @@ const TenantManagement: React.FC = () => {
       setIsEditing(false);
       setSuccess('Tenant updated successfully!');
       
-      // Update state immediately
       setTenants(prev => 
         prev.map(tenant => 
           tenant.id === editingTenant.id ? { ...tenant, ...updatedTenant } : tenant
@@ -167,7 +165,6 @@ const TenantManagement: React.FC = () => {
       await tenantApi.delete(deletingTenantId);
       setShowDeleteModal(false);
       
-      // Update state immediately
       setTenants(prev => prev.filter(tenant => tenant.id !== deletingTenantId));
       setInactiveTenantsCount(prev => prev + 1);
       
@@ -183,11 +180,9 @@ const TenantManagement: React.FC = () => {
   };
 
   const handleEditTenant = (tenant: Tenant) => {
-    // Close detail view first
     setShowDetail(false);
     setSelectedTenant(undefined);
     
-    // Then open edit form
     setEditingTenant(tenant);
     setIsEditing(true);
     setShowForm(true);
@@ -212,7 +207,6 @@ const TenantManagement: React.FC = () => {
       setShowCategoryForm(false);
       setSuccess('Category created successfully!');
       
-      // Update state immediately
       setCategories(prev => [...prev, newCategory]);
       
       setTimeout(() => setSuccess(''), 3000);
@@ -235,7 +229,6 @@ const TenantManagement: React.FC = () => {
       setIsEditingCategory(false);
       setSuccess('Category updated successfully!');
       
-      // Update state immediately
       setCategories(prev => 
         prev.map(category => 
           category.id === editingCategory.id ? { ...category, ...updatedCategory } : category
@@ -259,7 +252,6 @@ const TenantManagement: React.FC = () => {
       await tenantApi.category.delete(deletingCategoryId);
       setShowCategoryDeleteModal(false);
       
-      // Update state immediately
       setCategories(prev => prev.filter(category => category.id !== deletingCategoryId));
       
       setDeletingCategoryId(null);
@@ -345,19 +337,19 @@ const TenantManagement: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-stone-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Tenant Management</h1>
-              <p className="text-gray-600 mt-2">Manage your tenants, categories, and inactive accounts</p>
+              <h1 className="text-3xl font-bold text-stone-900">Tenant Management</h1>
+              <p className="text-stone-600 mt-2">Manage your tenants, categories, and inactive accounts</p>
             </div>
             {activeTab === 'tenants' && (
               <button
                 onClick={() => setShowForm(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition duration-150 font-semibold w-full sm:w-auto"
               >
                 Add New Tenant
               </button>
@@ -365,7 +357,7 @@ const TenantManagement: React.FC = () => {
             {activeTab === 'categories' && (
               <button
                 onClick={() => setShowCategoryForm(true)}
-                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition duration-150 font-semibold w-full sm:w-auto"
               >
                 Add New Category
               </button>
@@ -375,15 +367,15 @@ const TenantManagement: React.FC = () => {
 
         {/* Tab Navigation */}
         <div className="mb-6">
-          <div className="border-b border-gray-200">
+          <div className="border-b border-stone-200">
             <nav className="-mb-px flex space-x-8">
               <button
                 onClick={() => setActiveTab('tenants')}
                 className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'tenants'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                    ? 'border-red-500 text-red-600'
+                    : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
+                } transition duration-150`}
               >
                 Active Tenants ({tenants.length})
               </button>
@@ -391,9 +383,9 @@ const TenantManagement: React.FC = () => {
                 onClick={() => setActiveTab('categories')}
                 className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'categories'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                    ? 'border-red-500 text-red-600'
+                    : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
+                } transition duration-150`}
               >
                 Categories ({categories.length})
               </button>
@@ -402,8 +394,8 @@ const TenantManagement: React.FC = () => {
                 className={`whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'inactive'
                     ? 'border-red-500 text-red-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                    : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
+                } transition duration-150`}
               >
                 Inactive Tenants ({inactiveTenantsCount})
               </button>
@@ -413,54 +405,42 @@ const TenantManagement: React.FC = () => {
 
         {/* Alerts */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            </div>
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center">
+            <svg className="w-5 h-5 text-red-400 mr-3" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <p className="text-sm text-red-700">{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-green-700">{success}</p>
-              </div>
-            </div>
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center">
+            <svg className="w-5 h-5 text-green-400 mr-3" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <p className="text-sm text-green-700">{success}</p>
           </div>
         )}
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active Tenants</p>
-                <p className="text-2xl font-semibold text-gray-900">{tenants.length}</p>
+                <p className="text-sm font-medium text-stone-600">Active Tenants</p>
+                <p className="text-2xl font-semibold text-stone-900">{tenants.length}</p>
               </div>
             </div>
           </div>
           
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
@@ -470,24 +450,24 @@ const TenantManagement: React.FC = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Inactive Tenants</p>
-                <p className="text-2xl font-semibold text-gray-900">{inactiveTenantsCount}</p>
+                <p className="text-sm font-medium text-stone-600">Inactive Tenants</p>
+                <p className="text-2xl font-semibold text-stone-900">{inactiveTenantsCount}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                   </svg>
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Categories</p>
-                <p className="text-2xl font-semibold text-gray-900">{categories.length}</p>
+                <p className="text-sm font-medium text-stone-600">Categories</p>
+                <p className="text-2xl font-semibold text-stone-900">{categories.length}</p>
               </div>
             </div>
           </div>

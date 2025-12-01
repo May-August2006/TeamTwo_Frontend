@@ -135,9 +135,13 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
               <span className="ml-2 text-gray-600">{room.level?.levelName} (Level {room.level?.levelNumber})</span>
             </div>
             <div>
-              <span className="font-semibold text-gray-700">Branch:</span>
-              <span className="ml-2 text-gray-600">{room.level?.building?.branchName}</span>
-            </div>
+  <span className="font-semibold text-gray-700">Branch:</span>
+  <span className="ml-2 text-gray-600">
+    {room.level?.building?.branch?.branchName || 
+     room.level?.building?.branchName || 
+     'N/A'}
+  </span>
+</div>
           </div>
         </div>
 

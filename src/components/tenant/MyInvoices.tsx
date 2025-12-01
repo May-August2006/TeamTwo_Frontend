@@ -67,46 +67,56 @@ export default function MyInvoices() {
     }
   };
 
-  if (loading) return <p>Loading invoices...</p>;
+  if (loading) return (
+    <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
+      <div className="text-xl font-medium text-stone-700 animate-pulse">Loading Invoices...</div>
+    </div>
+  );
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 sm:p-6 space-y-6 min-h-screen bg-stone-50">
       <Toaster position="top-right" />
 
-      <div className="flex justify-between">
-        <h2 className="text-2xl font-semibold">My Invoices</h2>
-        <span>{connected ? "🟢 Online" : "🔴 Offline"}</span>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">My Invoices</h2>
+        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${connected ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+          {connected ? "🟢 Online" : "🔴 Offline"}
+        </span>
       </div>
 
-      <div className="bg-white shadow rounded divide-y">
+      <div className="bg-white rounded-xl shadow-lg border border-stone-200 overflow-hidden">
         {invoices.length === 0 && (
-          <p className="p-4 text-gray-500 text-center">No invoices</p>
+          <div className="p-8 text-center text-stone-500 bg-stone-50">
+            <div className="text-5xl mb-3">📄</div>
+            <div className="text-xl font-semibold text-stone-700">No Invoices</div>
+            <p className="text-sm mt-1">No invoices available at this time</p>
+          </div>
         )}
 
         {invoices.map((inv) => (
           <div
             key={inv.id}
-            className="flex justify-between px-4 py-3 hover:bg-gray-50"
+            className="flex justify-between items-center px-6 py-4 hover:bg-red-50/50 transition duration-150 border-b border-stone-100 last:border-b-0"
           >
             <div>
-              <p className="font-medium">{inv.invoiceNumber}</p>
-              <p className="text-sm text-gray-500">
+              <p className="font-semibold text-stone-900">{inv.invoiceNumber}</p>
+              <p className="text-sm text-stone-500 mt-1">
                 Issue: {inv.issueDate} • Due: {inv.dueDate}
               </p>
-              <p className="text-sm text-gray-500">{inv.totalAmount} MMK</p>
+              <p className="text-sm font-semibold text-red-600 mt-1">{inv.totalAmount} MMK</p>
             </div>
 
             <div className="flex gap-2">
               <button
                 onClick={() => viewPdf(inv)}
-                className="px-3 py-1 bg-blue-600 text-white rounded"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition duration-150 font-semibold transform active:scale-95"
               >
                 View
               </button>
 
               <button
                 onClick={() => downloadPdf(inv)}
-                className="px-3 py-1 bg-green-600 text-white rounded"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition duration-150 font-semibold transform active:scale-95"
               >
                 Download
               </button>

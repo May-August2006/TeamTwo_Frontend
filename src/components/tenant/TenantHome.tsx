@@ -49,7 +49,7 @@ const TenantHome: React.FC = () => {
       title: "Maintenance",
       value: "0",
       status: "No open requests",
-      color: "text-gray-600",
+      color: "text-stone-600",
       icon: <Wrench className="w-6 h-6" />,
     },
   ];
@@ -89,11 +89,11 @@ const TenantHome: React.FC = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6 min-h-screen bg-stone-50">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl shadow-sm p-6 text-white">
+      <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-xl shadow-lg p-6 text-white">
         <h2 className="text-2xl font-bold mb-2">Welcome back, John!</h2>
-        <p className="text-green-100">
+        <p className="text-red-100">
           Here's your current rental account overview and important updates.
         </p>
       </div>
@@ -103,22 +103,22 @@ const TenantHome: React.FC = () => {
         {quickStats.map((stat, index) => (
           <div
             key={index}
-            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+            className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 hover:shadow-xl transition duration-150"
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-sm font-medium text-stone-600">
                   {stat.title}
                 </p>
                 <p className={`text-2xl font-bold mt-1 ${stat.color}`}>
                   {stat.value}
                 </p>
               </div>
-              <div className="p-3 bg-gray-50 rounded-lg text-gray-600">
+              <div className="p-3 bg-stone-50 rounded-lg text-stone-600">
                 {stat.icon}
               </div>
             </div>
-            <p className="text-sm text-gray-500">{stat.status}</p>
+            <p className="text-sm text-stone-500">{stat.status}</p>
           </div>
         ))}
       </div>
@@ -128,40 +128,40 @@ const TenantHome: React.FC = () => {
         {/* Lease Information */}
         <div className="lg:col-span-2 space-y-6">
           {/* Current Lease Card */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
+            <h3 className="text-lg font-semibold text-stone-900 mb-4 border-b border-stone-200 pb-2">
               Current Lease Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-600">Property</p>
-                <p className="font-semibold text-gray-900">
+                <p className="text-sm text-stone-600">Property</p>
+                <p className="font-semibold text-stone-900">
                   {leaseInfo.property}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Monthly Rent</p>
-                <p className="font-semibold text-gray-900">{leaseInfo.rent}</p>
+                <p className="text-sm text-stone-600">Monthly Rent</p>
+                <p className="font-semibold text-stone-900">{leaseInfo.rent}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Next Payment Due</p>
-                <p className="font-semibold text-gray-900">
+                <p className="text-sm text-stone-600">Next Payment Due</p>
+                <p className="font-semibold text-stone-900">
                   {leaseInfo.nextPayment}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Lease End Date</p>
-                <p className="font-semibold text-gray-900">
+                <p className="text-sm text-stone-600">Lease End Date</p>
+                <p className="font-semibold text-stone-900">
                   {leaseInfo.leaseEnd}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Space</p>
-                <p className="font-semibold text-gray-900">{leaseInfo.space}</p>
+                <p className="text-sm text-stone-600">Space</p>
+                <p className="font-semibold text-stone-900">{leaseInfo.space}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Business Type</p>
-                <p className="font-semibold text-gray-900">
+                <p className="text-sm text-stone-600">Business Type</p>
+                <p className="font-semibold text-stone-900">
                   {leaseInfo.businessType}
                 </p>
               </div>
@@ -169,15 +169,15 @@ const TenantHome: React.FC = () => {
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
+            <h3 className="text-lg font-semibold text-stone-900 mb-4 border-b border-stone-200 pb-2">
               Recent Activity
             </h3>
             <div className="space-y-4">
               {recentActivity.map((activity) => (
                 <div
                   key={activity.id}
-                  className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg"
+                  className="flex items-start space-x-3 p-3 bg-stone-50 rounded-lg hover:bg-stone-100 transition duration-150"
                 >
                   <div
                     className={`p-2 rounded-lg ${
@@ -197,11 +197,11 @@ const TenantHome: React.FC = () => {
                     )}
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-stone-900">
                       {activity.message}
                     </p>
                     <div className="flex items-center justify-between mt-1">
-                      <p className="text-xs text-gray-500">{activity.date}</p>
+                      <p className="text-xs text-stone-500">{activity.date}</p>
                       {activity.amount && (
                         <span
                           className={`text-xs font-medium ${
@@ -224,8 +224,8 @@ const TenantHome: React.FC = () => {
         {/* Right Sidebar */}
         <div className="space-y-6">
           {/* Upcoming Dates */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
+            <h3 className="text-lg font-semibold text-stone-900 mb-4 border-b border-stone-200 pb-2">
               Upcoming Dates
             </h3>
             <div className="space-y-3">
@@ -235,26 +235,26 @@ const TenantHome: React.FC = () => {
                   className={`p-3 rounded-lg ${
                     date.important
                       ? "bg-red-50 border border-red-200"
-                      : "bg-gray-50"
+                      : "bg-stone-50"
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span
                       className={`text-sm font-medium ${
-                        date.important ? "text-red-900" : "text-gray-900"
+                        date.important ? "text-red-900" : "text-stone-900"
                       }`}
                     >
                       {date.event}
                     </span>
                     <Calendar
                       className={`w-4 h-4 ${
-                        date.important ? "text-red-600" : "text-gray-600"
+                        date.important ? "text-red-600" : "text-stone-600"
                       }`}
                     />
                   </div>
                   <p
                     className={`text-sm ${
-                      date.important ? "text-red-700" : "text-gray-600"
+                      date.important ? "text-red-700" : "text-stone-600"
                     }`}
                   >
                     {date.date}
@@ -265,20 +265,20 @@ const TenantHome: React.FC = () => {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
+            <h3 className="text-lg font-semibold text-stone-900 mb-4 border-b border-stone-200 pb-2">
               Quick Actions
             </h3>
             <div className="space-y-3">
-              <button className="w-full flex items-center space-x-3 p-3 text-left bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors">
+              <button className="w-full flex items-center space-x-3 p-3 text-left bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors duration-150">
                 <FileText className="w-5 h-5" />
                 <span>View Current Invoice</span>
               </button>
-              <button className="w-full flex items-center space-x-3 p-3 text-left bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors">
+              <button className="w-full flex items-center space-x-3 p-3 text-left bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors duration-150">
                 <CreditCard className="w-5 h-5" />
                 <span>Make a Payment</span>
               </button>
-              <button className="w-full flex items-center space-x-3 p-3 text-left bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors">
+              <button className="w-full flex items-center space-x-3 p-3 text-left bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors duration-150">
                 <Wrench className="w-5 h-5" />
                 <span>Submit Maintenance Request</span>
               </button>

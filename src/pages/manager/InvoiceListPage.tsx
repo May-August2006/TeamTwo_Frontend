@@ -1,4 +1,5 @@
 /** @format */
+
 import React, { useState, useEffect } from "react";
 import { invoiceApi } from "../../api/InvoiceAPI";
 import type { Invoice } from "../../types/billing";
@@ -44,17 +45,17 @@ export const InvoiceListPage: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     const statusClasses = {
-      DRAFT: "bg-gray-100 text-gray-800",
-      ISSUED: "bg-blue-100 text-blue-800",
+      DRAFT: "bg-stone-100 text-stone-800",
+      ISSUED: "bg-red-100 text-red-800",
       PAID: "bg-green-100 text-green-800",
       OVERDUE: "bg-red-100 text-red-800",
       PARTIAL: "bg-yellow-100 text-yellow-800",
-      CANCELLED: "bg-gray-100 text-gray-800"
+      CANCELLED: "bg-stone-100 text-stone-800"
     };
 
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-        statusClasses[status as keyof typeof statusClasses] || "bg-gray-100 text-gray-800"
+        statusClasses[status as keyof typeof statusClasses] || "bg-stone-100 text-stone-800"
       }`}>
         {status}
       </span>
@@ -63,21 +64,24 @@ export const InvoiceListPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6 flex justify-center">
-        <div className="text-lg">Loading invoices...</div>
+      <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
+        <div className="text-xl font-medium text-stone-700 animate-pulse">Loading invoices...</div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
-        <div className="flex gap-4">
+    <div className="p-4 sm:p-8 min-h-screen bg-stone-50">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">Invoices</h1>
+          <p className="text-stone-600 mt-1 text-sm sm:text-base">Manage and generate tenant invoices</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4">
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            className="border border-stone-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-150 bg-white"
           >
             <option value="ALL">All Status</option>
             <option value="DRAFT">Draft</option>
@@ -89,88 +93,92 @@ export const InvoiceListPage: React.FC = () => {
           <button
             onClick={generateRentInvoices}
             disabled={generating}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed"
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed transition duration-150 font-semibold"
           >
             {generating ? "Generating..." : "Generate Rent Invoices"}
           </button>
         </div>
       </div>
 
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Invoice Number
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Tenant
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Room
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Issue Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Due Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Total Amount
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Balance
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {invoices.map((invoice) => (
-              <tr key={invoice.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {invoice.invoiceNumber}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {invoice.tenantName}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {invoice.roomNumber}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(invoice.issueDate).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(invoice.dueDate).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  ${invoice.totalAmount.toLocaleString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  ${invoice.balanceAmount.toLocaleString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {getStatusBadge(invoice.invoiceStatus)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button className="text-blue-600 hover:text-blue-900 mr-3">
-                    View
-                  </button>
-                  <button className="text-green-600 hover:text-green-900">
-                    Calculate Utilities
-                  </button>
-                </td>
+      <div className="bg-white shadow-xl rounded-xl overflow-hidden ring-1 ring-stone-200">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-stone-200">
+            <thead className="bg-stone-100">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
+                  Invoice Number
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
+                  Tenant
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
+                  Room
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
+                  Issue Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
+                  Due Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
+                  Total Amount
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
+                  Balance
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-stone-200">
+              {invoices.map((invoice) => (
+                <tr key={invoice.id} className="hover:bg-red-50/50 transition duration-100">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-stone-900">
+                    {invoice.invoiceNumber}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
+                    {invoice.tenantName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
+                    {invoice.roomNumber}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
+                    {new Date(invoice.issueDate).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
+                    {new Date(invoice.dueDate).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
+                    ${invoice.totalAmount.toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
+                    ${invoice.balanceAmount.toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {getStatusBadge(invoice.invoiceStatus)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button className="text-red-600 hover:text-red-700 mr-3 transition duration-150">
+                      View
+                    </button>
+                    <button className="text-green-600 hover:text-green-700 transition duration-150">
+                      Calculate Utilities
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {invoices.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No invoices found
+          <div className="text-center py-16 text-stone-500 bg-stone-50 rounded-b-xl">
+            <div className="text-5xl mb-3">📄</div>
+            <div className="text-xl font-semibold text-stone-700">No Invoices Found</div>
+            <p className="text-sm mt-1">Generate rent invoices to get started.</p>
           </div>
         )}
       </div>

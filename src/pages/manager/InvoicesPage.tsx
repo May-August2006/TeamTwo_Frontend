@@ -1,4 +1,5 @@
 /** @format */
+
 import { useEffect, useState, useRef } from "react";
 import { useInvoicesWebSocket } from "../../hooks/useInvoicesWebSocket";
 import toast, { Toaster } from "react-hot-toast";
@@ -93,35 +94,41 @@ export default function InvoicesPage() {
     }
   };
 
-  if (loading) return <p>Loading invoices...</p>;
+  if (loading) {
+    return (
+      <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
+        <div className="text-xl font-medium text-stone-700 animate-pulse">Loading invoices...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-4">
+    <div className="p-4 sm:p-8 min-h-screen bg-stone-50">
       <Toaster position="top-right" />
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold">Invoices</h2>
-        <p className="text-sm text-gray-500">
-          WebSocket: {connected ? "Connected" : "Disconnected"}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">Invoices</h2>
+        <p className="text-sm text-stone-500">
+          WebSocket: {connected ? "🟢 Connected" : "🔴 Disconnected"}
         </p>
       </div>
 
-      <div className="bg-white shadow rounded-lg divide-y">
+      <div className="bg-white shadow-xl rounded-xl border border-stone-200 divide-y divide-stone-200">
         {invoices.map((inv) => (
           <div
             key={inv.id}
-            className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer transition"
+            className="flex items-center justify-between px-6 py-4 hover:bg-red-50/50 cursor-pointer transition duration-150"
           >
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-900 truncate">
+              <p className="font-medium text-stone-900 truncate">
                 {inv.invoiceNumber}
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-stone-500">
                 Tenant: {inv.tenantName} — Room: {inv.roomNumber}
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-stone-500">
                 Issue Date: {inv.issueDate} — Due Date: {inv.dueDate}
               </p>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-stone-500">
                 Amount: {inv.totalAmount} MMK — Status: {inv.invoiceStatus}
               </p>
             </div>
@@ -129,13 +136,13 @@ export default function InvoicesPage() {
             <div className="flex gap-2 ml-4 flex-shrink-0">
               <button
                 onClick={() => viewPdf(inv)}
-                className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
+                className="px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition duration-150"
               >
                 View
               </button>
               <button
                 onClick={() => downloadPdf(inv)}
-                className="px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-white text-sm font-medium"
+                className="px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition duration-150"
               >
                 Download
               </button>
@@ -143,7 +150,11 @@ export default function InvoicesPage() {
           </div>
         ))}
         {invoices.length === 0 && (
-          <p className="p-4 text-gray-500 text-center">No invoices found</p>
+          <div className="p-12 text-center text-stone-500 bg-stone-50 rounded-b-xl">
+            <div className="text-5xl mb-3">📄</div>
+            <div className="text-xl font-semibold text-stone-700">No Invoices Found</div>
+            <p className="text-sm mt-1">Generated invoices will appear here automatically.</p>
+          </div>
         )}
       </div>
     </div>
