@@ -8,8 +8,7 @@ export const invoiceApi = {
   // Get all invoices
   getAll: () => API.get<InvoiceDTO[]>("/api/invoices"),
 
- getUnpaidInvoices: () => API.get<InvoiceDTO[]>('/api/invoices/unpaid'),
- 
+  getUnpaidInvoices: () => API.get<InvoiceDTO[]>("/api/invoices/unpaid"),
 
   // Get invoice by ID
   getById: (id: number) => API.get<InvoiceDTO>(`/api/invoices/${id}`),
@@ -18,11 +17,12 @@ export const invoiceApi = {
   getByContract: (contractId: number) =>
     API.get<InvoiceDTO[]>(`/api/invoices/contract/${contractId}`),
 
-  // Get invoices by status
-  getByStatus: (status: string) =>
-    API.get<InvoiceDTO[]>(`/api/invoices/status/${status}`),
+  // Get invoices by status (OVERDUE, OUTSTANDING, or ALL unpaid)
+  getInvoicesByStatus: (status?: string) =>
+    API.get<InvoiceDTO[]>("/api/invoices/status", {
+      params: status ? { status } : undefined, // only include param when provided
+    }),
 
-  
   // Generate rent invoices
   generateRentInvoices: () =>
     API.post<InvoiceDTO[]>("/api/invoices/generate-rent"),
@@ -46,4 +46,6 @@ export const invoiceApi = {
     API.get(`/api/invoices/download/${invoiceId}`, {
       responseType: "blob", // important for binary files
     }),
+
+  getOverdueInvoices: () => API.get<InvoiceDTO[]>("/api/invoices/overdue"),
 };

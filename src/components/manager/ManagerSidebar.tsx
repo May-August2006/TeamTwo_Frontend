@@ -27,6 +27,35 @@ interface ManagerSidebarProps {
   onToggleCollapse: () => void;
 }
 
+const menuItems = [
+  { value: "overview", label: "Overview", path: "/manager/overview" },
+  { value: "tenants", label: "Tenant Management", path: "/manager/tenants" },
+  {
+    value: "appointments",
+    label: "Appointments",
+    path: "/manager/appointments",
+  },
+  {
+    value: "announcements",
+    label: "Announcements",
+    path: "/manager/announcements",
+  },
+  { value: "leases", label: "Lease Management", path: "/manager/leases" },
+  { value: "billing", label: "Billing & Utilities", path: "/manager/billing" },
+  { value: "payments", label: "Payments", path: "/manager/payments" },
+  { value: "maintenance", label: "Maintenance", path: "/manager/maintenance" },
+  { value: "reports", label: "Reports", path: "/manager/reports" },
+  { value: "invoices", label: "Invoices", path: "/manager/invoices" },
+  { value: "lateFee", label: "LateFee", path: "/manager/lateFee" },
+  {
+    value: "overdueOrOustanding",
+    label: "OverdueOrOustanding",
+    path: "/manager/overdueOrOustanding",
+  },
+];
+
+export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
+  mobileOpen,
 export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
   isOpen,
   onClose,
