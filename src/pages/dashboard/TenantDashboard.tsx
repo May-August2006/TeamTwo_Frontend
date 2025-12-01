@@ -11,6 +11,8 @@ import MyContract from "../../components/tenant/MyContract";
 import MaintenanceRequests from "../../components/tenant/MaintenanceRequests";
 import { TenantAnnouncements } from "../../components/tenant/TenantAnnouncements";
 import MyReminders from "../../components/tenant/MyReminders";
+import MyLateFee from "../../components/tenant/MyLateFees";
+import MyLateFees from "../../components/tenant/MyLateFees";
 
 const TenantDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -82,6 +84,7 @@ const TenantDashboard: React.FC = () => {
                 />
                 <Route path="/reminders" element={<MyReminders />} />
                 <Route path="/maintenance" element={<MaintenanceRequests />} />
+                <Route path="/lateFees" element={<MyLateFees />} />
               </Routes>
             </div>
           </div>

@@ -31,6 +31,12 @@ const menuItems = [
   { value: "maintenance", label: "Maintenance", path: "/manager/maintenance" },
   { value: "reports", label: "Reports", path: "/manager/reports" },
   { value: "invoices", label: "Invoices", path: "/manager/invoices" },
+  { value: "lateFee", label: "LateFee", path: "/manager/lateFee" },
+  {
+    value: "overdueOrOustanding",
+    label: "OverdueOrOustanding",
+    path: "/manager/overdueOrOustanding",
+  },
 ];
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({

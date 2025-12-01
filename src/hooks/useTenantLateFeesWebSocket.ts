@@ -3,27 +3,26 @@ import { useEffect, useRef, useState } from "react";
 import SockJS from "sockjs-client";
 import { Client, type Message } from "@stomp/stompjs";
 import { jwtDecode } from "jwt-decode";
-import type { InvoiceDTO } from "../types";
+import type { LateFeeResponseDTO } from "../types";
 
-export function useTenantInvoicesWebSocket(jwtToken: string) {
+export function useTenantLateFeesWebSocket(jwtToken: string) {
   const stompClient = useRef<Client | null>(null);
-  const [invoices, setInvoices] = useState<InvoiceDTO[]>([]);
+  const [lateFees, setLateFees] = useState<LateFeeResponseDTO[]>([]);
   const [connected, setConnected] = useState(false);
 
-  // ⬅️ Extract tenantId from JWT
+  // ⬅️ extract tenantId from JWT
   let tenantId: number | null = null;
-
-  console.log(jwtDecode(localStorage.getItem("accessToken")!));
 
   try {
     const decoded: any = jwtDecode(jwtToken);
-    tenantId = decoded.tenantId; // MUST exist in JWT
+    tenantId = decoded.tenantId;
   } catch (_) {}
 
   useEffect(() => {
     if (!jwtToken || !tenantId) return;
 
     const socket = new SockJS("http://localhost:8080/ws");
+
     const client = new Client({
       webSocketFactory: () => socket as any,
       debug: (msg) => console.log("[STOMP]", msg),
@@ -31,19 +30,16 @@ export function useTenantInvoicesWebSocket(jwtToken: string) {
       connectHeaders: { Authorization: `Bearer ${jwtToken}` },
 
       onConnect: () => {
-        console.log("Tenant WS Connected");
+        console.log("Tenant LateFee WS Connected");
         setConnected(true);
 
-        // 🔥 Subscribe to tenant-specific topic
+        // 🔥 SUBSCRIBE TO tenant late fee topic
         client.subscribe(
-          `/topic/tenant/${tenantId}/invoices`,
+          `/topic/tenant/${tenantId}/lateFees`,
           (msg: Message) => {
-            const invoice: InvoiceDTO = JSON.parse(msg.body);
+            const newLateFee: LateFeeResponseDTO = JSON.parse(msg.body);
 
-            setInvoices((prev) => {
-              if (prev.find((p) => p.id === invoice.id)) return prev;
-              return [invoice, ...prev];
-            });
+            setLateFees((prev) => [newLateFee, ...prev]);
           }
         );
       },
@@ -62,5 +58,5 @@ export function useTenantInvoicesWebSocket(jwtToken: string) {
     };
   }, [jwtToken, tenantId]);
 
-  return { invoices, setInvoices, connected };
+  return { lateFees, setLateFees, connected };
 }

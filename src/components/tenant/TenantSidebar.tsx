@@ -62,6 +62,11 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
       icon: <Bell className="w-5 h-5" />,
       path: "/tenant/reminders",
     },
+    {
+      name: "Late Fee",
+      icon: <FileCheck className="w-5 h-5" />,
+      path: "/tenant/lateFees",
+    },
   ];
 
   const isActivePath = (path: string) => {
