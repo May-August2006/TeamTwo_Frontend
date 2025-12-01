@@ -12,14 +12,14 @@ const QuickActionsCard: React.FC<QuickActionsCardProps> = ({ onRecordPayment }) 
       </h3>
       <button 
         onClick={onRecordPayment}
-        className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 mb-2"
+        className="w-full bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 mb-2"
       >
         Record Payment
       </button>
-      <button className="w-full border border-blue-600 text-blue-600 py-2 px-4 rounded hover:bg-blue-50 mb-2">
+      <button className="w-full border border-red-600 text-red-600 py-2 px-4 rounded hover:bg-red-50 mb-2">
         Generate Invoice
       </button>
-      <button className="w-full border border-blue-600 text-blue-600 py-2 px-4 rounded hover:bg-blue-50">
+      <button className="w-full border border-red-600 text-red-600 py-2 px-4 rounded hover:bg-red-50">
         View Daily Report
       </button>
     </div>

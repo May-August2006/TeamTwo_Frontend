@@ -1,4 +1,5 @@
 /** @format */
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import { OverviewPage } from "../manager/OverviewPage";
 import { BillingUtilitiesPage } from "../manager/BillingUtilitiesPage";
@@ -12,7 +13,12 @@ import SendAnnouncementPage from "../manager/SendAnnouncementPage";
 import { UtilityTypePage } from "../manager/UtilityTypePage";
 import { BillingFeePage } from "../manager/BillingFeePage";
 import { InvoiceListPage } from "../manager/InvoiceListPage";
+<<<<<<< HEAD
 import ManagerMaintenancePage from "../manager/MaintenancePage"; // Add this import
+=======
+import { UsageEntryPage } from "../manager/UsageEntryPage";
+import ManagerMaintenancePage from "../manager/MaintenancePage";
+>>>>>>> 5ff2003a549f866c1db313ba972da142f4684684
 import LeaseManagement from "../manager/LeaseManagement";
 import InvoicesPage from "../manager/InvoicesPage";
 import UsageEntryPage from "../manager/UsageEntryPage";
@@ -35,11 +41,7 @@ export default function ManagerDashboard() {
         <Route path="announcements" element={<SendAnnouncementPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="invoices" element={<InvoicesPage />} />
-
-        {/* Add the Maintenance route */}
         <Route path="maintenance" element={<ManagerMaintenancePage />} />
-
-        {/* Redirect to /overview by default */}
         <Route path="*" element={<Navigate to="overview" replace />} />
       </Routes>
     </ManagerDashboardLayout>

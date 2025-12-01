@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { announcementApi } from "../../api/announcementApi";
 import { useAnnouncementsWebSocket } from "../../hooks/useAnnouncementsWebSocket";
 import type { Announcement } from "../../types";
-import { toast } from "react-hot-toast"; // optional; use your toast lib
+import { toast } from "react-hot-toast";
 
 export function TenantAnnouncements() {
   const jwtToken = localStorage.getItem("accessToken") || "";
@@ -41,27 +41,31 @@ export function TenantAnnouncements() {
   }, [wsAnnouncements]);
 
   return (
-    <div className="space-y-4">
+    <div className="p-4 sm:p-6 space-y-6 min-h-screen bg-stone-50">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Announcements</h2>
-        <p className="text-sm text-gray-500">
-          {connected ? "Live" : "Offline"}
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">Announcements</h2>
+        <p className={`px-3 py-1 rounded-full text-sm font-semibold ${connected ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+          {connected ? "🟢 Live" : "🔴 Offline"}
         </p>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {localAnnouncements.length === 0 ? (
-          <div className="text-sm text-gray-500">No announcements</div>
+          <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-8 text-center">
+            <div className="text-5xl mb-3">📢</div>
+            <div className="text-xl font-semibold text-stone-700">No Announcements</div>
+            <p className="text-sm text-stone-500 mt-1">Check back later for updates from management</p>
+          </div>
         ) : (
           localAnnouncements.map((ann) => (
-            <div key={ann.id} className="p-3 rounded border bg-white shadow-sm">
+            <div key={ann.id} className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 hover:shadow-xl transition duration-150">
               <div className="flex justify-between items-start">
-                <h3 className="font-medium">{ann.title}</h3>
-                <span className="text-xs text-gray-400">
+                <h3 className="font-semibold text-stone-900 text-lg">{ann.title}</h3>
+                <span className="text-xs text-stone-400 bg-stone-100 px-2 py-1 rounded-full">
                   {new Date(ann.createdAt).toLocaleString()}
                 </span>
               </div>
-              <p className="mt-2 text-sm text-gray-700 whitespace-pre-wrap">
+              <p className="mt-3 text-sm text-stone-700 whitespace-pre-wrap bg-stone-50 p-3 rounded-lg">
                 {ann.message}
               </p>
             </div>

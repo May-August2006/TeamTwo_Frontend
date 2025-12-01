@@ -1,4 +1,5 @@
 /** @format */
+
 import React, { useState, useEffect } from "react";
 
 interface Payment {
@@ -16,7 +17,6 @@ export const PaymentManagementPage: React.FC = () => {
   const [payments, setPayments] = useState<Payment[]>([]);
 
   useEffect(() => {
-    // Mock data - replace with actual API calls
     const mockPayments: Payment[] = [
       {
         id: "1",
@@ -75,14 +75,14 @@ export const PaymentManagementPage: React.FC = () => {
     method.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase());
 
   return (
-    <div className="p-4 sm:p-6">
+    <div className="p-4 sm:p-6 min-h-screen bg-stone-50">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-blue-800">
+        <h1 className="text-2xl sm:text-3xl font-bold text-stone-900">
           Payment Management
         </h1>
         <div className="flex flex-wrap gap-2">
-          <button className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm sm:text-base">
+          <button className="bg-red-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2 text-sm sm:text-base transition duration-150">
             <svg
               className="w-5 h-5"
               fill="none"
@@ -98,7 +98,7 @@ export const PaymentManagementPage: React.FC = () => {
             </svg>
             Record Payment
           </button>
-          <button className="border border-gray-300 text-gray-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-50 flex items-center gap-2 text-sm sm:text-base">
+          <button className="border border-stone-300 text-stone-700 px-3 sm:px-4 py-2 rounded-lg hover:bg-stone-50 flex items-center gap-2 text-sm sm:text-base transition duration-150">
             <svg
               className="w-5 h-5"
               fill="none"
@@ -124,7 +124,7 @@ export const PaymentManagementPage: React.FC = () => {
             title: "Today's Collection",
             value: "$8,450",
             subtitle: "From 12 tenants",
-            color: "text-blue-600",
+            color: "text-red-600",
           },
           {
             title: "Monthly Collection",
@@ -148,27 +148,27 @@ export const PaymentManagementPage: React.FC = () => {
         ].map((card, i) => (
           <div
             key={i}
-            className={`bg-white rounded-lg border border-gray-200 p-4 shadow-sm ${
+            className={`bg-white rounded-xl border border-stone-200 p-4 shadow-sm ${
               card.border || ""
             }`}
           >
-            <h3 className="text-sm text-gray-600 mb-2">{card.title}</h3>
+            <h3 className="text-sm text-stone-600 mb-2">{card.title}</h3>
             <p className={`text-2xl font-bold ${card.color}`}>{card.value}</p>
-            <p className="text-xs text-gray-500 mt-1">{card.subtitle}</p>
+            <p className="text-xs text-stone-500 mt-1">{card.subtitle}</p>
           </div>
         ))}
       </div>
 
       {/* Recent Payments */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
-        <div className="p-4 sm:p-6 border-b border-gray-200">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+      <div className="bg-white rounded-xl border border-stone-200 shadow-sm mb-6">
+        <div className="p-4 sm:p-6 border-b border-stone-200">
+          <h2 className="text-lg sm:text-xl font-semibold text-stone-900">
             Recent Payments
           </h2>
         </div>
         <div className="p-4 sm:p-6 overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-stone-50">
               <tr>
                 {[
                   "Receipt No.",
@@ -182,32 +182,32 @@ export const PaymentManagementPage: React.FC = () => {
                 ].map((head) => (
                   <th
                     key={head}
-                    className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider"
                   >
                     {head}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-stone-200">
               {payments.map((payment) => (
-                <tr key={payment.id} className="hover:bg-gray-50">
-                  <td className="px-4 sm:px-6 py-3">{payment.receiptNumber}</td>
-                  <td className="px-4 sm:px-6 py-3">{payment.tenantName}</td>
-                  <td className="px-4 sm:px-6 py-3">{payment.roomNumber}</td>
-                  <td className="px-4 sm:px-6 py-3">{payment.paymentDate}</td>
-                  <td className="px-4 sm:px-6 py-3 font-semibold">
+                <tr key={payment.id} className="hover:bg-stone-50 transition duration-100">
+                  <td className="px-4 sm:px-6 py-3 text-stone-900">{payment.receiptNumber}</td>
+                  <td className="px-4 sm:px-6 py-3 text-stone-900">{payment.tenantName}</td>
+                  <td className="px-4 sm:px-6 py-3 text-stone-500">{payment.roomNumber}</td>
+                  <td className="px-4 sm:px-6 py-3 text-stone-500">{payment.paymentDate}</td>
+                  <td className="px-4 sm:px-6 py-3 font-semibold text-stone-900">
                     ${payment.amount.toLocaleString()}
                   </td>
                   <td className="px-4 sm:px-6 py-3">
-                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs border border-blue-200">
+                    <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs border border-red-200">
                       {formatPaymentMethod(payment.method)}
                     </span>
                   </td>
-                  <td className="px-4 sm:px-6 py-3">{payment.invoiceNumber}</td>
+                  <td className="px-4 sm:px-6 py-3 text-stone-500">{payment.invoiceNumber}</td>
                   <td className="px-4 sm:px-6 py-3">
                     <div className="flex gap-3">
-                      <button className="text-blue-600 hover:text-blue-900">
+                      <button className="text-red-600 hover:text-red-900 transition duration-150">
                         <svg
                           className="w-5 h-5"
                           fill="none"
@@ -228,7 +228,7 @@ export const PaymentManagementPage: React.FC = () => {
                           />
                         </svg>
                       </button>
-                      <button className="text-gray-600 hover:text-gray-900">
+                      <button className="text-stone-600 hover:text-stone-900 transition duration-150">
                         <svg
                           className="w-5 h-5"
                           fill="none"
@@ -253,15 +253,15 @@ export const PaymentManagementPage: React.FC = () => {
       </div>
 
       {/* Outstanding Balances */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-        <div className="p-4 sm:p-6 border-b border-gray-200">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+      <div className="bg-white rounded-xl border border-stone-200 shadow-sm">
+        <div className="p-4 sm:p-6 border-b border-stone-200">
+          <h2 className="text-lg sm:text-xl font-semibold text-stone-900">
             Outstanding Balances
           </h2>
         </div>
         <div className="p-4 sm:p-6 overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-stone-50">
               <tr>
                 {[
                   "Tenant Name",
@@ -273,20 +273,20 @@ export const PaymentManagementPage: React.FC = () => {
                 ].map((head) => (
                   <th
                     key={head}
-                    className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider"
                   >
                     {head}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-stone-200">
               {outstandingBalances.map((balance) => (
-                <tr key={balance.id} className="hover:bg-gray-50">
-                  <td className="px-4 sm:px-6 py-3">{balance.tenantName}</td>
-                  <td className="px-4 sm:px-6 py-3">{balance.roomNumber}</td>
-                  <td className="px-4 sm:px-6 py-3">{balance.dueDate}</td>
-                  <td className="px-4 sm:px-6 py-3 font-semibold">
+                <tr key={balance.id} className="hover:bg-stone-50 transition duration-100">
+                  <td className="px-4 sm:px-6 py-3 text-stone-900">{balance.tenantName}</td>
+                  <td className="px-4 sm:px-6 py-3 text-stone-500">{balance.roomNumber}</td>
+                  <td className="px-4 sm:px-6 py-3 text-stone-500">{balance.dueDate}</td>
+                  <td className="px-4 sm:px-6 py-3 font-semibold text-stone-900">
                     ${balance.amount.toLocaleString()}
                   </td>
                   <td className="px-4 sm:px-6 py-3">
@@ -295,7 +295,7 @@ export const PaymentManagementPage: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-4 sm:px-6 py-3">
-                    <button className="border border-red-300 text-red-600 px-3 py-1 rounded-lg hover:bg-red-50 flex items-center gap-2 text-sm">
+                    <button className="border border-red-300 text-red-600 px-3 py-1 rounded-lg hover:bg-red-50 flex items-center gap-2 text-sm transition duration-150">
                       <svg
                         className="w-4 h-4"
                         fill="none"

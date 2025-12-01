@@ -27,8 +27,6 @@ export interface Building {
   buildingCode: string;
   totalFloors: number;
   totalLeasableArea: number;
-  transformerFee: number;
-  generatorFee: number;
   createdAt: string;
   updatedAt: string;
   managerId?: number;
@@ -41,8 +39,6 @@ export interface BuildingRequest {
   buildingCode?: string;
   totalFloors?: number;
   totalLeasableArea?: number;
-  transformerFee: number;
-  generatorFee: number;
 }
 
 export interface Level {

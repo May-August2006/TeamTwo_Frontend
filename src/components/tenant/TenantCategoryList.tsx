@@ -17,7 +17,7 @@ const TenantCategoryList: React.FC<TenantCategoryListProps> = ({
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -82,7 +82,7 @@ const TenantCategoryList: React.FC<TenantCategoryListProps> = ({
                   <div className="flex justify-end space-x-2">
                     <button
                       onClick={() => onEdit(category)}
-                      className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                      className="text-red-600 hover:text-red-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md text-sm font-medium transition-colors"
                     >
                       Edit
                     </button>

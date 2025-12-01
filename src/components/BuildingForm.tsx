@@ -19,8 +19,6 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
     buildingCode: '',
     totalFloors: 0,
     totalLeasableArea: 0,
-    transformerFee: 0,
-    generatorFee: 0,
   });
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,8 +32,6 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
         buildingCode: building.buildingCode || '',
         totalFloors: building.totalFloors || 0,
         totalLeasableArea: building.totalLeasableArea || 0,
-        transformerFee: building.transformerFee || 0,
-        generatorFee: building.generatorFee || 0,
       });
     }
   }, [building]);
@@ -72,11 +68,7 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'branchId' || 
-               name === 'totalFloors' || 
-               name === 'totalLeasableArea' ||
-               name === 'transformerFee' ||
-               name === 'generatorFee' 
+      [name]: name === 'branchId' || name === 'totalFloors' || name === 'totalLeasableArea' 
         ? Number(value) 
         : value,
     }));
@@ -171,38 +163,6 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
               min="0"
               step="0.01"
               className="number-input"
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">
-              Transformer Fee ($)
-            </label>
-            <input
-              type="number"
-              name="transformerFee"
-              value={formData.transformerFee}
-              onChange={handleChange}
-              min="0"
-              step="0.01"
-              className="number-input"
-              placeholder="0.00"
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">
-              Generator Fee ($)
-            </label>
-            <input
-              type="number"
-              name="generatorFee"
-              value={formData.generatorFee}
-              onChange={handleChange}
-              min="0"
-              step="0.01"
-              className="number-input"
-              placeholder="0.00"
             />
           </div>
 
