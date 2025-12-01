@@ -5,14 +5,14 @@ import { useContractAlerts } from "../hooks/useContractAlerts";
 import { alertApi } from "../api/alertApi";
 import type { ContractAlert } from "../types";
 import { getAccessToken } from "../Auth";
+import { Bell } from "lucide-react";
 
 export const AlertsDropdown = () => {
   const [alerts, setAlerts] = useState<ContractAlert[]>([]);
   const [open, setOpen] = useState(false);
-  const jwtToken = getAccessToken(); // get current JWT
+  const jwtToken = getAccessToken();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch saved alerts from backend
   const fetchAlerts = async () => {
     try {
       const res = await alertApi.getAll();
@@ -33,7 +33,6 @@ export const AlertsDropdown = () => {
     fetchAlerts();
   }, []);
 
-  // Handle new alerts from WebSocket
   const handleNewAlert = useCallback((newAlert: ContractAlert) => {
     setAlerts((prev) => [newAlert, ...prev]);
     toast.success(newAlert.message);
@@ -41,7 +40,6 @@ export const AlertsDropdown = () => {
 
   useContractAlerts(jwtToken || "", handleNewAlert);
 
-  // Mark an alert as read
   const markRead = async (alertId: number) => {
     try {
       await alertApi.markRead(alertId);
@@ -54,7 +52,6 @@ export const AlertsDropdown = () => {
     }
   };
 
-  // Toggle dropdown
   const handleDropdownToggle = () => {
     setOpen(!open);
     if (!open) {
@@ -64,7 +61,6 @@ export const AlertsDropdown = () => {
     }
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -75,34 +71,47 @@ export const AlertsDropdown = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const unreadCount = alerts.filter((a) => !a.read).length;
 
   return (
     <div className="relative ml-auto" ref={dropdownRef}>
       <Toaster position="top-right" />
+
+      {/* 🔔 Bell Icon Button */}
       <button
         onClick={handleDropdownToggle}
-        className="px-4 py-2 bg-blue-600 text-white rounded shadow z-50 relative"
+        className="relative p-2 rounded-lg hover:bg-[#EBDCCB] transition"
       >
-        Alerts ({alerts.filter((a) => !a.read).length})
+        <Bell className="w-6 h-6 text-[#C8102E]" />
+
+        {/* 🔴 Unread Badge */}
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-[#C8102E] text-white text-xs px-1.5 py-0.5 rounded-full">
+            {unreadCount}
+          </span>
+        )}
       </button>
+
       {open && (
-        <div className="absolute top-full right-0 mt-2 w-80 bg-white border rounded shadow-lg max-h-96 overflow-y-auto z-50">
+        <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-[#C8102E] rounded shadow-lg max-h-96 overflow-y-auto z-50">
           {alerts.length === 0 && (
             <div className="p-4 text-gray-500">No alerts</div>
           )}
+
           {alerts.map((alert) => (
             <div
               key={alert.id}
-              className={`p-2 border-b cursor-pointer ${
-                alert.read ? "bg-gray-100" : "bg-white font-bold"
+              className={`p-3 border-b ${
+                alert.read
+                  ? "bg-gray-100"
+                  : "bg-[#FFF1F1] font-semibold border-l-4 border-[#C8102E]"
               }`}
             >
-              <div>{alert.message}</div>
-              <div className="text-xs text-gray-400">
+              <div className="text-[#C8102E]">{alert.message}</div>
+              <div className="text-xs text-gray-500">
                 {new Date(alert.createdAt).toLocaleString()}
               </div>
             </div>

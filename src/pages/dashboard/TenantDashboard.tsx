@@ -14,6 +14,7 @@ import MyReminders from "../../components/tenant/MyReminders";
 
 const TenantDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,6 +25,10 @@ const TenantDashboard: React.FC = () => {
   const handleNavigate = (path: string) => {
     navigate(path);
     setSidebarOpen(false); // Close sidebar on navigation for mobile
+  };
+
+  const handleToggleCollapse = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
   const getPageTitle = () => {
@@ -40,14 +45,6 @@ const TenantDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Fixed Sidebar */}
-      <TenantSidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        currentPath={location.pathname}
-        onNavigate={handleNavigate}
-      />
-
       {/* Fixed Header */}
       <TenantHeader
         onMenuToggle={() => setSidebarOpen(true)}
@@ -55,18 +52,25 @@ const TenantDashboard: React.FC = () => {
         pageTitle={getPageTitle()}
       />
 
+      {/* Fixed Sidebar */}
+      <TenantSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        currentPath={location.pathname}
+        onNavigate={handleNavigate}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={handleToggleCollapse}
+      />
+
       {/* Main Content Area - Adjusted for fixed header and sidebar */}
-      <main className="lg:ml-64 pt-16 min-h-screen">
+      <main className={`pt-16 min-h-screen transition-all duration-300 ${
+        isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      }`}>
         <div className="p-6">
           <div className="max-w-7xl mx-auto">
             {/* Page Title */}
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">
-                {getPageTitle()}
-              </h1>
-              <p className="text-gray-600 mt-2">
-                Manage your rental account and services
-              </p>
+              
             </div>
 
             {/* Content Area */}

@@ -1,4 +1,5 @@
-// components/contracts/LeaseManagement.tsx
+/** @format */
+
 import React, { useState } from 'react';
 import type { Contract } from '../../types/contract';
 import { contractApi } from '../../api/ContractAPI';
@@ -7,7 +8,6 @@ import { Button } from '../../components/common/ui/Button';
 import { ContractForm } from '../../components/contracts/ContractForm';
 import { ContractDetail } from '../../components/contracts/ContractDetail';
 import { TerminationModal } from '../../components/contracts/TerminationModal';
-
 
 type ViewMode = 'list' | 'create' | 'edit' | 'view' | 'renew';
 
@@ -81,7 +81,7 @@ export const LeaseManagement: React.FC = () => {
     }
   };
 
-  // MMS-6: Contract Termination
+  // Contract Termination
   const handleTerminateContract = (contract: Contract) => {
     setContractToTerminate(contract);
     setShowTerminationModal(true);
@@ -93,7 +93,6 @@ export const LeaseManagement: React.FC = () => {
     setShowTerminationModal(false);
     setContractToTerminate(null);
     
-    // If we're currently viewing the terminated contract, update the view
     if (selectedContract && selectedContract.id === terminatedContract.id) {
       setSelectedContract(terminatedContract);
     }
@@ -146,7 +145,7 @@ export const LeaseManagement: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-stone-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Success/Error Messages */}
         {message && (
@@ -186,12 +185,12 @@ export const LeaseManagement: React.FC = () => {
 
         {/* Form Views (Create, Edit, Renew) */}
         {(currentView === 'create' || currentView === 'edit' || currentView === 'renew') && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white rounded-xl shadow-sm border border-stone-200">
+            <div className="p-6 border-b border-stone-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{getViewTitle()}</h1>
-                  <p className="text-gray-600 mt-1">{getViewDescription()}</p>
+                  <h1 className="text-2xl font-bold text-stone-900">{getViewTitle()}</h1>
+                  <p className="text-stone-600 mt-1">{getViewDescription()}</p>
                 </div>
                 <Button onClick={handleBackToList} variant="secondary">
                   Back to List
@@ -218,12 +217,12 @@ export const LeaseManagement: React.FC = () => {
 
         {/* Contract Detail View */}
         {currentView === 'view' && selectedContract && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
+          <div className="bg-white rounded-xl shadow-sm border border-stone-200">
+            <div className="p-6 border-b border-stone-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{getViewTitle()}</h1>
-                  <p className="text-gray-600 mt-1">{getViewDescription()}</p>
+                  <h1 className="text-2xl font-bold text-stone-900">{getViewTitle()}</h1>
+                  <p className="text-stone-600 mt-1">{getViewDescription()}</p>
                 </div>
                 <Button onClick={handleBackToList} variant="secondary">
                   Back to List
@@ -243,7 +242,7 @@ export const LeaseManagement: React.FC = () => {
           </div>
         )}
 
-        {/* MMS-6: Termination Modal */}
+        {/* Termination Modal */}
         {showTerminationModal && contractToTerminate && (
           <TerminationModal
             isOpen={showTerminationModal}

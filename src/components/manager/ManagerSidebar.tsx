@@ -104,7 +104,6 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
 
   const handleNavigation = (path: string) => {
     onNavigate(path);
-    // Close the dropdown after navigation when sidebar is collapsed
     if (isCollapsed) {
       const newOpenSections = new Set(openSections);
       newOpenSections.delete("Billing & Utilities");
@@ -133,11 +132,11 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
           ${isCollapsed ? "w-20" : "w-64"}
         `}
       >
-        {/* Logo Section - Only show icon when collapsed */}
+        {/* Logo Section */}
         <div className={`flex items-center justify-between p-4 border-b border-stone-200 bg-stone-50 ${isCollapsed ? 'px-3' : 'px-6'}`}>
           {!isCollapsed && (
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md">
+              <div className="p-2 bg-gradient-to-br from-red-600 to-red-700 rounded-lg shadow-md">
                 <Building2 className="w-6 h-6 text-white font-bold" />
               </div>
               <div>
@@ -148,7 +147,7 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
             </div>
           )}
           {isCollapsed && (
-            <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md mx-auto">
+            <div className="p-2 bg-gradient-to-br from-red-600 to-red-700 rounded-lg shadow-md mx-auto">
               <Building2 className="w-6 h-6 text-white font-bold" />
             </div>
           )}
@@ -177,17 +176,17 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
                   <div className="space-y-1">
                     <button
                       onClick={() => toggleSection(item.name)}
-                      className={`flex items-center justify-between w-full p-3 text-left rounded-lg text-stone-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 group ${
+                      className={`flex items-center justify-between w-full p-3 text-left rounded-lg text-stone-700 hover:bg-red-50 hover:text-red-700 transition-colors duration-150 group ${
                         isCollapsed ? 'justify-center relative' : ''
                       }`}
                       title={isCollapsed ? item.name : ''}
                     >
                       <div className={`flex items-center space-x-3 ${isCollapsed ? 'justify-center' : ''}`}>
-                        <div className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-200 ${
-                          isActivePath(item.path!) ? 'from-blue-100 to-blue-50' : ''
+                        <div className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 ${
+                          isActivePath(item.path!) ? 'from-red-100 to-red-50' : ''
                         }`}>
                           {React.cloneElement(item.icon, { 
-                            className: `w-4 h-4 ${isActivePath(item.path!) ? 'text-blue-600 font-bold' : 'text-stone-600'}`
+                            className: `w-4 h-4 ${isActivePath(item.path!) ? 'text-red-600 font-bold' : 'text-stone-600'}`
                           })}
                         </div>
                         {!isCollapsed && <span className="font-semibold">{item.name}</span>}
@@ -212,16 +211,16 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
                               flex items-center space-x-3 w-full px-4 py-3 text-left transition-colors duration-150
                               ${
                                 isActivePath(child.path)
-                                  ? "bg-blue-50 text-blue-700 border-l-2 border-blue-600 font-medium"
+                                  ? "bg-red-50 text-red-700 border-l-2 border-red-600 font-medium"
                                   : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
                               }
                             `}
                           >
                             <div className={`p-1.5 rounded-md ${
-                              isActivePath(child.path) ? 'bg-blue-100' : 'bg-stone-100'
+                              isActivePath(child.path) ? 'bg-red-100' : 'bg-stone-100'
                             }`}>
                               {React.cloneElement(child.icon, { 
-                                className: `w-4 h-4 ${isActivePath(child.path) ? 'text-blue-600 font-bold' : 'text-stone-600'}`
+                                className: `w-4 h-4 ${isActivePath(child.path) ? 'text-red-600 font-bold' : 'text-stone-600'}`
                               })}
                             </div>
                             <span className="text-sm font-medium">{child.name}</span>
@@ -241,7 +240,7 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
                               flex items-center space-x-3 w-full p-3 text-left rounded-lg transition-colors duration-150 group
                               ${
                                 isActivePath(child.path)
-                                  ? "bg-blue-50 text-blue-700 border-l-2 border-blue-600 font-medium"
+                                  ? "bg-red-50 text-red-700 border-l-2 border-red-600 font-medium"
                                   : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
                               }
                             `}
@@ -250,7 +249,7 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
                               isActivePath(child.path) ? 'bg-white' : 'bg-stone-100'
                             }`}>
                               {React.cloneElement(child.icon, { 
-                                className: `w-4 h-4 ${isActivePath(child.path) ? 'text-blue-600 font-bold' : 'text-stone-600'}`
+                                className: `w-4 h-4 ${isActivePath(child.path) ? 'text-red-600 font-bold' : 'text-stone-600'}`
                               })}
                             </div>
                             <span className="text-sm font-medium">{child.name}</span>
@@ -266,18 +265,18 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
                       flex items-center space-x-3 w-full p-3 text-left rounded-lg transition-colors duration-150 group
                       ${
                         isActivePath(item.path!)
-                          ? "bg-blue-50 text-blue-700 border-l-2 border-blue-600 font-medium"
+                          ? "bg-red-50 text-red-700 border-l-2 border-red-600 font-medium"
                           : "text-stone-700 hover:bg-stone-100 hover:text-stone-900"
                       }
                       ${isCollapsed ? 'justify-center relative' : ''}
                     `}
                     title={isCollapsed ? item.name : ''}
                   >
-                    <div className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-200 ${
-                      isActivePath(item.path!) ? 'from-blue-100 to-blue-50' : ''
+                    <div className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 ${
+                      isActivePath(item.path!) ? 'from-red-100 to-red-50' : ''
                     } ${isCollapsed ? '' : 'mr-2'}`}>
                       {React.cloneElement(item.icon, { 
-                        className: `w-4 h-4 ${isActivePath(item.path!) ? 'text-blue-600 font-bold' : 'text-stone-600'}`
+                        className: `w-4 h-4 ${isActivePath(item.path!) ? 'text-red-600 font-bold' : 'text-stone-600'}`
                       })}
                     </div>
                     {!isCollapsed && <span className="font-semibold">{item.name}</span>}
