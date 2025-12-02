@@ -1,30 +1,34 @@
-// components/rooms/RoomAddForm.tsx (Fixed - Utility IDs format)
+// components/units/UnitAddForm.tsx
 import React, { useState, useEffect } from 'react';
 import { branchApi } from '../../api/BranchAPI';
 import { buildingApi } from '../../api/BuildingAPI';
 import { levelApi } from '../../api/LevelAPI';
-import { roomTypeApi, roomApi } from '../../api/RoomAPI';
+import { roomTypeApi, spaceTypeApi, hallTypeApi } from '../../api/UnitAPI';
 import { utilityApi } from '../../api/UtilityAPI';
 import { Button } from '../common/ui/Button';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
-import type { UtilityType } from '../../types/room';
+import { type UtilityType, UnitType } from '../../types/unit';
 
-interface RoomAddFormProps {
+interface UnitAddFormProps {
   onSubmit: (data: FormData) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }
 
-export const RoomAddForm: React.FC<RoomAddFormProps> = ({ 
+export const UnitAddForm: React.FC<UnitAddFormProps> = ({ 
   onSubmit, 
   onCancel, 
   isLoading = false 
 }) => {
   const [formData, setFormData] = useState({
-    roomNumber: '',
+    unitNumber: '',
+    unitType: UnitType.ROOM,
+    hasMeter: true,
     levelId: '',
     roomTypeId: '',
-    roomSpace: '',
+    spaceTypeId: '',
+    hallTypeId: '',
+    unitSpace: '',
     rentalFee: '',
     branchId: '',
     buildingId: ''
@@ -38,12 +42,16 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
   const [buildings, setBuildings] = useState<any[]>([]);
   const [levels, setLevels] = useState<any[]>([]);
   const [roomTypes, setRoomTypes] = useState<any[]>([]);
+  const [spaceTypes, setSpaceTypes] = useState<any[]>([]);
+  const [hallTypes, setHallTypes] = useState<any[]>([]);
   const [utilities, setUtilities] = useState<UtilityType[]>([]);
   
   const [branchesLoading, setBranchesLoading] = useState(false);
   const [buildingsLoading, setBuildingsLoading] = useState(false);
   const [levelsLoading, setLevelsLoading] = useState(false);
-  const [typesLoading, setTypesLoading] = useState(false);
+  const [roomTypesLoading, setRoomTypesLoading] = useState(false);
+  const [spaceTypesLoading, setSpaceTypesLoading] = useState(false);
+  const [hallTypesLoading, setHallTypesLoading] = useState(false);
   const [utilitiesLoading, setUtilitiesLoading] = useState(false);
   
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -52,23 +60,31 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
   useEffect(() => {
     const loadInitialData = async () => {
       setBranchesLoading(true);
-      setTypesLoading(true);
+      setRoomTypesLoading(true);
+      setSpaceTypesLoading(true);
+      setHallTypesLoading(true);
       setUtilitiesLoading(true);
       
       try {
-        const [branchesData, typesData, utilitiesData] = await Promise.all([
+        const [branchesData, roomTypesData, spaceTypesData, hallTypesData, utilitiesData] = await Promise.all([
           branchApi.getAllBranches(),
           roomTypeApi.getAll(),
+          spaceTypeApi.getActive(),
+          hallTypeApi.getActive(),
           utilityApi.getAll()
         ]);
         setBranches(branchesData.data);
-        setRoomTypes(typesData.data);
+        setRoomTypes(roomTypesData.data);
+        setSpaceTypes(spaceTypesData.data);
+        setHallTypes(hallTypesData.data);
         setUtilities(utilitiesData.data);
       } catch (error) {
         console.error('Error loading initial data:', error);
       } finally {
         setBranchesLoading(false);
-        setTypesLoading(false);
+        setRoomTypesLoading(false);
+        setSpaceTypesLoading(false);
+        setHallTypesLoading(false);
         setUtilitiesLoading(false);
       }
     };
@@ -96,6 +112,12 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
       setFormData(prev => ({ ...prev, levelId: '' }));
     }
   }, [formData.buildingId]);
+
+  // Update hasMeter based on unitType
+  useEffect(() => {
+    const hasMeter = formData.unitType !== UnitType.SPACE;
+    setFormData(prev => ({ ...prev, hasMeter }));
+  }, [formData.unitType]);
 
   const loadBuildings = async (branchId: number) => {
     setBuildingsLoading(true);
@@ -154,20 +176,35 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.roomNumber.trim()) {
-      newErrors.roomNumber = 'Room number is required';
+    if (!formData.unitNumber.trim()) {
+      newErrors.unitNumber = 'Unit number is required';
     }
 
     if (!formData.levelId) {
       newErrors.levelId = 'Please select a level';
     }
 
-    if (!formData.roomTypeId) {
-      newErrors.roomTypeId = 'Please selection a room type';
+    // Validate type-specific selection
+    switch (formData.unitType) {
+      case UnitType.ROOM:
+        if (!formData.roomTypeId) {
+          newErrors.roomTypeId = 'Please select a room type';
+        }
+        break;
+      case UnitType.SPACE:
+        if (!formData.spaceTypeId) {
+          newErrors.spaceTypeId = 'Please select a space type';
+        }
+        break;
+      case UnitType.HALL:
+        if (!formData.hallTypeId) {
+          newErrors.hallTypeId = 'Please select a hall type';
+        }
+        break;
     }
 
-    if (!formData.roomSpace || parseFloat(formData.roomSpace) <= 0) {
-      newErrors.roomSpace = 'Room space must be greater than 0';
+    if (!formData.unitSpace || parseFloat(formData.unitSpace) <= 0) {
+      newErrors.unitSpace = 'Unit space must be greater than 0';
     }
 
     if (!formData.rentalFee || parseFloat(formData.rentalFee) < 0) {
@@ -194,13 +231,27 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
       const submitFormData = new FormData();
       
       // Append all form fields
-      submitFormData.append('roomNumber', formData.roomNumber);
+      submitFormData.append('unitNumber', formData.unitNumber);
+      submitFormData.append('unitType', formData.unitType);
+      submitFormData.append('hasMeter', formData.hasMeter.toString());
       submitFormData.append('levelId', formData.levelId);
-      submitFormData.append('roomTypeId', formData.roomTypeId);
-      submitFormData.append('roomSpace', formData.roomSpace);
+      submitFormData.append('unitSpace', formData.unitSpace);
       submitFormData.append('rentalFee', formData.rentalFee);
       
-      // ✅ FIXED: Append utility type IDs - Correct format
+      // Append type-specific ID
+      switch (formData.unitType) {
+        case UnitType.ROOM:
+          submitFormData.append('roomTypeId', formData.roomTypeId);
+          break;
+        case UnitType.SPACE:
+          submitFormData.append('spaceTypeId', formData.spaceTypeId);
+          break;
+        case UnitType.HALL:
+          submitFormData.append('hallTypeId', formData.hallTypeId);
+          break;
+      }
+      
+      // Append utility type IDs
       selectedUtilityIds.forEach((utilityId) => {
         submitFormData.append('utilityTypeIds', utilityId.toString());
       });
@@ -210,9 +261,11 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
         submitFormData.append('images', image);
       });
 
-      console.log('Submitting room data:');
-      console.log('Utility IDs:', selectedUtilityIds);
-      console.log('Form Data:', Object.fromEntries(submitFormData.entries()));
+      console.log('Submitting unit data:', {
+        unitType: formData.unitType,
+        hasMeter: formData.hasMeter,
+        utilityIds: selectedUtilityIds
+      });
 
       // Submit FormData
       onSubmit(submitFormData);
@@ -233,7 +286,7 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
     }
   };
 
-  const allLoading = branchesLoading || typesLoading || utilitiesLoading;
+  const allLoading = branchesLoading || roomTypesLoading || spaceTypesLoading || hallTypesLoading || utilitiesLoading;
 
   if (allLoading) {
     return (
@@ -242,6 +295,91 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
       </div>
     );
   }
+
+  const renderTypeSpecificFields = () => {
+    switch (formData.unitType) {
+      case UnitType.ROOM:
+        return (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Room Type *
+            </label>
+            <select
+              name="roomTypeId"
+              value={formData.roomTypeId}
+              onChange={handleChange}
+              required
+              className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.roomTypeId ? 'border-red-500' : 'border-gray-300'
+              }`}
+            >
+              <option value="">Select Room Type</option>
+              {roomTypes.map(type => (
+                <option key={type.id} value={type.id}>{type.typeName}</option>
+              ))}
+            </select>
+            {errors.roomTypeId && (
+              <p className="text-red-500 text-sm mt-1">{errors.roomTypeId}</p>
+            )}
+          </div>
+        );
+
+      case UnitType.SPACE:
+        return (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Space Type *
+            </label>
+            <select
+              name="spaceTypeId"
+              value={formData.spaceTypeId}
+              onChange={handleChange}
+              required
+              className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.spaceTypeId ? 'border-red-500' : 'border-gray-300'
+              }`}
+            >
+              <option value="">Select Space Type</option>
+              {spaceTypes.map(type => (
+                <option key={type.id} value={type.id}>{type.name}</option>
+              ))}
+            </select>
+            {errors.spaceTypeId && (
+              <p className="text-red-500 text-sm mt-1">{errors.spaceTypeId}</p>
+            )}
+          </div>
+        );
+
+      case UnitType.HALL:
+        return (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Hall Type *
+            </label>
+            <select
+              name="hallTypeId"
+              value={formData.hallTypeId}
+              onChange={handleChange}
+              required
+              className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.hallTypeId ? 'border-red-500' : 'border-gray-300'
+              }`}
+            >
+              <option value="">Select Hall Type</option>
+              {hallTypes.map(type => (
+                <option key={type.id} value={type.id}>{type.name}</option>
+              ))}
+            </select>
+            {errors.hallTypeId && (
+              <p className="text-red-500 text-sm mt-1">{errors.hallTypeId}</p>
+            )}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -331,77 +469,90 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
         )}
       </div>
 
-      {/* Room Number */}
+      {/* Unit Number */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Room Number *
+          Unit Number *
         </label>
         <input
           type="text"
-          name="roomNumber"
-          value={formData.roomNumber}
+          name="unitNumber"
+          value={formData.unitNumber}
           onChange={handleChange}
           required
           className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.roomNumber ? 'border-red-500' : 'border-gray-300'
+            errors.unitNumber ? 'border-red-500' : 'border-gray-300'
           }`}
-          placeholder="Enter room number"
+          placeholder="Enter unit number"
         />
-        {errors.roomNumber && (
-          <p className="text-red-500 text-sm mt-1">{errors.roomNumber}</p>
+        {errors.unitNumber && (
+          <p className="text-red-500 text-sm mt-1">{errors.unitNumber}</p>
         )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Room Type */}
+        {/* Unit Type */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Room Type *
+            Unit Type *
           </label>
           <select
-            name="roomTypeId"
-            value={formData.roomTypeId}
+            name="unitType"
+            value={formData.unitType}
             onChange={handleChange}
             required
-            className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.roomTypeId ? 'border-red-500' : 'border-gray-300'
-            }`}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="">Select Room Type</option>
-            {roomTypes.map(type => (
-              <option key={type.id} value={type.id}>{type.typeName}</option>
-            ))}
+            <option value={UnitType.ROOM}>Room</option>
+            <option value={UnitType.SPACE}>Space</option>
+            <option value={UnitType.HALL}>Hall</option>
           </select>
-          {errors.roomTypeId && (
-            <p className="text-red-500 text-sm mt-1">{errors.roomTypeId}</p>
-          )}
         </div>
 
-        {/* Empty div to maintain grid layout */}
-        <div></div>
+        {/* Has Meter (auto-set for SPACE) */}
+        <div className="flex items-center space-x-3">
+          <input
+            type="checkbox"
+            id="hasMeter"
+            name="hasMeter"
+            checked={formData.hasMeter}
+            onChange={(e) => setFormData(prev => ({ ...prev, hasMeter: e.target.checked }))}
+            disabled={formData.unitType === UnitType.SPACE}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          />
+          <label htmlFor="hasMeter" className={`text-sm font-medium ${
+            formData.unitType === UnitType.SPACE ? 'text-gray-400' : 'text-gray-700'
+          }`}>
+            Has Meter
+            {formData.unitType === UnitType.SPACE && ' (Disabled for Spaces)'}
+          </label>
+        </div>
       </div>
 
+      {/* Type-specific fields */}
+      {renderTypeSpecificFields()}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Room Space */}
+        {/* Unit Space */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Room Space (sqm) *
+            Unit Space (sqm) *
           </label>
           <input
             type="number"
-            name="roomSpace"
-            value={formData.roomSpace}
+            name="unitSpace"
+            value={formData.unitSpace}
             onChange={handleChange}
             required
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.roomSpace ? 'border-red-500' : 'border-gray-300'
+              errors.unitSpace ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="Enter room space"
+            placeholder="Enter unit space"
             min="0"
             step="0.1"
           />
-          {errors.roomSpace && (
-            <p className="text-red-500 text-sm mt-1">{errors.roomSpace}</p>
+          {errors.unitSpace && (
+            <p className="text-red-500 text-sm mt-1">{errors.unitSpace}</p>
           )}
         </div>
 
@@ -477,7 +628,7 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
       {/* Image Upload Section */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Room Images
+          Unit Images
         </label>
         
         {/* Image Upload Input */}
@@ -488,10 +639,10 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
             accept="image/*"
             onChange={handleImageSelect}
             className="hidden"
-            id="room-images"
+            id="unit-images"
           />
           <label
-            htmlFor="room-images"
+            htmlFor="unit-images"
             className="cursor-pointer block"
           >
             <svg className="w-8 h-8 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -552,7 +703,7 @@ export const RoomAddForm: React.FC<RoomAddFormProps> = ({
           loading={isLoading}
           disabled={isLoading}
         >
-          Create Room
+          Create Unit
         </Button>
       </div>
     </form>

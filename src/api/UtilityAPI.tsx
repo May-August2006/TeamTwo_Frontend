@@ -1,6 +1,6 @@
 // api/UtilityAPI.ts
 import API from "./api";
-import type { UtilityType, UtilityTypeRequest } from "../types/room";
+import type { UtilityType, UtilityTypeRequest } from "../types/unit";
 import axios from "axios";
 
 export const utilityApi = {

@@ -1,12 +1,19 @@
-/** @format */
+export enum UnitType {
+  ROOM = 'ROOM',
+  SPACE = 'SPACE', 
+  HALL = 'HALL'
+}
 
-export interface Room {
-  meterType: string;
+export interface Unit {
   id: number;
-  roomNumber: string;
+  unitNumber: string;
+  unitType: UnitType;
+  hasMeter: boolean;
   level: Level;
-  roomType: RoomType;
-  roomSpace: number;
+  roomType?: RoomType;
+  spaceType?: SpaceType;
+  hallType?: HallType;
+  unitSpace: number;
   isAvailable: boolean;
   rentalFee: number;
   imageUrls: string[];
@@ -21,6 +28,35 @@ export interface RoomType {
   typeName: string;
   description: string;
   createdAt: string;
+}
+
+export interface SpaceType {
+  id: number;
+  name: string;
+  description: string;
+  basePricePerSqm: number;
+  minSpace: number;
+  maxSpace: number;
+  hasUtilities: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HallType {
+  id: number;
+  name: string;
+  description: string;
+  basePrice: number;
+  capacity: number;
+  minBookingHours: number;
+  maxBookingHours: number;
+  hasAudioEquipment: boolean;
+  hasVideoEquipment: boolean;
+  hasCatering: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Level {
@@ -56,11 +92,15 @@ export interface Branch {
   updatedAt: string;
 }
 
-export interface CreateRoomRequest {
-  roomNumber: string;
+export interface CreateUnitRequest {
+  unitNumber: string;
+  unitType: UnitType;
+  hasMeter?: boolean;
   levelId: number;
-  roomTypeId: number;
-  roomSpace: number;
+  roomTypeId?: number;
+  spaceTypeId?: number;
+  hallTypeId?: number;
+  unitSpace: number;
   utilityTypeIds?: number[];
   rentalFee: number;
   images?: File[];
@@ -69,6 +109,27 @@ export interface CreateRoomRequest {
 export interface RoomTypeRequest {
   typeName: string;
   description: string;
+}
+
+export interface SpaceTypeRequest {
+  name: string;
+  description: string;
+  basePricePerSqm: number;
+  minSpace: number;
+  maxSpace: number;
+  hasUtilities: boolean;
+}
+
+export interface HallTypeRequest {
+  name: string;
+  description: string;
+  basePrice: number;
+  capacity: number;
+  minBookingHours: number;
+  maxBookingHours: number;
+  hasAudioEquipment: boolean;
+  hasVideoEquipment: boolean;
+  hasCatering: boolean;
 }
 
 export interface LevelRequest {
@@ -89,11 +150,11 @@ export interface BranchRequest {
   email: string;
 }
 
-export interface RoomSearchParams {
+export interface UnitSearchParams {
   branchId?: number;
   buildingId?: number;
   levelId?: number;
-  roomTypeId?: number;
+  unitType?: UnitType;
   isAvailable?: boolean;
   minSpace?: number;
   maxSpace?: number;
@@ -118,18 +179,11 @@ export interface UtilityTypeRequest {
   description: string;
 }
 
-export interface RoomUtility {
+export interface UnitUtility {
   id: number;
-  roomId: number;
+  unitId: number;
   utilityTypeId: number;
   isActive: boolean;
   createdAt: string;
   utilityType: UtilityType;
-}
-
-export interface UtilityTypeRequest {
-  utilityName: string;
-  ratePerUnit: number;
-  calculationMethod: "FIXED" | "METERED" | "ALLOCATED";
-  description: string;
 }

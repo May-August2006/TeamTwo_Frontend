@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { meterReadingApi } from '../../api/MeterReadingAPI';
-import { roomApi } from '../../api/RoomAPI';
+import { unitService } from '../../api/MeterReadingAPI'; // Changed from roomApi
 import type { MeterReading, CreateMeterReadingRequest } from '../../types/meterReading';
-import type { Room, UtilityType } from '../../types/room';
+import type { Unit, UtilityType } from '../../types/unit';
 import { utilityApi } from '../../api/UtilityAPI';
 
 interface MeterReadingFormProps {
@@ -13,72 +13,72 @@ interface MeterReadingFormProps {
 
 const MeterReadingForm: React.FC<MeterReadingFormProps> = ({ reading, onCancel, onSave }) => {
   const [formData, setFormData] = useState<CreateMeterReadingRequest>({
-    roomId: 0,
+    unitId: 0, // ✅ Changed from roomId
     utilityTypeId: 0,
     readingDate: new Date().toISOString().split('T')[0],
     currentReading: 0
   });
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [filteredRooms, setFilteredRooms] = useState<Room[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]); // ✅ Changed from rooms
+  const [filteredUnits, setFilteredUnits] = useState<Unit[]>([]); // ✅ Changed from filteredRooms
   const [utilityTypes, setUtilityTypes] = useState<UtilityType[]>([]);
   const [previousReading, setPreviousReading] = useState<MeterReading | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [roomSearch, setRoomSearch] = useState('');
-  const [showRoomDropdown, setShowRoomDropdown] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [unitSearch, setUnitSearch] = useState(''); // ✅ Changed from roomSearch
+  const [showUnitDropdown, setShowUnitDropdown] = useState(false); // ✅ Changed from showRoomDropdown
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null); // ✅ Changed from selectedRoom
 
   useEffect(() => {
-    loadRoomsAndUtilityTypes();
+    loadUnitsAndUtilityTypes(); // ✅ Changed from loadRoomsAndUtilityTypes
   }, []);
 
   useEffect(() => {
     if (reading) {
       setFormData({
-        roomId: reading.roomId,
+        unitId: reading.unitId, // ✅ Changed from roomId
         utilityTypeId: reading.utilityTypeId,
         readingDate: reading.readingDate,
         currentReading: reading.currentReading
       });
       // Load previous reading when editing
-      if (reading.roomId && reading.utilityTypeId) {
-        loadPreviousReading(reading.roomId, reading.utilityTypeId);
+      if (reading.unitId && reading.utilityTypeId) { // ✅ Changed from roomId
+        loadPreviousReading(reading.unitId, reading.utilityTypeId); // ✅ Changed from roomId
       }
-      // Find and set the selected room
-      const room = rooms.find(r => r.id === reading.roomId);
-      if (room) {
-        setSelectedRoom(room);
-        setRoomSearch(room.roomNumber);
+      // Find and set the selected unit
+      const unit = units.find(u => u.id === reading.unitId); // ✅ Changed from room to unit
+      if (unit) {
+        setSelectedUnit(unit);
+        setUnitSearch(unit.unitNumber); // ✅ Changed from roomNumber
       }
     }
-  }, [reading, rooms]);
+  }, [reading, units]);
 
-  // Filter rooms based on search input
+  // Filter units based on search input
   useEffect(() => {
-    if (roomSearch.trim()) {
-      const filtered = rooms.filter(room =>
-        room.roomNumber.toLowerCase().includes(roomSearch.toLowerCase()) ||
-        (room.currentTenantName && room.currentTenantName.toLowerCase().includes(roomSearch.toLowerCase()))
+    if (unitSearch.trim()) {
+      const filtered = units.filter(unit =>
+        unit.unitNumber.toLowerCase().includes(unitSearch.toLowerCase()) || // ✅ Changed from roomNumber
+        (unit.currentTenantName && unit.currentTenantName.toLowerCase().includes(unitSearch.toLowerCase()))
       );
-      setFilteredRooms(filtered);
-      setShowRoomDropdown(true);
+      setFilteredUnits(filtered);
+      setShowUnitDropdown(true);
     } else {
-      setFilteredRooms([]);
-      setShowRoomDropdown(false);
+      setFilteredUnits([]);
+      setShowUnitDropdown(false);
     }
-  }, [roomSearch, rooms]);
+  }, [unitSearch, units]);
 
-  const loadRoomsAndUtilityTypes = async () => {
+  const loadUnitsAndUtilityTypes = async () => { // ✅ Changed method name
     try {
-      const [roomsResponse, utilityTypesResponse] = await Promise.all([
-        roomApi.getAll(),
+      const [unitsResponse, utilityTypesResponse] = await Promise.all([
+        unitService.getAllUnits(), // ✅ Changed from roomApi.getAll()
         utilityApi.getAll()
       ]);
       
-      const roomsData = Array.isArray(roomsResponse.data) ? roomsResponse.data : [];
+      const unitsData = Array.isArray(unitsResponse) ? unitsResponse : [];
       const utilityTypesData = Array.isArray(utilityTypesResponse.data) ? utilityTypesResponse.data : [];
       
-      setRooms(roomsData);
+      setUnits(unitsData);
       setUtilityTypes(utilityTypesData);
     } catch (err) {
       setError('Failed to load data');
@@ -86,38 +86,38 @@ const MeterReadingForm: React.FC<MeterReadingFormProps> = ({ reading, onCancel, 
     }
   };
 
-  const handleRoomSelect = (room: Room) => {
-    setSelectedRoom(room);
-    setFormData(prev => ({ ...prev, roomId: room.id }));
-    setRoomSearch(room.roomNumber);
-    setShowRoomDropdown(false);
+  const handleUnitSelect = (unit: Unit) => { // ✅ Changed method name
+    setSelectedUnit(unit);
+    setFormData(prev => ({ ...prev, unitId: unit.id })); // ✅ Changed from roomId
+    setUnitSearch(unit.unitNumber); // ✅ Changed from roomNumber
+    setShowUnitDropdown(false);
     
     // Load previous reading if utility type is already selected
     if (formData.utilityTypeId) {
-      loadPreviousReading(room.id, formData.utilityTypeId);
+      loadPreviousReading(unit.id, formData.utilityTypeId);
     }
   };
 
-  const handleRoomSearchChange = (value: string) => {
-    setRoomSearch(value);
-    setSelectedRoom(null);
-    setFormData(prev => ({ ...prev, roomId: 0 }));
+  const handleUnitSearchChange = (value: string) => { // ✅ Changed method name
+    setUnitSearch(value);
+    setSelectedUnit(null);
+    setFormData(prev => ({ ...prev, unitId: 0 })); // ✅ Changed from roomId
     setPreviousReading(null);
   };
 
   const handleUtilityTypeChange = async (utilityTypeId: number) => {
     setFormData(prev => ({ ...prev, utilityTypeId }));
     
-    if (selectedRoom && utilityTypeId) {
-      await loadPreviousReading(selectedRoom.id, utilityTypeId);
+    if (selectedUnit && utilityTypeId) { // ✅ Changed from selectedRoom
+      await loadPreviousReading(selectedUnit.id, utilityTypeId); // ✅ Changed from selectedRoom
     } else {
       setPreviousReading(null);
     }
   };
 
-  const loadPreviousReading = async (roomId: number, utilityTypeId: number) => {
+  const loadPreviousReading = async (unitId: number, utilityTypeId: number) => { // ✅ Changed parameter name
     try {
-      const previous = await meterReadingApi.getPreviousReading(roomId, utilityTypeId);
+      const previous = await meterReadingApi.getPreviousReading(unitId, utilityTypeId); // ✅ Changed from getPreviousReading(roomId, utilityTypeId)
       setPreviousReading(previous);
     } catch (err) {
       setPreviousReading(null);
@@ -130,7 +130,7 @@ const MeterReadingForm: React.FC<MeterReadingFormProps> = ({ reading, onCancel, 
     setError('');
 
     // Validate form data
-    if (!formData.roomId || !formData.utilityTypeId || !formData.readingDate || !formData.currentReading) {
+    if (!formData.unitId || !formData.utilityTypeId || !formData.readingDate || !formData.currentReading) { // ✅ Changed from roomId
       setError('Please fill in all required fields');
       setLoading(false);
       return;
@@ -160,13 +160,13 @@ const MeterReadingForm: React.FC<MeterReadingFormProps> = ({ reading, onCancel, 
 
   const resetForm = () => {
     setFormData({
-      roomId: 0,
+      unitId: 0, // ✅ Changed from roomId
       utilityTypeId: 0,
       readingDate: new Date().toISOString().split('T')[0],
       currentReading: 0
     });
-    setRoomSearch('');
-    setSelectedRoom(null);
+    setUnitSearch(''); // ✅ Changed from roomSearch
+    setSelectedUnit(null); // ✅ Changed from selectedRoom
     setPreviousReading(null);
     setError('');
   };
@@ -194,60 +194,73 @@ const MeterReadingForm: React.FC<MeterReadingFormProps> = ({ reading, onCancel, 
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Room Search - Enhanced with autocomplete */}
+          {/* Unit Search - Enhanced with autocomplete */} {/* ✅ Changed from Room Search */}
           <div className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Room *
+              Unit * {/* ✅ Changed from Room */}
             </label>
             <input
               type="text"
-              value={roomSearch}
-              onChange={(e) => handleRoomSearchChange(e.target.value)}
-              onFocus={() => roomSearch && setShowRoomDropdown(true)}
+              value={unitSearch} // ✅ Changed from roomSearch
+              onChange={(e) => handleUnitSearchChange(e.target.value)} // ✅ Changed method
+              onFocus={() => unitSearch && setShowUnitDropdown(true)} // ✅ Changed variable
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Type room number or tenant name..."
+              placeholder="Type unit number or tenant name..." // ✅ Changed placeholder
               required
             />
             
-            {/* Room Dropdown */}
-            {showRoomDropdown && filteredRooms.length > 0 && (
+            {/* Unit Dropdown */} {/* ✅ Changed from Room Dropdown */}
+            {showUnitDropdown && filteredUnits.length > 0 && (
               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                {filteredRooms.map(room => (
+                {filteredUnits.map(unit => ( // ✅ Changed from filteredRooms
                   <div
-                    key={room.id}
-                    onClick={() => handleRoomSelect(room)}
+                    key={unit.id}
+                    onClick={() => handleUnitSelect(unit)} // ✅ Changed method
                     className="px-3 py-2 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0"
                   >
                     <div className="font-medium text-gray-900">
-                      {room.roomNumber}
+                      {unit.unitNumber} {/* ✅ Changed from roomNumber */}
+                      <span className={`ml-2 text-xs px-2 py-1 rounded-full ${
+                        unit.unitType === 'ROOM' ? 'bg-blue-100 text-blue-800' :
+                        unit.unitType === 'SPACE' ? 'bg-green-100 text-green-800' :
+                        'bg-purple-100 text-purple-800'
+                      }`}>
+                        {unit.unitType}
+                      </span>
                     </div>
-                    {room.currentTenantName && (
+                    {unit.currentTenantName && (
                       <div className="text-sm text-gray-600">
-                        Tenant: {room.currentTenantName}
+                        Tenant: {unit.currentTenantName}
                       </div>
                     )}
                     <div className="text-xs text-gray-500">
-                      {room.isAvailable ? 'Available' : 'Occupied'}
-                      {room.roomSpace && ` • ${room.roomSpace} sqft`}
+                      {unit.isAvailable ? 'Available' : 'Occupied'}
+                      {unit.unitSpace && ` • ${unit.unitSpace} sqm`} {/* ✅ Changed from roomSpace */}
+                      {unit.hasMeter && ' • Has Meter'}
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Selected Room Info */}
-            {selectedRoom && (
+            {/* Selected Unit Info */} {/* ✅ Changed from Selected Room Info */}
+            {selectedUnit && (
               <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
                 <div className="text-sm text-green-800">
-                  <strong>Selected:</strong> {selectedRoom.roomNumber}
-                  {selectedRoom.currentTenantName && ` - ${selectedRoom.currentTenantName}`}
+                  <strong>Selected:</strong> {selectedUnit.unitNumber} {/* ✅ Changed from roomNumber */}
                   <span className={`ml-2 px-2 py-1 text-xs rounded ${
-                    selectedRoom.isAvailable 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-blue-100 text-blue-800'
+                    selectedUnit.unitType === 'ROOM' ? 'bg-blue-100 text-blue-800' :
+                    selectedUnit.unitType === 'SPACE' ? 'bg-green-100 text-green-800' :
+                    'bg-purple-100 text-purple-800'
                   }`}>
-                    {selectedRoom.isAvailable ? 'Available' : 'Occupied'}
+                    {selectedUnit.unitType}
                   </span>
+                  {selectedUnit.currentTenantName && ` - ${selectedUnit.currentTenantName}`}
+                  {!selectedUnit.hasMeter && (
+                    <span className="ml-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded">
+                      No Meter
+                    </span>
+                  )}
                 </div>
               </div>
             )}
@@ -263,6 +276,7 @@ const MeterReadingForm: React.FC<MeterReadingFormProps> = ({ reading, onCancel, 
               onChange={(e) => handleUtilityTypeChange(Number(e.target.value))}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               required
+              disabled={selectedUnit && !selectedUnit.hasMeter} // Disable if unit has no meter
             >
               <option value={0}>Select Utility Type</option>
               {utilityTypes.map(utility => (
@@ -272,6 +286,11 @@ const MeterReadingForm: React.FC<MeterReadingFormProps> = ({ reading, onCancel, 
                 </option>
               ))}
             </select>
+            {selectedUnit && !selectedUnit.hasMeter && (
+              <p className="text-xs text-yellow-600 mt-1">
+                This unit does not have a meter installed.
+              </p>
+            )}
           </div>
         </div>
 
@@ -307,6 +326,7 @@ const MeterReadingForm: React.FC<MeterReadingFormProps> = ({ reading, onCancel, 
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter current reading"
               required
+              disabled={selectedUnit && !selectedUnit.hasMeter} // Disable if unit has no meter
             />
           </div>
         </div>
@@ -327,10 +347,10 @@ const MeterReadingForm: React.FC<MeterReadingFormProps> = ({ reading, onCancel, 
         )}
 
         {/* No Previous Reading Message */}
-        {selectedRoom && formData.utilityTypeId && !previousReading && !reading && (
+        {selectedUnit && formData.utilityTypeId && !previousReading && !reading && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
             <p className="text-sm text-yellow-700">
-              <strong>Note:</strong> No previous reading found for {selectedRoom.roomNumber}. 
+              <strong>Note:</strong> No previous reading found for {selectedUnit.unitNumber}. {/* ✅ Changed from roomNumber */}
               This will be recorded as the first reading.
             </p>
           </div>
@@ -348,7 +368,7 @@ const MeterReadingForm: React.FC<MeterReadingFormProps> = ({ reading, onCancel, 
           </button>
           <button
             type="submit"
-            disabled={loading || !selectedRoom}
+            disabled={loading || !selectedUnit || (selectedUnit && !selectedUnit.hasMeter)} // Disable if no unit selected or unit has no meter
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Saving...' : reading ? 'Update' : 'Create'}

@@ -2,7 +2,7 @@
 
 // src/components/homepage/RoomCard.tsx
 import React from "react";
-import type { Room } from "../../types/room";
+import type { Room } from "../../types/unit";
 import { Button } from "../common/ui/Button";
 
 interface RoomCardProps {

@@ -1,7 +1,8 @@
+// types/meterReading.ts
 export interface MeterReading {
   id: number;
-  roomId: number;
-  roomNumber: string;
+  unitId: number; // ✅ Changed from roomId
+  unitNumber: string; // ✅ Changed from roomNumber
   utilityTypeId: number;
   utilityName: string;
   readingDate: string;
@@ -9,15 +10,16 @@ export interface MeterReading {
   previousReading?: number;
   consumption?: number;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateMeterReadingRequest {
-  roomId: number;
+  unitId: number; // ✅ Changed from roomId
   utilityTypeId: number;
   readingDate: string;
   currentReading: number;
+  previousReading?: number;
 }
-
 export interface Room {
   id: number;
   roomNumber: string;

@@ -68,7 +68,7 @@ const MeterReadingTable: React.FC<MeterReadingTableProps> = ({
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Room
+                Unit {/* ✅ Changed from Room */}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Utility Type
@@ -95,7 +95,7 @@ const MeterReadingTable: React.FC<MeterReadingTableProps> = ({
               <tr key={reading.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900">
-                    {reading.roomNumber}
+                    {reading.unitNumber} {/* ✅ Changed from roomNumber */}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Layout } from '../components/common/layout/Layout';
 import { RoomDetailModal } from '../components/homepage/RoomDetailModal';
 import { AppointmentForm } from '../components/homepage/AppointmentForm';
-import type { Room } from '../types/room';
+import type { Room } from '../types/unit';
 import Homepage from '../components/homepage/Homepage';
 
 const HomePage: React.FC = () => {

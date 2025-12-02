@@ -1,6 +1,6 @@
 // src/components/homepage/SearchFilters.tsx
 import React, { useState, useEffect } from 'react';
-import type { RoomSearchParams, RoomType } from '../../types/room';
+import type { RoomSearchParams, RoomType } from '../../types/unit';
 import { Button } from '../common/ui/Button';
 
 interface SearchFiltersProps {

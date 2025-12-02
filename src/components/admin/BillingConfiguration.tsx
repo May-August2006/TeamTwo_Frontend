@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { billingFeeApi } from "../../api/BillingFeeAPI";
 import { utilityApi } from "../../api/UtilityAPI";
 import type { BillingFee, BillingFeeRequest } from "../../types/billing";
-import type { UtilityType } from "../../types/room";
+import type { UtilityType } from "../../types/unit";
 
 // Custom Modal Component for Confirmation and Alerts
 const CustomMessageModal: React.FC<{

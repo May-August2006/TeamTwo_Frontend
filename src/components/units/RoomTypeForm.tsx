@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../common/ui/Button';
-import type { RoomType, RoomTypeRequest } from '../../types/room';
+import type { RoomType, RoomTypeRequest } from '../../types/unit';
 
 interface RoomTypeFormProps {
   roomType?: RoomType;

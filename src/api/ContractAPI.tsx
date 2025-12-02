@@ -42,7 +42,7 @@ export const contractApi = {
 
   // Check room availability
   checkRoomAvailability: (roomId: number) => 
-    API.get<boolean>(`/api/contracts/room/${roomId}/available`),
+    API.get<boolean>(`/api/contracts/unit/${roomId}/available`),
 
   // Terminate contract(old method)
   terminate: (id: number) => 

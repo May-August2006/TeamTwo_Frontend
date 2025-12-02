@@ -1,8 +1,8 @@
 // components/reports/VacantOccupiedUnitsReport.tsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { roomApi } from '../../api/RoomAPI';
+import { unitApi } from '../../api/UnitAPI';
 import { contractApi } from '../../api/ContractAPI';
-import type { Room } from '../../types/room';
+import type { Unit } from '../../types/unit';
 import type { Contract } from '../../types/contract';
 import type { OccupancyStats, BuildingOccupancy, FloorOccupancy, RoomStatus } from '../../types/occupancy';
 import { Button } from '../common/ui/Button';
@@ -16,7 +16,7 @@ interface VacantOccupiedUnitsReportProps {
 }
 
 export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps> = ({ onBack }) => {
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const [rooms, setRooms] = useState<Unit[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
       
       // Load all rooms and contracts in parallel
       const [roomsResponse, contractsResponse] = await Promise.all([
-        roomApi.getAll(),
+        unitApi.getAll(),
         contractApi.getAll()
       ]);
 
@@ -52,7 +52,7 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
   };
 
   // CORRECTED: Get branch name from the nested structure
-  const getBranchName = (room: Room): string => {
+  const getBranchName = (room: Unit): string => {
     return room.level?.building?.branch?.branchName || 'Main Branch';
   };
 
@@ -102,7 +102,7 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
       
       // Check if room is occupied by active contract
       const isOccupied = contracts.some(contract => 
-        contract.room?.id === room.id && 
+        contract.unit?.id === room.id && 
         (contract.contractStatus === 'ACTIVE' || contract.contractStatus === 'EXPIRING')
       );
       
@@ -148,7 +148,7 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
       
       // Check if room is occupied by active contract
       const isOccupied = contracts.some(contract => 
-        contract.room?.id === room.id && 
+        contract.unit?.id === room.id && 
         (contract.contractStatus === 'ACTIVE' || contract.contractStatus === 'EXPIRING')
       );
       
@@ -175,13 +175,13 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
   const roomStatus = useMemo((): RoomStatus[] => {
     return rooms.map(room => {
       const activeContract = contracts.find(contract => 
-        contract.room?.id === room.id && 
+        contract.unit?.id === room.id && 
         (contract.contractStatus === 'ACTIVE' || contract.contractStatus === 'EXPIRING')
       );
       
       return {
         roomId: room.id,
-        roomNumber: room.roomNumber,
+        roomNumber: room.unitNumber,
         roomType: room.roomType?.typeName || 'Unknown',
         floor: room.level?.levelName || 'Unknown',
         building: room.level?.building?.buildingName || 'Unknown',
@@ -189,7 +189,7 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
         status: (activeContract ? 'OCCUPIED' : 'VACANT') as 'OCCUPIED' | 'VACANT',
         currentTenant: activeContract?.tenant?.tenantName,
         contractEndDate: activeContract?.endDate,
-        size: room.roomSpace || 0,
+        size: room.unitSpace || 0,
         rentalFee: room.rentalFee || 0,
         isAvailable: room.isAvailable
       };
