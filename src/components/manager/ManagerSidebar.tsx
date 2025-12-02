@@ -54,8 +54,6 @@ const menuItems = [
   },
 ];
 
-export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
-  mobileOpen,
 export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
   isOpen,
   onClose,
