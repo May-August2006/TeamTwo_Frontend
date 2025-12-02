@@ -116,83 +116,86 @@ const ManagerMaintenancePage: React.FC = () => {
       case "PENDING":
         return "bg-yellow-100 text-yellow-800";
       case "IN_PROGRESS":
-        return "bg-blue-100 text-blue-800";
+        return "bg-red-100 text-red-800";
       case "COMPLETED":
         return "bg-green-100 text-green-800";
       case "CANCELLED":
         return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-stone-100 text-stone-800";
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "LOW":
-        return "bg-gray-100 text-gray-800";
+        return "bg-stone-100 text-stone-800";
       case "MEDIUM":
-        return "bg-blue-100 text-blue-800";
+        return "bg-red-100 text-red-800";
       case "HIGH":
         return "bg-orange-100 text-orange-800";
       case "URGENT":
         return "bg-red-100 text-red-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-stone-100 text-stone-800";
     }
   };
 
   if (isLoading && requests.length === 0) {
     return (
-      <div className="p-6 flex justify-center items-center">
-        <div className="text-lg">Loading maintenance requests...</div>
+      <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
+        <div className="text-xl font-medium text-stone-700 animate-pulse">Loading maintenance requests...</div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-8 min-h-screen bg-stone-50">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Maintenance Requests</h1>
-        <p className="text-gray-600">Manage and track maintenance requests from tenants</p>
+      <div className="mb-8">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">Maintenance Requests</h1>
+        <p className="text-stone-600 mt-1 text-sm sm:text-base">Manage and track maintenance requests from tenants</p>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          {error}
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center">
+          <svg className="w-5 h-5 mr-3 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          <span className="font-medium">{error}</span>
         </div>
       )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow border">
-          <div className="text-sm font-medium text-gray-500">Pending</div>
+        <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+          <div className="text-sm font-medium text-stone-600">Pending</div>
           <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border">
-          <div className="text-sm font-medium text-gray-500">In Progress</div>
-          <div className="text-2xl font-bold text-blue-600">{stats.inProgress}</div>
+        <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+          <div className="text-sm font-medium text-stone-600">In Progress</div>
+          <div className="text-2xl font-bold text-red-600">{stats.inProgress}</div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border">
-          <div className="text-sm font-medium text-gray-500">Completed</div>
+        <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+          <div className="text-sm font-medium text-stone-600">Completed</div>
           <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border">
-          <div className="text-sm font-medium text-gray-500">Cancelled</div>
+        <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
+          <div className="text-sm font-medium text-stone-600">Cancelled</div>
           <div className="text-2xl font-bold text-red-600">{stats.cancelled}</div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow border mb-6">
+      <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm mb-6">
         <div className="flex flex-wrap gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1">Status</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-stone-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-150 bg-white"
             >
               <option value="ALL">All Status</option>
               <option value="PENDING">Pending</option>
@@ -202,11 +205,11 @@ const ManagerMaintenancePage: React.FC = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1">Priority</label>
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-stone-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-150 bg-white"
             >
               <option value="ALL">All Priority</option>
               <option value="LOW">Low</option>
@@ -219,55 +222,57 @@ const ManagerMaintenancePage: React.FC = () => {
       </div>
 
       {/* Requests Table */}
-      <div className="bg-white rounded-lg shadow border overflow-hidden">
+      <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
         {filteredRequests.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            No maintenance requests found matching your filters.
+          <div className="p-12 text-center text-stone-500 bg-stone-50">
+            <div className="text-5xl mb-3">🔧</div>
+            <div className="text-xl font-semibold text-stone-700">No Maintenance Requests Found</div>
+            <p className="text-sm mt-1">No requests match your current filters.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-stone-200">
+              <thead className="bg-stone-100">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
                     Request
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
                     Tenant & Room
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
                     Priority
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
                     Assigned To
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
                     Created
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-stone-200">
                 {filteredRequests.map((request) => (
-                  <tr key={request.id} className="hover:bg-gray-50">
+                  <tr key={request.id} className="hover:bg-red-50/50 transition duration-100">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-stone-900">
                           {request.requestTitle}
                         </div>
-                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                        <div className="text-sm text-stone-500 truncate max-w-xs">
                           {request.requestDescription}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{request.tenantName}</div>
-                      <div className="text-sm text-gray-500">Room {request.roomNumber}</div>
+                      <div className="text-sm text-stone-900">{request.tenantName}</div>
+                      <div className="text-sm text-stone-500">Room {request.roomNumber}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
@@ -287,10 +292,10 @@ const ManagerMaintenancePage: React.FC = () => {
                         {request.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
                       {request.assignedToName || "Unassigned"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
                       {new Date(request.createdAt).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -300,7 +305,7 @@ const ManagerMaintenancePage: React.FC = () => {
                             setSelectedRequest(request);
                             setIsModalOpen(true);
                           }}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-red-600 hover:text-red-700 transition duration-150"
                         >
                           View
                         </button>
@@ -309,7 +314,7 @@ const ManagerMaintenancePage: React.FC = () => {
                           <select
                             onChange={(e) => handleStatusChange(request.id, e.target.value)}
                             value={request.status}
-                            className="border border-gray-300 rounded px-2 py-1 text-xs"
+                            className="border border-stone-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 transition duration-150"
                           >
                             <option value="PENDING">Pending</option>
                             <option value="IN_PROGRESS">In Progress</option>
@@ -329,14 +334,14 @@ const ManagerMaintenancePage: React.FC = () => {
 
       {/* View Modal */}
       {isModalOpen && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-stone-900 bg-opacity-70 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">{selectedRequest.requestTitle}</h3>
+                <h3 className="text-lg font-semibold text-stone-900">{selectedRequest.requestTitle}</h3>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-stone-400 hover:text-stone-600 transition duration-150"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -346,15 +351,15 @@ const ManagerMaintenancePage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Tenant</label>
-                  <p className="mt-1 text-sm text-gray-900">{selectedRequest.tenantName}</p>
+                  <label className="block text-sm font-medium text-stone-700">Tenant</label>
+                  <p className="mt-1 text-sm text-stone-900">{selectedRequest.tenantName}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Room</label>
-                  <p className="mt-1 text-sm text-gray-900">{selectedRequest.roomNumber}</p>
+                  <label className="block text-sm font-medium text-stone-700">Room</label>
+                  <p className="mt-1 text-sm text-stone-900">{selectedRequest.roomNumber}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Priority</label>
+                  <label className="block text-sm font-medium text-stone-700">Priority</label>
                   <span
                     className={`mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(
                       selectedRequest.priority
@@ -364,7 +369,7 @@ const ManagerMaintenancePage: React.FC = () => {
                   </span>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Status</label>
+                  <label className="block text-sm font-medium text-stone-700">Status</label>
                   <span
                     className={`mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
                       selectedRequest.status
@@ -376,25 +381,25 @@ const ManagerMaintenancePage: React.FC = () => {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700">Description</label>
-                <p className="mt-1 text-sm text-gray-900 bg-gray-50 p-3 rounded">
+                <label className="block text-sm font-medium text-stone-700">Description</label>
+                <p className="mt-1 text-sm text-stone-900 bg-stone-50 p-3 rounded-lg">
                   {selectedRequest.requestDescription}
                 </p>
               </div>
 
               {selectedRequest.tenantFeedback && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700">Tenant Feedback</label>
-                  <p className="mt-1 text-sm text-gray-900 bg-gray-50 p-3 rounded">
+                  <label className="block text-sm font-medium text-stone-700">Tenant Feedback</label>
+                  <p className="mt-1 text-sm text-stone-900 bg-stone-50 p-3 rounded-lg">
                     {selectedRequest.tenantFeedback}
                   </p>
                 </div>
               )}
 
-              <div className="flex justify-end space-x-3">
+              <div className="flex justify-end space-x-3 pt-4 border-t border-stone-200">
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                  className="px-4 py-2 text-sm font-medium text-stone-700 bg-stone-100 rounded-lg hover:bg-stone-200 transition duration-150"
                 >
                   Close
                 </button>

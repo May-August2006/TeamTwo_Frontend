@@ -11,6 +11,12 @@ import DailyCollectionReport from '../../components/accountant/DailyCollectionRe
 const AccountantDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState('overview');
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const handleToggleCollapse = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
 
   const renderContent = () => {
     if (showPaymentForm) {
@@ -18,7 +24,6 @@ const AccountantDashboard: React.FC = () => {
         <PaymentForm 
           onPaymentRecorded={() => {
             setShowPaymentForm(false);
-            // You might want to refresh the payment list here
           }}
           onCancel={() => setShowPaymentForm(false)}
         />
@@ -34,7 +39,7 @@ const AccountantDashboard: React.FC = () => {
               <div className="mt-6">
                 <button
                   onClick={() => setShowPaymentForm(true)}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium"
+                  className="bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-red-700 transition duration-150 font-semibold transform active:scale-95"
                 >
                   + Record New Payment
                 </button>
@@ -56,7 +61,7 @@ const AccountantDashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-stone-50">
       <style>{`
         body {
           margin: 0;
@@ -66,31 +71,50 @@ const AccountantDashboard: React.FC = () => {
             sans-serif;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
+          background-color: #fafaf9;
         }
         * {
           box-sizing: border-box;
         }
       `}</style>
 
-      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
-      
-      <main className="flex-grow ml-64">
+      <Sidebar 
+        activeSection={activeSection} 
+        onSectionChange={setActiveSection}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={handleToggleCollapse}
+      />
+
+      <main className={`flex-grow transition-all duration-300 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         <AppBar />
         <div className="h-16"></div>
+
         <div className="p-6">
+
+          {/* ---- FIXED TITLE SECTION ---- */}
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-800">
-              {showPaymentForm ? 'Record Payment' : 'Accountant Dashboard'}
-            </h1>
+
+            {/* Only show title when record payment form is open */}
+            {showPaymentForm && (
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
+                Record Payment
+              </h1>
+            )}
+
+            {/* Button only for payment section */}
             {!showPaymentForm && activeSection === 'payment' && (
               <button
                 onClick={() => setShowPaymentForm(true)}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium"
+                className="bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-red-700 transition duration-150 font-semibold transform active:scale-95"
               >
                 + Record New Payment
               </button>
             )}
           </div>
+          {/* ---- END FIX ---- */}
+
           {renderContent()}
         </div>
       </main>

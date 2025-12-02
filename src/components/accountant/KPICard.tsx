@@ -17,7 +17,7 @@ const KPICard: React.FC<KpiCardProps> = ({ kpi }) => {
         {kpi.title}
       </h3>
       <div className="flex items-center justify-between">
-        <div className="text-3xl font-bold text-blue-600">
+        <div className="text-3xl font-bold text-red-600">
           {kpi.value}
         </div>
         {kpi.trend && (

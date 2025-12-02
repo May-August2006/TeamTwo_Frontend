@@ -1,39 +1,34 @@
+// components/units/UnitSearch.tsx
 import React, { useState, useEffect } from 'react';
-import type { RoomSearchParams, RoomType } from '../../types/room';
+import { UnitType, type UnitSearchParams } from '../../types/unit';
 import { branchApi } from '../../api/BranchAPI';
 import { buildingApi } from '../../api/BuildingAPI';
 import { levelApi } from '../../api/LevelAPI';
-import { roomTypeApi } from '../../api/RoomAPI';
 import { Button } from '../common/ui/Button';
 import type { Branch, Building, Level } from '../../types';
 
-interface RoomSearchProps {
-  onSearch: (params: RoomSearchParams) => void;
+interface UnitSearchProps {
+  onSearch: (params: UnitSearchParams) => void;
   onReset: () => void;
   isLoading?: boolean;
 }
 
-export const RoomSearch: React.FC<RoomSearchProps> = ({ 
+export const UnitSearch: React.FC<UnitSearchProps> = ({ 
   onSearch, 
   onReset, 
   isLoading = false 
 }) => {
-  const [searchParams, setSearchParams] = useState<RoomSearchParams>({});
+  const [searchParams, setSearchParams] = useState<UnitSearchParams>({});
   const [branches, setBranches] = useState<Branch[]>([]);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
-  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const [branchesData, roomTypesData] = await Promise.all([
-          branchApi.getAllBranches(),
-          roomTypeApi.getAll()
-        ]);
+        const branchesData = await branchApi.getAllBranches();
         setBranches(branchesData.data);
-        setRoomTypes(roomTypesData.data);
       } catch (error) {
         console.error('Error loading initial data:', error);
       }
@@ -98,6 +93,7 @@ export const RoomSearch: React.FC<RoomSearchProps> = ({
               : value === '' ? undefined 
               : name.includes('Id') || name.includes('Space') || name.includes('Rent') 
                 ? Number(value) 
+                : name === 'unitType' ? value as UnitType
                 : value
     }));
   };
@@ -105,7 +101,7 @@ export const RoomSearch: React.FC<RoomSearchProps> = ({
   return (
     <div className="bg-white p-6 rounded-lg shadow-md mb-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-2 sm:mb-0">Search Rooms</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2 sm:mb-0">Search Units</h3>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
@@ -140,17 +136,17 @@ export const RoomSearch: React.FC<RoomSearchProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Room Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Unit Type</label>
             <select
-              name="roomTypeId"
-              value={searchParams.roomTypeId || ''}
+              name="unitType"
+              value={searchParams.unitType || ''}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">All Types</option>
-              {roomTypes.map(type => (
-                <option key={type.id} value={type.id}>{type.typeName}</option>
-              ))}
+              <option value={UnitType.ROOM}>Room</option>
+              <option value={UnitType.SPACE}>Space</option>
+              <option value={UnitType.HALL}>Hall</option>
             </select>
           </div>
 

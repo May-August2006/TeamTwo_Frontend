@@ -1,7 +1,7 @@
 /** @format */
 import React, { useState, useEffect } from "react";
 import { utilityApi } from "../../api/UtilityAPI";
-import type { UtilityType, UtilityTypeRequest } from "../../types/room";
+import type { UtilityType, UtilityTypeRequest } from "../../types/unit";
 
 export const UtilityTypePage: React.FC = () => {
   const [utilityTypes, setUtilityTypes] = useState<UtilityType[]>([]);

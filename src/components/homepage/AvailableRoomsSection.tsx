@@ -2,7 +2,7 @@
 
 // src/components/homepage/AvailableRoomsSection.tsx
 import React, { useState, useEffect } from "react";
-import type { Room, RoomSearchParams } from "../../types/room";
+import type { Room, RoomSearchParams } from "../../types/unit";
 import { RoomCard } from "./RoomCard";
 import { SearchFilters } from "./SearchFilters";
 import { LoadingSpinner } from "../common/ui/LoadingSpinner";

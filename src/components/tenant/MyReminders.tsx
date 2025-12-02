@@ -3,7 +3,6 @@ import { useEffect, useState, useRef } from "react";
 import toast, { Toaster } from "react-hot-toast";
 
 import { useTenantRemindersWebSocket } from "../../hooks/useTenantRemindersWebSocket";
-
 import { tenantReminderApi } from "../../api/tenantReminderApi";
 
 export default function MyReminders() {
@@ -45,32 +44,42 @@ export default function MyReminders() {
     });
   }, [reminders]);
 
-  if (loading) return <p>Loading reminders...</p>;
+  if (loading) return (
+    <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
+      <div className="text-xl font-medium text-stone-700 animate-pulse">Loading Reminders...</div>
+    </div>
+  );
 
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 sm:p-6 space-y-6 min-h-screen bg-stone-50">
       <Toaster position="top-right" />
 
-      <div className="flex justify-between">
-        <h2 className="text-2xl font-semibold">My Reminders</h2>
-        <span>{connected ? "🟢 Online" : "🔴 Offline"}</span>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">My Reminders</h2>
+        <span className={`px-3 py-1 rounded-full text-sm font-semibold ${connected ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+          {connected ? "🟢 Online" : "🔴 Offline"}
+        </span>
       </div>
 
-      <div className="bg-white shadow rounded divide-y">
+      <div className="bg-white rounded-xl shadow-lg border border-stone-200 overflow-hidden">
         {reminders.length === 0 && (
-          <p className="p-4 text-gray-500 text-center">No upcoming payments</p>
+          <div className="p-8 text-center text-stone-500 bg-stone-50">
+            <div className="text-5xl mb-3">📅</div>
+            <div className="text-xl font-semibold text-stone-700">No Upcoming Payments</div>
+            <p className="text-sm mt-1">You're all caught up! No payment reminders at this time.</p>
+          </div>
         )}
 
         {reminders.map((r) => (
           <div
             key={r.id}
-            className="flex justify-between px-4 py-3 hover:bg-gray-50"
+            className="flex justify-between px-6 py-4 hover:bg-red-50/50 transition duration-150 border-b border-stone-100 last:border-b-0"
           >
             <div>
-              <p className="font-medium">Invoice: {r.invoiceNumber}</p>
-              <p className="text-sm text-gray-500">Due Date: {r.dueDate}</p>
-              <p className="text-sm text-gray-500">{r.amount} MMK</p>
-              <p className="text-sm text-gray-500">{r.message}</p>
+              <p className="font-semibold text-stone-900">Invoice: {r.invoiceNumber}</p>
+              <p className="text-sm text-stone-500 mt-1">Due Date: {r.dueDate}</p>
+              <p className="text-sm font-semibold text-red-600 mt-1">{r.amount} MMK</p>
+              <p className="text-sm text-stone-500 mt-1">{r.message}</p>
             </div>
           </div>
         ))}

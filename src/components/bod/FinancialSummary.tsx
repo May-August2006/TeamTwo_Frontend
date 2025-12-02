@@ -46,68 +46,68 @@ const FinancialSummary: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-8 space-y-6 bg-stone-50 min-h-screen">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-stone-900">
               Total Revenue
             </h3>
             <DollarSign className="w-6 h-6 text-green-600" />
           </div>
-          <p className="text-3xl font-bold text-gray-900">$12.8M</p>
-          <p className="text-sm text-green-600 mt-2">+15.2% from last year</p>
+          <p className="text-3xl font-bold text-stone-900">$12.8M</p>
+          <p className="text-sm text-green-600 mt-2 font-medium">+15.2% from last year</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Net Profit</h3>
-            <TrendingUp className="w-6 h-6 text-blue-600" />
+            <h3 className="text-lg font-semibold text-stone-900">Net Profit</h3>
+            <TrendingUp className="w-6 h-6 text-red-600" />
           </div>
-          <p className="text-3xl font-bold text-gray-900">$5.7M</p>
-          <p className="text-sm text-blue-600 mt-2">+12.8% from last year</p>
+          <p className="text-3xl font-bold text-stone-900">$5.7M</p>
+          <p className="text-sm text-red-600 mt-2 font-medium">+12.8% from last year</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-stone-900">
               Profit Margin
             </h3>
             <PieChart className="w-6 h-6 text-purple-600" />
           </div>
-          <p className="text-3xl font-bold text-gray-900">44.5%</p>
-          <p className="text-sm text-purple-600 mt-2">+2.1% improvement</p>
+          <p className="text-3xl font-bold text-stone-900">44.5%</p>
+          <p className="text-sm text-purple-600 mt-2 font-medium">+2.1% improvement</p>
         </div>
       </div>
 
       {/* Quarterly Performance */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">
+      <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
+        <h3 className="text-xl font-bold text-stone-900 mb-6 pb-3 border-b border-stone-200">
           Quarterly Performance 2024
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {financialData.quarterly.map((quarter, index) => (
-            <div key={index} className="text-center p-4 bg-gray-50 rounded-lg">
-              <h4 className="font-semibold text-gray-900 mb-3">
+            <div key={index} className="text-center p-5 bg-stone-50 rounded-lg border border-stone-200 hover:bg-red-50/30 transition duration-150">
+              <h4 className="font-bold text-stone-900 mb-3">
                 {quarter.quarter}
               </h4>
               <div className="space-y-2">
                 <p className="text-sm">
-                  <span className="text-gray-600">Revenue: </span>
-                  <span className="font-semibold text-green-600">
+                  <span className="text-stone-600">Revenue: </span>
+                  <span className="font-bold text-green-600">
                     {quarter.revenue}
                   </span>
                 </p>
                 <p className="text-sm">
-                  <span className="text-gray-600">Expenses: </span>
-                  <span className="font-semibold text-red-600">
+                  <span className="text-stone-600">Expenses: </span>
+                  <span className="font-bold text-red-600">
                     {quarter.expenses}
                   </span>
                 </p>
                 <p className="text-sm">
-                  <span className="text-gray-600">Profit: </span>
-                  <span className="font-semibold text-blue-600">
+                  <span className="text-stone-600">Profit: </span>
+                  <span className="font-bold text-stone-900">
                     {quarter.profit}
                   </span>
                 </p>
@@ -118,42 +118,42 @@ const FinancialSummary: React.FC = () => {
       </div>
 
       {/* Yearly Comparison */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">
+      <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
+        <h3 className="text-xl font-bold text-stone-900 mb-6 pb-3 border-b border-stone-200">
           Yearly Financial Trends
         </h3>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-stone-200">
+            <thead className="bg-stone-100">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
                   Year
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
                   Total Revenue
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
                   Net Profit
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
                   Growth Rate
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-stone-100">
               {financialData.yearly.map((year, index) => (
-                <tr key={index}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <tr key={index} className="hover:bg-red-50/30 transition duration-100">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-stone-900">
                     {year.year}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
                     {year.revenue}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
                     {year.profit}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
                       {year.growth}
                     </span>
                   </td>
@@ -165,27 +165,29 @@ const FinancialSummary: React.FC = () => {
       </div>
 
       {/* Income Sources */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">
+      <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
+        <h3 className="text-xl font-bold text-stone-900 mb-6 pb-3 border-b border-stone-200">
           Revenue Sources
         </h3>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {financialData.incomeSources.map((source, index) => (
             <div
               key={index}
-              className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+              className="flex items-center justify-between p-4 bg-stone-50 rounded-lg hover:bg-red-50/30 transition duration-150"
             >
               <div className="flex items-center space-x-3">
-                <BarChart3 className="w-5 h-5 text-gray-400" />
-                <span className="font-medium text-gray-900">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <BarChart3 className="w-5 h-5 text-red-600" />
+                </div>
+                <span className="font-bold text-stone-900">
                   {source.source}
                 </span>
               </div>
               <div className="text-right">
-                <p className="text-lg font-semibold text-gray-900">
+                <p className="text-lg font-bold text-stone-900">
                   {source.amount}
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-stone-500 font-medium">
                   {source.percentage}% of total
                 </p>
               </div>

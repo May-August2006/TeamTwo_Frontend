@@ -124,7 +124,7 @@ export const TerminationModal: React.FC<TerminationModalProps> = ({
             <h3 className="font-medium text-blue-900 mb-2">Contract Details</h3>
             <div className="text-sm text-blue-700 space-y-1">
               <p><strong>Tenant:</strong> {contract.tenant?.tenantName}</p>
-              <p><strong>Room:</strong> {contract.room?.roomNumber}</p>
+              <p><strong>Unit:</strong> {contract.unit?.unitNumber}</p>
               <p><strong>Current Status:</strong> {contract.contractStatus}</p>
               <p><strong>End Date:</strong> {new Date(contract.endDate).toLocaleDateString()}</p>
             </div>
@@ -205,7 +205,7 @@ export const TerminationModal: React.FC<TerminationModalProps> = ({
             </div>
             <ul className="text-sm text-yellow-700 mt-2 space-y-1">
               <li>• This action cannot be undone</li>
-              <li>• The room will be marked as available immediately</li>
+              <li>• The unit will be marked as available immediately</li>
               <li>• Contract status will be changed to "TERMINATED"</li>
               <li>• All future billing will be stopped</li>
             </ul>

@@ -26,6 +26,7 @@ export function useTenantInvoicesWebSocket(jwtToken: string) {
     const socket = new SockJS("http://localhost:8080/ws");
     const client = new Client({
       webSocketFactory: () => socket as any,
+      debug: (msg) => console.log("[STOMP]", msg),
       reconnectDelay: 5000,
       connectHeaders: { Authorization: `Bearer ${jwtToken}` },
 

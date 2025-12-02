@@ -127,7 +127,7 @@ const TenantForm: React.FC<TenantFormProps> = ({
                 name="tenantName"
                 value={formData.tenantName}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
                   errors.tenantName ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter tenant name"
@@ -149,7 +149,7 @@ const TenantForm: React.FC<TenantFormProps> = ({
                 name="contactPerson"
                 value={formData.contactPerson}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
                   errors.contactPerson ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter contact person"
@@ -171,7 +171,7 @@ const TenantForm: React.FC<TenantFormProps> = ({
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
                   errors.email ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter email address"
@@ -193,7 +193,7 @@ const TenantForm: React.FC<TenantFormProps> = ({
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
                   errors.phone ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter phone number"
@@ -215,7 +215,7 @@ const TenantForm: React.FC<TenantFormProps> = ({
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
                   errors.username ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter username"
@@ -237,7 +237,7 @@ const TenantForm: React.FC<TenantFormProps> = ({
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 placeholder="Enter full name"
                 disabled={isLoading}
               />
@@ -254,7 +254,7 @@ const TenantForm: React.FC<TenantFormProps> = ({
                 name="nrc_no"
                 value={formData.nrc_no}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 placeholder="Enter NRC number"
                 disabled={isLoading}
               />
@@ -270,7 +270,7 @@ const TenantForm: React.FC<TenantFormProps> = ({
                 name="tenantCategoryId"
                 value={formData.tenantCategoryId}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
                   errors.tenantCategoryId ? 'border-red-500' : 'border-gray-300'
                 }`}
                 disabled={isLoading}
@@ -299,7 +299,7 @@ const TenantForm: React.FC<TenantFormProps> = ({
               value={formData.address}
               onChange={handleChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
               placeholder="Enter address"
               disabled={isLoading}
             />
@@ -310,14 +310,14 @@ const TenantForm: React.FC<TenantFormProps> = ({
               type="button"
               onClick={onCancel}
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <span className="flex items-center">

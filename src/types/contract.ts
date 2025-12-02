@@ -2,7 +2,7 @@
 export interface CreateContractRequest {
   contractNumber: string;
   tenantId: number;
-  roomId: number;
+  unitId: number;
   startDate: string;
   endDate: string;
   rentalFee: number;
@@ -22,7 +22,7 @@ export interface Contract {
   id: number;
   contractNumber: string;
   tenant?: Tenant;
-  room?: Room;
+  unit?: Unit;
   startDate: string;
   endDate: string;
   rentalFee: number;
@@ -70,11 +70,11 @@ export interface Tenant {
   };
 }
 
-export interface Room {
+export interface Unit {
   id: number;
-  roomNumber: string;
+  unitNumber: string;
   rentalFee?: number;
-  roomSpace?: number;
+  unitSpace?: number;
   isAvailable?: boolean;
   level?: Level;
   roomType?: RoomType;
@@ -84,7 +84,7 @@ export interface Level {
   id: number;
   levelName: string;
   levelNumber: number;
-  totalRooms: number;
+  totalunits: number;
   building?: Building;
   buildingName?: string;
 }
@@ -107,6 +107,14 @@ export interface Branch {
 export interface RoomType {
   id: number;
   typeName: string;
+}
+export interface SpaceType {
+  id: number;
+  name: string;
+}
+export interface HallType {
+  id: number;
+  name: string;
 }
 
 export interface UtilityType {
@@ -136,7 +144,7 @@ export interface LeaseTerminationRequest {
 export interface TerminationResult {
   contract: Contract;
   message: string;
-  roomReleased: boolean;
+  unitReleased: boolean;
 }
 
 export interface TerminationPreview {
@@ -144,7 +152,7 @@ export interface TerminationPreview {
   message?: string;
   contract?: Contract;
   currentStatus?: ContractStatus;
-  roomNumber?: string;
+  unitNumber?: string;
   tenantName?: string;
 }
 
@@ -152,7 +160,7 @@ export interface ContractDTO {
   id: number;
   contractNumber: string;
   tenant: TenantDTO;
-  room: RoomDTO;
+  unit: UnitDTO;
   startDate: string;
   endDate: string;
   rentalFee: number;
@@ -196,11 +204,11 @@ export interface TenantDTO {
   tenantCategoryName?: string;
 }
 
-export interface RoomDTO {
+export interface UnitDTO {
   id: number;
-  roomNumber: string;
+  unitNumber: string;
   rentalFee?: number;
-  roomSpace?: number;
+  unitSpace?: number;
   isAvailable?: boolean;
   level?: LevelDTO;
   roomType?: RoomTypeDTO;
@@ -210,7 +218,7 @@ export interface LevelDTO {
   id: number;
   levelName: string;
   levelNumber: number;
-  totalRooms: number;
+  totalUnits: number;
   building?: BuildingDTO;
   buildingName?: string;
 }
@@ -270,7 +278,7 @@ export interface ContractHistory {
 export interface ContractFilter {
   status?: ContractStatus;
   tenantId?: number;
-  roomId?: number;
+  unitId?: number;
   startDateFrom?: string;
   startDateTo?: string;
   endDateFrom?: string;
