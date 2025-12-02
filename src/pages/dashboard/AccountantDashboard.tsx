@@ -6,6 +6,7 @@ import SectionPlaceholder from '../../components/accountant/SectionPlaceholder';
 import PaymentListPage from '../../components/accountant/PaymentListPage';
 import PaymentForm from '../../components/accountant/PaymentForm';
 import PaymentAuditLog from '../../components/accountant/PaymentAuditLog';
+import DailyCollectionReport from '../../components/accountant/DailyCollectionReport';
 
 const AccountantDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -46,7 +47,7 @@ const AccountantDashboard: React.FC = () => {
       case 'invoices':
         return <SectionPlaceholder title="Invoices & Receipts" />;
       case 'reports':
-        return <SectionPlaceholder title="Reports" />;
+        return <DailyCollectionReport />;
       case 'audit':
         return <PaymentAuditLog />;
       default:
