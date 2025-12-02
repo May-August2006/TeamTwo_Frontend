@@ -3,23 +3,23 @@ import React, { useState } from 'react';
 import { Layout } from '../components/common/layout/Layout';
 import { RoomDetailModal } from '../components/homepage/RoomDetailModal';
 import { AppointmentForm } from '../components/homepage/AppointmentForm';
-import type { Room } from '../types/unit';
+import type { Unit } from '../types/unit';
 import Homepage from '../components/homepage/Homepage';
 
 const HomePage: React.FC = () => {
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<Unit | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false); // You'll get this from your auth context
 
-  const handleRoomDetail = (room: Room) => {
-    console.log('🏠 HomePage: Room detail requested', room.roomNumber);
+  const handleRoomDetail = (room: Unit) => {
+    console.log('🏠 HomePage: Room detail requested', room.unitNumber);
     setSelectedRoom(room);
     setIsDetailModalOpen(true);
   };
 
-  const handleAppointment = (room: Room) => {
-    console.log('🏠 HomePage: Appointment requested', room.roomNumber);
+  const handleAppointment = (room: Unit) => {
+    console.log('🏠 HomePage: Appointment requested', room.unitNumber);
     setSelectedRoom(room);
     setIsAppointmentModalOpen(true);
   };
@@ -44,7 +44,7 @@ const HomePage: React.FC = () => {
   };
 
   console.log('🏠 HomePage State:', {
-    selectedRoom: selectedRoom?.roomNumber,
+    selectedRoom: selectedRoom?.unitNumber,
     isDetailModalOpen,
     isAppointmentModalOpen,
     isLoggedIn

@@ -37,6 +37,10 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
   const [selectedUtilityIds, setSelectedUtilityIds] = useState<number[]>([]);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [rentalFeePreview, setRentalFeePreview] = useState<string>('');
+  const [selectedSpaceType, setSelectedSpaceType] = useState<any>(null);
+  const [selectedRoomType, setSelectedRoomType] = useState<any>(null);
+  const [selectedHallType, setSelectedHallType] = useState<any>(null);
 
   const [branches, setBranches] = useState<any[]>([]);
   const [buildings, setBuildings] = useState<any[]>([]);
@@ -119,6 +123,40 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     setFormData(prev => ({ ...prev, hasMeter }));
   }, [formData.unitType]);
 
+  // Fetch space type details when spaceTypeId changes
+  useEffect(() => {
+    if (formData.unitType === UnitType.SPACE && formData.spaceTypeId) {
+      fetchSpaceTypeDetails(parseInt(formData.spaceTypeId));
+    } else {
+      setSelectedSpaceType(null);
+    }
+  }, [formData.spaceTypeId, formData.unitType]);
+
+  // Fetch room type details when roomTypeId changes
+  useEffect(() => {
+    if (formData.unitType === UnitType.ROOM && formData.roomTypeId) {
+      const roomType = roomTypes.find(rt => rt.id === parseInt(formData.roomTypeId));
+      setSelectedRoomType(roomType || null);
+    } else {
+      setSelectedRoomType(null);
+    }
+  }, [formData.roomTypeId, formData.unitType, roomTypes]);
+
+  // Fetch hall type details when hallTypeId changes
+  useEffect(() => {
+    if (formData.unitType === UnitType.HALL && formData.hallTypeId) {
+      const hallType = hallTypes.find(ht => ht.id === parseInt(formData.hallTypeId));
+      setSelectedHallType(hallType || null);
+    } else {
+      setSelectedHallType(null);
+    }
+  }, [formData.hallTypeId, formData.unitType, hallTypes]);
+
+  // Calculate rental fee when unit space or type-specific data changes
+  useEffect(() => {
+    calculateRentalFee();
+  }, [formData.unitSpace, formData.unitType, selectedSpaceType, selectedRoomType, selectedHallType]);
+
   const loadBuildings = async (branchId: number) => {
     setBuildingsLoading(true);
     try {
@@ -142,6 +180,66 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       setLevels([]);
     } finally {
       setLevelsLoading(false);
+    }
+  };
+
+  const fetchSpaceTypeDetails = async (spaceTypeId: number) => {
+    try {
+      const response = await spaceTypeApi.getById(spaceTypeId);
+      setSelectedSpaceType(response.data);
+    } catch (error) {
+      console.error('Error fetching space type details:', error);
+      setSelectedSpaceType(null);
+    }
+  };
+
+  const calculateRentalFee = () => {
+    const space = parseFloat(formData.unitSpace);
+    
+    if (!formData.unitSpace || isNaN(space) || space <= 0) {
+      setRentalFeePreview('');
+      if (formData.unitType === UnitType.SPACE) {
+        setFormData(prev => ({ ...prev, rentalFee: '' }));
+      }
+      return;
+    }
+
+    let calculatedFee = '';
+
+    switch (formData.unitType) {
+      case UnitType.SPACE:
+        if (selectedSpaceType?.basePricePerSqm) {
+          const basePrice = parseFloat(selectedSpaceType.basePricePerSqm);
+          if (!isNaN(basePrice) && basePrice >= 0) {
+            calculatedFee = (space * basePrice).toFixed(2);
+          }
+        }
+        break;
+
+      case UnitType.ROOM:
+        if (selectedRoomType?.basePrice) {
+          const basePrice = parseFloat(selectedRoomType.basePrice);
+          if (!isNaN(basePrice) && basePrice >= 0) {
+            calculatedFee = (space * basePrice).toFixed(2);
+          }
+        }
+        break;
+
+      case UnitType.HALL:
+        if (selectedHallType?.basePrice) {
+          const basePrice = parseFloat(selectedHallType.basePrice);
+          if (!isNaN(basePrice) && basePrice >= 0) {
+            calculatedFee = (space * basePrice).toFixed(2);
+          }
+        }
+        break;
+    }
+
+    setRentalFeePreview(calculatedFee);
+    
+    // Auto-fill rental fee for Space type only (optional)
+    if (formData.unitType === UnitType.SPACE && calculatedFee) {
+      setFormData(prev => ({ ...prev, rentalFee: calculatedFee }));
     }
   };
 
@@ -207,6 +305,45 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       newErrors.unitSpace = 'Unit space must be greater than 0';
     }
 
+    // For SPACE type, validate against space type constraints
+    if (formData.unitType === UnitType.SPACE && formData.spaceTypeId && selectedSpaceType) {
+      const space = parseFloat(formData.unitSpace);
+      
+      if (selectedSpaceType.minSpace > 0 && space < selectedSpaceType.minSpace) {
+        newErrors.unitSpace = `Minimum space required: ${selectedSpaceType.minSpace} sqm`;
+      }
+      
+      if (selectedSpaceType.maxSpace > 0 && space > selectedSpaceType.maxSpace) {
+        newErrors.unitSpace = `Maximum space allowed: ${selectedSpaceType.maxSpace} sqm`;
+      }
+    }
+
+    // For ROOM type, validate against room type constraints if they exist
+    if (formData.unitType === UnitType.ROOM && formData.roomTypeId && selectedRoomType) {
+      const space = parseFloat(formData.unitSpace);
+      
+      if (selectedRoomType.minSpace > 0 && space < selectedRoomType.minSpace) {
+        newErrors.unitSpace = `Minimum space required: ${selectedRoomType.minSpace} sqm`;
+      }
+      
+      if (selectedRoomType.maxSpace > 0 && space > selectedRoomType.maxSpace) {
+        newErrors.unitSpace = `Maximum space allowed: ${selectedRoomType.maxSpace} sqm`;
+      }
+    }
+
+    // For HALL type, validate against hall type constraints if they exist
+    if (formData.unitType === UnitType.HALL && formData.hallTypeId && selectedHallType) {
+      const space = parseFloat(formData.unitSpace);
+      
+      if (selectedHallType.minSpace > 0 && space < selectedHallType.minSpace) {
+        newErrors.unitSpace = `Minimum space required: ${selectedHallType.minSpace} sqm`;
+      }
+      
+      if (selectedHallType.maxSpace > 0 && space > selectedHallType.maxSpace) {
+        newErrors.unitSpace = `Maximum space allowed: ${selectedHallType.maxSpace} sqm`;
+      }
+    }
+
     if (!formData.rentalFee || parseFloat(formData.rentalFee) < 0) {
       newErrors.rentalFee = 'Rental fee cannot be negative';
     }
@@ -264,6 +401,8 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       console.log('Submitting unit data:', {
         unitType: formData.unitType,
         hasMeter: formData.hasMeter,
+        rentalFee: formData.rentalFee,
+        calculatedPreview: rentalFeePreview,
         utilityIds: selectedUtilityIds
       });
 
@@ -315,9 +454,22 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             >
               <option value="">Select Room Type</option>
               {roomTypes.map(type => (
-                <option key={type.id} value={type.id}>{type.typeName}</option>
+                <option key={type.id} value={type.id}>
+                  {type.typeName} {type.basePrice ? `(${type.basePrice} MMK/sqm)` : ''}
+                </option>
               ))}
             </select>
+            {selectedRoomType && selectedRoomType.basePrice && (
+              <div className="mt-2 text-sm text-gray-600">
+                <p>Base Price: <span className="font-semibold">{selectedRoomType.basePrice} MMK per sqm</span></p>
+                {selectedRoomType.minSpace > 0 && (
+                  <p>Min Space: {selectedRoomType.minSpace} sqm</p>
+                )}
+                {selectedRoomType.maxSpace > 0 && (
+                  <p>Max Space: {selectedRoomType.maxSpace} sqm</p>
+                )}
+              </div>
+            )}
             {errors.roomTypeId && (
               <p className="text-red-500 text-sm mt-1">{errors.roomTypeId}</p>
             )}
@@ -341,9 +493,25 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             >
               <option value="">Select Space Type</option>
               {spaceTypes.map(type => (
-                <option key={type.id} value={type.id}>{type.name}</option>
+                <option key={type.id} value={type.id}>
+                  {type.name} ({type.basePricePerSqm}MMK/sqm)
+                </option>
               ))}
             </select>
+            {selectedSpaceType && (
+              <div className="mt-2 text-sm text-gray-600">
+                <p>Base Price: <span className="font-semibold">{selectedSpaceType.basePricePerSqm} MMK per sqm</span></p>
+                {selectedSpaceType.minSpace > 0 && (
+                  <p>Min Space: {selectedSpaceType.minSpace} sqm</p>
+                )}
+                {selectedSpaceType.maxSpace > 0 && (
+                  <p>Max Space: {selectedSpaceType.maxSpace} sqm</p>
+                )}
+                {selectedSpaceType.hasUtilities && (
+                  <p className="text-green-600 font-medium">✓ Utilities available</p>
+                )}
+              </div>
+            )}
             {errors.spaceTypeId && (
               <p className="text-red-500 text-sm mt-1">{errors.spaceTypeId}</p>
             )}
@@ -367,9 +535,22 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             >
               <option value="">Select Hall Type</option>
               {hallTypes.map(type => (
-                <option key={type.id} value={type.id}>{type.name}</option>
+                <option key={type.id} value={type.id}>
+                  {type.name} {type.basePrice ? `(${type.basePrice} MMK/sqm)` : ''}
+                </option>
               ))}
             </select>
+            {selectedHallType && selectedHallType.basePrice && (
+              <div className="mt-2 text-sm text-gray-600">
+                <p>Base Price: <span className="font-semibold">{selectedHallType.basePrice} MMK per sqm</span></p>
+                {selectedHallType.minSpace > 0 && (
+                  <p>Min Space: {selectedHallType.minSpace} sqm</p>
+                )}
+                {selectedHallType.maxSpace > 0 && (
+                  <p>Max Space: {selectedHallType.maxSpace} sqm</p>
+                )}
+              </div>
+            )}
             {errors.hallTypeId && (
               <p className="text-red-500 text-sm mt-1">{errors.hallTypeId}</p>
             )}
@@ -379,6 +560,86 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       default:
         return null;
     }
+  };
+
+  const renderCalculationPreview = () => {
+    if (!rentalFeePreview || !formData.unitSpace) return null;
+
+    const space = parseFloat(formData.unitSpace);
+    let basePrice = 0;
+    let unitTypeLabel = '';
+
+    switch (formData.unitType) {
+      case UnitType.SPACE:
+        basePrice = selectedSpaceType?.basePricePerSqm || 0;
+        unitTypeLabel = 'Space';
+        break;
+      case UnitType.ROOM:
+        basePrice = selectedRoomType?.basePrice || 0;
+        unitTypeLabel = 'Room';
+        break;
+      case UnitType.HALL:
+        basePrice = selectedHallType?.basePrice || 0;
+        unitTypeLabel = 'Hall';
+        break;
+    }
+
+    if (basePrice <= 0) return null;
+
+    return (
+      <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-medium text-blue-800">Calculated {unitTypeLabel} Rental Fee:</span>
+          <span className="text-lg font-bold text-blue-700">
+            {rentalFeePreview} MMK
+          </span>
+        </div>
+        <p className="text-xs text-blue-600 mt-1">
+          Calculation: {space} sqm × {basePrice.toFixed(2)} MMK /sqm = {rentalFeePreview} MMK
+        </p>
+        {formData.rentalFee !== rentalFeePreview && formData.rentalFee && (
+          <p className="text-xs text-amber-600 mt-1">
+            Note: Manual override applied. Calculated value was {rentalFeePreview} MMK
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  const renderRealTimeCalculation = () => {
+    const space = parseFloat(formData.unitSpace);
+    if (!space || space <= 0) return null;
+
+    let basePrice = 0;
+    
+    switch (formData.unitType) {
+      case UnitType.SPACE:
+        basePrice = selectedSpaceType?.basePricePerSqm || 0;
+        break;
+      case UnitType.ROOM:
+        basePrice = selectedRoomType?.basePrice || 0;
+        break;
+      case UnitType.HALL:
+        basePrice = selectedHallType?.basePrice || 0;
+        break;
+    }
+
+    if (basePrice <= 0) return null;
+
+    return (
+      <div className="text-sm text-gray-600 mt-1">
+        <div className="flex items-center space-x-1">
+          <span>Calculation:</span>
+          <span className="font-medium">{space} sqm</span>
+          <span>×</span>
+          <span className="font-medium">{basePrice.toFixed(2)}MMK/sqm</span>
+          <span>=</span>
+          <span className="font-bold text-green-600">
+            {(space * basePrice).toFixed(2)} MMK
+          </span>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -551,6 +812,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             min="0"
             step="0.1"
           />
+          {renderRealTimeCalculation()}
           {errors.unitSpace && (
             <p className="text-red-500 text-sm mt-1">{errors.unitSpace}</p>
           )}
@@ -561,19 +823,31 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Rental Fee (MMK) *
           </label>
-          <input
-            type="number"
-            name="rentalFee"
-            value={formData.rentalFee}
-            onChange={handleChange}
-            required
-            className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.rentalFee ? 'border-red-500' : 'border-gray-300'
-            }`}
-            placeholder="Enter rental fee"
-            min="0"
-            step="0.01"
-          />
+          
+          {renderCalculationPreview()}
+          
+          <div className="relative">
+            <input
+              type="number"
+              name="rentalFee"
+              value={formData.rentalFee}
+              onChange={handleChange}
+              required
+              className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.rentalFee ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder={rentalFeePreview ? "Auto-calculated" : "Enter rental fee"}
+              min="0"
+              step="0.01"
+            />
+            
+            {rentalFeePreview && formData.rentalFee === rentalFeePreview && (
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <span className="text-gray-500 text-sm">Auto</span>
+              </div>
+            )}
+          </div>
+          
           {errors.rentalFee && (
             <p className="text-red-500 text-sm mt-1">{errors.rentalFee}</p>
           )}

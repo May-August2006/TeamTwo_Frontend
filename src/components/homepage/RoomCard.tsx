@@ -2,13 +2,13 @@
 
 // src/components/homepage/RoomCard.tsx
 import React from "react";
-import type { Room } from "../../types/unit";
+import type { Unit } from "../../types/unit";
 import { Button } from "../common/ui/Button";
 
 interface RoomCardProps {
-  room: Room;
-  onViewDetails: (room: Room) => void;
-  onAppointment: (room: Room) => void;
+  room: Unit;
+  onViewDetails: (room: Unit) => void;
+  onAppointment: (room: Unit) => void;
 }
 
 export const RoomCard: React.FC<RoomCardProps> = ({
@@ -20,13 +20,13 @@ export const RoomCard: React.FC<RoomCardProps> = ({
   const primaryImage =
     room.imageUrls?.[0] ||
     "https://via.placeholder.com/400x300?text=Retail+Space";
-  const roomNumber = room.roomNumber || "N/A";
-  const roomSpace = room.roomSpace || 0;
+  const roomNumber = room.unitNumber || "N/A";
+  const roomSpace = room.unitSpace || 0;
   const rentalFee = room.rentalFee || 0;
   const roomTypeName = room.roomType?.typeName || "Retail Space";
   const buildingName = room.level?.building?.buildingName || "Shopping Mall";
   const levelName = room.level?.levelName || "Ground Floor";
-  const meterType = room.meterType || "ELECTRICITY";
+  // const meterType = room.meterType || "ELECTRICITY";
 
   const getBusinessSuggestion = (space: number, roomType: string) => {
     if (space < 20) return "kiosks, small retail, or service businesses";
@@ -158,7 +158,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                 d="M13 10V3L4 14h7v7l9-11h-7z"
               />
             </svg>
-            <span className="capitalize">{meterType.toLowerCase()} Meter</span>
+            {/* <span className="capitalize">{meterType.toLowerCase()} Meter</span> */}
           </div>
         </div>
 

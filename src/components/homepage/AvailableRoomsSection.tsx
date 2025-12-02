@@ -2,7 +2,7 @@
 
 // src/components/homepage/AvailableRoomsSection.tsx
 import React, { useState, useEffect } from "react";
-import type { Room, RoomSearchParams } from "../../types/unit";
+import type { Unit, UnitSearchParams } from "../../types/unit";
 import { RoomCard } from "./RoomCard";
 import { SearchFilters } from "./SearchFilters";
 import { LoadingSpinner } from "../common/ui/LoadingSpinner";
@@ -12,20 +12,20 @@ import { appointmentApi } from "../../api/appointmentApi";
 import { useAuth } from "../../context/AuthContext";
 
 interface AvailableRoomsSectionProps {
-  onRoomDetail?: (room: Room) => void;
+  onRoomDetail?: (room: Unit) => void;
 }
 
 export const AvailableRoomsSection: React.FC<AvailableRoomsSectionProps> = ({
   onRoomDetail,
 }) => {
-  const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
-  const [filteredRooms, setFilteredRooms] = useState<Room[]>([]);
-  const [searchParams, setSearchParams] = useState<RoomSearchParams>({});
+  const [availableRooms, setAvailableRooms] = useState<Unit[]>([]);
+  const [filteredRooms, setFilteredRooms] = useState<Unit[]>([]);
+  const [searchParams, setSearchParams] = useState<UnitSearchParams>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Appointment Modal state
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<Unit | null>(null);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const { isAuthenticated, userId } = useAuth();
@@ -47,7 +47,7 @@ export const AvailableRoomsSection: React.FC<AvailableRoomsSectionProps> = ({
       setError(null);
       console.log("🔄 Loading available rooms...");
 
-      const response = await fetch("http://localhost:8080/api/rooms/available");
+      const response = await fetch("http://localhost:8080/api/units/available");
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       let data = await response.json();
@@ -74,30 +74,30 @@ export const AvailableRoomsSection: React.FC<AvailableRoomsSectionProps> = ({
     let filtered = [...availableRooms];
 
     if (searchParams.minSpace)
-      filtered = filtered.filter((r) => r.roomSpace >= searchParams.minSpace!);
+      filtered = filtered.filter((r) => r.unitSpace >= searchParams.minSpace!);
     if (searchParams.maxSpace)
-      filtered = filtered.filter((r) => r.roomSpace <= searchParams.maxSpace!);
+      filtered = filtered.filter((r) => r.unitSpace <= searchParams.maxSpace!);
     if (searchParams.minRent)
       filtered = filtered.filter((r) => r.rentalFee >= searchParams.minRent!);
     if (searchParams.maxRent)
       filtered = filtered.filter((r) => r.rentalFee <= searchParams.maxRent!);
-    if (searchParams.roomTypeId)
+    if (searchParams.unitType)
       filtered = filtered.filter(
-        (r) => r.roomType.id === searchParams.roomTypeId
+        (r) => r.unitType === searchParams.unitType
       );
 
     setFilteredRooms(filtered);
   };
 
   // View room details
-  const handleRoomDetail = (room: Room) => {
-    console.log("👁️ Viewing room:", room.roomNumber);
+  const handleRoomDetail = (room: Unit) => {
+    console.log("👁️ Viewing room:", room.unitNumber);
     if (onRoomDetail) onRoomDetail(room);
   };
 
   // Open appointment modal
-  const handleAppointment = (room: Room) => {
-    console.log("📅 Booking appointment for:", room.roomNumber);
+  const handleAppointment = (room: Unit) => {
+    console.log("📅 Booking appointment for:", room.unitNumber);
     setSelectedRoom(room);
     setIsAppointmentOpen(true);
   };

@@ -1,14 +1,14 @@
-// src/components/homepage/RoomDetailModal.tsx
+// src/components/homepage/UnitDetailModal.tsx
 import React, { useState } from 'react';
 import { Modal } from '../common/ui/Modal';
-import type { Room } from '../../types/unit';
+import type { Unit } from '../../types/unit';
 import { Button } from '../common/ui/Button';
 
 interface RoomDetailModalProps {
-  room: Room;
+  room: Unit;
   isOpen: boolean;
   onClose: () => void;
-  onAppointment: (room: Room) => void;
+  onAppointment: (room: Unit) => void;
   isLoggedIn: boolean;
   onLoginRequired: () => void;
 }
@@ -50,7 +50,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`${room.roomNumber} - ${room.roomType.typeName}`}
+      title={`${room.unitNumber}`}
       size="lg"
     >
       <div className="space-y-6">
@@ -58,7 +58,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
         <div className="relative bg-gray-100 rounded-lg overflow-hidden">
           <img
             src={currentImage}
-            alt={`${room.roomNumber} - Image ${selectedImage + 1}`}
+            alt={`${room.unitNumber} - Image ${selectedImage + 1}`}
             className="w-full h-64 object-cover"
           />
           
@@ -113,12 +113,12 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
           </div>
         )}
 
-        {/* Rest of your existing RoomDetailModal content remains the same */}
+        {/* Rest of your existing UnitDetailModal content remains the same */}
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="space-y-3">
             <div>
               <span className="font-semibold text-gray-700">Space:</span>
-              <span className="ml-2 text-gray-600">{room.roomSpace} sqm</span>
+              <span className="ml-2 text-gray-600">{room.unitSpace} sqm</span>
             </div>
             <div>
               <span className="font-semibold text-gray-700">Rental Fee:</span>
@@ -170,7 +170,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
         <div>
           <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
           <p className="text-gray-600 text-sm">
-            This {room.roomSpace} sqm space is perfect for {getBusinessSuggestion(room.roomSpace, room.roomType.typeName)}. 
+            This {room.unitSpace} sqm space is perfect for {getBusinessSuggestion(room.unitSpace, room.unitType)}. 
             Located in {room.level?.building?.buildingName} on {room.level?.levelName}, this space offers excellent visibility 
             and accessibility for your business.
           </p>

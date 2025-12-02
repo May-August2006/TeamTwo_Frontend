@@ -3,11 +3,11 @@
 // src/components/homepage/AppointmentForm.tsx
 import React, { useState } from "react";
 import { Modal } from "../common/ui/Modal";
-import type { Room } from "../../types/unit";
+import type { Unit } from "../../types/unit";
 import { Button } from "../common/ui/Button";
 
 interface AppointmentFormProps {
-  room: Room;
+  room: Unit;
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: {
@@ -62,7 +62,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Book Appointment – ${room.roomNumber}`}
+      title={`Book Appointment – ${room.unitNumber}`}
       size="md"
     >
       {!isLoggedIn && (
@@ -80,15 +80,15 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>
               <span className="text-gray-600">Room:</span>
-              <span className="ml-2 font-medium">{room.roomNumber}</span>
+              <span className="ml-2 font-medium">{room.unitNumber}</span>
             </div>
             <div>
               <span className="text-gray-600">Space:</span>
-              <span className="ml-2 font-medium">{room.roomSpace} sqm</span>
+              <span className="ml-2 font-medium">{room.unitSpace} sqm</span>
             </div>
             <div>
               <span className="text-gray-600">Type:</span>
-              <span className="ml-2 font-medium">{room.roomType.typeName}</span>
+              <span className="ml-2 font-medium">{room.unitType}</span>
             </div>
             <div>
               <span className="text-gray-600">Rent:</span>
