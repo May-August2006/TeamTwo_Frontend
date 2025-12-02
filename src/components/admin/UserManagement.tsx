@@ -78,7 +78,7 @@ const UserManagement: React.FC = () => {
     email: "",
     fullName: "",
     roleName: "ROLE_GUEST",
-    password: "defaultPassword123",
+    password: "123456",
     branchId: null,
     buildingId: null
   });

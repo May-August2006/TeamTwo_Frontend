@@ -33,6 +33,7 @@
     "levelManagement": "Level Management",
     "roomManagement": "Room Management",
     "utilityTypeManagement": "Utility Types",
+    "unitManagement": "Unit Management",
     "billing": "Billing Configuration",
     "users": "User Management"
   },
