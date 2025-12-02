@@ -198,6 +198,8 @@ export interface InvoiceDTO {
   invoiceItems: InvoiceItemDTO[]; // matches "invoiceItems" (not items)
   createdAt: string; // LocalDate → string
   updatedAt: string; // LocalDate → string
+
+  lateFees?: LateFeeResponseDTO[];
 }
 
 export interface InvoiceItemDTO {
@@ -289,4 +291,36 @@ export interface ReminderDTO {
   amount: number; // BigDecimal → number
   message: string;
   invoiceNumber: string;
+}
+
+export interface PaymentStatusDTO {
+  invoiceId: number;
+  tenantName: string;
+  roomNumber: number;
+  dueDate: string;
+  outstandingAmount: number;
+}
+
+// Late Fee
+export interface LateFeeRequest {
+  invoiceId: number;
+  lateDays: number;
+  reason: string;
+  appliedBy?: number;
+}
+
+export interface LateFeePolicy {
+  id?: number;
+  amountPerDay: number | string;
+}
+
+export interface LateFeeResponseDTO {
+  id: number;
+  invoiceId: number;
+  appliedDate: string;
+  lateDays: number;
+  appliedAmount: number;
+  reason: string;
+  appliedByName?: string;
+  pdfUrl: string;
 }

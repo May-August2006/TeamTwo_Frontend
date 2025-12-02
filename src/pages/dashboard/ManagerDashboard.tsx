@@ -16,6 +16,8 @@ import { InvoiceListPage } from "../manager/InvoiceListPage";
 import ManagerMaintenancePage from "../manager/MaintenancePage";
 import LeaseManagement from "../manager/LeaseManagement";
 import InvoicesPage from "../manager/InvoicesPage";
+import { OverdueOrOutstandingPage } from "../manager/OverdueOrOustandingPage";
+import { LateFeeManagementPage } from "../manager/LateFeeManagementPage";
 import UsageEntryPage from "../manager/UsageEntryPage";
 
 export default function ManagerDashboard() {
@@ -36,6 +38,13 @@ export default function ManagerDashboard() {
         <Route path="announcements" element={<SendAnnouncementPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="invoices" element={<InvoicesPage />} />
+        <Route path="lateFee" element={<LateFeeManagementPage />} />
+        <Route
+          path="overdueOrOustanding"
+          element={<OverdueOrOutstandingPage />}
+        />
+
+        {/* Add the Maintenance route */}
         <Route path="maintenance" element={<ManagerMaintenancePage />} />
         <Route path="*" element={<Navigate to="overview" replace />} />
       </Routes>
