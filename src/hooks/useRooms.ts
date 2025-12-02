@@ -1,7 +1,7 @@
 // hooks/useRooms.ts (Updated & Clean Version)
 
 import { useState, useEffect } from 'react';
-import type {  Room, RoomSearchParams } from '../types/room';
+import type {  Room, RoomSearchParams } from '../types/unit';
 import { roomApi } from '../api/RoomAPI';
 import type { AxiosError } from 'axios';
 

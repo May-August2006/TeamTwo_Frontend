@@ -1,7 +1,7 @@
 // src/components/homepage/RoomDetailModal.tsx
 import React, { useState } from 'react';
 import { Modal } from '../common/ui/Modal';
-import type { Room } from '../../types/room';
+import type { Room } from '../../types/unit';
 import { Button } from '../common/ui/Button';
 
 interface RoomDetailModalProps {

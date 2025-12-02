@@ -1,45 +1,91 @@
+// components/units/UnitDetail.tsx
 import React, { useState, useEffect } from 'react';
-import type { Room } from '../../types/room';
-import { roomApi } from '../../api/RoomAPI';
+import { UnitType, type Unit } from '../../types/unit';
+import { unitApi } from '../../api/UnitAPI';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
 import { Button } from '../common/ui/Button';
 
-interface RoomDetailProps {
-  roomId: number;
+interface UnitDetailProps {
+  unitId: number;
   isOpen: boolean;
   onClose: () => void;
-  onEdit: (room: Room) => void;
+  onEdit: (unit: Unit) => void;
   onDelete: (id: number) => void;
 }
 
-export const RoomDetail: React.FC<RoomDetailProps> = ({
-  roomId,
+export const UnitDetail: React.FC<UnitDetailProps> = ({
+  unitId,
   isOpen,
   onClose,
   onEdit,
   onDelete
 }) => {
-  const [room, setRoom] = useState<Room | null>(null);
+  const [unit, setUnit] = useState<Unit | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [updatingUtility, setUpdatingUtility] = useState<number | null>(null);
 
   useEffect(() => {
-    if (isOpen && roomId) {
-      fetchRoomDetails();
+    if (isOpen && unitId) {
+      fetchUnitDetails();
     }
-  }, [isOpen, roomId]);
+  }, [isOpen, unitId]);
 
-  const fetchRoomDetails = async () => {
+  const fetchUnitDetails = async () => {
     setIsLoading(true);
     try {
-      const response = await roomApi.getById(roomId);
-      setRoom(response.data);
+      const response = await unitApi.getById(unitId);
+      setUnit(response.data);
     } catch (error) {
-      console.error('Error fetching room details:', error);
+      console.error('Error fetching unit details:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const getUnitTypeBadge = (unitType: UnitType) => {
+    const badges = {
+      [UnitType.ROOM]: { color: 'bg-blue-100 text-blue-800', label: 'Room' },
+      [UnitType.SPACE]: { color: 'bg-green-100 text-green-800', label: 'Space' },
+      [UnitType.HALL]: { color: 'bg-purple-100 text-purple-800', label: 'Hall' },
+    };
+    return badges[unitType];
+  };
+
+  const getTypeSpecificInfo = () => {
+    if (!unit) return null;
+    
+    switch (unit.unitType) {
+      case UnitType.ROOM:
+        return (
+          <div>
+            <p className="text-sm text-gray-500">Room Type</p>
+            <p className="font-medium">{unit.roomType?.typeName}</p>
+          </div>
+        );
+      case UnitType.SPACE:
+        return (
+          <div>
+            <p className="text-sm text-gray-500">Space Type</p>
+            <p className="font-medium">{unit.spaceType?.name}</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Base Price: {unit.spaceType?.basePricePerSqm} MMK/sqm
+            </p>
+          </div>
+        );
+      case UnitType.HALL:
+        return (
+          <div>
+            <p className="text-sm text-gray-500">Hall Type</p>
+            <p className="font-medium">{unit.hallType?.name}</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Capacity: {unit.hallType?.capacity} people
+            </p>
+          </div>
+        );
+      default:
+        return null;
     }
   };
 
@@ -47,10 +93,10 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
   const toggleUtilityStatus = async (utilityTypeId: number, currentStatus: boolean) => {
     setUpdatingUtility(utilityTypeId);
     try {
-      await roomApi.toggleRoomUtility(roomId, utilityTypeId, !currentStatus);
+      await unitApi.toggleUnitUtility(unitId, utilityTypeId, !currentStatus);
       
-      // Re-fetch the complete room data to get updated utilities
-      await fetchRoomDetails();
+      // Re-fetch the complete unit data to get updated utilities
+      await fetchUnitDetails();
       
     } catch (error) {
       console.error('Error toggling utility status:', error);
@@ -69,17 +115,17 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
   };
 
   const nextImage = () => {
-    if (room?.imageUrls) {
+    if (unit?.imageUrls) {
       setSelectedImageIndex((prev) => 
-        prev === room.imageUrls!.length - 1 ? 0 : prev + 1
+        prev === unit.imageUrls!.length - 1 ? 0 : prev + 1
       );
     }
   };
 
   const prevImage = () => {
-    if (room?.imageUrls) {
+    if (unit?.imageUrls) {
       setSelectedImageIndex((prev) => 
-        prev === 0 ? room.imageUrls!.length - 1 : prev - 1
+        prev === 0 ? unit.imageUrls!.length - 1 : prev - 1
       );
     }
   };
@@ -90,35 +136,44 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
   };
 
   const handleEdit = () => {
-    if (room) {
-      onEdit(room);
+    if (unit) {
+      onEdit(unit);
       onClose();
     }
   };
 
   const handleDelete = () => {
-    if (room) {
-      onDelete(room.id);
+    if (unit) {
+      onDelete(unit.id);
       onClose();
     }
   };
 
   if (!isOpen) return null;
 
+  const unitTypeBadge = getUnitTypeBadge(unit?.unitType || UnitType.ROOM);
+
   return (
     <>
-      {/* Room Detail Modal */}
+      {/* Unit Detail Modal */}
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
           {/* Header */}
           <div className="flex justify-between items-center p-6 border-b border-gray-200">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                {isLoading ? 'Loading...' : `Room ${room?.roomNumber}`}
-              </h2>
-              {!isLoading && room && (
+              <div className="flex items-center space-x-3">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {isLoading ? 'Loading...' : `Unit ${unit?.unitNumber}`}
+                </h2>
+                {!isLoading && unit && (
+                  <span className={`inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full ${unitTypeBadge.color}`}>
+                    {unitTypeBadge.label}
+                  </span>
+                )}
+              </div>
+              {!isLoading && unit && (
                 <p className="text-gray-600 mt-1">
-                  {room.level.building.buildingName} • {room.level.levelName} • Floor {room.level.levelNumber}
+                  {unit.level.building.buildingName} • {unit.level.levelName} • Floor {unit.level.levelNumber}
                 </p>
               )}
             </div>
@@ -138,7 +193,7 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
               <div className="flex justify-center items-center py-12">
                 <LoadingSpinner size="lg" />
               </div>
-            ) : room ? (
+            ) : unit ? (
               <div className="p-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Image Gallery Section */}
@@ -146,12 +201,12 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
                     {/* Main Image */}
                     <div 
                       className="bg-gray-100 rounded-lg overflow-hidden mb-4 cursor-pointer hover:opacity-95 transition-opacity"
-                      onClick={() => room.imageUrls && room.imageUrls.length > 0 && openImageModal(0)}
+                      onClick={() => unit.imageUrls && unit.imageUrls.length > 0 && openImageModal(0)}
                     >
-                      {room.imageUrls && room.imageUrls.length > 0 ? (
+                      {unit.imageUrls && unit.imageUrls.length > 0 ? (
                         <img
-                          src={room.imageUrls[0]}
-                          alt={`Room ${room.roomNumber}`}
+                          src={unit.imageUrls[0]}
+                          alt={`Unit ${unit.unitNumber}`}
                           className="w-full h-64 object-cover"
                         />
                       ) : (
@@ -167,9 +222,9 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
                     </div>
 
                     {/* Thumbnail Gallery */}
-                    {room.imageUrls && room.imageUrls.length > 1 && (
+                    {unit.imageUrls && unit.imageUrls.length > 1 && (
                       <div className="grid grid-cols-4 gap-2">
-                        {room.imageUrls.map((image, index) => (
+                        {unit.imageUrls.map((image, index) => (
                           <button
                             key={index}
                             onClick={() => openImageModal(index)}
@@ -186,50 +241,53 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
                     )}
                   </div>
 
-                  {/* Room Details Section */}
+                  {/* Unit Details Section */}
                   <div className="space-y-4">
                     {/* Status Badge */}
                     <div className="flex items-center justify-between">
                       <span className={`inline-flex px-4 py-2 rounded-full text-sm font-semibold ${
-                        room.isAvailable 
+                        unit.isAvailable 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {room.isAvailable ? 'Available for Rent' : 'Currently Occupied'}
+                        {unit.isAvailable ? 'Available for Rent' : 'Currently Occupied'}
                       </span>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-blue-600">{room.rentalFee} MMK/month</p>
+                        <p className="text-2xl font-bold text-blue-600">{unit.rentalFee} MMK/month</p>
                         <p className="text-sm text-gray-500">Rental fee</p>
                       </div>
                     </div>
 
-                    {/* Room Specifications */}
+                    {/* Unit Specifications */}
                     <div className="bg-gray-50 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Room Specifications</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Unit Specifications</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-sm text-gray-500">Room Number</p>
-                          <p className="font-medium">{room.roomNumber}</p>
+                          <p className="text-sm text-gray-500">Unit Number</p>
+                          <p className="font-medium">{unit.unitNumber}</p>
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Room Type</p>
-                          <p className="font-medium">{room.roomType.typeName}</p>
-                        </div>
+                        {getTypeSpecificInfo()}
                         <div>
                           <p className="text-sm text-gray-500">Space Area</p>
-                          <p className="font-medium">{room.roomSpace} sqm</p>
+                          <p className="font-medium">{unit.unitSpace} sqm</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Meter</p>
+                          <p className={`font-medium ${unit.hasMeter ? 'text-green-600' : 'text-red-600'}`}>
+                            {unit.hasMeter ? 'Has Meter' : 'No Meter'}
+                          </p>
                         </div>
                       </div>
                     </div>
 
                     {/* ✅ FIXED: Utilities Section - Show ALL utilities regardless of isActive status */}
-                    {room.utilities && room.utilities.length > 0 && (
+                    {unit.utilities && unit.utilities.length > 0 && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                          Utilities ({room.utilities.filter(u => u.isActive).length} active / {room.utilities.length} total)
+                          Utilities ({unit.utilities.filter(u => u.isActive).length} active / {unit.utilities.length} total)
                         </h3>
                         <div className="space-y-3">
-                          {room.utilities.map((utility) => (
+                          {unit.utilities.map((utility) => (
                             <div 
                               key={utility.id}
                               className={`flex items-center justify-between p-3 rounded-lg border ${
@@ -282,24 +340,36 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Branch</span>
-                          <span className="font-medium">{room.level.building.branchName}</span>
+                          <span className="font-medium">{unit.level.building.branchName}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Building</span>
-                          <span className="font-medium">{room.level.building.buildingName}</span>
+                          <span className="font-medium">{unit.level.building.buildingName}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Level</span>
-                          <span className="font-medium">{room.level.levelName} (Floor {room.level.levelNumber})</span>
+                          <span className="font-medium">{unit.level.levelName} (Floor {unit.level.levelNumber})</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Room Type Description */}
-                    {room.roomType.description && (
+                    {/* Type Description */}
+                    {unit.roomType?.description && (
                       <div className="bg-gray-50 rounded-lg p-4">
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">Room Type Description</h3>
-                        <p className="text-gray-700">{room.roomType.description}</p>
+                        <p className="text-gray-700">{unit.roomType.description}</p>
+                      </div>
+                    )}
+                    {unit.spaceType?.description && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Space Type Description</h3>
+                        <p className="text-gray-700">{unit.spaceType.description}</p>
+                      </div>
+                    )}
+                    {unit.hallType?.description && (
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Hall Type Description</h3>
+                        <p className="text-gray-700">{unit.hallType.description}</p>
                       </div>
                     )}
                   </div>
@@ -317,19 +387,19 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
                     onClick={handleEdit}
                     variant="primary"
                   >
-                    Edit Room
+                    Edit Unit
                   </Button>
                   <Button
                     onClick={handleDelete}
                     variant="danger"
                   >
-                    Delete Room
+                    Delete Unit
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-red-500">Failed to load room details</p>
+                <p className="text-red-500">Failed to load unit details</p>
               </div>
             )}
           </div>
@@ -337,7 +407,7 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
       </div>
 
       {/* Image Gallery Modal */}
-      {isImageModalOpen && room?.imageUrls && room.imageUrls.length > 0 && (
+      {isImageModalOpen && unit?.imageUrls && unit.imageUrls.length > 0 && (
         <div className="fixed inset-0 bg-black bg-opacity-90 z-[60] flex items-center justify-center p-4">
           <div className="relative max-w-4xl max-h-full w-full">
             {/* Close Button */}
@@ -351,7 +421,7 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
             </button>
 
             {/* Navigation Buttons */}
-            {room.imageUrls.length > 1 && (
+            {unit.imageUrls.length > 1 && (
               <>
                 <button
                   onClick={prevImage}
@@ -375,21 +445,21 @@ export const RoomDetail: React.FC<RoomDetailProps> = ({
             {/* Main Image */}
             <div className="flex items-center justify-center h-full">
               <img
-                src={room.imageUrls[selectedImageIndex]}
-                alt={`Room ${room.roomNumber} - Image ${selectedImageIndex + 1}`}
+                src={unit.imageUrls[selectedImageIndex]}
+                alt={`Unit ${unit.unitNumber} - Image ${selectedImageIndex + 1}`}
                 className="max-w-full max-h-[70vh] object-contain rounded-lg"
               />
             </div>
 
             {/* Image Counter */}
             <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
-              {selectedImageIndex + 1} / {room.imageUrls.length}
+              {selectedImageIndex + 1} / {unit.imageUrls.length}
             </div>
 
             {/* Thumbnail Strip */}
-            {room.imageUrls.length > 1 && (
+            {unit.imageUrls.length > 1 && (
               <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 bg-black bg-opacity-50 rounded-lg p-2">
-                {room.imageUrls.map((image, index) => (
+                {unit.imageUrls.map((image, index) => (
                   <button
                     key={index}
                     onClick={(e) => handleThumbnailClick(index, e)}

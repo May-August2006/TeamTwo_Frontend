@@ -62,9 +62,9 @@ const AdminHome: React.FC<AdminHomeProps> = ({ onNavigate }) => {
       color: "bg-stone-100 text-stone-900 hover:bg-stone-200 border-stone-200",
     },
     {
-      label: t('admin.manageRooms'),
+      label: t('admin.manageUnits'),
       icon: <Layers className="w-5 h-5" />,
-      onClick: () => onNavigate("/admin/rooms"),
+      onClick: () => onNavigate("/admin/units"),
       color: "bg-stone-100 text-stone-900 hover:bg-stone-200 border-stone-200",
     },
     {
@@ -122,7 +122,7 @@ const AdminHome: React.FC<AdminHomeProps> = ({ onNavigate }) => {
         return <Building2 className="w-4 h-4 text-red-600" />;
       case "level":
         return <Layers className="w-4 h-4 text-red-600" />;
-      case "room":
+      case "unit":
         return <Layers className="w-4 h-4 text-red-600" />;
       default:
         return <Building2 className="w-4 h-4 text-stone-500" />;

@@ -10,9 +10,9 @@ import BuildingManagement from "../BuildingManagement";
 import LevelManagement from "../LevelManagement";
 import AdminBillingConfiguration from "../../components/admin/BillingConfiguration";
 import UserManagement from "../../components/admin/UserManagement";
-import RoomManagement from "../RoomManagement";
 import { useTranslation } from "react-i18next";
 import UtilityTypeManagement from "../../components/admin/UtilityTypeManagement";
+import UnitManagement from "../UnitManagement";
 
 const AdminDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -42,7 +42,7 @@ const AdminDashboard: React.FC = () => {
     if (location.pathname.includes("utility-types")) return t('sidebar.utilityTypeManagement');
     if (location.pathname.includes("billing")) return t('sidebar.billing');
     if (location.pathname.includes("users")) return t('sidebar.users');
-    if (location.pathname.includes("rooms")) return t('sidebar.roomManagement');
+    if (location.pathname.includes("units")) return t('sidebar.unitManagement');
     return t('admin.dashboard');
   };
 
@@ -84,7 +84,7 @@ const AdminDashboard: React.FC = () => {
                 <Route path="/utility-types" element={<UtilityTypeManagement />} />
                 <Route path="/billing" element={<AdminBillingConfiguration />} />
                 <Route path="/users" element={<UserManagement />} />
-                <Route path="/rooms" element={<RoomManagement />} />
+                <Route path="/units" element={<UnitManagement />} />
               </Routes>
             </div>
           </div>

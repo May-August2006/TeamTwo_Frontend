@@ -1,12 +1,12 @@
 // components/contracts/ContractForm.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { tenantApi } from '../../api/TenantAPI';
-import { roomApi } from '../../api/RoomAPI';
+import { unitApi } from '../../api/UnitAPI';
 import { utilityApi } from '../../api/UtilityAPI';
 import { contractApi } from '../../api/ContractAPI';
 import { Button } from '../common/ui/Button';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
-import type { CreateContractRequest, Room, Tenant, UtilityType, ContractDurationType, Contract } from '../../types/contract';
+import type { CreateContractRequest, Unit, Tenant, UtilityType, ContractDurationType, Contract } from '../../types/contract';
 
 interface ContractFormProps {
   onSubmit: (data: FormData) => void;
@@ -36,7 +36,7 @@ export const ContractForm: React.FC<ContractFormProps> = ({
   const [formData, setFormData] = useState({
     contractNumber: initialData?.contractNumber || '',
     tenantId: initialData?.tenant?.id || 0,
-    roomId: initialData?.room?.id || 0,
+    unitId: initialData?.unit?.id || 0,
     startDate: initialData?.startDate || '',
     endDate: initialData?.endDate || '',
     rentalFee: initialData?.rentalFee || 0,
@@ -53,29 +53,29 @@ export const ContractForm: React.FC<ContractFormProps> = ({
   });
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [utilities, setUtilities] = useState<UtilityType[]>([]);
   
   const [searchTerm, setSearchTerm] = useState({
     tenant: initialData?.tenant?.tenantName || '',
-    room: initialData?.room?.roomNumber || ''
+    unit: initialData?.unit?.unitNumber || ''
   });
   
   const [filteredTenants, setFilteredTenants] = useState<Tenant[]>([]);
-  const [filteredRooms, setFilteredRooms] = useState<Room[]>([]);
+  const [filteredUnits, setFilteredUnits] = useState<Unit[]>([]);
   
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(initialData?.tenant || null);
-  const [selectedRoom, setSelectedRoom] = useState<Room | null>(initialData?.room || null);
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(initialData?.unit || null);
   const [selectedUtilityIds, setSelectedUtilityIds] = useState<number[]>(initialData?.includedUtilities?.map(u => u.id) || []);
   
   const [tenantsLoading, setTenantsLoading] = useState(false);
-  const [roomsLoading, setRoomsLoading] = useState(false);
+  const [unitsLoading, setUnitsLoading] = useState(false);
   const [utilitiesLoading, setUtilitiesLoading] = useState(false);
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showDropdown, setShowDropdown] = useState({
     tenant: false,
-    room: false
+    unit: false
   });
 
   // File upload state
@@ -87,7 +87,7 @@ export const ContractForm: React.FC<ContractFormProps> = ({
   const [manualEndDate, setManualEndDate] = useState(false);
 
   const tenantInputRef = useRef<HTMLInputElement>(null);
-  const roomInputRef = useRef<HTMLInputElement>(null);
+  const unitInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const termsContent = `
@@ -226,17 +226,17 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
         setTenants(tenantsData);
         setFilteredTenants([]);
 
-        // Load rooms - for edit/renew, show all rooms; for create, show only available
-        setRoomsLoading(true);
-        let roomsResponse;
+        // Load units - for edit/renew, show all units; for create, show only available
+        setUnitsLoading(true);
+        let unitsResponse;
         if (isEdit || isRenewal) {
-          roomsResponse = await roomApi.getAll();
+          unitsResponse = await unitApi.getAll();
         } else {
-          roomsResponse = await roomApi.getAvailable();
+          unitsResponse = await unitApi.getAvailable();
         }
-        const roomsData = extractArrayData<Room>(roomsResponse);
-        setRooms(roomsData);
-        setFilteredRooms([]);
+        const unitsData = extractArrayData<Unit>(unitsResponse);
+        setUnits(unitsData);
+        setFilteredUnits([]);
 
         // Load utilities
         setUtilitiesLoading(true);
@@ -252,11 +252,11 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
       } catch (error) {
         console.error('Error loading initial data:', error);
         setTenants([]);
-        setRooms([]);
+        setUnits([]);
         setUtilities([]);
       } finally {
         setTenantsLoading(false);
-        setRoomsLoading(false);
+        setUnitsLoading(false);
         setUtilitiesLoading(false);
       }
     };
@@ -313,20 +313,20 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
     }
   }, [searchTerm.tenant, tenants]);
 
-  // Filter rooms based on search
+  // Filter units based on search
   useEffect(() => {
-    if (searchTerm.room.trim()) {
-      const filtered = rooms.filter(room => 
-        room.roomNumber?.toLowerCase().includes(searchTerm.room.toLowerCase()) ||
-        room.level?.levelName?.toLowerCase().includes(searchTerm.room.toLowerCase()) ||
-        room.level?.building?.buildingName?.toLowerCase().includes(searchTerm.room.toLowerCase()) ||
-        room.roomType?.typeName?.toLowerCase().includes(searchTerm.room.toLowerCase())
+    if (searchTerm.unit.trim()) {
+      const filtered = units.filter(unit => 
+        unit.unitNumber?.toLowerCase().includes(searchTerm.unit.toLowerCase()) ||
+        unit.level?.levelName?.toLowerCase().includes(searchTerm.unit.toLowerCase()) ||
+        unit.level?.building?.buildingName?.toLowerCase().includes(searchTerm.unit.toLowerCase()) ||
+        unit.roomType?.typeName?.toLowerCase().includes(searchTerm.unit.toLowerCase())
       );
-      setFilteredRooms(filtered);
+      setFilteredUnits(filtered);
     } else {
-      setFilteredRooms([]);
+      setFilteredUnits([]);
     }
-  }, [searchTerm.room, rooms]);
+  }, [searchTerm.unit, units]);
 
   // File upload handlers
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -368,9 +368,9 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
     setShowDropdown(prev => ({ ...prev, tenant: term.trim().length > 0 }));
   };
 
-  const handleRoomSearch = (term: string) => {
-    setSearchTerm(prev => ({ ...prev, room: term }));
-    setShowDropdown(prev => ({ ...prev, room: term.trim().length > 0 }));
+  const handleunitSearch = (term: string) => {
+    setSearchTerm(prev => ({ ...prev, unit: term }));
+    setShowDropdown(prev => ({ ...prev, unit: term.trim().length > 0 }));
   };
 
   const handleTenantInputFocus = () => {
@@ -379,9 +379,9 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
     }
   };
 
-  const handleRoomInputFocus = () => {
-    if (searchTerm.room.trim().length > 0) {
-      setShowDropdown(prev => ({ ...prev, room: true }));
+  const handleunitInputFocus = () => {
+    if (searchTerm.unit.trim().length > 0) {
+      setShowDropdown(prev => ({ ...prev, unit: true }));
     }
   };
 
@@ -393,16 +393,16 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
     setFilteredTenants([]);
   };
 
-  const selectRoom = (room: Room) => {
-    setSelectedRoom(room);
+  const selectunit = (unit: Unit) => {
+    setSelectedUnit(unit);
     setFormData(prev => ({ 
       ...prev, 
-      roomId: room.id,
-      rentalFee: room.rentalFee || formData.rentalFee // Keep existing rental fee if editing
+      unitId: unit.id,
+      rentalFee: unit.rentalFee || formData.rentalFee // Keep existing rental fee if editing
     }));
-    setSearchTerm(prev => ({ ...prev, room: room.roomNumber || '' }));
-    setShowDropdown(prev => ({ ...prev, room: false }));
-    setFilteredRooms([]);
+    setSearchTerm(prev => ({ ...prev, unit: unit.unitNumber || '' }));
+    setShowDropdown(prev => ({ ...prev, unit: false }));
+    setFilteredUnits([]);
   };
 
   const handleUtilityToggle = (utilityId: number) => {
@@ -424,8 +424,8 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
       newErrors.tenantId = 'Please select a tenant';
     }
 
-    if (!formData.roomId || formData.roomId === 0) {
-      newErrors.roomId = 'Please select a room';
+    if (!formData.unitId || formData.unitId === 0) {
+      newErrors.unitId = 'Please select a unit';
     }
 
     if (!formData.startDate) {
@@ -466,7 +466,7 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
       // Append all form data - FIXED: Proper FormData handling
       formDataToSend.append('contractNumber', formData.contractNumber);
       formDataToSend.append('tenantId', formData.tenantId.toString());
-      formDataToSend.append('roomId', formData.roomId.toString());
+      formDataToSend.append('unitId', formData.unitId.toString());
       formDataToSend.append('startDate', formData.startDate);
       formDataToSend.append('endDate', formData.endDate);
       formDataToSend.append('rentalFee', formData.rentalFee.toString());
@@ -574,14 +574,14 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
     setFilteredTenants([]);
   };
 
-  const clearRoomSelection = () => {
-    setSelectedRoom(null);
-    setFormData(prev => ({ ...prev, roomId: 0 }));
-    setSearchTerm(prev => ({ ...prev, room: '' }));
-    setFilteredRooms([]);
+  const clearunitSelection = () => {
+    setSelectedUnit(null);
+    setFormData(prev => ({ ...prev, unitId: 0 }));
+    setSearchTerm(prev => ({ ...prev, unit: '' }));
+    setFilteredUnits([]);
   };
 
-  const closeDropdown = (type: 'tenant' | 'room') => {
+  const closeDropdown = (type: 'tenant' | 'unit') => {
     setShowDropdown(prev => ({ ...prev, [type]: false }));
   };
 
@@ -662,7 +662,7 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
     </div>
   );
 
-  const allLoading = tenantsLoading || roomsLoading || utilitiesLoading;
+  const allLoading = tenantsLoading || unitsLoading || utilitiesLoading;
 
   if (allLoading) {
     return (
@@ -904,26 +904,26 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
               )}
             </div>
 
-            {/* Room Selection */}
+            {/* unit Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Room *
+                unit *
               </label>
               <div className="relative">
-                {selectedRoom ? (
+                {selectedUnit ? (
                   <div className="flex items-center justify-between p-3 border border-green-500 rounded-md bg-green-50">
                     <div>
-                      <p className="font-medium text-green-900">{selectedRoom.roomNumber}</p>
+                      <p className="font-medium text-green-900">{selectedUnit.unitNumber}</p>
                       <p className="text-sm text-green-700">
-                        {selectedRoom.level?.levelName} - {selectedRoom.roomType?.typeName}
+                        {selectedUnit.level?.levelName} - {selectedUnit.roomType?.typeName}
                       </p>
                       <p className="text-sm text-green-700">
-                        {selectedRoom.rentalFee?.toLocaleString()} MMK
+                        {selectedUnit.rentalFee?.toLocaleString()} MMK
                       </p>
                     </div>
                     <button
                       type="button"
-                      onClick={clearRoomSelection}
+                      onClick={clearunitSelection}
                       className="text-red-500 hover:text-red-700 ml-2 text-lg font-bold"
                     >
                       ×
@@ -932,43 +932,43 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
                 ) : (
                   <>
                     <input
-                      ref={roomInputRef}
+                      ref={unitInputRef}
                       type="text"
-                      value={searchTerm.room}
-                      onChange={(e) => handleRoomSearch(e.target.value)}
-                      onFocus={handleRoomInputFocus}
+                      value={searchTerm.unit}
+                      onChange={(e) => handleunitSearch(e.target.value)}
+                      onFocus={handleunitInputFocus}
                       className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        errors.roomId ? 'border-red-500' : 'border-gray-300'
+                        errors.unitId ? 'border-red-500' : 'border-gray-300'
                       }`}
-                      placeholder="Search room by number, level, or building..."
+                      placeholder="Search unit by number, level, or building..."
                     />
-                    {showDropdown.room && filteredRooms.length > 0 && (
+                    {showDropdown.unit && filteredUnits.length > 0 && (
                       <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
                         <div className="flex justify-between items-center p-2 border-b border-gray-200 bg-gray-50">
-                          <span className="text-sm text-gray-600">{filteredRooms.length} rooms found</span>
+                          <span className="text-sm text-gray-600">{filteredUnits.length} units found</span>
                           <button
                             type="button"
-                            onClick={() => closeDropdown('room')}
+                            onClick={() => closeDropdown('unit')}
                             className="text-xs text-red-500 hover:text-red-700 font-medium"
                           >
                             Close
                           </button>
                         </div>
-                        {filteredRooms.map(room => (
+                        {filteredUnits.map(unit => (
                           <div
-                            key={room.id}
-                            onClick={() => selectRoom(room)}
+                            key={unit.id}
+                            onClick={() => selectunit(unit)}
                             className="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
                           >
                             <div className="flex justify-between items-start">
                               <div>
-                                <p className="font-medium text-gray-900">{room.roomNumber}</p>
+                                <p className="font-medium text-gray-900">{unit.unitNumber}</p>
                                 <p className="text-sm text-gray-600">
-                                  {room.level?.levelName} • {room.roomType?.typeName}
+                                  {unit.level?.levelName} • {unit.roomType?.typeName}
                                 </p>
                               </div>
                               <p className="font-semibold text-green-600">
-                                {room.rentalFee?.toLocaleString()} MMK
+                                {unit.rentalFee?.toLocaleString()} MMK
                               </p>
                             </div>
                           </div>
@@ -978,8 +978,8 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
                   </>
                 )}
               </div>
-              {errors.roomId && (
-                <p className="text-red-500 text-sm mt-1">{errors.roomId}</p>
+              {errors.unitId && (
+                <p className="text-red-500 text-sm mt-1">{errors.unitId}</p>
               )}
             </div>
           </div>

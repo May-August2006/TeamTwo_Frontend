@@ -155,9 +155,9 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
     return contract.terminationReason || (contract as any)?.terminationDetails?.terminationReason;
   };
 
-  const getRoomStatus = (contract: Contract): string => {
-    if (contract.room?.isAvailable !== undefined) {
-      return contract.room.isAvailable ? 'Available' : 'Occupied';
+  const getUnitStatus = (contract: Contract): string => {
+    if (contract.unit?.isAvailable !== undefined) {
+      return contract.unit.isAvailable ? 'Available' : 'Occupied';
     }
     return 'Unknown';
   };
@@ -195,7 +195,7 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
   // Get termination data safely
   const terminationDate = getTerminationDate(contract);
   const terminationReason = getTerminationReason(contract);
-  const roomStatus = getRoomStatus(contract);
+  const unitStatus = getUnitStatus(contract);
 
   return (
     <div className="space-y-6">
@@ -359,27 +359,27 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
               </div>
             </div>
 
-            {/* Room Information */}
+            {/* Unit Information */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Room Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Unit Information</h3>
               <div className="space-y-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Room Number</label>
-                  <p className="text-gray-900">{contract.room?.roomNumber || '-'}</p>
+                  <label className="text-sm font-medium text-gray-500">Unit Number</label>
+                  <p className="text-gray-900">{contract.unit?.unitNumber || '-'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Room Type</label>
-                  <p className="text-gray-900">{contract.room?.roomType?.typeName || '-'}</p>
+                  <label className="text-sm font-medium text-gray-500">Unit Type</label>
+                  <p className="text-gray-900">{contract.unit?.roomType?.typeName || '-'}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Space</label>
                   <p className="text-gray-900">
-                    {contract.room?.roomSpace ? `${contract.room.roomSpace} sq.ft` : '-'}
+                    {contract.unit?.unitSpace ? `${contract.unit.unitSpace} sq.ft` : '-'}
                   </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Status</label>
-                  <p className="text-gray-900">{roomStatus}</p>
+                  <p className="text-gray-900">{unitStatus}</p>
                 </div>
               </div>
             </div>
@@ -481,8 +481,8 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                     <span>{terminationReason || 'Not specified'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Room Released:</span>
-                    <span>{roomStatus === 'Available' ? 'Yes' : 'No'}</span>
+                    <span>Unit Released:</span>
+                    <span>{unitStatus === 'Available' ? 'Yes' : 'No'}</span>
                   </div>
                 </div>
               </div>

@@ -104,7 +104,7 @@ export const ContractList: React.FC<ContractListProps> = ({
           contract.contractNumber?.toLowerCase().includes(searchLower) ||
           contract.tenant?.tenantName?.toLowerCase().includes(searchLower) ||
           contract.tenant?.email?.toLowerCase().includes(searchLower) ||
-          contract.room?.roomNumber?.toLowerCase().includes(searchLower) ||
+          contract.unit?.unitNumber?.toLowerCase().includes(searchLower) ||
           contract.tenantSearchName?.toLowerCase().includes(searchLower) ||
           contract.tenantSearchEmail?.toLowerCase().includes(searchLower) ||
           contract.tenantSearchPhone?.includes(searchTerm)
@@ -230,7 +230,7 @@ export const ContractList: React.FC<ContractListProps> = ({
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Search contracts by number, tenant, room, email, or phone..."
+              placeholder="Search contracts by number, tenant, unit, email, or phone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -278,7 +278,7 @@ export const ContractList: React.FC<ContractListProps> = ({
                   Tenant
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Room
+                  Unit
                 </th>
                 <th 
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
@@ -365,9 +365,9 @@ export const ContractList: React.FC<ContractListProps> = ({
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{contract.room?.roomNumber || '-'}</div>
+                        <div className="text-sm text-gray-900">{contract.unit?.unitNumber || '-'}</div>
                         <div className="text-sm text-gray-500">
-                          {contract.room?.roomType?.typeName || '-'}
+                          {contract.unit?.roomType?.typeName || '-'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

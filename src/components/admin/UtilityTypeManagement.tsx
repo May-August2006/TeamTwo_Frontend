@@ -1,7 +1,7 @@
 /** @format */
 import React, { useState, useEffect } from "react";
 import { utilityApi } from "../../api/UtilityAPI";
-import type { UtilityType, UtilityTypeRequest } from "../../types/room";
+import type { UtilityType, UtilityTypeRequest } from "../../types/unit";
 import { Zap, Plus } from "lucide-react";
 
 // Custom Modal Component for Confirmation and Alerts

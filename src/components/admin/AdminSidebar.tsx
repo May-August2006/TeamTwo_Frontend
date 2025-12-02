@@ -64,8 +64,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
           icon: <Layers className="w-4 h-4" />,
         },
         {
-          name: t('sidebar.roomManagement'),
-          path: "/admin/rooms",
+          name: t('sidebar.unitManagement'),
+          path: "/admin/units",
           icon: <Layers className="w-4 h-4" />,
         },
       ],

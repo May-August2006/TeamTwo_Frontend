@@ -13,12 +13,7 @@ import SendAnnouncementPage from "../manager/SendAnnouncementPage";
 import { UtilityTypePage } from "../manager/UtilityTypePage";
 import { BillingFeePage } from "../manager/BillingFeePage";
 import { InvoiceListPage } from "../manager/InvoiceListPage";
-<<<<<<< HEAD
-import ManagerMaintenancePage from "../manager/MaintenancePage"; // Add this import
-=======
-import { UsageEntryPage } from "../manager/UsageEntryPage";
 import ManagerMaintenancePage from "../manager/MaintenancePage";
->>>>>>> 5ff2003a549f866c1db313ba972da142f4684684
 import LeaseManagement from "../manager/LeaseManagement";
 import InvoicesPage from "../manager/InvoicesPage";
 import UsageEntryPage from "../manager/UsageEntryPage";
