@@ -111,6 +111,12 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
           path: "/manager/invoices",
           icon: <Receipt className="w-4 h-4" />,
         },
+
+        {
+          name: "LateFee",
+          path: "/manager/lateFee",
+          icon: <Receipt className="w-4 h-4" />,
+        },
       ],
     },
     {
