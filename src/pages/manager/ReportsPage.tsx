@@ -5,6 +5,7 @@ import { TenantContractSummary } from '../../components/reports/TenantContractSu
 import { VacantOccupiedUnitsReport } from '../../components/reports/VacantOccupiedUnitsReport';
 import { ExpiringContractsReport } from '../../components/reports/ExpiringContractsReport';
 import { ContractHistoryReport } from '../../components/reports/ContractHistoryReport';
+import { RentalRevenueByBusinessTypeReport } from '../../components/reports/RentalRevenueByBusinessTypeReport';
 
 type ReportType = 
   | 'TENANT_CONTRACT_SUMMARY' 
@@ -96,6 +97,8 @@ export const ReportsPage: React.FC = () => {
         return <ContractHistoryReport onBack={handleBackToReports} />;
       case 'VACANT_OCCUPIED_UNITS':
         return <VacantOccupiedUnitsReport onBack={handleBackToReports} />;
+        case 'REVENUE_BY_CATEGORY':  // Add this case
+      return <RentalRevenueByBusinessTypeReport onBack={handleBackToReports} />;
       case 'MONTHLY_BILLING_SUMMARY':
         return (
           <div className="text-center py-12">

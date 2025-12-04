@@ -31,7 +31,7 @@
     "branchManagement": "Branch Management",
     "buildingManagement": "Building Management", 
     "levelManagement": "Level Management",
-    "roomManagement": "Room Management",
+    "unitManagement": "Unit Management",
     "utilityTypeManagement": "Utility Types",
     "billing": "Billing Configuration",
     "users": "User Management"
