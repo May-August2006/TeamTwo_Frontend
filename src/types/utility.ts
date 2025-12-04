@@ -13,8 +13,6 @@ export interface UtilityCalculationDTO {
   buildingName?: string;
   totalLeasableArea?: number;
   totalCAMCosts?: number;
-  taxAmount?: number;
-  grandTotal?: number;
 }
 
 export interface UtilityChargeDTO {
@@ -62,8 +60,7 @@ export interface UtilityBillingDTO {
   
   utilityFees: UtilityFeeDetail[];
   totalAmount: number;
-  taxAmount: number;
-  grandTotal: number;
+
 }
 
 export interface UtilityFeeDetail {

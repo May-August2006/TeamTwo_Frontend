@@ -20,6 +20,8 @@ export interface BranchRequest {
 }
 
 export interface Building {
+  buildingType: string;
+  totalUnits: string;
   id: number;
   branchId: number;
   branchName: string;

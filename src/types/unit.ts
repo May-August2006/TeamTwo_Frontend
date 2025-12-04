@@ -21,6 +21,8 @@ export interface Unit {
   createdAt: string;
   updatedAt: string;
   currentTenantName?: string;
+  uildingId?: number; // Add this
+  buildingName?: string; // Add this
 }
 
 export interface RoomType {
