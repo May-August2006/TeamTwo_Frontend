@@ -74,8 +74,9 @@ updateCAMSettings: (buildingId: number, settings: BuildingUtilityConfig) =>
   API.put<BuildingUtilityConfig>(`/api/buildings/${buildingId}/cam-settings`, settings),
   
 calculateCAMDistribution: (buildingId: number) => 
-  API.get<CAMDistribution[]>(`/api/buildings/${buildingId}/cam-distribution`)
-};
+  API.get<CAMDistribution[]>(`/api/buildings/${buildingId}/cam-distribution`),
+
   checkExists: (buildingName: string, branchId: number) => 
     API.get<boolean>(`/api/buildings/exists?buildingName=${encodeURIComponent(buildingName)}&branchId=${branchId}`)
+
 };
