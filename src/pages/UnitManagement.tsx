@@ -12,8 +12,11 @@ import { UnitList } from '../components/units/UnitList';
 import { SpaceTypeForm } from '../components/units/SpaceTypeForm';
 import { HallTypeForm } from '../components/units/HallTypeForm';
 import { RoomTypeForm } from '../components/units/RoomTypeForm';
+import { useNotification } from '../context/NotificationContext';
 
 const UnitManagement: React.FC = () => {
+  const { showSuccess, showError } = useNotification();
+  
   // Data states
   const [units, setUnits] = useState<Unit[]>([]);
   const [filteredUnits, setFilteredUnits] = useState<Unit[]>([]);
@@ -39,6 +42,15 @@ const UnitManagement: React.FC = () => {
   const [editingSpaceType, setEditingSpaceType] = useState<SpaceType | null>(null);
   const [editingHallType, setEditingHallType] = useState<HallType | null>(null);
 
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => Promise<void>;
+    onCancel: () => void;
+  } | null>(null);
+
   // ========== DATA LOADING ==========
   useEffect(() => {
     loadAllData();
@@ -49,7 +61,6 @@ const UnitManagement: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      // Load all data at once
       const [unitsRes, roomTypesRes, spaceTypesRes, hallTypesRes] = await Promise.all([
         unitApi.getAll(),
         roomTypeApi.getAll(),
@@ -63,24 +74,43 @@ const UnitManagement: React.FC = () => {
       setSpaceTypes(spaceTypesRes.data || []);
       setHallTypes(hallTypesRes.data || []);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading data:", error);
-      setError("Failed to load data. Please try again.");
+      const errorMessage = error.response?.data?.message || 'Failed to load data';
+      setError(errorMessage);
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
+  // ========== CONFIRMATION DIALOG ==========
+  const showConfirmDialog = (
+    title: string, 
+    message: string, 
+    onConfirm: () => Promise<void>
+  ) => {
+    setConfirmDialog({
+      isOpen: true,
+      title,
+      message,
+      onConfirm,
+      onCancel: () => setConfirmDialog(null)
+    });
+  };
+
   // ========== UNIT OPERATIONS ==========
   const handleCreateUnit = async (formData: FormData) => {
     try {
-      await unitApi.create(formData);
+      const response = await unitApi.create(formData);
       setShowUnitForm(false);
-      loadAllData();
+      await loadAllData();
+      showSuccess(`Unit ${response.data.unitNumber} created successfully!`);
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating unit:", error);
-      setError("Failed to create unit");
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to create unit';
+      showError(errorMessage);
       return false;
     }
   };
@@ -89,32 +119,38 @@ const UnitManagement: React.FC = () => {
     if (!editingUnit) return false;
     
     try {
-      await unitApi.update(editingUnit.id, formData);
+      const response = await unitApi.update(editingUnit.id, formData);
       setShowUnitForm(false);
       setEditingUnit(null);
-      loadAllData();
+      await loadAllData();
+      showSuccess(`Unit ${response.data.unitNumber} updated successfully!`);
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating unit:", error);
-      setError("Failed to update unit");
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to update unit';
+      showError(errorMessage);
       return false;
     }
   };
 
-  const handleDeleteUnit = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this unit?")) {
-      return false;
-    }
-    
-    try {
-      await unitApi.delete(id);
-      loadAllData();
-      return true;
-    } catch (error) {
-      console.error("Error deleting unit:", error);
-      setError("Failed to delete unit");
-      return false;
-    }
+  const confirmDeleteUnit = async (id: number, unitNumber: string) => {
+    showConfirmDialog(
+      'Delete Unit',
+      `Are you sure you want to delete unit ${unitNumber}? This action cannot be undone.`,
+      async () => {
+        try {
+          await unitApi.delete(id);
+          await loadAllData();
+          showSuccess(`Unit ${unitNumber} deleted successfully!`);
+          setConfirmDialog(null);
+        } catch (error: any) {
+          console.error("Error deleting unit:", error);
+          const errorMessage = error.response?.data?.message || 'Failed to delete unit';
+          showError(errorMessage);
+          setConfirmDialog(null);
+        }
+      }
+    );
   };
 
   // ========== ROOM TYPE OPERATIONS ==========
@@ -122,11 +158,13 @@ const UnitManagement: React.FC = () => {
     try {
       await roomTypeApi.create(roomTypeData);
       setShowRoomTypeForm(false);
-      loadAllData();
+      await loadAllData();
+      showSuccess('Room type created successfully!');
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating room type:", error);
-      setError("Failed to create room type");
+      const errorMessage = error.response?.data?.message || 'Failed to create room type';
+      showError(errorMessage);
       return false;
     }
   };
@@ -138,29 +176,35 @@ const UnitManagement: React.FC = () => {
       await roomTypeApi.update(editingRoomType.id, roomTypeData);
       setShowRoomTypeForm(false);
       setEditingRoomType(null);
-      loadAllData();
+      await loadAllData();
+      showSuccess('Room type updated successfully!');
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating room type:", error);
-      setError("Failed to update room type");
+      const errorMessage = error.response?.data?.message || 'Failed to update room type';
+      showError(errorMessage);
       return false;
     }
   };
 
-  const handleDeleteRoomType = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this room type?")) {
-      return false;
-    }
-    
-    try {
-      await roomTypeApi.delete(id);
-      loadAllData();
-      return true;
-    } catch (error) {
-      console.error("Error deleting room type:", error);
-      setError("Failed to delete room type");
-      return false;
-    }
+  const confirmDeleteRoomType = async (id: number, typeName: string) => {
+    showConfirmDialog(
+      'Delete Room Type',
+      `Are you sure you want to delete room type "${typeName}"? This action cannot be undone.`,
+      async () => {
+        try {
+          await roomTypeApi.delete(id);
+          await loadAllData();
+          showSuccess(`Room type "${typeName}" deleted successfully!`);
+          setConfirmDialog(null);
+        } catch (error: any) {
+          console.error("Error deleting room type:", error);
+          const errorMessage = error.response?.data?.message || 'Failed to delete room type';
+          showError(errorMessage);
+          setConfirmDialog(null);
+        }
+      }
+    );
   };
 
   // ========== SPACE TYPE OPERATIONS ==========
@@ -169,11 +213,13 @@ const UnitManagement: React.FC = () => {
       await spaceTypeApi.create(spaceTypeData);
       setShowSpaceTypeForm(false);
       setEditingSpaceType(null);
-      loadAllData();
+      await loadAllData();
+      showSuccess('Space type created successfully!');
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating space type:", error);
-      setError("Failed to create space type");
+      const errorMessage = error.response?.data?.message || 'Failed to create space type';
+      showError(errorMessage);
       return false;
     }
   };
@@ -185,29 +231,35 @@ const UnitManagement: React.FC = () => {
       await spaceTypeApi.update(editingSpaceType.id, spaceTypeData);
       setShowSpaceTypeForm(false);
       setEditingSpaceType(null);
-      loadAllData();
+      await loadAllData();
+      showSuccess('Space type updated successfully!');
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating space type:", error);
-      setError("Failed to update space type");
+      const errorMessage = error.response?.data?.message || 'Failed to update space type';
+      showError(errorMessage);
       return false;
     }
   };
 
-  const handleDeleteSpaceType = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this space type?")) {
-      return false;
-    }
-    
-    try {
-      await spaceTypeApi.delete(id);
-      loadAllData();
-      return true;
-    } catch (error) {
-      console.error("Error deleting space type:", error);
-      setError("Failed to delete space type");
-      return false;
-    }
+  const confirmDeleteSpaceType = async (id: number, name: string) => {
+    showConfirmDialog(
+      'Delete Space Type',
+      `Are you sure you want to delete space type "${name}"? This action cannot be undone.`,
+      async () => {
+        try {
+          await spaceTypeApi.delete(id);
+          await loadAllData();
+          showSuccess(`Space type "${name}" deleted successfully!`);
+          setConfirmDialog(null);
+        } catch (error: any) {
+          console.error("Error deleting space type:", error);
+          const errorMessage = error.response?.data?.message || 'Failed to delete space type';
+          showError(errorMessage);
+          setConfirmDialog(null);
+        }
+      }
+    );
   };
 
   // ========== HALL TYPE OPERATIONS ==========
@@ -216,11 +268,13 @@ const UnitManagement: React.FC = () => {
       await hallTypeApi.create(hallTypeData);
       setShowHallTypeForm(false);
       setEditingHallType(null);
-      loadAllData();
+      await loadAllData();
+      showSuccess('Hall type created successfully!');
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating hall type:", error);
-      setError("Failed to create hall type");
+      const errorMessage = error.response?.data?.message || 'Failed to create hall type';
+      showError(errorMessage);
       return false;
     }
   };
@@ -232,29 +286,35 @@ const UnitManagement: React.FC = () => {
       await hallTypeApi.update(editingHallType.id, hallTypeData);
       setShowHallTypeForm(false);
       setEditingHallType(null);
-      loadAllData();
+      await loadAllData();
+      showSuccess('Hall type updated successfully!');
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating hall type:", error);
-      setError("Failed to update hall type");
+      const errorMessage = error.response?.data?.message || 'Failed to update hall type';
+      showError(errorMessage);
       return false;
     }
   };
 
-  const handleDeleteHallType = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this hall type?")) {
-      return false;
-    }
-    
-    try {
-      await hallTypeApi.delete(id);
-      loadAllData();
-      return true;
-    } catch (error) {
-      console.error("Error deleting hall type:", error);
-      setError("Failed to delete hall type");
-      return false;
-    }
+  const confirmDeleteHallType = async (id: number, name: string) => {
+    showConfirmDialog(
+      'Delete Hall Type',
+      `Are you sure you want to delete hall type "${name}"? This action cannot be undone.`,
+      async () => {
+        try {
+          await hallTypeApi.delete(id);
+          await loadAllData();
+          showSuccess(`Hall type "${name}" deleted successfully!`);
+          setConfirmDialog(null);
+        } catch (error: any) {
+          console.error("Error deleting hall type:", error);
+          const errorMessage = error.response?.data?.message || 'Failed to delete hall type';
+          showError(errorMessage);
+          setConfirmDialog(null);
+        }
+      }
+    );
   };
 
   // ========== SEARCH HANDLING ==========
@@ -263,9 +323,13 @@ const UnitManagement: React.FC = () => {
       setLoading(true);
       const response = await unitApi.search(searchParams);
       setFilteredUnits(response.data || []);
-    } catch (error) {
+      if (response.data?.length === 0) {
+        showInfo('No units found matching your search criteria');
+      }
+    } catch (error: any) {
       console.error("Error searching units:", error);
-      setError("Failed to search units");
+      const errorMessage = error.response?.data?.message || 'Failed to search units';
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -274,6 +338,12 @@ const UnitManagement: React.FC = () => {
   const resetSearch = () => {
     setFilteredUnits(units);
     setError(null);
+    showInfo('Search reset to show all units');
+  };
+
+  const showInfo = (message: string) => {
+    // You can add this to your NotificationContext if you want info notifications
+    console.info(message);
   };
 
   // ========== UI HANDLERS ==========
@@ -370,7 +440,28 @@ const UnitManagement: React.FC = () => {
     }
   };
 
-  if (loading) {
+  const renderDeleteButtons = (type: 'unit' | 'roomType' | 'spaceType' | 'hallType', item: any) => {
+    const deleteHandlers = {
+      unit: () => confirmDeleteUnit(item.id, item.unitNumber),
+      roomType: () => confirmDeleteRoomType(item.id, item.typeName),
+      spaceType: () => confirmDeleteSpaceType(item.id, item.name),
+      hallType: () => confirmDeleteHallType(item.id, item.name)
+    };
+
+    return (
+      <button
+        onClick={deleteHandlers[type]}
+        className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+        title="Delete"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </button>
+    );
+  };
+
+  if (loading && units.length === 0) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
         <div className="text-center">
@@ -503,7 +594,7 @@ const UnitManagement: React.FC = () => {
           <UnitList
             units={filteredUnits}
             onEdit={openEditUnitModal}
-            onDelete={handleDeleteUnit}
+            onDelete={(id, unitNumber) => confirmDeleteUnit(id, unitNumber)}
             isLoading={loading}
             viewMode="grid"
           />
@@ -527,15 +618,7 @@ const UnitManagement: React.FC = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
-                      <button
-                        onClick={() => handleDeleteRoomType(roomType.id)}
-                        className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                      {renderDeleteButtons('roomType', roomType)}
                     </div>
                   </div>
                   <p className="text-stone-600 text-sm mb-4 line-clamp-2">{roomType.description || 'No description provided'}</p>
@@ -599,15 +682,7 @@ const UnitManagement: React.FC = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
-                      <button
-                        onClick={() => handleDeleteSpaceType(spaceType.id)}
-                        className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                      {renderDeleteButtons('spaceType', spaceType)}
                     </div>
                   </div>
                   <p className="text-stone-600 text-sm mb-4 line-clamp-2">{spaceType.description || 'No description provided'}</p>
@@ -681,15 +756,7 @@ const UnitManagement: React.FC = () => {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </button>
-                      <button
-                        onClick={() => handleDeleteHallType(hallType.id)}
-                        className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                      {renderDeleteButtons('hallType', hallType)}
                     </div>
                   </div>
                   <p className="text-stone-600 text-sm mb-4 line-clamp-2">{hallType.description || 'No description provided'}</p>
@@ -791,6 +858,35 @@ const UnitManagement: React.FC = () => {
           isLoading={false}
         />
       </Modal>
+
+      {/* Custom Confirmation Dialog */}
+      {confirmDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">{confirmDialog.title}</h3>
+              <p className="text-gray-600 mb-6">{confirmDialog.message}</p>
+              
+              <div className="flex justify-end space-x-3">
+                <Button
+                  onClick={confirmDialog.onCancel}
+                  variant="secondary"
+                  className="px-4 py-2"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmDialog.onConfirm}
+                  variant="danger"
+                  className="px-4 py-2"
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

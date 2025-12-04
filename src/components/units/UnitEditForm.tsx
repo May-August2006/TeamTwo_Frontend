@@ -1,7 +1,9 @@
 // components/units/UnitEditForm.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-import { roomTypeApi, spaceTypeApi, hallTypeApi } from '../../api/UnitAPI';
+import { roomTypeApi, spaceTypeApi, hallTypeApi, unitApi } from '../../api/UnitAPI';
 import { utilityApi } from '../../api/UtilityAPI';
+import { buildingApi } from '../../api/BuildingAPI';
+import { levelApi } from '../../api/LevelAPI';
 import { Button } from '../common/ui/Button';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
 import { UnitType, type Unit, type UtilityType } from '../../types/unit';
@@ -28,11 +30,19 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     hallTypeId: '',
     unitSpace: '',
     rentalFee: '',
+    levelId: '',
   });
 
   // 🔥 Use Set for utilities to automatically handle duplicates
   const [originalUtilityIds, setOriginalUtilityIds] = useState<Set<number>>(new Set());
   const [currentUtilityIds, setCurrentUtilityIds] = useState<Set<number>>(new Set());
+  
+  // New state for capacity validation
+  const [selectedLevel, setSelectedLevel] = useState<any>(null);
+  const [selectedBuilding, setSelectedBuilding] = useState<any>(null);
+  const [levelUnitsCount, setLevelUnitsCount] = useState<number>(0);
+  const [buildingUsedArea, setBuildingUsedArea] = useState<number>(0);
+  const [originalUnitSpace, setOriginalUnitSpace] = useState<number>(0);
   
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -49,6 +59,80 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
   const [utilitiesLoading, setUtilitiesLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+
+  // Uppercase unit number validation
+  const validateUnitNumber = (value: string): string => {
+    const trimmed = value.trim();
+    
+    if (!trimmed) {
+      return 'Unit number is required';
+    }
+    
+    // Check if it contains only valid characters (letters, numbers, dash, underscore)
+    const isValidFormat = /^[A-Z0-9_-]+$/.test(trimmed);
+    if (!isValidFormat) {
+      return 'Unit number can only contain letters, numbers, dash (-) and underscore (_)';
+    }
+    
+    // Check length
+    if (trimmed.length > 20) {
+      return 'Unit number cannot exceed 20 characters';
+    }
+    
+    return '';
+  };
+
+  // Validate level capacity
+  const validateLevelCapacity = (): boolean => {
+    if (!selectedLevel || selectedLevel.totalUnits === null || selectedLevel.totalUnits === undefined) {
+      return true; // No limit set
+    }
+    
+    // Count existing units in this level (excluding current unit if level didn't change)
+    const adjustedCount = formData.levelId === unit.level?.id?.toString() 
+      ? Math.max(0, levelUnitsCount - 1) // Subtract current unit if it's in the same level
+      : levelUnitsCount;
+    
+    if (adjustedCount >= selectedLevel.totalUnits) {
+      setErrors(prev => ({
+        ...prev,
+        levelId: `Level is at full capacity. Maximum ${selectedLevel.totalUnits} units allowed. Current: ${adjustedCount} units.`
+      }));
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Validate building area capacity
+  const validateBuildingArea = (unitSpace: number): boolean => {
+    if (!selectedBuilding || selectedBuilding.totalLeasableArea === null || selectedBuilding.totalLeasableArea === undefined) {
+      return true; // No limit set
+    }
+    
+    // Adjust building used area: subtract original unit space if building didn't change, add new unit space
+    let adjustedUsedArea = buildingUsedArea;
+    
+    if (formData.levelId === unit.level?.id?.toString()) {
+      // Same building, subtract original unit space, add new unit space
+      adjustedUsedArea = buildingUsedArea - originalUnitSpace + unitSpace;
+    } else {
+      // Different building, just add new unit space
+      adjustedUsedArea = buildingUsedArea + unitSpace;
+    }
+    
+    if (adjustedUsedArea > selectedBuilding.totalLeasableArea) {
+      const availableArea = selectedBuilding.totalLeasableArea - buildingUsedArea;
+      setErrors(prev => ({
+        ...prev,
+        unitSpace: `Exceeds building's leasable area. Available: ${availableArea.toFixed(2)} sqm, Required: ${unitSpace.toFixed(2)} sqm`
+      }));
+      return false;
+    }
+    
+    return true;
+  };
 
   // Load all data types
   useEffect(() => {
@@ -68,6 +152,12 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         setSpaceTypes(spaceTypesData.data);
         setHallTypes(hallTypesData.data);
         setUtilities(utilitiesData.data);
+        
+        // Load level and building info for validation
+        if (unit.level?.id) {
+          await fetchLevelAndBuildingInfo(unit.level.id);
+        }
+        
         setDataLoaded(true);
       } catch (error) {
         console.error('Error loading data:', error);
@@ -82,13 +172,50 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     loadData();
   }, []);
 
+  // Fetch level and building info for capacity validation
+  const fetchLevelAndBuildingInfo = async (levelId: number) => {
+    try {
+      // Get level details
+      const levelResponse = await levelApi.getById(levelId);
+      setSelectedLevel(levelResponse.data);
+      setFormData(prev => ({ ...prev, levelId: levelId.toString() }));
+      
+      // Get current units count in this level
+      const unitsInLevelResponse = await unitApi.search({ levelId });
+      const currentUnitsInLevel = unitsInLevelResponse.data
+        .filter((u: any) => u.id !== unit.id) // Exclude current unit from count
+        .length;
+      setLevelUnitsCount(currentUnitsInLevel);
+      
+      // Get building details
+      if (levelResponse.data?.buildingId) {
+        const buildingResponse = await buildingApi.getById(levelResponse.data.buildingId);
+        setSelectedBuilding(buildingResponse.data);
+        
+        // Get current units count in building for area calculation
+        const unitsInBuildingResponse = await unitApi.search({ buildingId: levelResponse.data.buildingId });
+        const totalArea = unitsInBuildingResponse.data
+          .filter((u: any) => u.id !== unit.id) // Exclude current unit
+          .reduce((sum: number, unitData: any) => 
+            sum + (parseFloat(unitData.unitSpace) || 0), 0
+          );
+        setBuildingUsedArea(totalArea);
+      }
+    } catch (error) {
+      console.error('Error fetching level/building info:', error);
+    }
+  };
+
   // Initialize form data from unit
   useEffect(() => {
     if (unit && dataLoaded) {
       console.log('Editing unit:', unit);
       
+      // Ensure unit number is uppercase
+      const unitNumber = unit.unitNumber ? unit.unitNumber.toUpperCase() : '';
+      
       const initialData = {
-        unitNumber: unit.unitNumber || '',
+        unitNumber: unitNumber,
         unitType: unit.unitType || UnitType.ROOM,
         hasMeter: unit.hasMeter !== undefined ? unit.hasMeter : unit.unitType !== UnitType.SPACE,
         roomTypeId: unit.roomType?.id?.toString() || '',
@@ -96,11 +223,16 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         hallTypeId: unit.hallType?.id?.toString() || '',
         unitSpace: unit.unitSpace?.toString() || '',
         rentalFee: unit.rentalFee?.toString() || '',
+        levelId: unit.level?.id?.toString() || '',
       };
       
       setFormData(initialData);
       setExistingImages(unit.imageUrls || []);
       setImagesToRemove([]);
+      
+      // Store original unit space for validation
+      const originalSpace = parseFloat(unit.unitSpace?.toString() || '0');
+      setOriginalUnitSpace(originalSpace);
       
       // 🔥 FIXED: Use Set to automatically remove duplicates
       if (unit.utilities && unit.utilities.length > 0) {
@@ -126,6 +258,20 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     setFormData(prev => ({ ...prev, hasMeter }));
   }, [formData.unitType]);
 
+  // Re-validate when level changes
+  useEffect(() => {
+    if (formData.levelId && formData.levelId !== unit.level?.id?.toString()) {
+      fetchLevelAndBuildingInfo(parseInt(formData.levelId));
+    }
+  }, [formData.levelId]);
+
+  // Re-validate unit space when constraints change
+  useEffect(() => {
+    if (formData.unitSpace && (selectedLevel || selectedBuilding)) {
+      validateUnitSpaceField(formData.unitSpace);
+    }
+  }, [selectedLevel, selectedBuilding]);
+
   // 🔥 FIXED: Use Set operations for changes
   const getUtilityChanges = useCallback(() => {
     const added = Array.from(currentUtilityIds).filter(id => !originalUtilityIds.has(id));
@@ -136,6 +282,72 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     
     return { added, removed };
   }, [currentUtilityIds, originalUtilityIds]);
+
+  // Check for duplicate unit number
+  const checkDuplicateUnitNumber = async (unitNumber: string, levelId: string) => {
+    if (!unitNumber || !levelId) return false;
+    
+    // Don't check if unit number hasn't changed and it's the same level
+    if (unitNumber.toUpperCase() === unit.unitNumber.toUpperCase() && 
+        levelId === unit.level?.id?.toString()) {
+      return false;
+    }
+    
+    setIsCheckingDuplicate(true);
+    try {
+      const response = await unitApi.checkDuplicate(unitNumber, parseInt(levelId));
+      return response.data.exists;
+    } catch (error) {
+      console.error('Error checking duplicate unit number:', error);
+      return false;
+    } finally {
+      setIsCheckingDuplicate(false);
+    }
+  };
+
+  // Unit space validation
+  const validateUnitSpaceField = (value: string) => {
+    const trimmed = value.trim();
+    const space = parseFloat(trimmed);
+    
+    if (!trimmed) {
+      setErrors(prev => ({ ...prev, unitSpace: 'Unit space is required' }));
+      return false;
+    }
+    
+    if (isNaN(space)) {
+      setErrors(prev => ({ ...prev, unitSpace: 'Please enter a valid number' }));
+      return false;
+    }
+    
+    if (space <= 0) {
+      setErrors(prev => ({ ...prev, unitSpace: 'Unit space must be greater than 0' }));
+      return false;
+    }
+    
+    if (space < 0.1) {
+      setErrors(prev => ({ ...prev, unitSpace: 'Unit space must be at least 0.1 sqm' }));
+      return false;
+    }
+    
+    if (space > 10000) {
+      setErrors(prev => ({ ...prev, unitSpace: 'Unit space cannot exceed 10000 sqm' }));
+      return false;
+    }
+    
+    // Check building area capacity
+    if (!validateBuildingArea(space)) {
+      return false;
+    }
+    
+    // Clear error if all validations pass
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors.unitSpace;
+      return newErrors;
+    });
+    return true;
+  };
 
   // 🔥 FIXED: Proper Set operations for toggling
   const handleUtilityToggle = (utilityId: number) => {
@@ -196,11 +408,29 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     });
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = async (): Promise<boolean> => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.unitNumber.trim()) {
-      newErrors.unitNumber = 'Unit number is required';
+    // Validate unit number
+    const unitNumberError = validateUnitNumber(formData.unitNumber);
+    if (unitNumberError) {
+      newErrors.unitNumber = unitNumberError;
+    } else if (formData.levelId) {
+      // Check for duplicates
+      const isDuplicate = await checkDuplicateUnitNumber(formData.unitNumber, formData.levelId);
+      if (isDuplicate) {
+        newErrors.unitNumber = 'Unit number already exists on this level';
+      }
+    }
+
+    // Validate level capacity
+    if (!formData.levelId) {
+      newErrors.levelId = 'Please select a level';
+    } else if (selectedLevel) {
+      // Validate level capacity
+      if (!validateLevelCapacity()) {
+        newErrors.levelId = errors.levelId || '';
+      }
     }
 
     // Validate type-specific selection
@@ -222,11 +452,32 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         break;
     }
 
-    if (!formData.unitSpace || parseFloat(formData.unitSpace) <= 0) {
+    // Validate unit space
+    const space = parseFloat(formData.unitSpace);
+    if (!formData.unitSpace) {
+      newErrors.unitSpace = 'Unit space is required';
+    } else if (isNaN(space) || space <= 0) {
       newErrors.unitSpace = 'Unit space must be greater than 0';
+    } else if (space < 0.1) {
+      newErrors.unitSpace = 'Unit space must be at least 0.1 sqm';
+    } else if (space > 10000) {
+      newErrors.unitSpace = 'Unit space cannot exceed 10000 sqm';
+    } else {
+      // Validate building area capacity
+      if (selectedBuilding && selectedBuilding.totalLeasableArea !== null && selectedBuilding.totalLeasableArea !== undefined) {
+        if (!validateBuildingArea(space)) {
+          newErrors.unitSpace = errors.unitSpace || '';
+        }
+      }
     }
 
-    if (!formData.rentalFee || parseFloat(formData.rentalFee) < 0) {
+    // Validate rental fee
+    const rentalFee = parseFloat(formData.rentalFee);
+    if (!formData.rentalFee) {
+      newErrors.rentalFee = 'Rental fee is required';
+    } else if (isNaN(rentalFee)) {
+      newErrors.rentalFee = 'Please enter a valid rental fee';
+    } else if (rentalFee < 0) {
       newErrors.rentalFee = 'Rental fee cannot be negative';
     }
 
@@ -234,16 +485,18 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (validateForm()) {
+    const isValid = await validateForm();
+    if (isValid) {
       const submitFormData = new FormData();
       
-      submitFormData.append('unitNumber', formData.unitNumber);
+      // Ensure unit number is uppercase before submission
+      submitFormData.append('unitNumber', formData.unitNumber.toUpperCase());
       submitFormData.append('unitType', formData.unitType);
       submitFormData.append('hasMeter', formData.hasMeter.toString());
-      submitFormData.append('levelId', unit.level?.id?.toString() || '');
+      submitFormData.append('levelId', formData.levelId);
       submitFormData.append('unitSpace', formData.unitSpace);
       submitFormData.append('rentalFee', formData.rentalFee);
       
@@ -275,8 +528,10 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
       }
 
       console.log('Submitting edit form data:', {
+        unitNumber: formData.unitNumber.toUpperCase(),
         unitType: formData.unitType,
         hasMeter: formData.hasMeter,
+        levelId: formData.levelId,
         utilities: finalUtilityIds
       });
       
@@ -287,13 +542,103 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    // Special handling for unit number
+    if (name === 'unitNumber') {
+      // Convert to uppercase immediately
+      const uppercaseValue = value.toUpperCase();
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: uppercaseValue
+      }));
 
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      // Validate unit number
+      const unitNumberError = validateUnitNumber(uppercaseValue);
+      setErrors(prev => ({
+        ...prev,
+        [name]: unitNumberError
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+
+      if (errors[name]) {
+        setErrors(prev => ({ ...prev, [name]: '' }));
+      }
+      
+      // Special handling for unit space - validate immediately if value exists
+      if (name === 'unitSpace' && value) {
+        validateUnitSpaceField(value);
+      }
+    }
+  };
+
+  const handleUnitNumberBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    const uppercaseValue = value.toUpperCase();
+    
+    // Ensure uppercase on blur
+    if (value !== uppercaseValue) {
+      setFormData(prev => ({
+        ...prev,
+        unitNumber: uppercaseValue
+      }));
+    }
+
+    // Validate unit number on blur
+    const unitNumberError = validateUnitNumber(uppercaseValue);
+    if (unitNumberError) {
+      setErrors(prev => ({
+        ...prev,
+        unitNumber: unitNumberError
+      }));
+      return;
+    }
+
+    // Check for duplicates when user leaves the field (only if valid)
+    if (formData.levelId && uppercaseValue) {
+      setIsCheckingDuplicate(true);
+      try {
+        const isDuplicate = await checkDuplicateUnitNumber(uppercaseValue, formData.levelId);
+        if (isDuplicate) {
+          setErrors(prev => ({
+            ...prev,
+            unitNumber: 'Unit number already exists on this level'
+          }));
+        } else {
+          // Clear duplicate error if it exists
+          setErrors(prev => {
+            const newErrors = { ...prev };
+            if (newErrors.unitNumber === 'Unit number already exists on this level') {
+              delete newErrors.unitNumber;
+            }
+            return newErrors;
+          });
+        }
+      } catch (error) {
+        console.error('Error checking duplicate:', error);
+      } finally {
+        setIsCheckingDuplicate(false);
+      }
+    }
+  };
+
+  const handleUnitSpaceBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    validateUnitSpaceField(value);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const { name } = e.currentTarget;
+    
+    if (name === 'unitNumber') {
+      // Allow only alphanumeric, dash, underscore, and backspace
+      const char = String.fromCharCode(e.charCode);
+      if (!/^[A-Za-z0-9_-]$/.test(char) && e.charCode !== 0) {
+        e.preventDefault();
+      }
     }
   };
 
@@ -316,14 +661,15 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     return added.length > 0 || removed.length > 0 || 
            selectedImages.length > 0 || 
            imagesToRemove.length > 0 ||
-           formData.unitNumber !== unit.unitNumber ||
+           formData.unitNumber.toUpperCase() !== unit.unitNumber.toUpperCase() ||
            formData.unitType !== unit.unitType ||
            formData.hasMeter !== unit.hasMeter ||
            formData.roomTypeId !== unit.roomType?.id?.toString() ||
            formData.spaceTypeId !== unit.spaceType?.id?.toString() ||
            formData.hallTypeId !== unit.hallType?.id?.toString() ||
            formData.unitSpace !== unit.unitSpace?.toString() ||
-           formData.rentalFee !== unit.rentalFee?.toString();
+           formData.rentalFee !== unit.rentalFee?.toString() ||
+           formData.levelId !== unit.level?.id?.toString();
   }, [getUtilityChanges, selectedImages, imagesToRemove, formData, unit]);
 
   const renderTypeSpecificFields = () => {
@@ -443,7 +789,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
 
       {/* Location Info (Read-only) */}
       <div className="bg-gray-50 p-4 rounded-lg">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Location Information</h3>
+        <h3 className="text-sm font-medium text-gray-700 mb-2">Current Location</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
           <div>
             <span className="text-gray-500">Branch:</span>
@@ -454,12 +800,12 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
             <span className="ml-2 font-medium">{unit.level?.building?.buildingName}</span>
           </div>
           <div>
-            <span className="text-gray-500">Level:</span>
+            <span className="text-gray-500">Floor:</span>
             <span className="ml-2 font-medium">{unit.level?.levelName} (Floor {unit.level?.levelNumber})</span>
           </div>
           <div>
             <span className="text-gray-500">Current Unit:</span>
-            <span className="ml-2 font-medium">{unit.unitNumber}</span>
+            <span className="ml-2 font-medium">{unit.unitNumber.toUpperCase()}</span>
           </div>
           <div>
             <span className="text-gray-500">Current Type:</span>
@@ -468,24 +814,91 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         </div>
       </div>
 
+      {/* Level Selection with Capacity Info */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Level *
+        </label>
+        <div className="relative">
+          <input
+            type="text"
+            value={`${unit.level?.levelName || ''} (Floor ${unit.level?.levelNumber || ''})`}
+            readOnly
+            className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50 text-gray-700 cursor-not-allowed"
+          />
+          <div className="absolute inset-0 flex items-center justify-end pr-3 pointer-events-none">
+            <span className="text-gray-500 text-sm">Cannot change level</span>
+          </div>
+        </div>
+        <input type="hidden" name="levelId" value={formData.levelId} />
+        
+        {/* Level capacity info */}
+        {selectedLevel && selectedLevel.totalUnits !== null && selectedLevel.totalUnits !== undefined && (
+          <div className="mt-2 p-2 bg-gray-50 rounded-md">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-600">Level Capacity:</span>
+              <div className="flex items-center space-x-2">
+                <span className="font-medium">{levelUnitsCount}/{selectedLevel.totalUnits} units</span>
+                <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 transition-all duration-300"
+                    style={{ width: `${Math.min((levelUnitsCount / selectedLevel.totalUnits) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            {levelUnitsCount >= selectedLevel.totalUnits && (
+              <p className="text-red-600 text-xs mt-1">Level is at full capacity!</p>
+            )}
+          </div>
+        )}
+        
+        {errors.levelId && (
+          <p className="text-red-500 text-sm mt-1">{errors.levelId}</p>
+        )}
+      </div>
+
       {/* Unit Number */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Unit Number *
         </label>
-        <input
-          type="text"
-          name="unitNumber"
-          value={formData.unitNumber}
-          onChange={handleChange}
-          required
-          className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.unitNumber ? 'border-red-500' : 'border-gray-300'
-          }`}
-          placeholder="Enter unit number"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            name="unitNumber"
+            value={formData.unitNumber}
+            onChange={handleChange}
+            onBlur={handleUnitNumberBlur}
+            onKeyPress={handleKeyPress}
+            required
+            className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase ${
+              errors.unitNumber ? 'border-red-500' : 'border-gray-300'
+            }`}
+            placeholder="Enter unit number (e.g., A-101, B_202)"
+            style={{ textTransform: 'uppercase' }}
+            maxLength={20}
+            disabled={isCheckingDuplicate}
+          />
+          {isCheckingDuplicate && (
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+        </div>
+        <div className="flex justify-between items-center mt-1">
+          <p className="text-xs text-gray-500">
+            Use letters, numbers, dash (-) or underscore (_). Will be converted to uppercase.
+          </p>
+          <span className="text-xs text-gray-400">
+            {formData.unitNumber.length}/20
+          </span>
+        </div>
         {errors.unitNumber && (
           <p className="text-red-500 text-sm mt-1">{errors.unitNumber}</p>
+        )}
+        {!errors.unitNumber && formData.unitNumber && (
+          <p className="text-green-500 text-sm mt-1">✓ Unit number format is valid</p>
         )}
       </div>
 
@@ -542,16 +955,45 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
             name="unitSpace"
             value={formData.unitSpace}
             onChange={handleChange}
+            onBlur={handleUnitSpaceBlur}
             required
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.unitSpace ? 'border-red-500' : 'border-gray-300'
             }`}
             placeholder="Enter unit space"
-            min="0"
+            min="0.1"
             step="0.1"
           />
+          
+          {/* Building area capacity info */}
+          {selectedBuilding && selectedBuilding.totalLeasableArea !== null && selectedBuilding.totalLeasableArea !== undefined && (
+            <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-100">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-blue-700">Building Leasable Area:</span>
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium">
+                    {(selectedBuilding.totalLeasableArea - buildingUsedArea).toFixed(2)}/{selectedBuilding.totalLeasableArea} sqm available
+                  </span>
+                </div>
+              </div>
+              <div className="mt-1 text-xs text-blue-600">
+                Currently used: {buildingUsedArea.toFixed(2)} sqm
+                {originalUnitSpace > 0 && (
+                  <span className="ml-2">(Current unit: {originalUnitSpace.toFixed(2)} sqm)</span>
+                )}
+              </div>
+            </div>
+          )}
+          
           {errors.unitSpace && (
-            <p className="text-red-500 text-sm mt-1">{errors.unitSpace}</p>
+            <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-red-600 text-sm font-medium flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                {errors.unitSpace}
+              </p>
+            </div>
           )}
         </div>
 
@@ -574,7 +1016,14 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
             step="0.01"
           />
           {errors.rentalFee && (
-            <p className="text-red-500 text-sm mt-1">{errors.rentalFee}</p>
+            <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-red-600 text-sm font-medium flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                {errors.rentalFee}
+              </p>
+            </div>
           )}
         </div>
       </div>
@@ -664,7 +1113,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         )}
       </div>
 
-      {/* Rest of the image upload section remains similar */}
+      {/* Image Upload Section */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Unit Images
@@ -790,7 +1239,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         <Button
           type="submit"
           loading={isLoading}
-          disabled={isLoading || !hasChanges()}
+          disabled={isLoading || !hasChanges() || isCheckingDuplicate}
         >
           Update Unit
         </Button>

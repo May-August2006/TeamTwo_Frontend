@@ -23,6 +23,12 @@ export const unitApi = {
       'Content-Type': 'multipart/form-data'
     }
   }),
+
+  checkDuplicate: (unitNumber: string, levelId: number) => 
+    API.get<{ exists: boolean; message: string }>('/api/units/check-duplicate', {
+      params: { unitNumber, levelId }
+    }),
+
   
   // Update unit with FormData
   update: (id: number, formData: FormData) => API.put<Unit>(`/api/units/${id}`, formData, {

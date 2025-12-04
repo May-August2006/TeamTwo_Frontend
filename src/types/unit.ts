@@ -80,6 +80,7 @@ export interface Building {
   totalRooms: number;
   createdAt: string;
   updatedAt: string;
+  branch: Branch;
 }
 
 export interface Branch {
@@ -160,6 +161,10 @@ export interface UnitSearchParams {
   maxSpace?: number;
   minRent?: number;
   maxRent?: number;
+  unitNumber?: string;
+  // Add these for specific utility filters
+  utilityTypeId?: number;
+  hasMeter?: boolean;
 }
 
 export interface UtilityType {

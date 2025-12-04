@@ -1,36 +1,31 @@
-// src/components/homepage/RoomDetailModal.tsx
+// src/components/homepage/UnitDetailModal.tsx
 import React, { useState } from 'react';
 import { Modal } from '../common/ui/Modal';
-import type { Room } from '../../types/unit';
+import type { Unit } from '../../types/unit';
 import { Button } from '../common/ui/Button';
+import { useAuth } from '../../context/AuthContext';
 
-interface RoomDetailModalProps {
-  room: Room;
+interface UnitDetailModalProps {
+  unit: Unit;
   isOpen: boolean;
   onClose: () => void;
-  onAppointment: (room: Room) => void;
-  isLoggedIn: boolean;
-  onLoginRequired: () => void;
+  onAppointment: (unit: Unit) => void;
 }
 
-export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
-  room,
+export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
+  unit,
   isOpen,
   onClose,
   onAppointment,
-  isLoggedIn,
-  onLoginRequired
 }) => {
+  const { isAuthenticated } = useAuth();
   const [selectedImage, setSelectedImage] = useState(0);
-  const imageUrls = room.imageUrls || [];
-  const currentImage = imageUrls[selectedImage] || '/api/placeholder/600/400';
+  const imageUrls = unit.imageUrls || [];
+  const currentImage = imageUrls[selectedImage] || 'https://via.placeholder.com/600x400?text=Retail+Space';
 
   const handleBookAppointment = () => {
-    if (!isLoggedIn) {
-      onLoginRequired();
-      return;
-    }
-    onAppointment(room);
+    // Simply call onAppointment - parent (HomePage) will handle login check
+    onAppointment(unit);
     onClose();
   };
 
@@ -46,11 +41,18 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
     }
   };
 
+  const getBusinessSuggestion = (space: number, unitType: string) => {
+    if (space < 20) return "kiosks, small retail, or service businesses";
+    if (space < 50) return "boutiques, small cafes, or specialty stores";
+    if (space < 100) return "restaurants, medium retail, or showrooms";
+    return "large retail stores, supermarkets, or entertainment venues";
+  };
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`${room.roomNumber} - ${room.roomType.typeName}`}
+      title={`${unit.unitNumber}`}
       size="lg"
     >
       <div className="space-y-6">
@@ -58,7 +60,7 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
         <div className="relative bg-gray-100 rounded-lg overflow-hidden">
           <img
             src={currentImage}
-            alt={`${room.roomNumber} - Image ${selectedImage + 1}`}
+            alt={`${unit.unitNumber} - Image ${selectedImage + 1}`}
             className="w-full h-64 object-cover"
           />
           
@@ -113,66 +115,70 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
           </div>
         )}
 
-        {/* Rest of your existing RoomDetailModal content remains the same */}
+        {/* Unit Details */}
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="space-y-3">
             <div>
               <span className="font-semibold text-gray-700">Space:</span>
-              <span className="ml-2 text-gray-600">{room.roomSpace} sqm</span>
+              <span className="ml-2 text-gray-600">{unit.unitSpace} sqm</span>
             </div>
             <div>
               <span className="font-semibold text-gray-700">Rental Fee:</span>
-              <span className="ml-2 text-gray-600">{room.rentalFee} MMK/month</span>
+              {isAuthenticated ? (
+                <span className="ml-2 text-gray-600">{unit.rentalFee.toLocaleString()} MMK/month</span>
+              ) : (
+                <span className="ml-2 text-gray-500 italic">Login to see price</span>
+              )}
             </div>
           </div>
           <div className="space-y-3">
             <div>
               <span className="font-semibold text-gray-700">Building:</span>
-              <span className="ml-2 text-gray-600">{room.level?.building?.buildingName}</span>
+              <span className="ml-2 text-gray-600">{unit.level?.building?.buildingName || 'N/A'}</span>
             </div>
             <div>
               <span className="font-semibold text-gray-700">Floor:</span>
-              <span className="ml-2 text-gray-600">{room.level?.levelName} (Level {room.level?.levelNumber})</span>
+              <span className="ml-2 text-gray-600">{unit.level?.levelName || 'N/A'} (Level {unit.level?.levelNumber || 'N/A'})</span>
             </div>
             <div>
-  <span className="font-semibold text-gray-700">Branch:</span>
-  <span className="ml-2 text-gray-600">
-    {room.level?.building?.branch?.branchName || 
-     room.level?.building?.branchName || 
-     'N/A'}
-  </span>
-</div>
+              <span className="font-semibold text-gray-700">Branch:</span>
+              <span className="ml-2 text-gray-600">
+                {unit.level?.building?.branch?.branchName || 
+                 unit.level?.building?.branchName || 
+                 'N/A'}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Utilities Section - Add this after the Description section */}
-{room.utilities && room.utilities.filter(util => util.isActive).length > 0 && (
-  <div>
-    <h4 className="font-semibold text-gray-900 mb-2">Available Utilities</h4>
-    <div className="grid grid-cols-2 gap-2">
-      {room.utilities
-        .filter(utility => utility.isActive)
-        .map((utility) => (
-          <div 
-            key={utility.id}
-            className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg"
-          >
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-sm text-gray-700">{utility.utilityName}</span>
+        {/* Utilities Section */}
+        {unit.utilities && unit.utilities.filter(util => util.isActive).length > 0 && (
+          <div>
+            <h4 className="font-semibold text-gray-900 mb-2">Available Utilities</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {unit.utilities
+                .filter(utility => utility.isActive)
+                .map((utility) => (
+                  <div 
+                    key={utility.id}
+                    className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg"
+                  >
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-gray-700">{utility.utilityName}</span>
+                  </div>
+                ))
+              }
+            </div>
           </div>
-        ))
-      }
-    </div>
-  </div>
-)}
+        )}
 
         {/* Description */}
         <div>
           <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
           <p className="text-gray-600 text-sm">
-            This {room.roomSpace} sqm space is perfect for {getBusinessSuggestion(room.roomSpace, room.roomType.typeName)}. 
-            Located in {room.level?.building?.buildingName} on {room.level?.levelName}, this space offers excellent visibility 
-            and accessibility for your business.
+            This {unit.unitSpace} sqm space is perfect for {getBusinessSuggestion(unit.unitSpace, unit.unitType)}. 
+            Located in {unit.level?.building?.buildingName || 'the building'} on {unit.level?.levelName || 'this floor'}, 
+            this space offers excellent visibility and accessibility for your business.
           </p>
         </div>
 
@@ -189,18 +195,10 @@ export const RoomDetailModal: React.FC<RoomDetailModalProps> = ({
             onClick={handleBookAppointment}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
           >
-            {isLoggedIn ? 'Book Appointment' : 'Login to Book'}
+            {isAuthenticated ? 'Book Appointment' : 'Login to Book'}
           </Button>
         </div>
       </div>
     </Modal>
   );
-};
-
-// Helper function
-const getBusinessSuggestion = (space: number, roomType: string) => {
-  if (space < 20) return "kiosks, small retail, or service businesses";
-  if (space < 50) return "boutiques, small cafes, or specialty stores";
-  if (space < 100) return "restaurants, medium retail, or showrooms";
-  return "large retail stores, supermarkets, or entertainment venues";
 };
