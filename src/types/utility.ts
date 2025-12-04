@@ -41,6 +41,7 @@ export interface UtilityInvoiceRequest {
 
 // NEW: Add comprehensive utility billing DTO
 export interface UtilityBillingDTO {
+  grandTotal: number;
   unitId: number;
   unitNumber: string;
   unitSpace: number;
