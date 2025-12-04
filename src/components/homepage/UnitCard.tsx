@@ -1,34 +1,32 @@
 /** @format */
 
-// src/components/homepage/RoomCard.tsx
+// src/components/homepage/UnitCard.tsx
 import React from "react";
 import type { Unit } from "../../types/unit";
 import { Button } from "../common/ui/Button";
 
-interface RoomCardProps {
-  room: Unit;
-  onViewDetails: (room: Unit) => void;
-  onAppointment: (room: Unit) => void;
+interface UnitCardProps {
+  unit: Unit;
+  onViewDetails: (unit: Unit) => void;
+  onAppointment: (unit: Unit) => void;
 }
 
-export const RoomCard: React.FC<RoomCardProps> = ({
-  room,
+export const UnitCard: React.FC<UnitCardProps> = ({
+  unit,
   onViewDetails,
   onAppointment,
 }) => {
   // Safe data access with comprehensive fallbacks
   const primaryImage =
-    room.imageUrls?.[0] ||
+    unit.imageUrls?.[0] ||
     "https://via.placeholder.com/400x300?text=Retail+Space";
-  const roomNumber = room.unitNumber || "N/A";
-  const roomSpace = room.unitSpace || 0;
-  const rentalFee = room.rentalFee || 0;
-  const roomTypeName = room.roomType?.typeName || "Retail Space";
-  const buildingName = room.level?.building?.buildingName || "Shopping Mall";
-  const levelName = room.level?.levelName || "Ground Floor";
-  // const meterType = room.meterType || "ELECTRICITY";
+  const unitNumber = unit.unitNumber || "N/A";
+  const unitSpace = unit.unitSpace || 0;
+  const unitTypeName = unit.roomType?.typeName || "Retail Space";
+  const buildingName = unit.level?.building?.buildingName || "Shopping Mall";
+  const levelName = unit.level?.levelName || "Ground Floor";
 
-  const getBusinessSuggestion = (space: number, roomType: string) => {
+  const getBusinessSuggestion = (space: number, unitType: string) => {
     if (space < 20) return "kiosks, small retail, or service businesses";
     if (space < 50) return "boutiques, small cafes, or specialty stores";
     if (space < 100) return "restaurants, medium retail, or showrooms";
@@ -43,10 +41,10 @@ export const RoomCard: React.FC<RoomCardProps> = ({
       "https://via.placeholder.com/400x300?text=Retail+Space";
   };
 
-  console.log(`🎯 Rendering RoomCard: ${roomNumber}`, {
-    id: room.id,
-    hasImages: room.imageUrls?.length > 0,
-    type: roomTypeName,
+  console.log(`🎯 Rendering UnitCard: ${unitNumber}`, {
+    id: unit.id,
+    hasImages: unit.imageUrls?.length > 0,
+    type: unitTypeName,
     building: buildingName,
   });
 
@@ -55,9 +53,9 @@ export const RoomCard: React.FC<RoomCardProps> = ({
       <div className="relative">
         <img
           src={primaryImage}
-          alt={`Room ${roomNumber}`}
+          alt={`Unit ${unitNumber}`}
           className="w-full h-48 object-cover cursor-pointer"
-          onClick={() => onViewDetails(room)}
+          onClick={() => onViewDetails(unit)}
           onError={handleImageError}
         />
         <div className="absolute top-4 right-4">
@@ -69,7 +67,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
         {/* Hover Overlay */}
         <div
           className="absolute inset-0 bg-[#0D1B2A] bg-opacity-0 hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center cursor-pointer"
-          onClick={() => onViewDetails(room)}
+          onClick={() => onViewDetails(unit)}
         >
           <div className="bg-[#0D1B2A] bg-opacity-80 text-white px-4 py-2 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-200 text-sm font-medium">
             View Details
@@ -78,11 +76,9 @@ export const RoomCard: React.FC<RoomCardProps> = ({
       </div>
 
       <div className="p-6">
-        <div className="flex justify-between items-start mb-3">
-          <h3 className="text-xl font-semibold text-[#0D1B2A]">{roomNumber}</h3>
-          <span className="text-2xl font-bold text-[#D32F2F]">
-            {rentalFee.toLocaleString()} MMK/mo
-          </span>
+        <div className="mb-3">
+          <h3 className="text-xl font-semibold text-[#0D1B2A]">{unitNumber}</h3>
+          {/* Rental fee removed from card - only shown in detail modal after login */}
         </div>
 
         {/* Location Info */}
@@ -126,7 +122,7 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                 d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
               />
             </svg>
-            <span>{roomSpace} sqm</span>
+            <span>{unitSpace} sqm</span>
           </div>
           <div className="flex items-center text-[#0D1B2A] opacity-80">
             <svg
@@ -142,40 +138,24 @@ export const RoomCard: React.FC<RoomCardProps> = ({
                 d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
               />
             </svg>
-            <span>{roomTypeName}</span>
-          </div>
-          <div className="flex items-center text-[#0D1B2A] opacity-80">
-            <svg
-              className="w-4 h-4 mr-2 flex-shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-            {/* <span className="capitalize">{meterType.toLowerCase()} Meter</span> */}
+            <span>{unitTypeName}</span>
           </div>
         </div>
 
         <p className="text-[#0D1B2A] opacity-80 text-sm mb-4 line-clamp-2">
-          Perfect for {getBusinessSuggestion(roomSpace, roomTypeName)}
+          Perfect for {getBusinessSuggestion(unitSpace, unitTypeName)}
         </p>
 
         <div className="flex space-x-3">
           <Button
-            onClick={() => onViewDetails(room)}
+            onClick={() => onViewDetails(unit)}
             variant="secondary"
             className="flex-1 border-[#0D1B2A] hover:bg-[#0D1B2A] hover:text-white"
           >
             View Details
           </Button>
           <Button
-            onClick={() => onAppointment(room)}
+            onClick={() => onAppointment(unit)}
             className="flex-1 bg-[#D32F2F] hover:bg-[#B71C1C] text-white"
           >
             Book Now

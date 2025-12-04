@@ -51,7 +51,7 @@ export interface Level {
   buildingName: string;
   levelName: string;
   levelNumber: number;
-  totalRooms: number;
+  totalUnits: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -60,7 +60,7 @@ export interface LevelRequest {
   buildingId: number;
   levelName: string;
   levelNumber: number;
-  totalRooms: number;
+  totalUnits: number;
 }
 
 export interface User {

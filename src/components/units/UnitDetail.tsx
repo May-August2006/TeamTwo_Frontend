@@ -4,13 +4,15 @@ import { UnitType, type Unit } from '../../types/unit';
 import { unitApi } from '../../api/UnitAPI';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
 import { Button } from '../common/ui/Button';
+import { formatCurrency } from '../../utils/formatUtils';
+import { useNotification } from '../../context/NotificationContext';
 
 interface UnitDetailProps {
   unitId: number;
   isOpen: boolean;
   onClose: () => void;
   onEdit: (unit: Unit) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: number, unitNumber: string) => void; // Updated to include unitNumber
 }
 
 export const UnitDetail: React.FC<UnitDetailProps> = ({
@@ -20,11 +22,13 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
   onEdit,
   onDelete
 }) => {
+  const { showSuccess, showError } = useNotification();
   const [unit, setUnit] = useState<Unit | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [updatingUtility, setUpdatingUtility] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (isOpen && unitId) {
@@ -37,8 +41,10 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
     try {
       const response = await unitApi.getById(unitId);
       setUnit(response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching unit details:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to load unit details';
+      showError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -46,9 +52,33 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
 
   const getUnitTypeBadge = (unitType: UnitType) => {
     const badges = {
-      [UnitType.ROOM]: { color: 'bg-blue-100 text-blue-800', label: 'Room' },
-      [UnitType.SPACE]: { color: 'bg-green-100 text-green-800', label: 'Space' },
-      [UnitType.HALL]: { color: 'bg-purple-100 text-purple-800', label: 'Hall' },
+      [UnitType.ROOM]: { 
+        color: 'bg-blue-100 text-blue-800', 
+        label: 'Room',
+        icon: (
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+        )
+      },
+      [UnitType.SPACE]: { 
+        color: 'bg-green-100 text-green-800', 
+        label: 'Space',
+        icon: (
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4 4 0 003 15z" />
+          </svg>
+        )
+      },
+      [UnitType.HALL]: { 
+        color: 'bg-purple-100 text-purple-800', 
+        label: 'Hall',
+        icon: (
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+        )
+      },
     };
     return badges[unitType];
   };
@@ -70,7 +100,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
             <p className="text-sm text-gray-500">Space Type</p>
             <p className="font-medium">{unit.spaceType?.name}</p>
             <p className="text-xs text-gray-500 mt-1">
-              Base Price: {unit.spaceType?.basePricePerSqm} MMK/sqm
+              Base Price: {formatCurrency(unit.spaceType?.basePricePerSqm || 0)} MMK/sqm
             </p>
           </div>
         );
@@ -82,6 +112,11 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
             <p className="text-xs text-gray-500 mt-1">
               Capacity: {unit.hallType?.capacity} people
             </p>
+            {unit.hallType?.basePrice && (
+              <p className="text-xs text-gray-500 mt-1">
+                Base Price: {formatCurrency(unit.hallType.basePrice)} MMK
+              </p>
+            )}
           </div>
         );
       default:
@@ -89,17 +124,22 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
     }
   };
 
-  // ✅ FIXED: Always show all utilities, not just active ones
+  // Toggle utility status
   const toggleUtilityStatus = async (utilityTypeId: number, currentStatus: boolean) => {
     setUpdatingUtility(utilityTypeId);
     try {
       await unitApi.toggleUnitUtility(unitId, utilityTypeId, !currentStatus);
       
-      // Re-fetch the complete unit data to get updated utilities
+      // Re-fetch the complete unit data
       await fetchUnitDetails();
       
-    } catch (error) {
+      // Show success notification
+      showSuccess(`Utility ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
+      
+    } catch (error: any) {
       console.error('Error toggling utility status:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to update utility status';
+      showError(errorMessage);
     } finally {
       setUpdatingUtility(null);
     }
@@ -142,10 +182,17 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
     }
   };
 
-  const handleDelete = () => {
-    if (unit) {
-      onDelete(unit.id);
+  const handleDelete = async () => {
+    if (!unit) return;
+    
+    try {
+      setIsDeleting(true);
+      await onDelete(unit.id, unit.unitNumber);
       onClose();
+    } catch (error) {
+      console.error('Error deleting unit:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -167,6 +214,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                 </h2>
                 {!isLoading && unit && (
                   <span className={`inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full ${unitTypeBadge.color}`}>
+                    {unitTypeBadge.icon}
                     {unitTypeBadge.label}
                   </span>
                 )}
@@ -179,7 +227,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -200,17 +248,24 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                   <div>
                     {/* Main Image */}
                     <div 
-                      className="bg-gray-100 rounded-lg overflow-hidden mb-4 cursor-pointer hover:opacity-95 transition-opacity"
+                      className="bg-gray-100 rounded-lg overflow-hidden mb-4 cursor-pointer hover:opacity-95 transition-opacity group relative"
                       onClick={() => unit.imageUrls && unit.imageUrls.length > 0 && openImageModal(0)}
                     >
                       {unit.imageUrls && unit.imageUrls.length > 0 ? (
-                        <img
-                          src={unit.imageUrls[0]}
-                          alt={`Unit ${unit.unitNumber}`}
-                          className="w-full h-64 object-cover"
-                        />
+                        <>
+                          <img
+                            src={unit.imageUrls[0]}
+                            alt={`Unit ${unit.unitNumber}`}
+                            className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity duration-300 flex items-center justify-center">
+                            <div className="bg-black/70 text-white px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                              Click to view gallery
+                            </div>
+                          </div>
+                        </>
                       ) : (
-                        <div className="w-full h-64 flex items-center justify-center bg-gray-50">
+                        <div className="w-full h-64 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
                           <div className="text-center">
                             <svg className="w-16 h-16 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -224,79 +279,117 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                     {/* Thumbnail Gallery */}
                     {unit.imageUrls && unit.imageUrls.length > 1 && (
                       <div className="grid grid-cols-4 gap-2">
-                        {unit.imageUrls.map((image, index) => (
+                        {unit.imageUrls.slice(0, 4).map((image, index) => (
                           <button
                             key={index}
                             onClick={() => openImageModal(index)}
-                            className="relative rounded-md overflow-hidden border border-gray-200 hover:border-blue-500 transition-colors"
+                            className="relative rounded-md overflow-hidden border border-gray-200 hover:border-blue-500 transition-colors group"
                           >
                             <img
                               src={image}
                               alt={`Thumbnail ${index + 1}`}
                               className="w-full h-16 object-cover"
                             />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity"></div>
                           </button>
                         ))}
+                        {unit.imageUrls.length > 4 && (
+                          <button
+                            onClick={() => openImageModal(4)}
+                            className="relative rounded-md overflow-hidden border border-gray-200 hover:border-blue-500 transition-colors bg-gray-100 flex items-center justify-center"
+                          >
+                            <span className="text-gray-600 font-medium">
+                              +{unit.imageUrls.length - 4} more
+                            </span>
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
 
                   {/* Unit Details Section */}
                   <div className="space-y-4">
-                    {/* Status Badge */}
+                    {/* Status Badge - Updated colors for mall owners */}
                     <div className="flex items-center justify-between">
-                      <span className={`inline-flex px-4 py-2 rounded-full text-sm font-semibold ${
+                      <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
                         unit.isAvailable 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
+                          ? 'bg-gray-100 text-gray-800' // Neutral gray for available units
+                          : 'bg-green-100 text-green-800' // Green for occupied (positive revenue)
                       }`}>
+                        <div className={`w-2 h-2 rounded-full mr-2 ${
+                          unit.isAvailable ? 'bg-gray-500' : 'bg-green-500'
+                        }`}></div>
                         {unit.isAvailable ? 'Available for Rent' : 'Currently Occupied'}
                       </span>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-blue-600">{unit.rentalFee} MMK/month</p>
+                        <p className="text-2xl font-bold text-blue-600">{formatCurrency(unit.rentalFee)} MMK/month</p>
                         <p className="text-sm text-gray-500">Rental fee</p>
                       </div>
                     </div>
 
                     {/* Unit Specifications */}
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Unit Specifications</h3>
+                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        Unit Specifications
+                      </h3>
                       <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-gray-500">Unit Number</p>
-                          <p className="font-medium">{unit.unitNumber}</p>
+                        <div className="bg-white p-3 rounded-lg shadow-sm">
+                          <p className="text-sm text-gray-500 mb-1">Unit Number</p>
+                          <p className="font-medium text-gray-900 text-lg font-mono">{unit.unitNumber}</p>
                         </div>
-                        {getTypeSpecificInfo()}
-                        <div>
-                          <p className="text-sm text-gray-500">Space Area</p>
-                          <p className="font-medium">{unit.unitSpace} sqm</p>
+                        <div className="bg-white p-3 rounded-lg shadow-sm">
+                          {getTypeSpecificInfo()}
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Meter</p>
-                          <p className={`font-medium ${unit.hasMeter ? 'text-green-600' : 'text-red-600'}`}>
-                            {unit.hasMeter ? 'Has Meter' : 'No Meter'}
+                        <div className="bg-white p-3 rounded-lg shadow-sm">
+                          <p className="text-sm text-gray-500 mb-1">Space Area</p>
+                          <p className="font-medium text-gray-900 text-lg">{unit.unitSpace} sqm</p>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg shadow-sm">
+                          <p className="text-sm text-gray-500 mb-1">Meter</p>
+                          <p className={`font-medium text-lg ${unit.hasMeter ? 'text-green-600' : 'text-red-600'}`}>
+                            {unit.hasMeter ? (
+                              <span className="flex items-center">
+                                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Has Meter
+                              </span>
+                            ) : (
+                              <span className="flex items-center">
+                                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                No Meter
+                              </span>
+                            )}
                           </p>
                         </div>
                       </div>
                     </div>
 
-                    {/* ✅ FIXED: Utilities Section - Show ALL utilities regardless of isActive status */}
+                    {/* Utilities Section */}
                     {unit.utilities && unit.utilities.length > 0 && (
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-200">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
                           Utilities ({unit.utilities.filter(u => u.isActive).length} active / {unit.utilities.length} total)
                         </h3>
                         <div className="space-y-3">
                           {unit.utilities.map((utility) => (
                             <div 
                               key={utility.id}
-                              className={`flex items-center justify-between p-3 rounded-lg border ${
+                              className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
                                 utility.isActive 
-                                  ? 'bg-white border-green-200' 
+                                  ? 'bg-white border-green-200 shadow-sm' 
                                   : 'bg-gray-50 border-gray-300 opacity-70'
                               }`}
                             >
-                              <div className="flex items-center space-x-3">
+                              <div className="flex items-center space-x-4">
                                 <div className={`w-3 h-3 rounded-full ${
                                   utility.isActive ? 'bg-green-500' : 'bg-gray-400'
                                 }`}></div>
@@ -306,8 +399,8 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                                   }`}>
                                     {utility.utilityName}
                                   </p>
-                                  <p className="text-sm text-gray-500">
-                                    {utility.ratePerUnit} MMK per unit • {utility.calculationMethod}
+                                  <p className="text-sm text-gray-500 mt-1">
+                                    {formatCurrency(utility.ratePerUnit)} MMK per unit • {utility.calculationMethod}
                                   </p>
                                   {!utility.isActive && (
                                     <p className="text-xs text-red-500 mt-1">Currently inactive</p>
@@ -319,13 +412,15 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                                 variant={utility.isActive ? "secondary" : "primary"}
                                 size="sm"
                                 disabled={updatingUtility === utility.id}
+                                loading={updatingUtility === utility.id}
+                                className="min-w-[100px]"
                               >
                                 {updatingUtility === utility.id ? (
-                                  <LoadingSpinner size="sm" />
+                                  'Updating...'
                                 ) : utility.isActive ? (
-                                  'Deactivate'  
+                                  'Deactivate'
                                 ) : (
-                                  'Activate'    
+                                  'Activate'
                                 )}
                               </Button>
                             </div>
@@ -335,40 +430,46 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                     )}
 
                     {/* Building Information */}
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3">Location Information</h3>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
+                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Location Information
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center p-3 bg-white rounded-lg">
                           <span className="text-gray-600">Branch</span>
-                          <span className="font-medium">{unit.level.building.branchName}</span>
+                          <span className="font-medium text-gray-900">{unit.level.building.branch.branchName || unit.level.building.branchName}</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between items-center p-3 bg-white rounded-lg">
                           <span className="text-gray-600">Building</span>
-                          <span className="font-medium">{unit.level.building.buildingName}</span>
+                          <span className="font-medium text-gray-900">{unit.level.building.buildingName}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Level</span>
-                          <span className="font-medium">{unit.level.levelName} (Floor {unit.level.levelNumber})</span>
+                        <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                          <span className="text-gray-600">Floor</span>
+                          <span className="font-medium text-gray-900">{unit.level.levelName} (Floor {unit.level.levelNumber})</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Type Description */}
                     {unit.roomType?.description && (
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Room Type Description</h3>
+                      <div className="bg-blue-50 rounded-xl p-5 border border-blue-200">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Room Type Description</h3>
                         <p className="text-gray-700">{unit.roomType.description}</p>
                       </div>
                     )}
                     {unit.spaceType?.description && (
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Space Type Description</h3>
+                      <div className="bg-green-50 rounded-xl p-5 border border-green-200">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Space Type Description</h3>
                         <p className="text-gray-700">{unit.spaceType.description}</p>
                       </div>
                     )}
                     {unit.hallType?.description && (
-                      <div className="bg-gray-50 rounded-lg p-4">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Hall Type Description</h3>
+                      <div className="bg-purple-50 rounded-xl p-5 border border-purple-200">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Hall Type Description</h3>
                         <p className="text-gray-700">{unit.hallType.description}</p>
                       </div>
                     )}
@@ -380,26 +481,48 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                   <Button
                     onClick={onClose}
                     variant="secondary"
+                    className="px-6"
                   >
                     Close
                   </Button>
                   <Button
                     onClick={handleEdit}
                     variant="primary"
+                    className="px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
                   >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
                     Edit Unit
                   </Button>
                   <Button
                     onClick={handleDelete}
                     variant="danger"
+                    disabled={isDeleting}
+                    loading={isDeleting}
+                    className="px-6"
                   >
-                    Delete Unit
+                    {!isDeleting && (
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    )}
+                    {isDeleting ? 'Deleting...' : 'Delete Unit'}
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-red-500">Failed to load unit details</p>
+                <div className="text-5xl mb-4">😞</div>
+                <p className="text-red-500 text-lg font-medium">Failed to load unit details</p>
+                <p className="text-gray-500 mt-2">Please try again later</p>
+                <Button
+                  onClick={onClose}
+                  variant="secondary"
+                  className="mt-4"
+                >
+                  Close
+                </Button>
               </div>
             )}
           </div>
@@ -409,11 +532,11 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
       {/* Image Gallery Modal */}
       {isImageModalOpen && unit?.imageUrls && unit.imageUrls.length > 0 && (
         <div className="fixed inset-0 bg-black bg-opacity-90 z-[60] flex items-center justify-center p-4">
-          <div className="relative max-w-4xl max-h-full w-full">
+          <div className="relative max-w-6xl max-h-full w-full">
             {/* Close Button */}
             <button
               onClick={closeImageModal}
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors z-10"
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors z-10 p-2 hover:bg-white/10 rounded-lg"
             >
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -425,7 +548,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
               <>
                 <button
                   onClick={prevImage}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full p-3 transition-all"
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full p-4 transition-all backdrop-blur-sm"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -433,7 +556,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                 </button>
                 <button
                   onClick={nextImage}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full p-3 transition-all"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full p-4 transition-all backdrop-blur-sm"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -447,32 +570,32 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
               <img
                 src={unit.imageUrls[selectedImageIndex]}
                 alt={`Unit ${unit.unitNumber} - Image ${selectedImageIndex + 1}`}
-                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-2xl"
               />
             </div>
 
             {/* Image Counter */}
-            <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+            <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-black/70 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium">
               {selectedImageIndex + 1} / {unit.imageUrls.length}
             </div>
 
             {/* Thumbnail Strip */}
             {unit.imageUrls.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 bg-black bg-opacity-50 rounded-lg p-2">
+              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-2 bg-black/50 backdrop-blur-sm rounded-xl p-3">
                 {unit.imageUrls.map((image, index) => (
                   <button
                     key={index}
                     onClick={(e) => handleThumbnailClick(index, e)}
-                    className={`w-12 h-12 rounded border-2 transition-all ${
+                    className={`w-14 h-14 rounded-lg border-2 transition-all overflow-hidden ${
                       selectedImageIndex === index 
-                        ? 'border-white ring-2 ring-blue-400' 
-                        : 'border-gray-400 hover:border-white'
+                        ? 'border-white ring-2 ring-blue-400 shadow-lg scale-110' 
+                        : 'border-gray-400 hover:border-white hover:scale-105'
                     }`}
                   >
                     <img
                       src={image}
                       alt={`Thumbnail ${index + 1}`}
-                      className="w-full h-full object-cover rounded"
+                      className="w-full h-full object-cover"
                     />
                   </button>
                 ))}

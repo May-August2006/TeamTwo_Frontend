@@ -76,11 +76,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
       icon: <Zap className="w-4 h-4" />,
     },
     {
-      name: t('sidebar.billing'),
-      icon: <DollarSign className="w-5 h-5" />,
-      path: "/admin/billing",
-    },
-    {
       name: t('sidebar.users'),
       icon: <Users className="w-5 h-5" />,
       path: "/admin/users",
