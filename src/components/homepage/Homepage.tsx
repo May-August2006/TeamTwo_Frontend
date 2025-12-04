@@ -1,30 +1,25 @@
-// src/components/homepage/Homepage.tsx
 import React from 'react';
 import { HeroSection } from './HeroSection';
-import { AvailableRoomsSection } from './AvailableRoomsSection';
+import { AvailableUnitsSection } from './AvailableUnitsSection';
 import { FeaturesSection } from './FeaturesSection';
 import { ContactSection } from './ContactSection';
 
 interface HomepageProps {
-  onRoomDetail?: (room: any) => void;
-  onAppointment?: (room: any) => void;
+  onUnitDetail?: (unit: any) => void;
 }
 
 export const Homepage: React.FC<HomepageProps> = ({ 
-  onRoomDetail, 
-  onAppointment 
+  onUnitDetail
 }) => {
   console.log('🏠 Homepage rendered with props:', {
-    hasOnRoomDetail: !!onRoomDetail,
-    hasOnAppointment: !!onAppointment
+    hasOnUnitDetail: !!onUnitDetail
   });
 
   return (
     <div className="min-h-screen bg-white">
       <HeroSection />
-      <AvailableRoomsSection 
-        onRoomDetail={onRoomDetail}
-        onAppointment={onAppointment}
+      <AvailableUnitsSection 
+        onUnitDetail={onUnitDetail}
       />
       <FeaturesSection />
       <ContactSection />

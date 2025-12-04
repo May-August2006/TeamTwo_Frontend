@@ -16,5 +16,7 @@ export const buildingApi = {
   assignManager: (buildingId: number, managerId: number) => 
     API.post<Building>(`/api/buildings/${buildingId}/assign-manager/${managerId}`, {}),
   removeManager: (buildingId: number) => 
-    API.post<void>(`/api/buildings/${buildingId}/remove-manager`, {})
+    API.post<void>(`/api/buildings/${buildingId}/remove-manager`, {}),
+  checkExists: (buildingName: string, branchId: number) => 
+    API.get<boolean>(`/api/buildings/exists?buildingName=${encodeURIComponent(buildingName)}&branchId=${branchId}`)
 };

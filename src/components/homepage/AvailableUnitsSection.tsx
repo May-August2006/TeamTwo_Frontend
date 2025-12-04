@@ -1,77 +1,102 @@
-/** @format */
-
-// src/components/homepage/AvailableRoomsSection.tsx
 import React, { useState, useEffect } from "react";
 import type { Unit, UnitSearchParams } from "../../types/unit";
-import { RoomCard } from "./RoomCard";
+import { UnitCard } from "./UnitCard";
 import { SearchFilters } from "./SearchFilters";
 import { LoadingSpinner } from "../common/ui/LoadingSpinner";
 import { Button } from "../common/ui/Button";
 import { AppointmentForm } from "./AppointmentForm";
 import { appointmentApi } from "../../api/appointmentApi";
 import { useAuth } from "../../context/AuthContext";
+import { LoginPromptModal } from "../common/ui/LoginPromptModal"; // Add this import
 
-interface AvailableRoomsSectionProps {
-  onRoomDetail?: (room: Unit) => void;
+interface AvailableUnitsSectionProps {
+  onUnitDetail?: (unit: Unit) => void;
+  onAppointment?: (unit: Unit) => void; // Add this prop
 }
 
-export const AvailableRoomsSection: React.FC<AvailableRoomsSectionProps> = ({
-  onRoomDetail,
+export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
+  onUnitDetail,
+  onAppointment, // Destructure this
 }) => {
-  const [availableRooms, setAvailableRooms] = useState<Unit[]>([]);
-  const [filteredRooms, setFilteredRooms] = useState<Unit[]>([]);
+  const [availableUnits, setAvailableUnits] = useState<Unit[]>([]);
+  const [filteredUnits, setFilteredUnits] = useState<Unit[]>([]);
   const [searchParams, setSearchParams] = useState<UnitSearchParams>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Appointment Modal state
-  const [selectedRoom, setSelectedRoom] = useState<Unit | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
+  
+  // Login Prompt state
+  const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<{
+    type: 'view' | 'appointment';
+    unit: Unit;
+  } | null>(null);
+  
   const { isAuthenticated, userId } = useAuth();
 
-  // Load rooms on mount
+  // Load units on mount
   useEffect(() => {
-    loadAvailableRooms();
+    loadAvailableUnits();
   }, []);
 
-  // Filter rooms when search changes
+  // Filter units when search changes
   useEffect(() => {
-    filterRooms();
-  }, [searchParams, availableRooms]);
+    filterUnits();
+  }, [searchParams, availableUnits]);
 
-  // Fetch available rooms
-  const loadAvailableRooms = async () => {
+  // Fetch available units
+  const loadAvailableUnits = async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log("🔄 Loading available rooms...");
+      console.log("🔄 Loading available units...");
 
       const response = await fetch("http://localhost:8080/api/units/available");
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       let data = await response.json();
+      console.log("📦 Raw API response:", data);
 
-      // Handle different API response structures
-      if (data.content) data = data.content;
-      else if (data.data) data = data.data;
+      // Handle Spring Boot's ResponseEntity structure
+      if (data && data.data) {
+        data = data.data;
+      }
+      
+      // Handle pagination if needed
+      if (data && Array.isArray(data.content)) {
+        data = data.content;
+      }
 
-      if (!Array.isArray(data)) throw new Error("Invalid data format");
+      if (!Array.isArray(data)) {
+        console.error("❌ Invalid data format:", data);
+        throw new Error("Invalid data format");
+      }
 
-      setAvailableRooms(data);
-      console.log(`✅ Loaded ${data.length} rooms`);
+      // Transform the data to match your frontend structure
+      const transformedData = data.map((unit: any) => ({
+        ...unit,
+        utilities: unit.utilities || [],
+        imageUrls: unit.imageUrls || []
+      }));
+
+      setAvailableUnits(transformedData);
+      console.log(`✅ Loaded ${transformedData.length} units`, transformedData);
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to load rooms");
-      setAvailableRooms([]);
+      console.error("❌ Error loading units:", err);
+      setError(err.message || "Failed to load units");
+      setAvailableUnits([]);
     } finally {
       setLoading(false);
     }
   };
 
   // Apply search filters
-  const filterRooms = () => {
-    let filtered = [...availableRooms];
+  const filterUnits = () => {
+    let filtered = [...availableUnits];
 
     if (searchParams.minSpace)
       filtered = filtered.filter((r) => r.unitSpace >= searchParams.minSpace!);
@@ -85,26 +110,70 @@ export const AvailableRoomsSection: React.FC<AvailableRoomsSectionProps> = ({
       filtered = filtered.filter(
         (r) => r.unitType === searchParams.unitType
       );
+    if (searchParams.roomTypeId)
+      filtered = filtered.filter(
+        (r) => r.roomType?.id === searchParams.roomTypeId
+      );
 
-    setFilteredRooms(filtered);
+    setFilteredUnits(filtered);
   };
 
-  // View room details
-  const handleRoomDetail = (room: Unit) => {
-    console.log("👁️ Viewing room:", room.unitNumber);
-    if (onRoomDetail) onRoomDetail(room);
+  // View unit details
+  const handleUnitDetail = (unit: Unit) => {
+    if (!isAuthenticated) {
+      // Show login prompt instead of alert
+      setPendingAction({ type: 'view', unit });
+      setIsLoginPromptOpen(true);
+      return;
+    }
+    console.log("👁️ Viewing unit:", unit.unitNumber);
+    if (onUnitDetail) onUnitDetail(unit);
   };
 
   // Open appointment modal
-  const handleAppointment = (room: Unit) => {
-    console.log("📅 Booking appointment for:", room.unitNumber);
-    setSelectedRoom(room);
+  const handleAppointment = (unit: Unit) => {
+    if (!isAuthenticated) {
+      // Show login prompt instead of alert
+      setPendingAction({ type: 'appointment', unit });
+      setIsLoginPromptOpen(true);
+      return;
+    }
+    
+    // If parent provides onAppointment handler, use it
+    if (onAppointment) {
+      onAppointment(unit);
+      return;
+    }
+    
+    // Otherwise use local appointment modal
+    console.log("📅 Booking appointment for:", unit.unitNumber);
+    setSelectedUnit(unit);
     setIsAppointmentOpen(true);
+  };
+
+  // Handle login prompt confirm
+  const handleLoginConfirm = () => {
+    setIsLoginPromptOpen(false);
+    
+    // Save the intended action to session storage
+    if (pendingAction) {
+      sessionStorage.setItem('pendingAction', JSON.stringify(pendingAction));
+      sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
+      
+      // Redirect to login page
+      window.location.href = '/login';
+    }
+  };
+
+  // Handle login prompt cancel
+  const handleLoginCancel = () => {
+    setIsLoginPromptOpen(false);
+    setPendingAction(null);
   };
 
   // Close appointment modal
   const closeAppointmentModal = () => {
-    setSelectedRoom(null);
+    setSelectedUnit(null);
     setIsAppointmentOpen(false);
   };
 
@@ -118,7 +187,7 @@ export const AvailableRoomsSection: React.FC<AvailableRoomsSectionProps> = ({
     guestPhone: string;
   }) => {
     if (!userId) {
-      alert("You must be logged in to book an appointment");
+      // This shouldn't happen since we check isAuthenticated first
       return;
     }
 
@@ -128,6 +197,7 @@ export const AvailableRoomsSection: React.FC<AvailableRoomsSectionProps> = ({
       const response = await appointmentApi.book(userId || 0, data);
       console.log("✅ Appointment booked:", response.data);
 
+      // Show success message (you can add toast notification here)
       alert("Appointment booked successfully!");
       closeAppointmentModal();
     } catch (err: any) {
@@ -139,7 +209,7 @@ export const AvailableRoomsSection: React.FC<AvailableRoomsSectionProps> = ({
   };
 
   return (
-    <section id="available-rooms" className="py-16 bg-[#E5E8EB]">
+    <section id="available-units" className="py-16 bg-[#E5E8EB]">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-12">
@@ -178,7 +248,7 @@ export const AvailableRoomsSection: React.FC<AvailableRoomsSectionProps> = ({
             </h3>
             <p className="text-[#D32F2F] mb-4">{error}</p>
             <Button
-              onClick={loadAvailableRooms}
+              onClick={loadAvailableUnits}
               variant="secondary"
               className="border-[#0D1B2A]"
             >
@@ -187,17 +257,17 @@ export const AvailableRoomsSection: React.FC<AvailableRoomsSectionProps> = ({
           </div>
         )}
 
-        {/* Room List */}
+        {/* Unit List */}
         {!loading && !error && (
           <>
             <div className="flex justify-between items-center mb-6">
               <p className="text-[#0D1B2A] opacity-80">
-                Showing {filteredRooms.length} of {availableRooms.length}{" "}
+                Showing {filteredUnits.length} of {availableUnits.length}{" "}
                 available spaces
               </p>
-              {availableRooms.length > 0 && (
+              {availableUnits.length > 0 && (
                 <Button
-                  onClick={loadAvailableRooms}
+                  onClick={loadAvailableUnits}
                   variant="secondary"
                   size="sm"
                   className="border-[#0D1B2A]"
@@ -207,7 +277,7 @@ export const AvailableRoomsSection: React.FC<AvailableRoomsSectionProps> = ({
               )}
             </div>
 
-            {filteredRooms.length === 0 ? (
+            {filteredUnits.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg border border-[#0D1B2A]/10">
                 <h3 className="text-xl font-semibold text-[#0D1B2A] mb-2">
                   No spaces match your criteria
@@ -222,11 +292,11 @@ export const AvailableRoomsSection: React.FC<AvailableRoomsSectionProps> = ({
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredRooms.map((room) => (
-                  <RoomCard
-                    key={room.id}
-                    room={room}
-                    onViewDetails={handleRoomDetail}
+                {filteredUnits.map((unit) => (
+                  <UnitCard
+                    key={unit.id}
+                    unit={unit}
+                    onViewDetails={handleUnitDetail}
                     onAppointment={handleAppointment}
                   />
                 ))}
@@ -236,14 +306,31 @@ export const AvailableRoomsSection: React.FC<AvailableRoomsSectionProps> = ({
         )}
 
         {/* Appointment Modal */}
-        {selectedRoom && (
+        {selectedUnit && (
           <AppointmentForm
-            room={selectedRoom}
+            unit={selectedUnit}
             isOpen={isAppointmentOpen}
             onClose={closeAppointmentModal}
             onSubmit={submitAppointment}
             isLoading={isBooking}
             isLoggedIn={isAuthenticated}
+          />
+        )}
+
+        {/* Login Prompt Modal */}
+        {pendingAction && (
+          <LoginPromptModal
+            isOpen={isLoginPromptOpen}
+            onClose={handleLoginCancel}
+            onConfirm={handleLoginConfirm}
+            title={pendingAction.type === 'view' ? 'View Details' : 'Book Appointment'}
+            message={
+              pendingAction.type === 'view'
+                ? 'You need to login to view unit details and pricing.'
+                : 'You need to login to book an appointment.'
+            }
+            confirmText="Login Now"
+            cancelText="Maybe Later"
           />
         )}
       </div>
