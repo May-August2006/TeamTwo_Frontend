@@ -3,6 +3,13 @@ import type { CreateMeterReadingRequest, MeterReading } from '../types/meterRead
 import type { Unit, UtilityType } from '../types/unit'; // Changed from Room to Unit
 
 export const meterReadingApi = {
+
+  create: (request: CreateMeterReadingRequest): Promise<MeterReading> =>
+    API.post('/api/meter-readings', request).then(response => response.data),
+
+   createBulkMeterReadings: (requests: CreateMeterReadingRequest[]): Promise<MeterReading[]> =>
+    API.post('/api/meter-readings/bulk', requests).then(response => response.data),
+  
   getAllMeterReadings: (): Promise<MeterReading[]> =>
     API.get('/api/meter-readings').then(response => response.data),
 

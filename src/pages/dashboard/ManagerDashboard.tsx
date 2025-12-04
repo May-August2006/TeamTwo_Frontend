@@ -19,6 +19,8 @@ import InvoicesPage from "../manager/InvoicesPage";
 import { OverdueOrOutstandingPage } from "../manager/OverdueOrOustandingPage";
 import { LateFeeManagementPage } from "../manager/LateFeeManagementPage";
 import UsageEntryPage from "../manager/UsageEntryPage";
+import BulkMeterReadingPage from "../manager/BulkMeterReadingPage"; 
+import BuildingUtilityInvoicePage from "../manager/BuildingUtilityInvoicePage";
 
 export default function ManagerDashboard() {
   return (
@@ -32,6 +34,8 @@ export default function ManagerDashboard() {
         <Route path="billing/fees" element={<BillingFeePage />} />
         <Route path="billing/invoices" element={<InvoiceListPage />} />
         <Route path="billing/usage" element={<UsageEntryPage />} />
+        <Route path="billing/bulk-readings" element={<BulkMeterReadingPage />} /> 
+        <Route path="billing/building-invoices" element={<BuildingUtilityInvoicePage />} />
         <Route path="payments" element={<PaymentManagementPage />} />
         <Route path="appointments" element={<AppointmentManagementPage />} />
         <Route path="appointments/:id" element={<AppointmentDetailPage />} />
