@@ -1,7 +1,8 @@
 /** @format */
 
 import type {
-  LateFeePolicy,
+  LateFeePolicyDTO,
+  LateFeePolicyRequest,
   LateFeeRequest,
   LateFeeResponseDTO,
 } from "../types";
@@ -18,15 +19,30 @@ export const lateFeeApi = {
       responseType: "blob",
     }),
 
-  // Fetch policy (if you have this endpoint)
-  getPolicy: () => API.get<LateFeePolicy>("/api/late-fee-policy/current"),
-
-  // Update policy
-  updatePolicy: (id: number, data: LateFeePolicy) =>
-    API.put(`/api/late-fee-policy/update/${id}`, data),
-
+  // Get all late fees for a specific invoice by invoiceId
   getByInvoiceId: (invoiceId: number) =>
     API.get<LateFeeResponseDTO[]>(`/api/late-fees/invoice/${invoiceId}`),
+
+  // Fetch the single policy (returns null if not created yet)
+  getPolicy: async (): Promise<LateFeePolicyDTO | null> => {
+    try {
+      const response = await API.get<LateFeePolicyDTO>("/api/late-fee-policy");
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null; // No policy exists yet
+      }
+      throw error; // rethrow other errors
+    }
+  },
+
+  // Create or replace the policy
+  createPolicy: (data: LateFeePolicyRequest) =>
+    API.post<LateFeePolicyDTO>("/api/late-fee-policy", data),
+
+  // Update the existing policy
+  updatePolicy: (data: LateFeePolicyRequest) =>
+    API.put<LateFeePolicyDTO>("/api/late-fee-policy", data),
 
   // Get late fees for the logged-in tenant
   getTenantLateFees: () =>

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { branchApi } from '../../api/BranchAPI';
 import { buildingApi } from '../../api/BuildingAPI';
 import { levelApi } from '../../api/LevelAPI';
-import { roomTypeApi, spaceTypeApi, hallTypeApi } from '../../api/UnitAPI';
+import { roomTypeApi, spaceTypeApi, hallTypeApi, unitApi } from '../../api/UnitAPI';
 import { utilityApi } from '../../api/UtilityAPI';
 import { Button } from '../common/ui/Button';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
@@ -41,6 +41,12 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
   const [selectedSpaceType, setSelectedSpaceType] = useState<any>(null);
   const [selectedRoomType, setSelectedRoomType] = useState<any>(null);
   const [selectedHallType, setSelectedHallType] = useState<any>(null);
+  
+  // New state for capacity validation
+  const [selectedLevel, setSelectedLevel] = useState<any>(null);
+  const [selectedBuilding, setSelectedBuilding] = useState<any>(null);
+  const [levelUnitsCount, setLevelUnitsCount] = useState<number>(0);
+  const [buildingUsedArea, setBuildingUsedArea] = useState<number>(0);
 
   const [branches, setBranches] = useState<any[]>([]);
   const [buildings, setBuildings] = useState<any[]>([]);
@@ -59,6 +65,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
   const [utilitiesLoading, setUtilitiesLoading] = useState(false);
   
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
 
   // Load initial data
   useEffect(() => {
@@ -104,16 +111,24 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       setBuildings([]);
       setLevels([]);
       setFormData(prev => ({ ...prev, buildingId: '', levelId: '' }));
+      setSelectedBuilding(null);
+      setSelectedLevel(null);
+      setBuildingUsedArea(0);
+      setLevelUnitsCount(0);
     }
   }, [formData.branchId]);
 
-  // Load levels when buildingId changes
+  // Load levels and building info when buildingId changes
   useEffect(() => {
     if (formData.buildingId) {
       loadLevels(parseInt(formData.buildingId));
     } else {
       setLevels([]);
       setFormData(prev => ({ ...prev, levelId: '' }));
+      setSelectedLevel(null);
+      setSelectedBuilding(null);
+      setBuildingUsedArea(0);
+      setLevelUnitsCount(0);
     }
   }, [formData.buildingId]);
 
@@ -157,6 +172,13 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     calculateRentalFee();
   }, [formData.unitSpace, formData.unitType, selectedSpaceType, selectedRoomType, selectedHallType]);
 
+  // Re-validate unit space when constraints change
+  useEffect(() => {
+    if (formData.unitSpace && (selectedSpaceType || selectedRoomType || selectedHallType || selectedLevel || selectedBuilding)) {
+      validateUnitSpaceField(formData.unitSpace);
+    }
+  }, [selectedSpaceType, selectedRoomType, selectedHallType, selectedLevel, selectedBuilding]);
+
   const loadBuildings = async (branchId: number) => {
     setBuildingsLoading(true);
     try {
@@ -173,13 +195,43 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
   const loadLevels = async (buildingId: number) => {
     setLevelsLoading(true);
     try {
+      // Load levels for this building
       const response = await levelApi.getLevelsByBuilding(buildingId);
       setLevels(response.data);
+      
+      // Also load the building details for area validation
+      const buildingResponse = await buildingApi.getById(buildingId);
+      setSelectedBuilding(buildingResponse.data);
+      
+      // Get current units count in building for area calculation
+      const unitsResponse = await unitApi.search({ buildingId });
+      const totalArea = unitsResponse.data.reduce((sum: number, unit: any) => 
+        sum + (unit.unitSpace || 0), 0
+      );
+      setBuildingUsedArea(totalArea);
     } catch (error) {
       console.error('Error loading levels:', error);
       setLevels([]);
+      setSelectedBuilding(null);
+      setBuildingUsedArea(0);
     } finally {
       setLevelsLoading(false);
+    }
+  };
+
+  // Fetch level details and count units in that level
+  const fetchLevelDetails = async (levelId: number) => {
+    try {
+      const response = await levelApi.getById(levelId);
+      setSelectedLevel(response.data);
+      
+      // Get current units count in this level
+      const unitsResponse = await unitApi.search({ levelId });
+      setLevelUnitsCount(unitsResponse.data.length);
+    } catch (error) {
+      console.error('Error fetching level details:', error);
+      setSelectedLevel(null);
+      setLevelUnitsCount(0);
     }
   };
 
@@ -190,6 +242,164 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     } catch (error) {
       console.error('Error fetching space type details:', error);
       setSelectedSpaceType(null);
+    }
+  };
+
+  // Validate unit number
+  const validateUnitNumber = (value: string): string => {
+    const trimmed = value.trim();
+    
+    if (!trimmed) {
+      return 'Unit number is required';
+    }
+    
+    // Check if it contains only valid characters (letters, numbers, dash, underscore)
+    const isValidFormat = /^[A-Z0-9_-]+$/.test(trimmed);
+    if (!isValidFormat) {
+      return 'Unit number can only contain uppercase letters, numbers, dash (-) and underscore (_)';
+    }
+    
+    // Check length
+    if (trimmed.length > 20) {
+      return 'Unit number cannot exceed 20 characters';
+    }
+    
+    return '';
+  };
+
+  // Validate level capacity
+  const validateLevelCapacity = (): boolean => {
+    if (!selectedLevel || selectedLevel.totalUnits === null || selectedLevel.totalUnits === undefined) {
+      return true; // No limit set
+    }
+    
+    if (levelUnitsCount >= selectedLevel.totalUnits) {
+      setErrors(prev => ({
+        ...prev,
+        levelId: `Level is at full capacity. Maximum ${selectedLevel.totalUnits} units allowed. Current: ${levelUnitsCount} units.`
+      }));
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Validate building area capacity
+  const validateBuildingArea = (unitSpace: number): boolean => {
+    if (!selectedBuilding || selectedBuilding.totalLeasableArea === null || selectedBuilding.totalLeasableArea === undefined) {
+      return true; // No limit set
+    }
+    
+    const newTotalArea = buildingUsedArea + unitSpace;
+    
+    if (newTotalArea > selectedBuilding.totalLeasableArea) {
+      const availableArea = selectedBuilding.totalLeasableArea - buildingUsedArea;
+      setErrors(prev => ({
+        ...prev,
+        unitSpace: `Exceeds building's leasable area. Available: ${availableArea.toFixed(2)} sqm, Required: ${unitSpace.toFixed(2)} sqm`
+      }));
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Unit space validation
+  const validateUnitSpaceField = (value: string) => {
+    const trimmed = value.trim();
+    const space = parseFloat(trimmed);
+    
+    if (!trimmed) {
+      setErrors(prev => ({ ...prev, unitSpace: 'Unit space is required' }));
+      return false;
+    }
+    
+    if (isNaN(space)) {
+      setErrors(prev => ({ ...prev, unitSpace: 'Please enter a valid number' }));
+      return false;
+    }
+    
+    if (space <= 0) {
+      setErrors(prev => ({ ...prev, unitSpace: 'Unit space must be greater than 0' }));
+      return false;
+    }
+    
+    if (space < 0.1) {
+      setErrors(prev => ({ ...prev, unitSpace: 'Unit space must be at least 0.1 sqm' }));
+      return false;
+    }
+    
+    if (space > 10000) {
+      setErrors(prev => ({ ...prev, unitSpace: 'Unit space cannot exceed 10000 sqm' }));
+      return false;
+    }
+    
+    // Check space type constraints
+    if (formData.unitType === UnitType.SPACE && formData.spaceTypeId && selectedSpaceType) {
+      if (selectedSpaceType.minSpace > 0 && space < selectedSpaceType.minSpace) {
+        setErrors(prev => ({ ...prev, unitSpace: `Minimum space required: ${selectedSpaceType.minSpace} sqm` }));
+        return false;
+      }
+      
+      if (selectedSpaceType.maxSpace > 0 && space > selectedSpaceType.maxSpace) {
+        setErrors(prev => ({ ...prev, unitSpace: `Maximum space allowed: ${selectedSpaceType.maxSpace} sqm` }));
+        return false;
+      }
+    }
+
+    // Check room type constraints
+    if (formData.unitType === UnitType.ROOM && formData.roomTypeId && selectedRoomType) {
+      if (selectedRoomType.minSpace > 0 && space < selectedRoomType.minSpace) {
+        setErrors(prev => ({ ...prev, unitSpace: `Minimum space required: ${selectedRoomType.minSpace} sqm` }));
+        return false;
+      }
+      
+      if (selectedRoomType.maxSpace > 0 && space > selectedRoomType.maxSpace) {
+        setErrors(prev => ({ ...prev, unitSpace: `Maximum space allowed: ${selectedRoomType.maxSpace} sqm` }));
+        return false;
+      }
+    }
+
+    // Check hall type constraints
+    if (formData.unitType === UnitType.HALL && formData.hallTypeId && selectedHallType) {
+      if (selectedHallType.minSpace > 0 && space < selectedHallType.minSpace) {
+        setErrors(prev => ({ ...prev, unitSpace: `Minimum space required: ${selectedHallType.minSpace} sqm` }));
+        return false;
+      }
+      
+      if (selectedHallType.maxSpace > 0 && space > selectedHallType.maxSpace) {
+        setErrors(prev => ({ ...prev, unitSpace: `Maximum space allowed: ${selectedHallType.maxSpace} sqm` }));
+        return false;
+      }
+    }
+    
+    // Check building area capacity
+    if (!validateBuildingArea(space)) {
+      return false;
+    }
+    
+    // Clear error if all validations pass
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors.unitSpace;
+      return newErrors;
+    });
+    return true;
+  };
+
+  // Check for duplicate unit number
+  const checkDuplicateUnitNumber = async (unitNumber: string, levelId: string) => {
+    if (!unitNumber || !levelId) return false;
+    
+    setIsCheckingDuplicate(true);
+    try {
+      const response = await unitApi.checkDuplicate(unitNumber, parseInt(levelId));
+      return response.data.exists;
+    } catch (error) {
+      console.error('Error checking duplicate unit number:', error);
+      return false;
+    } finally {
+      setIsCheckingDuplicate(false);
     }
   };
 
@@ -271,15 +481,28 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = async (): Promise<boolean> => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.unitNumber.trim()) {
-      newErrors.unitNumber = 'Unit number is required';
+    // Validate unit number
+    const unitNumberError = validateUnitNumber(formData.unitNumber);
+    if (unitNumberError) {
+      newErrors.unitNumber = unitNumberError;
+    } else if (formData.levelId) {
+      // Check for duplicates
+      const isDuplicate = await checkDuplicateUnitNumber(formData.unitNumber, formData.levelId);
+      if (isDuplicate) {
+        newErrors.unitNumber = 'Unit number already exists on this level';
+      }
     }
 
     if (!formData.levelId) {
       newErrors.levelId = 'Please select a level';
+    } else if (selectedLevel) {
+      // Validate level capacity
+      if (!validateLevelCapacity()) {
+        newErrors.levelId = errors.levelId || '';
+      }
     }
 
     // Validate type-specific selection
@@ -301,50 +524,65 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         break;
     }
 
-    if (!formData.unitSpace || parseFloat(formData.unitSpace) <= 0) {
+    // Validate unit space
+    const space = parseFloat(formData.unitSpace);
+    if (!formData.unitSpace) {
+      newErrors.unitSpace = 'Unit space is required';
+    } else if (isNaN(space) || space <= 0) {
       newErrors.unitSpace = 'Unit space must be greater than 0';
+    } else if (space < 0.1) {
+      newErrors.unitSpace = 'Unit space must be at least 0.1 sqm';
+    } else if (space > 10000) {
+      newErrors.unitSpace = 'Unit space cannot exceed 10000 sqm';
+    } else {
+      // For SPACE type, validate against space type constraints
+      if (formData.unitType === UnitType.SPACE && formData.spaceTypeId && selectedSpaceType) {
+        if (selectedSpaceType.minSpace > 0 && space < selectedSpaceType.minSpace) {
+          newErrors.unitSpace = `Minimum space required: ${selectedSpaceType.minSpace} sqm`;
+        }
+        
+        if (selectedSpaceType.maxSpace > 0 && space > selectedSpaceType.maxSpace) {
+          newErrors.unitSpace = `Maximum space allowed: ${selectedSpaceType.maxSpace} sqm`;
+        }
+      }
+
+      // For ROOM type, validate against room type constraints if they exist
+      if (formData.unitType === UnitType.ROOM && formData.roomTypeId && selectedRoomType) {
+        if (selectedRoomType.minSpace > 0 && space < selectedRoomType.minSpace) {
+          newErrors.unitSpace = `Minimum space required: ${selectedRoomType.minSpace} sqm`;
+        }
+        
+        if (selectedRoomType.maxSpace > 0 && space > selectedRoomType.maxSpace) {
+          newErrors.unitSpace = `Maximum space allowed: ${selectedRoomType.maxSpace} sqm`;
+        }
+      }
+
+      // For HALL type, validate against hall type constraints if they exist
+      if (formData.unitType === UnitType.HALL && formData.hallTypeId && selectedHallType) {
+        if (selectedHallType.minSpace > 0 && space < selectedHallType.minSpace) {
+          newErrors.unitSpace = `Minimum space required: ${selectedHallType.minSpace} sqm`;
+        }
+        
+        if (selectedHallType.maxSpace > 0 && space > selectedHallType.maxSpace) {
+          newErrors.unitSpace = `Maximum space allowed: ${selectedHallType.maxSpace} sqm`;
+        }
+      }
+      
+      // Validate building area capacity
+      if (selectedBuilding && selectedBuilding.totalLeasableArea !== null && selectedBuilding.totalLeasableArea !== undefined) {
+        if (!validateBuildingArea(space)) {
+          newErrors.unitSpace = errors.unitSpace || '';
+        }
+      }
     }
 
-    // For SPACE type, validate against space type constraints
-    if (formData.unitType === UnitType.SPACE && formData.spaceTypeId && selectedSpaceType) {
-      const space = parseFloat(formData.unitSpace);
-      
-      if (selectedSpaceType.minSpace > 0 && space < selectedSpaceType.minSpace) {
-        newErrors.unitSpace = `Minimum space required: ${selectedSpaceType.minSpace} sqm`;
-      }
-      
-      if (selectedSpaceType.maxSpace > 0 && space > selectedSpaceType.maxSpace) {
-        newErrors.unitSpace = `Maximum space allowed: ${selectedSpaceType.maxSpace} sqm`;
-      }
-    }
-
-    // For ROOM type, validate against room type constraints if they exist
-    if (formData.unitType === UnitType.ROOM && formData.roomTypeId && selectedRoomType) {
-      const space = parseFloat(formData.unitSpace);
-      
-      if (selectedRoomType.minSpace > 0 && space < selectedRoomType.minSpace) {
-        newErrors.unitSpace = `Minimum space required: ${selectedRoomType.minSpace} sqm`;
-      }
-      
-      if (selectedRoomType.maxSpace > 0 && space > selectedRoomType.maxSpace) {
-        newErrors.unitSpace = `Maximum space allowed: ${selectedRoomType.maxSpace} sqm`;
-      }
-    }
-
-    // For HALL type, validate against hall type constraints if they exist
-    if (formData.unitType === UnitType.HALL && formData.hallTypeId && selectedHallType) {
-      const space = parseFloat(formData.unitSpace);
-      
-      if (selectedHallType.minSpace > 0 && space < selectedHallType.minSpace) {
-        newErrors.unitSpace = `Minimum space required: ${selectedHallType.minSpace} sqm`;
-      }
-      
-      if (selectedHallType.maxSpace > 0 && space > selectedHallType.maxSpace) {
-        newErrors.unitSpace = `Maximum space allowed: ${selectedHallType.maxSpace} sqm`;
-      }
-    }
-
-    if (!formData.rentalFee || parseFloat(formData.rentalFee) < 0) {
+    // Validate rental fee
+    const rentalFee = parseFloat(formData.rentalFee);
+    if (!formData.rentalFee) {
+      newErrors.rentalFee = 'Rental fee is required';
+    } else if (isNaN(rentalFee)) {
+      newErrors.rentalFee = 'Please enter a valid rental fee';
+    } else if (rentalFee < 0) {
       newErrors.rentalFee = 'Rental fee cannot be negative';
     }
 
@@ -360,15 +598,16 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (validateForm()) {
+    const isValid = await validateForm();
+    if (isValid) {
       // Create FormData for file upload
       const submitFormData = new FormData();
       
       // Append all form fields
-      submitFormData.append('unitNumber', formData.unitNumber);
+      submitFormData.append('unitNumber', formData.unitNumber.toUpperCase());
       submitFormData.append('unitType', formData.unitType);
       submitFormData.append('hasMeter', formData.hasMeter.toString());
       submitFormData.append('levelId', formData.levelId);
@@ -398,30 +637,136 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         submitFormData.append('images', image);
       });
 
-      console.log('Submitting unit data:', {
-        unitType: formData.unitType,
-        hasMeter: formData.hasMeter,
-        rentalFee: formData.rentalFee,
-        calculatedPreview: rentalFeePreview,
-        utilityIds: selectedUtilityIds
-      });
-
       // Submit FormData
       onSubmit(submitFormData);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    // Special handling for unit number
+    if (name === 'unitNumber') {
+      // Convert to uppercase immediately
+      const uppercaseValue = value.toUpperCase();
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: uppercaseValue
+      }));
 
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      // Validate unit number
+      const unitNumberError = validateUnitNumber(uppercaseValue);
+      if (unitNumberError) {
+        setErrors(prev => ({
+          ...prev,
+          [name]: unitNumberError
+        }));
+      } else {
+        // Clear error if validation passes
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+    } else if (name === 'levelId') {
+      // Handle level change
+      setFormData(prev => ({ ...prev, levelId: value }));
+      
+      if (value) {
+        await fetchLevelDetails(parseInt(value));
+      } else {
+        setSelectedLevel(null);
+        setLevelUnitsCount(0);
+      }
+      
+      // Clear error
+      if (errors.levelId) {
+        setErrors(prev => ({ ...prev, levelId: '' }));
+      }
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+
+      // Clear error when user starts typing
+      if (errors[name]) {
+        setErrors(prev => ({ ...prev, [name]: '' }));
+      }
+      
+      // Special handling for unit space - validate immediately if value exists
+      if (name === 'unitSpace' && value) {
+        validateUnitSpaceField(value);
+      }
+    }
+  };
+
+  const handleUnitNumberBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    const uppercaseValue = value.toUpperCase();
+    
+    // Ensure uppercase on blur
+    if (value !== uppercaseValue) {
+      setFormData(prev => ({
+        ...prev,
+        unitNumber: uppercaseValue
+      }));
+    }
+
+    // Validate unit number on blur
+    const unitNumberError = validateUnitNumber(uppercaseValue);
+    if (unitNumberError) {
+      setErrors(prev => ({
+        ...prev,
+        unitNumber: unitNumberError
+      }));
+      return;
+    }
+
+    // Check for duplicates when user leaves the field (only if valid)
+    if (formData.levelId && uppercaseValue) {
+      setIsCheckingDuplicate(true);
+      try {
+        const isDuplicate = await checkDuplicateUnitNumber(uppercaseValue, formData.levelId);
+        if (isDuplicate) {
+          setErrors(prev => ({
+            ...prev,
+            unitNumber: 'Unit number already exists on this level'
+          }));
+        } else {
+          // Clear duplicate error if it exists
+          setErrors(prev => {
+            const newErrors = { ...prev };
+            if (newErrors.unitNumber === 'Unit number already exists on this level') {
+              delete newErrors.unitNumber;
+            }
+            return newErrors;
+          });
+        }
+      } catch (error) {
+        console.error('Error checking duplicate:', error);
+      } finally {
+        setIsCheckingDuplicate(false);
+      }
+    }
+  };
+
+  const handleUnitSpaceBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    validateUnitSpaceField(value);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const { name } = e.currentTarget;
+    
+    if (name === 'unitNumber') {
+      // Allow only alphanumeric, dash, underscore, and backspace
+      const char = String.fromCharCode(e.charCode);
+      if (!/^[A-Za-z0-9_-]$/.test(char) && e.charCode !== 0) {
+        e.preventDefault();
+      }
     }
   };
 
@@ -689,6 +1034,8 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
           {buildings.map(building => (
             <option key={building.id} value={building.id}>
               {building.buildingName}
+              {building.totalLeasableArea !== null && building.totalLeasableArea !== undefined && 
+                ` (Total Area: ${building.totalLeasableArea} sqm)`}
             </option>
           ))}
         </select>
@@ -719,12 +1066,36 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
           {levels.map(level => (
             <option key={level.id} value={level.id}>
               {level.levelName} (Floor {level.levelNumber})
+              {level.totalUnits !== null && level.totalUnits !== undefined && 
+                ` - Max ${level.totalUnits} units`}
             </option>
           ))}
         </select>
         {levelsLoading && (
           <p className="text-blue-500 text-sm mt-1">Loading levels...</p>
         )}
+        
+        {/* Level capacity info */}
+        {selectedLevel && selectedLevel.totalUnits !== null && selectedLevel.totalUnits !== undefined && (
+          <div className="mt-2 p-2 bg-gray-50 rounded-md">
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-600">Level Capacity:</span>
+              <div className="flex items-center space-x-2">
+                <span className="font-medium">{levelUnitsCount}/{selectedLevel.totalUnits} units</span>
+                <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 transition-all duration-300"
+                    style={{ width: `${Math.min((levelUnitsCount / selectedLevel.totalUnits) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            {levelUnitsCount >= selectedLevel.totalUnits && (
+              <p className="text-red-600 text-xs mt-1">Level is at full capacity!</p>
+            )}
+          </div>
+        )}
+        
         {errors.levelId && (
           <p className="text-red-500 text-sm mt-1">{errors.levelId}</p>
         )}
@@ -735,19 +1106,42 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         <label className="block text-sm font-medium text-gray-700 mb-1">
           Unit Number *
         </label>
-        <input
-          type="text"
-          name="unitNumber"
-          value={formData.unitNumber}
-          onChange={handleChange}
-          required
-          className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.unitNumber ? 'border-red-500' : 'border-gray-300'
-          }`}
-          placeholder="Enter unit number"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            name="unitNumber"
+            value={formData.unitNumber}
+            onChange={handleChange}
+            onBlur={handleUnitNumberBlur}
+            onKeyPress={handleKeyPress}
+            required
+            className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase ${
+              errors.unitNumber ? 'border-red-500' : 'border-gray-300'
+            }`}
+            placeholder="Enter unit number (e.g., A-101, B_202)"
+            style={{ textTransform: 'uppercase' }}
+            maxLength={20}
+            disabled={isCheckingDuplicate}
+          />
+          {isCheckingDuplicate && (
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+        </div>
+        <div className="flex justify-between items-center mt-1">
+          <p className="text-xs text-gray-500">
+            Use uppercase letters, numbers, dash (-) or underscore (_).
+          </p>
+          <span className="text-xs text-gray-400">
+            {formData.unitNumber.length}/20
+          </span>
+        </div>
         {errors.unitNumber && (
           <p className="text-red-500 text-sm mt-1">{errors.unitNumber}</p>
+        )}
+        {!errors.unitNumber && formData.unitNumber && formData.levelId && !isCheckingDuplicate && (
+          <p className="text-green-500 text-sm mt-1">✓ Unit number format is valid</p>
         )}
       </div>
 
@@ -804,17 +1198,43 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             name="unitSpace"
             value={formData.unitSpace}
             onChange={handleChange}
+            onBlur={handleUnitSpaceBlur}
             required
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.unitSpace ? 'border-red-500' : 'border-gray-300'
             }`}
             placeholder="Enter unit space"
-            min="0"
+            min="0.1"
             step="0.1"
           />
+          
+          {/* Building area capacity info */}
+          {selectedBuilding && selectedBuilding.totalLeasableArea !== null && selectedBuilding.totalLeasableArea !== undefined && (
+            <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-100">
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-blue-700">Building Leasable Area:</span>
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium">
+                    {(selectedBuilding.totalLeasableArea - buildingUsedArea).toFixed(2)}/{selectedBuilding.totalLeasableArea} sqm available
+                  </span>
+                </div>
+              </div>
+              <div className="mt-1 text-xs text-blue-600">
+                Currently used: {buildingUsedArea.toFixed(2)} sqm
+              </div>
+            </div>
+          )}
+          
           {renderRealTimeCalculation()}
           {errors.unitSpace && (
-            <p className="text-red-500 text-sm mt-1">{errors.unitSpace}</p>
+            <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-red-600 text-sm font-medium flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                {errors.unitSpace}
+              </p>
+            </div>
           )}
         </div>
 
@@ -849,7 +1269,14 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
           </div>
           
           {errors.rentalFee && (
-            <p className="text-red-500 text-sm mt-1">{errors.rentalFee}</p>
+            <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-red-600 text-sm font-medium flex items-center">
+                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                {errors.rentalFee}
+              </p>
+            </div>
           )}
         </div>
       </div>
@@ -975,7 +1402,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         <Button
           type="submit"
           loading={isLoading}
-          disabled={isLoading}
+          disabled={isLoading || isCheckingDuplicate}
         >
           Create Unit
         </Button>

@@ -53,7 +53,7 @@ export interface Level {
   buildingName: string;
   levelName: string;
   levelNumber: number;
-  totalRooms: number;
+  totalUnits: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -62,7 +62,7 @@ export interface LevelRequest {
   buildingId: number;
   levelName: string;
   levelNumber: number;
-  totalRooms: number;
+  totalUnits: number;
 }
 
 export interface User {
@@ -201,6 +201,9 @@ export interface InvoiceDTO {
   createdAt: string; // LocalDate → string
   updatedAt: string; // LocalDate → string
 
+  unpaidBalance: string;
+  daysOverdue: number;
+
   lateFees?: LateFeeResponseDTO[];
 }
 
@@ -325,4 +328,16 @@ export interface LateFeeResponseDTO {
   reason: string;
   appliedByName?: string;
   pdfUrl: string;
+}
+
+export interface LateFeePolicyDTO {
+  id: number; // database ID
+  amountPerDay: number; // late fee amount per day
+  createdAt?: string; // optional, if backend includes timestamps
+  updatedAt?: string;
+}
+
+// Request payload for creating/updating policy
+export interface LateFeePolicyRequest {
+  amountPerDay: number; // late fee amount per day
 }

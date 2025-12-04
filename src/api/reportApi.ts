@@ -23,9 +23,24 @@ export const reportApi = {
     return response.data;
   },
 
-  // You can add more report methods here as needed
-  // MMS-18: Financial Summary Report
-  // MMS-19: Tenant Contract Summary Report
-  // MMS-20: Expiring Contracts Report
-  // etc.
+  async getRentalRevenueByBusinessType(params: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any[]> {
+    const response = await API.get(`/api/reports/rental-revenue-by-business-type`, {
+      params
+    });
+    return response.data;
+  },
+
+  async exportRentalRevenueByBusinessTypeReport(params: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<Blob> {
+    const response = await API.get(`/api/reports/rental-revenue-by-business-type/export`, {
+      params,
+      responseType: 'blob'
+    });
+    return response.data;
+  }
 };

@@ -1,10 +1,14 @@
 /** @format */
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
-import { Loader2, X } from "lucide-react";
+import { FileText, Loader2, X } from "lucide-react";
 import { lateFeeApi } from "../../api/LateFeeAPI";
 import { invoiceApi } from "../../api/InvoiceAPI";
-import type { InvoiceDTO, LateFeePolicy } from "../../types";
+import type {
+  InvoiceDTO,
+  LateFeePolicy,
+  LateFeePolicyRequest,
+} from "../../types";
 import { useAuth } from "../../context/AuthContext";
 
 export function LateFeeManagementPage() {
@@ -21,11 +25,11 @@ export function LateFeeManagementPage() {
   const [reason, setReason] = useState("");
 
   const { userId } = useAuth();
-
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   // Policy state
   const [policy, setPolicy] = useState<LateFeePolicy | null>(null);
+  const [newPolicyAmount, setNewPolicyAmount] = useState<number | "">("");
 
   // -------------------------------------------------------------
   // Fetch overdue invoices
@@ -35,7 +39,6 @@ export function LateFeeManagementPage() {
       setLoading(true);
       const res = await invoiceApi.getOverdueInvoices(); // returns InvoiceDTO[]
 
-      // Fetch late fees for each invoice
       const invoicesWithLateFees = await Promise.all(
         res.data.map(async (invoice) => {
           try {
@@ -61,8 +64,12 @@ export function LateFeeManagementPage() {
   const loadPolicy = async () => {
     try {
       setLoading(true);
-      const res = await lateFeeApi.getPolicy();
-      setPolicy(res.data); // Save full policy including id
+      const res = await lateFeeApi.getPolicy(); // may return null if no policy exists
+      if (res) {
+        setPolicy(res); // Save full policy including id
+      } else {
+        setPolicy(null); // No policy exists yet
+      }
     } catch {
       toast.error("Failed to load policy data");
     } finally {
@@ -73,12 +80,6 @@ export function LateFeeManagementPage() {
   useEffect(() => {
     loadInvoices();
     loadPolicy();
-
-    // const interval = setInterval(() => {
-    //   loadInvoices();
-    // }, 10000); // refresh every 10 seconds
-
-    // return () => clearInterval(interval);
   }, []);
 
   // -------------------------------------------------------------
@@ -86,13 +87,23 @@ export function LateFeeManagementPage() {
   // -------------------------------------------------------------
   const createLateFee = async () => {
     if (!selectedInvoice) return toast.error("Please select an invoice");
+
+    const overdueDays = selectedInvoice.daysOverdue ?? 0;
+
+    // NEW VALIDATION — prevents entering lateDays > overdueDays
+    if (lateDays > overdueDays) {
+      return toast.error(
+        `Late days cannot exceed overdue days (${overdueDays} days)`
+      );
+    }
+
     if (lateDays <= 0) return toast.error("Late days must be greater than 0");
 
     const LateFeeRequest = {
       invoiceId: selectedInvoice.id,
       lateDays,
       reason,
-      appliedBy: userId!, // TODO replace with real user ID
+      appliedBy: userId!,
     };
 
     try {
@@ -104,7 +115,6 @@ export function LateFeeManagementPage() {
       const blobUrl = window.URL.createObjectURL(pdfRes.data);
       setPdfUrl(blobUrl);
 
-      // Refresh invoices list to include new late fee
       await loadInvoices();
     } catch (e) {
       console.error(e);
@@ -113,20 +123,44 @@ export function LateFeeManagementPage() {
   };
 
   // -------------------------------------------------------------
-  // Update policy
+  // Update existing policy
   // -------------------------------------------------------------
   const updatePolicy = async () => {
-    if (!policy?.id) return toast.error("No policy loaded");
+    if (!policy) return toast.error("No policy loaded");
+
     try {
-      await lateFeeApi.updatePolicy(policy.id, {
-        ...policy,
+      await lateFeeApi.updatePolicy({
         amountPerDay: Number(policy.amountPerDay),
       });
 
       toast.success("Policy updated successfully");
       loadPolicy();
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error("Failed to update policy");
+    }
+  };
+
+  // -------------------------------------------------------------
+  // Create new policy
+  // -------------------------------------------------------------
+  const createPolicy = async () => {
+    if (!newPolicyAmount || newPolicyAmount <= 0) {
+      return toast.error("Please enter a valid amount per day");
+    }
+
+    const request: LateFeePolicyRequest = {
+      amountPerDay: Number(newPolicyAmount),
+    };
+
+    try {
+      await lateFeeApi.createPolicy(request);
+      toast.success("Late fee policy created successfully");
+      setNewPolicyAmount("");
+      loadPolicy();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create policy");
     }
   };
 
@@ -146,24 +180,45 @@ export function LateFeeManagementPage() {
       <section className="bg-white rounded-xl shadow p-5">
         <h2 className="text-xl font-bold mb-3">Late Fee Policy</h2>
 
-        <div className="flex items-center gap-4">
-          <input
-            type="number"
-            value={policy?.amountPerDay ?? ""}
-            onChange={(e) =>
-              setPolicy({ ...policy!, amountPerDay: e.target.value })
-            }
-            className="border p-2 rounded w-40"
-            placeholder="Amount per day"
-          />
+        {policy ? (
+          <div className="flex items-center gap-4">
+            <input
+              type="number"
+              value={policy.amountPerDay ?? ""}
+              onChange={(e) =>
+                setPolicy({ ...policy!, amountPerDay: Number(e.target.value) })
+              }
+              className="border p-2 rounded w-40"
+              placeholder="Amount per day"
+            />
 
-          <button
-            onClick={updatePolicy}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          >
-            Update Policy
-          </button>
-        </div>
+            <button
+              onClick={updatePolicy}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              Update Policy
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-4">
+            <input
+              type="number"
+              value={newPolicyAmount}
+              onChange={(e) =>
+                setNewPolicyAmount(e.target.value ? Number(e.target.value) : "")
+              }
+              className="border p-2 rounded w-40"
+              placeholder="Amount per day"
+            />
+
+            <button
+              onClick={createPolicy}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+            >
+              Create Policy
+            </button>
+          </div>
+        )}
       </section>
 
       {/* ------------------- OVERDUE INVOICE LIST --------------------- */}
@@ -184,10 +239,10 @@ export function LateFeeManagementPage() {
               <tr className="bg-gray-100 border-b text-left">
                 <th className="p-3">Invoice ID</th>
                 <th className="p-3">Invoice No</th>
-                <th className="p-3">Status</th>
+                <th className="p-3">Unpaided Balance</th>
                 <th className="p-3">Tenant</th>
                 <th className="p-3">Room</th>
-                <th className="p-3">Due Date</th>
+                <th className="p-3">Overdue Days</th>
                 <th className="p-3">Balance</th>
                 <th className="p-3">PDF File</th>
               </tr>
@@ -204,29 +259,27 @@ export function LateFeeManagementPage() {
                 >
                   <td className="p-3">{inv.id}</td>
                   <td className="p-3">{inv.invoiceNumber}</td>
-                  <td className="p-3">{inv.invoiceStatus}</td>
+                  <td className="p-3">{inv.unpaidBalance}</td>
                   <td className="p-3">{inv.tenantName}</td>
                   <td className="p-3">{inv.roomNumber}</td>
-                  <td className="p-3">{inv.dueDate}</td>
+                  <td className="p-3">{inv.daysOverdue}</td>
                   <td className="p-3">{inv.balanceAmount}</td>
 
                   <td className="p-3 flex items-center gap-2">
                     {inv.lateFees?.map((lf) => (
-                      <div key={lf.id} className="flex items-center gap-1">
-                        {/* Open PDF in new tab using your download endpoint */}
-                        <button
-                          onClick={() =>
-                            window.open(
-                              `http://localhost:8080/api/late-fees/download/${lf.id}`,
-                              "_blank"
-                            )
-                          }
-                          className="text-blue-600 hover:underline text-sm"
-                          title="View Late Fee PDF"
-                        >
-                          PDF
-                        </button>
-                      </div>
+                      <button
+                        key={lf.id}
+                        onClick={() =>
+                          window.open(
+                            `http://localhost:8080/api/late-fees/download/${lf.id}`,
+                            "_blank"
+                          )
+                        }
+                        className="p-2 rounded-lg hover:bg-blue-100 transition"
+                        title="Download PDF"
+                      >
+                        <FileText className="w-5 h-5 text-blue-600" />
+                      </button>
                     ))}
                   </td>
                 </tr>
@@ -247,9 +300,19 @@ export function LateFeeManagementPage() {
               <input
                 type="number"
                 value={lateDays}
-                onChange={(e) =>
-                  setLateDays(e.target.value ? parseInt(e.target.value) : 0)
-                }
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0;
+                  const overdueDays = selectedInvoice?.daysOverdue ?? 0;
+
+                  if (value > overdueDays) {
+                    toast.error(
+                      `Late days cannot exceed overdue days (${overdueDays})`
+                    );
+                    return;
+                  }
+
+                  setLateDays(value);
+                }}
                 className="border p-2 rounded w-full"
               />
             </div>
