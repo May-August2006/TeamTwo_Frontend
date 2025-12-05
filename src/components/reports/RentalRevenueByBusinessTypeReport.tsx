@@ -32,10 +32,6 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
     loadReportData();
   }, []);
 
-  useEffect(() => {
-    applyFilters();
-  }, [reportData, searchTerm]);
-
   const loadReportData = async () => {
     try {
       setLoading(true);
@@ -54,31 +50,6 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
     } finally {
       setLoading(false);
     }
-  };
-
-  const applyFilters = () => {
-    if (!searchTerm.trim()) {
-      setFilteredData(reportData);
-      return;
-    }
-
-    const term = searchTerm.toLowerCase();
-    const filtered = reportData.filter(item =>
-      item.businessType?.toLowerCase().includes(term)
-    );
-    
-    setFilteredData(filtered);
-  };
-
-  const handleGenerateReport = () => {
-    loadReportData();
-  };
-
-  const clearFilters = () => {
-    setStartDate('');
-    setEndDate('');
-    setSearchTerm('');
-    loadReportData();
   };
 
   const exportToPDF = async () => {
@@ -116,7 +87,7 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
   };
 
   const calculateTotal = () => {
-    return filteredData.reduce((total, item) => total + (item.totalRentalFee || 0), 0);
+    return reportData.reduce((total, item) => total + (item.totalRentalFee || 0), 0);
   };
 
   const getTopCategories = () => {
