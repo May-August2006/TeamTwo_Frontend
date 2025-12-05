@@ -5,7 +5,7 @@ import type { User, UserRequest } from "../types/type";
 
 export const userApi = {
   getAll: () => API.get<User[]>("/api/users"),
-  getById: (id: number) => API.get<User>(`/api/users/${id}`),
+  getById: (id: number) => API.get<User>(`/api/guests/${id}`),
   create: (user: UserRequest) => {
     console.log("API - Creating user:", user); // Debug log
     return API.post<User>("/api/users", user);
