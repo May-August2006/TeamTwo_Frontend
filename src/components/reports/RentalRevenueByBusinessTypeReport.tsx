@@ -17,15 +17,9 @@ interface ReportData {
 
 export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusinessTypeReportProps> = ({ onBack }) => {
   const [reportData, setReportData] = useState<ReportData[]>([]);
-  const [filteredData, setFilteredData] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Filter states
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     // Load initial data when component mounts
@@ -37,13 +31,8 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
       setLoading(true);
       setError(null);
       
-      const params: any = {};
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
-      
-      const data = await reportApi.getRentalRevenueByBusinessType(params);
+      const data = await reportApi.getRentalRevenueByBusinessType({});
       setReportData(data);
-      setFilteredData(data);
     } catch (err) {
       console.error('Error loading report data:', err);
       setError('Failed to load report data');
@@ -56,11 +45,7 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
     try {
       setGeneratingPdf(true);
       
-      const params: any = {};
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
-      
-      const blob = await reportApi.exportRentalRevenueByBusinessTypeReport(params);
+      const blob = await reportApi.exportRentalRevenueByBusinessTypeReport({});
       
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -68,10 +53,7 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
       link.href = url;
       
       // Generate filename
-      let filename = 'rental-revenue-by-business-type';
-      if (startDate) filename += `-from-${startDate}`;
-      if (endDate) filename += `-to-${endDate}`;
-      filename += '.pdf';
+      const filename = 'rental-revenue-by-business-type.pdf';
       
       link.download = filename;
       document.body.appendChild(link);
@@ -91,7 +73,7 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
   };
 
   const getTopCategories = () => {
-    return [...filteredData]
+    return [...reportData]
       .sort((a, b) => (b.totalRentalFee || 0) - (a.totalRentalFee || 0))
       .slice(0, 3);
   };
@@ -142,13 +124,6 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
 
           <div className="flex flex-wrap gap-3">
             <Button
-              variant="secondary"
-              onClick={clearFilters}
-              disabled={loading}
-            >
-              Clear Filters
-            </Button>
-            <Button
               variant="primary"
               onClick={exportToPDF}
               loading={generatingPdf}
@@ -160,67 +135,6 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
               Export PDF Report
             </Button>
           </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white p-6 rounded-lg border border-stone-200">
-        <h3 className="text-lg font-semibold text-stone-900 mb-4">Filter Report</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          {/* Start Date */}
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">
-              Start Date (Optional)
-            </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-          </div>
-
-          {/* End Date */}
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">
-              End Date (Optional)
-            </label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-          </div>
-
-          {/* Search */}
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">
-              Search Business Type
-            </label>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search business types..."
-              className="w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-between items-center">
-          <div className="text-sm text-stone-600">
-            {startDate || endDate ? `Period: ${startDate || 'Start'} to ${endDate || 'End'}` : 'All Time Period'}
-          </div>
-          
-          <Button
-            variant="primary"
-            onClick={handleGenerateReport}
-            disabled={loading}
-          >
-            Generate Report
-          </Button>
         </div>
       </div>
 
@@ -240,11 +154,10 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
       <div className="bg-white p-4 rounded-lg border border-stone-200">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="text-sm text-stone-600">
-            Showing {filteredData.length} business categories
-            {searchTerm && ' (filtered)'}
+            Showing {reportData.length} business categories
           </div>
           
-          {filteredData.length > 0 && (
+          {reportData.length > 0 && (
             <Button
               variant="primary"
               size="sm"
@@ -260,14 +173,14 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
 
       {/* Report Table */}
       <div className="bg-white rounded-lg border border-stone-200 overflow-hidden">
-        {filteredData.length === 0 ? (
+        {reportData.length === 0 ? (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <h3 className="mt-2 text-sm font-medium text-stone-900">No revenue data found</h3>
             <p className="mt-1 text-sm text-stone-500">
-              {reportData.length === 0 ? 'No rental revenue data available.' : 'Try changing your filters or search term.'}
+              No rental revenue data available.
             </p>
           </div>
         ) : (
@@ -290,7 +203,7 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-stone-200">
-                {filteredData.map((item, index) => (
+                {reportData.map((item, index) => (
                   <tr key={index} className="hover:bg-stone-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-stone-900">
@@ -335,7 +248,7 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
       </div>
 
       {/* Quick Stats */}
-      {filteredData.length > 0 && (
+      {reportData.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Summary Stats */}
           <div className="bg-white p-6 rounded-lg border border-stone-200">
@@ -343,7 +256,7 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-stone-600">Total Categories:</span>
-                <span className="font-semibold">{filteredData.length}</span>
+                <span className="font-semibold">{reportData.length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-stone-600">Total Revenue:</span>
@@ -351,7 +264,7 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
               </div>
               <div className="flex justify-between">
                 <span className="text-stone-600">Period:</span>
-                <span className="font-semibold">{startDate || 'Start'} to {endDate || 'End'}</span>
+                <span className="font-semibold">All Time</span>
               </div>
             </div>
           </div>
@@ -376,7 +289,7 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
           <div className="bg-white p-6 rounded-lg border border-stone-200">
             <h3 className="text-lg font-semibold text-stone-900 mb-4">Revenue Distribution</h3>
             <div className="space-y-2">
-              {filteredData.map((item, index) => (
+              {reportData.map((item, index) => (
                 <div key={index} className="flex items-center">
                   <div className="w-3 h-3 rounded-full mr-2" 
                        style={{ backgroundColor: index === 0 ? '#dc2626' : 
