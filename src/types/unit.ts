@@ -1,7 +1,9 @@
+/** @format */
+
 export enum UnitType {
-  ROOM = 'ROOM',
-  SPACE = 'SPACE', 
-  HALL = 'HALL'
+  ROOM = "ROOM",
+  SPACE = "SPACE",
+  HALL = "HALL",
 }
 
 export interface Unit {
@@ -167,6 +169,7 @@ export interface UnitSearchParams {
   // Add these for specific utility filters
   utilityTypeId?: number;
   hasMeter?: boolean;
+  roomTypeId?: number;
 }
 
 export interface UtilityType {
@@ -181,7 +184,7 @@ export interface UtilityType {
 
 export interface UtilityTypeRequest {
   utilityName: string;
-  calculationMethod: 'FIXED' | 'METERED' | 'ALLOCATED';
+  calculationMethod: "FIXED" | "METERED" | "ALLOCATED";
   ratePerUnit: number;
   description: string;
 }

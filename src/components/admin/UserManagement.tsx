@@ -278,7 +278,10 @@ const UserManagement: React.FC = () => {
   };
 
   const getApprovalStatusDisplay = (status?: string) => {
-    switch (status) {
+    // Default to PENDING if status is undefined
+    const effectiveStatus = status || "PENDING";
+
+    switch (effectiveStatus) {
       case "PENDING":
         return {
           text: "Pending",
@@ -469,6 +472,9 @@ const UserManagement: React.FC = () => {
       setErrors({});
       const response = await userApi.getAll();
 
+      console.log("API Response:", response); // Add this for debugging
+      console.log("API Data:", response.data); // Add this for debugging
+
       let usersData = response.data;
 
       if (response.data && Array.isArray(response.data)) {
@@ -477,7 +483,20 @@ const UserManagement: React.FC = () => {
         usersData = response.data.content;
       }
 
-      setUsers(usersData);
+      // Ensure all guest users have an approvalStatus
+      const processedUsers = usersData.map((user: User) => {
+        // For ROLE_GUEST users, ensure approvalStatus is properly set
+        if (user.roleName === "ROLE_GUEST") {
+          return {
+            ...user,
+            // If approvalStatus is missing, set it to PENDING
+            approvalStatus: user.approvalStatus || "PENDING",
+          };
+        }
+        return user;
+      });
+
+      setUsers(processedUsers);
     } catch (error: any) {
       setErrors({ general: "Failed to load users" });
       addNotification("error", "Failed to load users");

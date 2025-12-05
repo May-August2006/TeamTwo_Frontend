@@ -1,3 +1,5 @@
+/** @format */
+
 export interface User {
   id: number;
   username: string;
@@ -10,6 +12,7 @@ export interface User {
   buildingId?: number;
   branchName?: string;
   buildingName?: string;
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED";
 }
 
 export interface UserRequest {
