@@ -69,7 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       children: [
 
         {
-          name: "Usage Entry",
+          name: "Utility Calculation",
           value: "usage-entry",
           icon: <Calculator className="w-4 h-4" />,
         },
@@ -79,7 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           icon: <FileText className="w-4 h-4" />,
         },
         {
-          name: "Building Invoices",
+          name: "Utility Expenses",
           value: "building-invoices",
           icon: <Building2 className="w-4 h-4" />,
         },

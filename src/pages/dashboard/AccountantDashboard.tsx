@@ -9,9 +9,7 @@ import PaymentAuditLog from '../../components/accountant/PaymentAuditLog';
 import DailyCollectionReport from '../../components/accountant/DailyCollectionReport';
 
 // Import Billing & Utilities components
-import { BillingUtilitiesPage } from '../../components/accountant/BillingUtilitiesPage';
-import { UtilityTypePage } from '../../components/accountant/UtilityTypePage';
-import { BillingFeePage } from '../../components/accountant/BillingFeePage';
+
 import { InvoiceListPage } from '../../components/accountant/InvoiceListPage';
 import UsageEntryPage from '../../components/accountant/UsageEntryPage';
 import BulkMeterReadingPage from '../../components/accountant/BulkMeterReadingPage';
@@ -68,12 +66,7 @@ const AccountantDashboard: React.FC = () => {
         return <PaymentAuditLog />;
       
       // Billing & Utilities Sections
-      case 'billing':
-        return <BillingUtilitiesPage />;
-      case 'utility-types':
-        return <UtilityTypePage />;
-      case 'billing-fees':
-        return <BillingFeePage />;
+
       case 'usage-entry':
         return <UsageEntryPage />;
       case 'bulk-readings':
