@@ -77,6 +77,16 @@ calculateCAMDistribution: (buildingId: number) =>
   API.get<CAMDistribution[]>(`/api/buildings/${buildingId}/cam-distribution`),
 
   checkExists: (buildingName: string, branchId: number) => 
-    API.get<boolean>(`/api/buildings/exists?buildingName=${encodeURIComponent(buildingName)}&branchId=${branchId}`)
+    API.get<boolean>(`/api/buildings/exists?buildingName=${encodeURIComponent(buildingName)}&branchId=${branchId}`),
+
+  assignAccountant: (buildingId: number, accountantId: number) => 
+    API.post<Building>(`/api/buildings/${buildingId}/assign-accountant/${accountantId}`, {}),
+    
+  removeAccountant: (buildingId: number) => 
+    API.post<void>(`/api/buildings/${buildingId}/remove-accountant`, {}),
+    
+  // Update getAvailableBuildings to filter for accountants too
+  getAvailableBuildingsForAccountants: () => 
+    API.get<Building[]>('/api/buildings/available-for-accountants'),
 
 };
