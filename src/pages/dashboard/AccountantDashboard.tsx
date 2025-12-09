@@ -1,4 +1,7 @@
+/** @format */
+
 import React, { useState } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import AppBar from '../../components/accountant/AppBar';
 import Sidebar from '../../components/accountant/Sidebar';
 import OverviewSection from '../../components/accountant/OverviewSection';
@@ -6,7 +9,7 @@ import SectionPlaceholder from '../../components/accountant/SectionPlaceholder';
 import PaymentListPage from '../../components/accountant/PaymentListPage';
 import PaymentForm from '../../components/accountant/PaymentForm';
 import PaymentAuditLog from '../../components/accountant/PaymentAuditLog';
-import DailyCollectionReport from '../../components/accountant/DailyCollectionReport';
+import { ReportsPage } from '../../components/accountant/ReportsPage'; // Add this import
 
 const AccountantDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState('overview');
@@ -52,7 +55,7 @@ const AccountantDashboard: React.FC = () => {
       case 'invoices':
         return <SectionPlaceholder title="Invoices & Receipts" />;
       case 'reports':
-        return <DailyCollectionReport />;
+        return <ReportsPage />; // Change from DailyCollectionReport to ReportsPage
       case 'audit':
         return <PaymentAuditLog />;
       default:
@@ -92,10 +95,8 @@ const AccountantDashboard: React.FC = () => {
         <div className="h-16"></div>
 
         <div className="p-6">
-
           {/* ---- FIXED TITLE SECTION ---- */}
           <div className="flex justify-between items-center mb-6">
-
             {/* Only show title when record payment form is open */}
             {showPaymentForm && (
               <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">

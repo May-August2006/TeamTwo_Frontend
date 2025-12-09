@@ -19,7 +19,8 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const [generatingExcel, setGeneratingExcel] = useState(false);
+const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Load initial data when component mounts
@@ -40,6 +41,35 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
       setLoading(false);
     }
   };
+
+
+  const exportToExcel = async () => {
+  try {
+    setGeneratingExcel(true); // Add this state: const [generatingExcel, setGeneratingExcel] = useState(false);
+    
+    await reportApi.exportRentalRevenueByBusinessTypeExcel();
+    const blob = await reportApi.exportRentalRevenueByBusinessTypeExcel();
+    
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Generate filename - IMPORTANT: Use .xlsx for Excel
+    const filename = 'rental-revenue-by-business-type.xlsx';
+    
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Error exporting Excel:', err);
+    setError('Failed to export Excel report');
+  } finally {
+    setGeneratingExcel(false);
+  }
+};
 
   const exportToPDF = async () => {
     try {
@@ -123,18 +153,30 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button
-              variant="primary"
-              onClick={exportToPDF}
-              loading={generatingPdf}
-              disabled={generatingPdf || reportData.length === 0}
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Export PDF Report
-            </Button>
-          </div>
+  <Button
+    variant="primary"
+    onClick={exportToPDF}
+    loading={generatingPdf}
+    disabled={generatingPdf || reportData.length === 0}
+  >
+    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+    </svg>
+    Export PDF
+  </Button>
+  
+  <Button
+    variant="secondary"
+    onClick={exportToExcel}
+    loading={generatingExcel}
+    disabled={generatingExcel || reportData.length === 0}
+  >
+    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+    Export Excel
+  </Button>
+</div>
         </div>
       </div>
 

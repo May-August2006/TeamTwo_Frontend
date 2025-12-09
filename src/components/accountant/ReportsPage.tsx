@@ -1,23 +1,12 @@
 /** @format */
 
 import React, { useState } from 'react';
-import { TenantContractSummary } from '../../components/reports/TenantContractSummary';
-import { VacantOccupiedUnitsReport } from '../../components/reports/VacantOccupiedUnitsReport';
-import { ExpiringContractsReport } from '../../components/reports/ExpiringContractsReport';
-import { ContractHistoryReport } from '../../components/reports/ContractHistoryReport';
-import { RentalRevenueByBusinessTypeReport } from '../../components/reports/RentalRevenueByBusinessTypeReport';
-import { OutstandingBalancesReport } from '../../components/reports/OutstandingBalancesReport';
+import { OutstandingBalancesReport } from '../reports/OutstandingBalancesReport';
+import DailyCollectionReport from '../accountant/DailyCollectionReport'; // Keep this if you want it separate
 
 type ReportType = 
-  | 'TENANT_CONTRACT_SUMMARY' 
-  | 'EXPIRING_CONTRACTS' 
-  | 'VACANT_OCCUPIED_UNITS' 
-  | 'CONTRACT_HISTORY'
-  | 'MONTHLY_BILLING_SUMMARY' 
-  | 'UTILITY_CONSUMPTION' 
+  | 'DAILY_COLLECTION' 
   | 'OUTSTANDING_BALANCES' 
-  | 'REVENUE_BY_CATEGORY' 
-  | 'EXPENSE_VS_REVENUE'
   | null;
 
 export const ReportsPage: React.FC = () => {
@@ -25,58 +14,16 @@ export const ReportsPage: React.FC = () => {
 
   const reportTypes = [
     {
-      id: 'TENANT_CONTRACT_SUMMARY' as ReportType,
-      title: "Tenant Contract Summary",
-      description: "Summary of all tenant contracts with current status",
-      icon: "📊"
-    },
-    {
-      id: 'EXPIRING_CONTRACTS' as ReportType,
-      title: "Expiring Contracts",
-      description: "List of contracts due to expire within 30 days",
-      icon: "⏰"
-    },
-    {
-      id: 'VACANT_OCCUPIED_UNITS' as ReportType,
-      title: "Vacant vs Occupied Units",
-      description: "Occupancy statistics for the mall",
-      icon: "🏢"
-    },
-    {
-      id: 'CONTRACT_HISTORY' as ReportType,
-      title: "Contract History Report",
-      description: "Complete history of contract changes, renewals, and terminations",
-      icon: "📋"
-    },
-    {
-      id: 'MONTHLY_BILLING_SUMMARY' as ReportType,
-      title: "Monthly Billing Summary",
-      description: "Summary of all charges for a billing month",
+      id: 'DAILY_COLLECTION' as ReportType,
+      title: "Daily Collection Report",
+      description: "Summary of all payments collected on a specific date",
       icon: "💰"
     },
     {
-      id: 'UTILITY_CONSUMPTION' as ReportType,
-      title: "Utility Consumption",
-      description: "Detailed breakdown of utility usage and costs",
-      icon: "⚡"
-    },
-    {
-    id: 'OUTSTANDING_BALANCES' as ReportType,
-    title: "Outstanding Balances",
-    description: "List of all tenants with unpaid invoices",
-    icon: "📝"
-  },
-    {
-      id: 'REVENUE_BY_CATEGORY' as ReportType,
-      title: "Revenue by Category",
-      description: "Income grouped by tenant type (Retail, Food, etc.)",
-      icon: "📈"
-    },
-    {
-      id: 'EXPENSE_VS_REVENUE' as ReportType,
-      title: "Expense vs Revenue",
-      description: "Comparison of total income vs mall expenses",
-      icon: "⚖️"
+      id: 'OUTSTANDING_BALANCES' as ReportType,
+      title: "Outstanding Balances",
+      description: "List of all tenants with unpaid invoices",
+      icon: "📝"
     }
   ];
 
@@ -90,33 +37,10 @@ export const ReportsPage: React.FC = () => {
 
   const renderActiveReport = () => {
     switch (activeReport) {
-      case 'TENANT_CONTRACT_SUMMARY':
-        return <TenantContractSummary onBack={handleBackToReports} />;
-      case 'EXPIRING_CONTRACTS':
-        return <ExpiringContractsReport onBack={handleBackToReports} />;
-      case 'CONTRACT_HISTORY':
-        return <ContractHistoryReport onBack={handleBackToReports} />;
-      case 'VACANT_OCCUPIED_UNITS':
-        return <VacantOccupiedUnitsReport onBack={handleBackToReports} />;
-        case 'REVENUE_BY_CATEGORY':  // Add this case
-      return <RentalRevenueByBusinessTypeReport onBack={handleBackToReports} />;
-        case 'OUTSTANDING_BALANCES':
-  return <OutstandingBalancesReport onBack={handleBackToReports} />;
-      case 'MONTHLY_BILLING_SUMMARY':
-        
-        return (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">💰</div>
-            <h2 className="text-2xl font-bold text-stone-900 mb-2">Monthly Billing Summary Report</h2>
-            <p className="text-stone-600 mb-4">This report will show monthly billing information</p>
-            <button 
-              onClick={handleBackToReports}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition duration-150"
-            >
-              Back to Reports
-            </button>
-          </div>
-        );
+      case 'DAILY_COLLECTION':
+        return <DailyCollectionReport onBack={handleBackToReports} />;
+      case 'OUTSTANDING_BALANCES':
+        return <OutstandingBalancesReport onBack={handleBackToReports} />;
       default:
         return null;
     }
@@ -138,9 +62,9 @@ export const ReportsPage: React.FC = () => {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-stone-900">Reports & Analytics</h1>
+            <h1 className="text-3xl font-bold text-stone-900">Accountant Reports</h1>
             <p className="text-stone-600 mt-2">
-              Generate detailed reports and analytics for your mall management
+              Generate detailed financial reports
             </p>
           </div>
 
