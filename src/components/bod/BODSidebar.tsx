@@ -10,6 +10,8 @@ import {
   DollarSign,
   Target,
   ChevronRight,
+  Building,
+  FileText,
 } from "lucide-react";
 
 interface BODSidebarProps {
@@ -34,21 +36,31 @@ const BODSidebar: React.FC<BODSidebarProps> = ({
       name: "Dashboard",
       icon: <Home className="w-5 h-5" />,
       path: "/bod",
+      description: "Overview"
+    },
+    {
+      name: "Occupancy & Lease",
+      icon: <Building className="w-5 h-5" />,
+      path: "/bod/occupancy",
+      description: "Reviews"
+    },
+    {
+      name: "Performance",
+      icon: <Target className="w-5 h-5" />,
+      path: "/bod/performance",
+      description: "Metrics"
     },
     {
       name: "Financial Summary",
       icon: <DollarSign className="w-5 h-5" />,
       path: "/bod/financial-summary",
+      description: "Quarterly/Yearly"
     },
     {
-      name: "Revenue Analysis",
-      icon: <BarChart3 className="w-5 h-5" />,
-      path: "/bod/revenue-analysis",
-    },
-    {
-      name: "Performance Metrics",
-      icon: <Target className="w-5 h-5" />,
-      path: "/bod/performance-metrics",
+      name: "Reports",
+      icon: <FileText className="w-5 h-5" />,
+      path: "/bod/reports",
+      description: "Download"
     },
   ];
 
@@ -65,51 +77,52 @@ const BODSidebar: React.FC<BODSidebarProps> = ({
 
   return (
     <>
-      {/* Fixed Sidebar - Updated styles to match Admin */}
+      {/* Fixed Sidebar */}
       <div
         className={`
-          fixed top-16 left-0 bottom-0 z-30 bg-white shadow-xl transform transition-all duration-300 ease-in-out border-r border-stone-200
+          fixed top-16 left-0 bottom-0 z-30 bg-white shadow-lg transform transition-all duration-300 ease-in-out border-r border-gray-100
           lg:translate-x-0
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
           ${isCollapsed ? "w-20" : "w-64"}
         `}
       >
-        {/* Logo Section - Updated to match Admin */}
-        <div className={`flex items-center justify-between p-4 border-b border-stone-200 bg-stone-50 ${isCollapsed ? 'px-3' : 'px-6'}`}>
+        {/* Logo Section */}
+        <div className={`flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/30 ${isCollapsed ? 'px-3' : 'px-6'}`}>
           {!isCollapsed && (
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-br from-red-600 to-red-700 rounded-lg shadow-md">
-                <Building2 className="w-6 h-6 text-white font-bold" />
+              <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg shadow-md">
+                <Building2 className="w-6 h-6 text-white" />
               </div>
               <div>
-                <span className="text-lg font-bold text-stone-900">
+                <span className="text-lg font-bold text-gray-900">
                   Board of Directors
                 </span>
+                <p className="text-xs text-gray-600">Strategic Dashboard</p>
               </div>
             </div>
           )}
           {isCollapsed && (
-            <div className="p-2 bg-gradient-to-br from-red-600 to-red-700 rounded-lg shadow-md mx-auto">
-              <Building2 className="w-6 h-6 text-white font-bold" />
+            <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg shadow-md mx-auto">
+              <Building2 className="w-6 h-6 text-white" />
             </div>
           )}
           <div className="flex items-center space-x-2">
             <button
               onClick={onToggleCollapse}
-              className="hidden lg:block p-2 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors duration-150"
+              className="hidden lg:block p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors duration-150"
             >
               <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
             </button>
             <button
               onClick={onClose}
-              className="lg:hidden p-2 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors duration-150"
+              className="lg:hidden p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors duration-150"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Navigation - Updated colors */}
+        {/* Navigation */}
         <div className="flex flex-col h-full">
           <nav className={`flex-1 p-4 space-y-1 overflow-y-auto ${isCollapsed ? 'px-2' : ''}`}>
             {menuItems.map((item, index) => (
@@ -117,49 +130,56 @@ const BODSidebar: React.FC<BODSidebarProps> = ({
                 key={index}
                 onClick={() => handleNavigation(item.path)}
                 className={`
-                  flex items-center space-x-3 w-full p-3 text-left rounded-lg transition-colors duration-150 group
+                  flex items-center w-full p-3 text-left rounded-lg transition-all duration-200 group
                   ${
                     isActivePath(item.path)
-                      ? "bg-red-50 text-red-700 border-l-2 border-red-600 font-medium"
-                      : "text-stone-700 hover:bg-stone-100 hover:text-stone-900"
+                      ? "bg-gradient-to-r from-blue-50/80 to-indigo-50/50 text-gray-900 border-l-2 border-blue-600 font-medium shadow-sm"
+                      : "text-gray-700 hover:bg-gray-50/80 hover:text-gray-900 hover:shadow-sm"
                   }
                   ${isCollapsed ? 'justify-center relative' : ''}
                 `}
                 title={isCollapsed ? item.name : ''}
               >
-                <div className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 ${
-                  isActivePath(item.path) ? 'from-red-100 to-red-50' : ''
-                } ${isCollapsed ? '' : 'mr-2'}`}>
+                <div className={`p-2 rounded-lg transition-all duration-200 ${
+                  isActivePath(item.path) 
+                    ? 'bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 shadow-sm' 
+                    : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
+                } ${isCollapsed ? '' : 'mr-3'}`}>
                   {React.cloneElement(item.icon, { 
-                    className: `w-4 h-4 ${isActivePath(item.path) ? 'text-red-600 font-bold' : 'text-stone-600'}`
+                    className: `w-4 h-4 ${isActivePath(item.path) ? 'text-blue-700' : 'text-gray-600'}`
                   })}
                 </div>
-                {!isCollapsed && <span className="font-semibold">{item.name}</span>}
+                {!isCollapsed && (
+                  <div className="flex-1">
+                    <span className="font-semibold text-sm">{item.name}</span>
+                    <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
+                  </div>
+                )}
               </button>
             ))}
           </nav>
 
-          {/* User Info Section - Updated colors */}
-          <div className="border-t border-stone-200 bg-stone-50">
+          {/* User Info Section */}
+          <div className="border-t border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/30">
             {!isCollapsed && (
               <div className="p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-gradient-to-br from-stone-200 to-stone-300 rounded-lg shadow-sm">
-                    <User className="w-4 h-4 text-stone-700 font-bold" />
+                  <div className="p-2 bg-gradient-to-br from-blue-200 to-indigo-100 rounded-lg shadow-sm">
+                    <User className="w-4 h-4 text-gray-700" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-stone-900 truncate">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
                       Board Member
                     </p>
-                    <p className="text-xs text-stone-500 truncate">Board of Directors</p>
+                    <p className="text-xs text-gray-500 truncate">Read-Only Access</p>
                   </div>
                 </div>
               </div>
             )}
             {isCollapsed && (
               <div className="p-4 flex justify-center">
-                <div className="p-2 bg-gradient-to-br from-stone-200 to-stone-300 rounded-lg shadow-sm">
-                  <User className="w-4 h-4 text-stone-700 font-bold" />
+                <div className="p-2 bg-gradient-to-br from-blue-200 to-indigo-100 rounded-lg shadow-sm">
+                  <User className="w-4 h-4 text-gray-700" />
                 </div>
               </div>
             )}
@@ -167,10 +187,10 @@ const BODSidebar: React.FC<BODSidebarProps> = ({
         </div>
       </div>
 
-      {/* Mobile Overlay - Updated color */}
+      {/* Mobile Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-stone-900 bg-opacity-70 z-20 lg:hidden"
+          className="fixed inset-0 bg-gray-900 bg-opacity-70 z-20 lg:hidden"
           onClick={onClose}
         />
       )}
