@@ -25,12 +25,12 @@
     "daysAgo": "ရက်အကြာက"
   },
   "sidebar": {
-    "dashboard": "ဒိုင်းဘုတ်",
+    "dashboard": "ပင်မ စာမျက်နှာ",
     "masterData": "မက်စ်တာဒေတာစီမံခန့်ခွဲမှု",
     "branchManagement": "ခွဲစီမံခန့်ခွဲမှု",
     "buildingManagement": "အဆောက်အဦစီမံခန့်ခွဲမှု",
     "levelManagement": "အဆင့်စီမံခန့်ခွဲမှု",
-    "roomManagement": "အခန်းစီမံခန့်ခွဲမှု",
+    "unitManagement": "အခန်းစီမံခန့်ခွဲမှု",
     "billing": "ငွေတောင်းခံလွှာပြင်ဆင်မှု",
     "users": "အသုံးပြုသူစီမံခန့်ခွဲမှု"
   },

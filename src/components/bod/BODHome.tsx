@@ -1,6 +1,6 @@
 /** @format */
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   TrendingUp,
   Users,
@@ -8,217 +8,330 @@ import {
   Building2,
   PieChart,
   BarChart3,
+  LineChart,
+  Loader2,
+  Home,
+  Calendar,
 } from "lucide-react";
+import { dashboardApi, type DashboardMetrics } from "../../api/dashboardApi";
 
 const BODHome: React.FC = () => {
-  // Key Performance Indicators
-  const kpis = [
-    {
-      title: "Total Revenue",
-      value: "$12.8M",
-      change: "+15.2%",
-      trend: "up",
-      icon: <DollarSign className="w-6 h-6 text-green-600" />,
-      description: "Year-to-date total revenue",
-    },
-    {
-      title: "Occupancy Rate",
-      value: "96.5%",
-      change: "+2.3%",
-      trend: "up",
-      icon: <Building2 className="w-6 h-6 text-red-600" />,
-      description: "Current occupancy across all properties",
-    },
-    {
-      title: "Collection Efficiency",
-      value: "94.8%",
-      change: "+1.7%",
-      trend: "up",
-      icon: <TrendingUp className="w-6 h-6 text-purple-600" />,
-      description: "Percentage of billed amount collected",
-    },
-    {
-      title: "Active Tenants",
-      value: "342",
-      change: "+18",
-      trend: "up",
-      icon: <Users className="w-6 h-6 text-orange-600" />,
-      description: "Currently managed tenants",
-    },
-  ];
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Revenue by Category
-  const revenueByCategory = [
-    {
-      category: "Retail",
-      amount: "$6.2M",
-      percentage: 48.4,
-      color: "bg-red-600",
-    },
-    {
-      category: "Food & Beverage",
-      amount: "$3.1M",
-      percentage: 24.2,
-      color: "bg-green-600",
-    },
-    {
-      category: "Entertainment",
-      amount: "$1.8M",
-      percentage: 14.1,
-      color: "bg-purple-600",
-    },
-    {
-      category: "Services",
-      amount: "$1.7M",
-      percentage: 13.3,
-      color: "bg-orange-600",
-    },
-  ];
+  useEffect(() => {
+    fetchDashboardMetrics();
+  }, []);
 
-  // Quarterly Performance
-  const quarterlyData = [
-    { quarter: "Q1", revenue: "$2.8M", occupancy: "92%", profit: "$1.2M" },
-    { quarter: "Q2", revenue: "$3.2M", occupancy: "94%", profit: "$1.4M" },
-    { quarter: "Q3", revenue: "$3.5M", occupancy: "96%", profit: "$1.6M" },
-    { quarter: "Q4", revenue: "$3.3M", occupancy: "97%", profit: "$1.5M" },
-  ];
+  const fetchDashboardMetrics = async () => {
+    try {
+      setLoading(true);
+      const data = await dashboardApi.getMetrics();
+      setMetrics(data);
+    } catch (err) {
+      setError("Failed to load dashboard data");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (amount: number | undefined) => {
+    if (amount === undefined) return "$0.00";
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatPercentage = (value: number | undefined) => {
+    if (value === undefined) return "0%";
+    return `${value.toFixed(1)}%`;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <span className="ml-2 text-lg text-gray-600">Loading dashboard...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-red-600 text-lg mb-2">{error}</div>
+          <button
+            onClick={fetchDashboardMetrics}
+            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all duration-200"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate for pie chart
+  const occupied = metrics?.occupiedShops || 0;
+  const vacant = metrics?.vacantShops || 0;
+  const total = metrics?.totalShops || 1;
+  const occupiedPercent = (occupied / total) * 100;
+  const vacantPercent = (vacant / total) * 100;
 
   return (
-    <div className="p-4 sm:p-8 space-y-6 bg-stone-50 min-h-screen">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-xl shadow-lg p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">Strategic Overview</h2>
-        <p className="text-red-100">
-          Comprehensive financial performance and operational metrics for
-          strategic decision-making
-        </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-slate-800 via-blue-900 to-blue-800 rounded-2xl shadow-xl p-6 text-white border border-blue-700">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Board of Directors Dashboard</h2>
+            <p className="text-blue-100">
+              Strategic overview for high-level decision making
+            </p>
+          </div>
+          <button
+            onClick={fetchDashboardMetrics}
+            className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-200 text-sm backdrop-blur-sm border border-white/20"
+          >
+            Refresh Data
+          </button>
+        </div>
       </div>
 
       {/* Key Performance Indicators */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {kpis.map((kpi, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 hover:shadow-xl transition duration-150"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-medium text-stone-600">{kpi.title}</p>
-                <p className="text-2xl font-bold text-stone-900 mt-1">
-                  {kpi.value}
-                </p>
-              </div>
-              <div className="p-3 bg-red-50 rounded-lg">{kpi.icon}</div>
+        {/* Total Shops */}
+        <div className="bg-white rounded-xl shadow-lg border border-blue-100 p-6 hover:shadow-xl transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Shops</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {metrics?.totalShops || 0}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                {occupied} occupied • {vacant} vacant
+              </p>
             </div>
+            <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+              <Home className="w-6 h-6 text-blue-700" />
+            </div>
+          </div>
+          <div className="flex items-center">
+            <div className="w-full bg-gray-100 rounded-full h-2">
+              <div 
+                className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-blue-700" 
+                style={{ width: `${metrics?.occupancyRate || 0}%` }}
+              ></div>
+            </div>
+            <span className="text-sm text-gray-500 ml-2">{formatPercentage(metrics?.occupancyRate)} occupied</span>
+          </div>
+        </div>
+
+        {/* Occupancy Rate */}
+        <div className="bg-white rounded-xl shadow-lg border border-blue-100 p-6 hover:shadow-xl transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Occupancy Rate</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {formatPercentage(metrics?.occupancyRate)}
+              </p>
+            </div>
+            <div className="p-3 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl border border-indigo-200">
+              <Building2 className="w-6 h-6 text-indigo-700" />
+            </div>
+          </div>
+          <div className="flex items-center">
+            <div className="w-full bg-gray-100 rounded-full h-2">
+              <div 
+                className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-700" 
+                style={{ width: `${metrics?.occupancyRate || 0}%` }}
+              ></div>
+            </div>
+            <span className="text-sm text-gray-500 ml-2">Industry avg: 88%</span>
+          </div>
+        </div>
+
+        {/* Total Revenue */}
+        <div className="bg-white rounded-xl shadow-lg border border-blue-100 p-6 hover:shadow-xl transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total Revenue</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {formatCurrency(metrics?.totalRevenue)}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">Annual 2024</p>
+            </div>
+            <div className="p-3 bg-gradient-to-br from-blue-50 to-teal-50 rounded-xl border border-blue-200">
+              <DollarSign className="w-6 h-6 text-teal-700" />
+            </div>
+          </div>
+          <div className="flex items-center">
+            <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+            <span className="text-sm text-green-600 font-medium">+5.2% from last quarter</span>
+          </div>
+        </div>
+
+        {/* Rent Collection Rate */}
+        <div className="bg-white rounded-xl shadow-lg border border-blue-100 p-6 hover:shadow-xl transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Rent Collection Rate</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {formatPercentage(metrics?.collectionRate)}
+              </p>
+            </div>
+            <div className="p-3 bg-gradient-to-br from-green-50 to-teal-50 rounded-xl border border-green-200">
+              <TrendingUp className="w-6 h-6 text-green-700" />
+            </div>
+          </div>
+          <div className="flex items-center">
+            <div className="w-full bg-gray-100 rounded-full h-2">
+              <div 
+                className="h-2 rounded-full bg-gradient-to-r from-green-500 to-green-700" 
+                style={{ width: `${metrics?.collectionRate || 0}%` }}
+              ></div>
+            </div>
+            <span className="text-sm text-gray-500 ml-2">Target: 95%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Pie Chart for Total Shops (Vacant & Occupied) */}
+      <div className="bg-white rounded-xl shadow-lg border border-blue-100 p-6 hover:shadow-xl transition-shadow duration-300">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Total Shops Distribution</h3>
+            <p className="text-sm text-gray-600 mt-1">Vacant vs Occupied Units</p>
+          </div>
+          <div className="p-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+            <PieChart className="w-5 h-5 text-blue-700" />
+          </div>
+        </div>
+        
+        <div className="flex flex-col lg:flex-row items-center lg:items-start space-y-6 lg:space-y-0 lg:space-x-6">
+          {/* Pie Chart Visualization */}
+          <div className="relative w-48 h-48">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-gray-900">{total}</p>
+                <p className="text-sm text-gray-600">Total Shops</p>
+              </div>
+            </div>
+            <div className="w-full h-full">
+              {/* Occupied - Percentage */}
+              <div 
+                className="absolute w-full h-full rounded-full border-8 border-blue-500 border-r-transparent"
+                style={{ 
+                  clipPath: 'polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 50% 100%)',
+                  transform: `rotate(${occupiedPercent * 3.6}deg)`
+                }}
+              ></div>
+              {/* Vacant - Percentage */}
+              <div 
+                className="absolute w-full h-full rounded-full border-8 border-gray-300 border-r-transparent"
+                style={{ 
+                  clipPath: 'polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 50% 100%)'
+                }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex-1 space-y-4">
+            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors duration-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 rounded-full bg-gradient-to-r from-blue-500 to-blue-700"></div>
+                <span className="font-medium text-gray-900">Occupied Shops</span>
+              </div>
+              <div className="text-right">
+                <p className="font-bold text-gray-900">{occupied}</p>
+                <p className="text-sm text-gray-600">{formatPercentage(occupiedPercent)} of total</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-4 h-4 rounded-full bg-gradient-to-r from-gray-300 to-gray-500"></div>
+                <span className="font-medium text-gray-900">Vacant Shops</span>
+              </div>
+              <div className="text-right">
+                <p className="font-bold text-gray-900">{vacant}</p>
+                <p className="text-sm text-gray-600">{formatPercentage(vacantPercent)} of total</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Utility Efficiency */}
+      <div className="bg-white rounded-xl shadow-lg border border-blue-100 p-6 hover:shadow-xl transition-shadow duration-300">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Utility Efficiency</h3>
+            <p className="text-sm text-gray-600 mt-1">Cost per sq ft optimization</p>
+          </div>
+          <div className="p-2 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+            <LineChart className="w-5 h-5 text-blue-700" />
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-gray-900">Current Cost per sq ft</p>
+              <p className="text-2xl font-bold text-blue-700">${metrics?.utilityCostPerSqFt?.toFixed(2) || "0.00"}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-600">Year-over-year change</p>
+              <p className="text-lg font-bold text-green-600">↓ {formatPercentage(metrics?.utilityEfficiencyImprovement)}</p>
+            </div>
+          </div>
+
+          <div className="flex items-end space-x-4 h-32">
+            {[
+              { year: "2021", cost: 4.80, color: "bg-gradient-to-t from-gray-300 to-gray-400" },
+              { year: "2022", cost: 4.50, color: "bg-gradient-to-t from-blue-300 to-blue-400" },
+              { year: "2023", cost: 4.20, color: "bg-gradient-to-t from-blue-400 to-blue-500" },
+              { year: "2024", cost: metrics?.utilityCostPerSqFt || 4.00, color: "bg-gradient-to-t from-blue-500 to-blue-700" },
+            ].map((item, index) => (
+              <div key={index} className="flex-1 flex flex-col items-center">
+                <div className="text-center mb-2">
+                  <p className="text-xs font-bold text-gray-900">${item.cost.toFixed(2)}</p>
+                  <p className="text-xs text-gray-500">{item.year}</p>
+                </div>
+                <div
+                  className={`w-3/4 ${item.color} rounded-t-lg transition-all duration-300 hover:opacity-90`}
+                  style={{ height: `${(item.cost / 5) * 100}%` }}
+                ></div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="pt-4 border-t border-gray-100">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-stone-500">{kpi.description}</span>
-              <span
-                className={`text-sm font-medium ${
-                  kpi.trend === "up" ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {kpi.change}
-              </span>
+              <div className="text-sm text-gray-600">
+                Cumulative savings: <span className="font-bold text-green-700">${metrics?.utilitySavings?.toFixed(1) || "0"}M</span>
+              </div>
+              <div className="text-sm text-gray-600">
+                Industry avg: $4.80/sq ft
+              </div>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Charts and Metrics Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Revenue by Category */}
-        <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-stone-900">
-              Revenue by Category
-            </h3>
-            <PieChart className="w-5 h-5 text-red-600" />
-          </div>
-          <div className="space-y-4">
-            {revenueByCategory.map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-stone-50 rounded-lg hover:bg-red-50/30 transition duration-150">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-3 h-3 rounded-full ${item.color}`}></div>
-                  <span className="text-sm font-bold text-stone-700">
-                    {item.category}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-stone-900">
-                    {item.amount}
-                  </p>
-                  <p className="text-xs text-stone-500">{item.percentage}%</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Quarterly Performance */}
-        <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-stone-900">
-              Quarterly Performance
-            </h3>
-            <BarChart3 className="w-5 h-5 text-red-600" />
-          </div>
-          <div className="space-y-4">
-            {quarterlyData.map((quarter, index) => (
-              <div
-                key={index}
-                className="flex justify-between items-center p-4 bg-stone-50 rounded-lg hover:bg-red-50/30 transition duration-150"
-              >
-                <div>
-                  <p className="font-bold text-stone-900">
-                    {quarter.quarter}
-                  </p>
-                </div>
-                <div className="text-right space-y-1">
-                  <p className="text-sm text-stone-600">
-                    Revenue:{" "}
-                    <span className="font-bold text-green-600">{quarter.revenue}</span>
-                  </p>
-                  <p className="text-sm text-stone-600">
-                    Occupancy:{" "}
-                    <span className="font-bold text-red-600">{quarter.occupancy}</span>
-                  </p>
-                  <p className="text-sm text-stone-600">
-                    Profit:{" "}
-                    <span className="font-bold text-stone-900">{quarter.profit}</span>
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
-      {/* Strategic Highlights */}
-      <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
-        <h3 className="text-xl font-bold text-stone-900 mb-4 pb-3 border-b border-stone-200">
-          Strategic Highlights
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="text-center p-5 bg-red-50 rounded-lg border border-red-100">
-            <Building2 className="w-8 h-8 text-red-600 mx-auto mb-2" />
-            <h4 className="font-bold text-stone-900">Portfolio Growth</h4>
-            <p className="text-sm text-stone-600">
-              5 new properties acquired this year
-            </p>
-          </div>
-          <div className="text-center p-5 bg-green-50 rounded-lg border border-green-100">
-            <TrendingUp className="w-8 h-8 text-green-600 mx-auto mb-2" />
-            <h4 className="font-bold text-stone-900">Revenue Growth</h4>
-            <p className="text-sm text-stone-600">
-              15.2% increase year-over-year
-            </p>
-          </div>
-          <div className="text-center p-5 bg-purple-50 rounded-lg border border-purple-100">
-            <Users className="w-8 h-8 text-purple-600 mx-auto mb-2" />
-            <h4 className="font-bold text-stone-900">Tenant Satisfaction</h4>
-            <p className="text-sm text-stone-600">92% tenant retention rate</p>
-          </div>
-        </div>
+      {/* Data Last Updated */}
+      <div className="text-center text-sm text-gray-500 pt-4 border-t border-gray-200">
+        <Calendar className="w-4 h-4 inline mr-2" />
+        Data last updated: {new Date().toLocaleString('en-US', { 
+          dateStyle: 'medium', 
+          timeStyle: 'short' 
+        })}
       </div>
     </div>
   );
