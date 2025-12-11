@@ -2,11 +2,11 @@
 import { useEffect, useRef, useState } from "react";
 import SockJS from "sockjs-client";
 import { Client, type Message } from "@stomp/stompjs";
-import type { InvoiceDTO } from "../types";
+import type { InvoiceSummaryDTO } from "../api/InvoiceAPI";
 
 export function useInvoicesWebSocket(jwtToken: string) {
   const stompClient = useRef<Client | null>(null);
-  const [invoices, setInvoices] = useState<InvoiceDTO[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceSummaryDTO[]>([]);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export function useInvoicesWebSocket(jwtToken: string) {
 
         // Subscribe to invoice notifications for managers
         client.subscribe("/topic/manager/invoices", (msg: Message) => {
-          const invoice: InvoiceDTO = JSON.parse(msg.body);
+          const invoice: InvoiceSummaryDTO = JSON.parse(msg.body);
 
           // Avoid duplicates (check by invoice id)
           setInvoices((prev) => {
