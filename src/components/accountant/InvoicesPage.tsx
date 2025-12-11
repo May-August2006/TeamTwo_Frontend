@@ -3,8 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useInvoicesWebSocket } from "../../hooks/useInvoicesWebSocket";
 import toast, { Toaster } from "react-hot-toast";
-import type { InvoiceDTO } from "../../types";
-import { invoiceApi } from "../../api/InvoiceAPI";
+
+import { invoiceApi, type InvoiceSummaryDTO } from "../../api/InvoiceAPI";
 
 export default function InvoicesPage() {
   const jwtToken = localStorage.getItem("accessToken") || "";
@@ -46,7 +46,7 @@ export default function InvoicesPage() {
   }, [invoices]);
 
   /** View PDF in a new window using API */
-  const viewPdf = async (invoice: InvoiceDTO) => {
+  const viewPdf = async (invoice: InvoiceSummaryDTO) => {
     if (!invoice.id) return toast.error("PDF not available");
 
     const apiUrl = `/api/invoices/download/${invoice.id}`;
@@ -69,7 +69,7 @@ export default function InvoicesPage() {
   };
 
   /** Download PDF using API */
-  const downloadPdf = async (invoice: InvoiceDTO) => {
+  const downloadPdf = async (invoice: InvoiceSummaryDTO) => {
     if (!invoice.id) return toast.error("PDF not available");
 
     const apiUrl = `/api/invoices/download/${invoice.id}`;
@@ -97,7 +97,9 @@ export default function InvoicesPage() {
   if (loading) {
     return (
       <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
-        <div className="text-xl font-medium text-stone-700 animate-pulse">Loading invoices...</div>
+        <div className="text-xl font-medium text-stone-700 animate-pulse">
+          Loading invoices...
+        </div>
       </div>
     );
   }
@@ -106,7 +108,9 @@ export default function InvoicesPage() {
     <div className="p-4 sm:p-8 min-h-screen bg-stone-50">
       <Toaster position="top-right" />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">Invoices</h2>
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
+          Invoices
+        </h2>
         <p className="text-sm text-stone-500">
           WebSocket: {connected ? "🟢 Connected" : "🔴 Disconnected"}
         </p>
@@ -152,8 +156,12 @@ export default function InvoicesPage() {
         {invoices.length === 0 && (
           <div className="p-12 text-center text-stone-500 bg-stone-50 rounded-b-xl">
             <div className="text-5xl mb-3">📄</div>
-            <div className="text-xl font-semibold text-stone-700">No Invoices Found</div>
-            <p className="text-sm mt-1">Generated invoices will appear here automatically.</p>
+            <div className="text-xl font-semibold text-stone-700">
+              No Invoices Found
+            </div>
+            <p className="text-sm mt-1">
+              Generated invoices will appear here automatically.
+            </p>
           </div>
         )}
       </div>
