@@ -64,12 +64,7 @@ const Reports: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-800 via-blue-900 to-blue-800 rounded-2xl shadow-xl p-6 text-white border border-blue-700">
-        <h2 className="text-2xl font-bold mb-2">Reports Dashboard</h2>
-        <p className="text-blue-100">
-          Access and download quarterly and yearly reports
-        </p>
-      </div>
+
 
       {/* Report Categories */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

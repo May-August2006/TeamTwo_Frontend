@@ -99,22 +99,7 @@ const FinancialSummary: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-800 via-blue-900 to-blue-800 rounded-2xl shadow-xl p-6 text-white border border-blue-700">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold mb-2">Financial Summary</h2>
-            <p className="text-blue-100">
-              Quarterly and yearly financial overview for strategic assessment
-            </p>
-          </div>
-          <button
-            onClick={fetchDashboardMetrics}
-            className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-200 text-sm backdrop-blur-sm border border-white/20"
-          >
-            Refresh Data
-          </button>
-        </div>
-      </div>
+
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

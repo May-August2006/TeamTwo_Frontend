@@ -1,4 +1,4 @@
-// api/dashboardApi.ts - FIXED VERSION
+// api/dashboardApi.ts - UPDATED VERSION
 import API from "./api";
 
 export interface DashboardMetrics {
@@ -9,6 +9,48 @@ export interface DashboardMetrics {
   revenueThisMonth?: number;
   revenueThisQuarter?: number;
   revenueThisYear?: number;
+}
+
+export interface BuildingOccupancyDTO {
+  buildingId: number;
+  buildingName: string;
+  branchName: string;
+  totalUnits: number;
+  occupiedUnits: number;
+  vacantUnits: number;
+  occupancyRate: number;
+  status: 'EXCELLENT' | 'GOOD' | 'NEEDS_ATTENTION';
+}
+
+export interface OccupancySummary {
+  totalBuildings: number;
+  totalUnits: number;
+  occupiedUnits: number;
+  vacantUnits: number;
+  overallOccupancyRate: number;
+  buildingStats: BuildingOccupancyDTO[];
+}
+
+export interface PerformanceMetricsDTO {
+  rentCollectionRate?: number;
+  rentCollectionChange?: number;
+  utilityEfficiency?: number;
+  utilityEfficiencyChange?: number;
+  buildingUtilityData?: Array<{
+    buildingName: string;
+    cost2023: number;
+    cost2024: number;
+    improvement: number;  // Changed from string to number
+    status: 'EXCELLENT' | 'GOOD' | 'NEEDS_ATTENTION';
+  }>;
+  utilityTrendData?: Array<{
+    year: string;
+    cost: number;
+    label: string;
+  }>;
+  cumulativeSavings?: number;
+  industryAverageUtility?: number;
+  targetCollectionRate?: number;
 }
 
 // Helper to convert BigDecimal to number
@@ -43,6 +85,38 @@ export const dashboardApi = {
           revenueThisYear: toNumber(data.totalRevenue) // For now, using total as yearly
         };
       }),
+
+      getPerformanceMetrics: (): Promise<PerformanceMetricsDTO> =>
+    API.get('/api/dashboard/performance-metrics')
+      .then(response => {
+        console.log('Performance metrics API response:', response.data);
+        return response.data;
+      })
+      .catch(error => {
+        console.error('Error fetching performance metrics:', error);
+        throw error;
+      }),
+  
+
+  // Get occupancy summary with building details
+  getOccupancySummary: (): Promise<OccupancySummary> =>
+    API.get('/api/occupancy/summary')
+      .then(response => {
+        const data = response.data;
+        return {
+          totalBuildings: data.totalBuildings || 0,
+          totalUnits: data.totalUnits || 0,
+          occupiedUnits: data.occupiedUnits || 0,
+          vacantUnits: data.vacantUnits || 0,
+          overallOccupancyRate: data.overallOccupancyRate || 0,
+          buildingStats: data.buildingStats || []
+        };
+      }),
+
+  // Get building occupancy stats
+  getBuildingOccupancyStats: (): Promise<BuildingOccupancyDTO[]> =>
+    API.get('/api/occupancy/building-stats')
+      .then(response => response.data),
 
   // Get revenue summary with optional period filter
   getRevenueSummary: (period?: string): Promise<DashboardMetrics> => {
