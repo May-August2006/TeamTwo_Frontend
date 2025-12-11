@@ -1,3 +1,5 @@
+/** @format */
+
 // types/utility.ts
 export interface UtilityCalculationDTO {
   contractId: number | null;
@@ -41,31 +43,31 @@ export interface UtilityInvoiceRequest {
 
 // NEW: Add comprehensive utility billing DTO
 export interface UtilityBillingDTO {
+  taxAmount: number;
   grandTotal: number;
   unitId: number;
   unitNumber: string;
   unitSpace: number;
   unitType: string;
-  
+
   contractId?: number;
   contractNumber?: string;
   tenantName?: string;
-  
+
   buildingId?: number;
   buildingName?: string;
   totalLeasableArea?: number;
   totalCAMCosts?: number;
-  
+
   periodStart: string;
   periodEnd: string;
-  
+
   utilityFees: UtilityFeeDetail[];
   totalAmount: number;
-
 }
 
 export interface UtilityFeeDetail {
-  utilityTypeId: number;
+  utilityTypeId?: number;
   utilityName: string;
   calculationMethod: string;
   ratePerUnit: number | null;
@@ -82,4 +84,7 @@ export interface UtilityBillRequest {
   periodEnd: string;
   dueDate?: string;
   notes?: string;
+  utilityFees?: UtilityFeeDetail[]; // <-- required for backend calculation
+  taxAmount?: number; // optional, but recommended
+  grandTotal?: number; // optional, but recommended
 }

@@ -244,7 +244,7 @@ export function LateFeeManagementPage() {
                 <th className="p-3">Room</th>
                 <th className="p-3">Overdue Days</th>
                 <th className="p-3">Balance</th>
-                <th className="p-3">PDF File</th>
+                <th className="p-3">Late Fee</th>
               </tr>
             </thead>
 
