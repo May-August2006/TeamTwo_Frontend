@@ -102,3 +102,23 @@ export interface DashboardDataResponse {
   }>;
   strategicHighlights: StrategicHighlight[];
 }
+
+export interface BuildingOccupancyDTO {
+  buildingId: number;
+  buildingName: string;
+  branchName: string;
+  totalUnits: number;
+  occupiedUnits: number;
+  vacantUnits: number;
+  occupancyRate: number;
+  status: 'EXCELLENT' | 'GOOD' | 'NEEDS_ATTENTION';
+}
+
+export interface OccupancySummary {
+  totalBuildings: number;
+  totalUnits: number;
+  occupiedUnits: number;
+  vacantUnits: number;
+  overallOccupancyRate: number;
+  buildingStats: BuildingOccupancyDTO[];
+}

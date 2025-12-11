@@ -80,14 +80,14 @@ const BODSidebar: React.FC<BODSidebarProps> = ({
       {/* Fixed Sidebar */}
       <div
         className={`
-          fixed top-16 left-0 bottom-0 z-30 bg-white shadow-lg transform transition-all duration-300 ease-in-out border-r border-gray-100
+          fixed top-16 left-0 bottom-0 z-30 bg-white shadow-lg transform transition-all duration-300 ease-in-out border-r border-blue-100
           lg:translate-x-0
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
           ${isCollapsed ? "w-20" : "w-64"}
         `}
       >
         {/* Logo Section */}
-        <div className={`flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/30 ${isCollapsed ? 'px-3' : 'px-6'}`}>
+        <div className={`flex items-center justify-between p-4 border-b border-blue-100 bg-gradient-to-r from-blue-50 to-blue-100/30 ${isCollapsed ? 'px-3' : 'px-6'}`}>
           {!isCollapsed && (
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg shadow-md">
@@ -109,13 +109,13 @@ const BODSidebar: React.FC<BODSidebarProps> = ({
           <div className="flex items-center space-x-2">
             <button
               onClick={onToggleCollapse}
-              className="hidden lg:block p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors duration-150"
+              className="hidden lg:block p-2 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors duration-150"
             >
               <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
             </button>
             <button
               onClick={onClose}
-              className="lg:hidden p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors duration-150"
+              className="lg:hidden p-2 rounded-lg text-blue-600 hover:text-blue-800 hover:bg-blue-50 transition-colors duration-150"
             >
               <X className="w-5 h-5" />
             </button>
@@ -133,8 +133,8 @@ const BODSidebar: React.FC<BODSidebarProps> = ({
                   flex items-center w-full p-3 text-left rounded-lg transition-all duration-200 group
                   ${
                     isActivePath(item.path)
-                      ? "bg-gradient-to-r from-blue-50/80 to-indigo-50/50 text-gray-900 border-l-2 border-blue-600 font-medium shadow-sm"
-                      : "text-gray-700 hover:bg-gray-50/80 hover:text-gray-900 hover:shadow-sm"
+                      ? "bg-gradient-to-r from-blue-50 to-blue-100 text-gray-900 border-l-2 border-blue-600 font-medium shadow-sm"
+                      : "text-gray-700 hover:bg-blue-50 hover:text-gray-900 hover:shadow-sm"
                   }
                   ${isCollapsed ? 'justify-center relative' : ''}
                 `}
@@ -143,10 +143,10 @@ const BODSidebar: React.FC<BODSidebarProps> = ({
                 <div className={`p-2 rounded-lg transition-all duration-200 ${
                   isActivePath(item.path) 
                     ? 'bg-gradient-to-r from-blue-100 to-blue-50 text-blue-700 shadow-sm' 
-                    : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
+                    : 'bg-blue-50 text-blue-600 group-hover:bg-blue-100'
                 } ${isCollapsed ? '' : 'mr-3'}`}>
                   {React.cloneElement(item.icon, { 
-                    className: `w-4 h-4 ${isActivePath(item.path) ? 'text-blue-700' : 'text-gray-600'}`
+                    className: `w-4 h-4 ${isActivePath(item.path) ? 'text-blue-700' : 'text-blue-600'}`
                   })}
                 </div>
                 {!isCollapsed && (
@@ -160,11 +160,11 @@ const BODSidebar: React.FC<BODSidebarProps> = ({
           </nav>
 
           {/* User Info Section */}
-          <div className="border-t border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50/30">
+          <div className="border-t border-blue-100 bg-gradient-to-r from-blue-50 to-blue-100/30">
             {!isCollapsed && (
               <div className="p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-gradient-to-br from-blue-200 to-indigo-100 rounded-lg shadow-sm">
+                  <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg shadow-sm">
                     <User className="w-4 h-4 text-gray-700" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -178,7 +178,7 @@ const BODSidebar: React.FC<BODSidebarProps> = ({
             )}
             {isCollapsed && (
               <div className="p-4 flex justify-center">
-                <div className="p-2 bg-gradient-to-br from-blue-200 to-indigo-100 rounded-lg shadow-sm">
+                <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg shadow-sm">
                   <User className="w-4 h-4 text-gray-700" />
                 </div>
               </div>
