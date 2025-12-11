@@ -1,14 +1,15 @@
 /** @format */
 
-import React, { useState } from "react";
-import AppBar from "../../components/accountant/AppBar";
-import Sidebar from "../../components/accountant/Sidebar";
-import OverviewSection from "../../components/accountant/OverviewSection";
-import SectionPlaceholder from "../../components/accountant/SectionPlaceholder";
-import PaymentListPage from "../../components/accountant/PaymentListPage";
-import PaymentForm from "../../components/accountant/PaymentForm";
-import PaymentAuditLog from "../../components/accountant/PaymentAuditLog";
-import DailyCollectionReport from "../../components/accountant/DailyCollectionReport";
+import React, { useState } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import AppBar from '../../components/accountant/AppBar';
+import Sidebar from '../../components/accountant/Sidebar';
+import OverviewSection from '../../components/accountant/OverviewSection';
+import SectionPlaceholder from '../../components/accountant/SectionPlaceholder';
+import PaymentListPage from '../../components/accountant/PaymentListPage';
+import PaymentForm from '../../components/accountant/PaymentForm';
+import PaymentAuditLog from '../../components/accountant/PaymentAuditLog';
+import { ReportsPage } from '../../components/accountant/ReportsPage'; // Add this import
 
 // Import Billing & Utilities components
 
@@ -62,9 +63,9 @@ const AccountantDashboard: React.FC = () => {
         return <PaymentListPage />;
       case "invoices":
         return <SectionPlaceholder title="Invoices & Receipts" />;
-      case "reports":
-        return <DailyCollectionReport />;
-      case "audit":
+      case 'reports':
+        return <ReportsPage />; // Change from DailyCollectionReport to ReportsPage
+      case 'audit':
         return <PaymentAuditLog />;
 
       // Billing & Utilities Sections

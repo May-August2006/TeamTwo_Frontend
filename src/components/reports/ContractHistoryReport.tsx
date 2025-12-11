@@ -1,4 +1,4 @@
-// components/reports/ContractHistoryReport.tsx - UPDATED
+// components/reports/ContractHistoryReport.tsx - UPDATED WITH EXCEL SUPPORT
 import React, { useState, useEffect } from 'react';
 import { contractHistoryApi } from '../../api/ContractHistoryAPI';
 import { tenantApi } from '../../api/TenantAPI';
@@ -27,6 +27,7 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
   const [filteredHistory, setFilteredHistory] = useState<ContractHistoryDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [generatingExcel, setGeneratingExcel] = useState(false); // NEW: Excel loading state
   const [error, setError] = useState<string | null>(null);
   
   // Filter states
@@ -133,17 +134,18 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
     loadContractHistory();
   };
 
+  // Generate PDF Report
   const generatePdfReport = async () => {
     try {
       setGeneratingPdf(true);
 
       // Check if we have filtered data
-    if (filteredHistory.length === 0) {
-      setError('No data to export');
-      return;
-    }
+      if (filteredHistory.length === 0) {
+        setError('No data to export');
+        return;
+      }
       
-      // Prepare parameters for PDF generation - NOW INCLUDES ACTION TYPE
+      // Prepare parameters for PDF generation
       const pdfParams: any = { ...filters };
       
       // Add action type to PDF parameters if not "ALL"
@@ -188,8 +190,130 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
     }
   };
 
-  // ... rest of the component remains the same (getActionTypeBadge, formatDate, etc.)
-  // Only remove any date range related code
+  // NEW: Generate Excel Report
+  const generateExcelReport = async () => {
+    try {
+      setGeneratingExcel(true);
+
+      // Check if we have filtered data
+      if (filteredHistory.length === 0) {
+        setError('No data to export');
+        return;
+      }
+      
+      // Prepare parameters for Excel generation
+      const excelParams: any = { 
+        ...filters,
+        format: 'excel' // Add format parameter
+      };
+      
+      // Add action type to Excel parameters if not "ALL"
+      if (selectedActionType !== 'ALL') {
+        excelParams.actionType = selectedActionType;
+      }
+
+      // Generate Excel with current filters
+      const blob = await contractHistoryApi.generateReport(excelParams);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Generate filename based on filters
+      let filename = 'contract-history-report';
+      if (filters.tenantId) {
+        const tenant = tenants.find(t => t.id === filters.tenantId);
+        filename += `-tenant-${tenant?.tenantName || filters.tenantId}`;
+      } else if (filters.contractId) {
+        const contract = contracts.find(c => c.id === filters.contractId);
+        filename += `-contract-${contract?.contractNumber || filters.contractId}`;
+      }
+      
+      if (selectedActionType !== 'ALL') {
+        filename += `-${selectedActionType.toLowerCase()}`;
+      }
+      
+      filename += '.xlsx';
+      
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error generating Excel report:', err);
+      setError('Failed to generate Excel report. Please try again.');
+    } finally {
+      setGeneratingExcel(false);
+    }
+  };
+
+  // NEW: Combined export function that shows options
+  const handleExportReport = () => {
+    if (filteredHistory.length === 0) {
+      setError('No data to export');
+      return;
+    }
+
+    // Show export options modal or implement a dropdown
+    // For simplicity, we'll create a simple dropdown UI
+    return (
+      <div className="relative">
+        <Button
+          variant="primary"
+          onClick={generatePdfReport}
+          disabled={generatingPdf || generatingExcel || filteredHistory.length === 0}
+          className="flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Export Report
+        </Button>
+        <div className="absolute top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10 hidden hover:block group-hover:block">
+          <button
+            onClick={generatePdfReport}
+            disabled={generatingPdf}
+            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          >
+            {generatingPdf ? (
+              <>
+                <LoadingSpinner size="sm" />
+                Generating PDF...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export as PDF
+              </>
+            )}
+          </button>
+          <button
+            onClick={generateExcelReport}
+            disabled={generatingExcel}
+            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+          >
+            {generatingExcel ? (
+              <>
+                <LoadingSpinner size="sm" />
+                Generating Excel...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export as Excel
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   const getActionTypeBadge = (actionType: string) => {
     const config = {
@@ -238,7 +362,7 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
 
   return (
     <div className="space-y-6">
-      {/* Header - Same as before */}
+      {/* Header - UPDATED with Excel button */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
@@ -271,22 +395,61 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
             >
               Clear Filters
             </Button>
-            <Button
-              variant="primary"
-              onClick={generatePdfReport}
-              loading={generatingPdf}
-              disabled={generatingPdf || history.length === 0}
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Export PDF Report
-            </Button>
+            
+            {/* Export Dropdown */}
+            <div className="relative group">
+              <Button
+                variant="primary"
+                disabled={generatingPdf || generatingExcel || history.length === 0}
+                className="flex items-center gap-2"
+              >
+                {generatingPdf || generatingExcel ? (
+                  <>
+                    <LoadingSpinner size="sm" />
+                    {generatingPdf ? 'Generating PDF...' : 'Generating Excel...'}
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export Report
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </>
+                )}
+              </Button>
+              
+              <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                <button
+                  onClick={generatePdfReport}
+                  disabled={generatingPdf}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Export as PDF
+                </button>
+                <button
+                  onClick={generateExcelReport}
+                  disabled={generatingExcel}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Export as Excel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Filters - REMOVED DATE RANGE, KEPT ACTION TYPE */}
+      {/* ... (filters section remains exactly the same) */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Filter History</h3>
         
@@ -362,7 +525,24 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
           </div>
         </div>
 
-       
+        {/* Search Box */}
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Search History
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by contract, tenant, room, action, or description..."
+              className="w-full border border-gray-300 rounded-md pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
 
         {/* Active Filters Display */}
         {hasActiveFilters && (
@@ -402,7 +582,6 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
         )}
       </div>
 
-      {/* ... rest of the component (error display, results summary, table) remains the same */}
       {/* Error Display */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -415,7 +594,7 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
         </div>
       )}
 
-      {/* Results Summary */}
+      {/* Results Summary - UPDATED with Excel button */}
       <div className="bg-white p-4 rounded-lg border border-gray-200">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="text-sm text-gray-600">
@@ -424,20 +603,39 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
           </div>
           
           {filteredHistory.length > 0 && (
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={generatePdfReport}
-              loading={generatingPdf}
-              disabled={generatingPdf}
-            >
-              Export PDF
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={generateExcelReport}
+                loading={generatingExcel}
+                disabled={generatingExcel || generatingPdf}
+                className="flex items-center gap-2"
+              >
+                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Excel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={generatePdfReport}
+                loading={generatingPdf}
+                disabled={generatingPdf || generatingExcel}
+                className="flex items-center gap-2"
+              >
+                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                PDF
+              </Button>
+            </div>
           )}
         </div>
       </div>
 
-      {/* History Table - This remains exactly the same */}
+      {/* History Table */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {filteredHistory.length === 0 ? (
           <div className="text-center py-12">
@@ -522,7 +720,6 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
                       <div className="text-sm text-gray-900 max-w-md">
                         {record.description}
                       </div>
-                      {/* Show changes if available */}
                       {(record.oldValues || record.newValues) && (
                         <details className="mt-2 text-xs">
                           <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
