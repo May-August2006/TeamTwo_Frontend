@@ -118,6 +118,26 @@ export const dashboardApi = {
     API.get('/api/occupancy/building-stats')
       .then(response => response.data),
 
+      getFinancialMetrics: (): Promise<DashboardMetrics> =>
+        API.get('/api/dashboard/metrics-full')
+            .then(response => {
+                const data = response.data;
+                return {
+                    totalRevenue: toNumber(data.totalRevenue),
+                    totalExpenses: toNumber(data.totalExpenses),
+                    netProfit: toNumber(data.netProfit),
+                    profitMargin: toNumber(data.profitMargin),
+                    occupancyRate: toNumber(data.occupancyRate),
+                    collectionEfficiency: toNumber(data.collectionEfficiency),
+                    totalUnits: data.totalUnits || 0,
+                    occupiedUnits: data.occupiedUnits || 0,
+                    activeTenants: data.activeTenants || 0,
+                    activeContracts: data.activeContracts || 0,
+                    // Calculate vacant units
+                    vacantUnits: (data.totalUnits || 0) - (data.occupiedUnits || 0)
+                };
+            }),
+
   // Get revenue summary with optional period filter
   getRevenueSummary: (period?: string): Promise<DashboardMetrics> => {
     let endpoint = '/api/dashboard/revenue/current-month';
