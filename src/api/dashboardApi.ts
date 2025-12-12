@@ -2,6 +2,7 @@
 import API from "./api";
 
 export interface DashboardMetrics {
+  totalExpenses: number;
   totalRevenue: number;
   occupancyRate: number;
   collectionEfficiency: number;
