@@ -2,32 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
-  Building2, 
   Calculator, 
-  Send, 
-  Zap, 
-  Battery, 
   Home,
   PieChart,
-  Users,
   CheckCircle,
   AlertCircle,
   RefreshCw,
   Clock,
-  DollarSign,
   History,
   Save,
-  Calendar,
-  Eye,
   Trash2,
   Download,
-  Printer
 } from 'lucide-react';
 import { buildingApi } from '../../api/BuildingAPI';
-import { utilityApi } from '../../api/UtilityAPI';
 import { contractApi } from '../../api/ContractAPI';
 import type { Building } from '../../types';
-import type { UtilityBillingDTO, UtilityBillRequest } from '../../types/utility';
+import type { UtilityBillingDTO } from '../../types/utility';
+import { expenseApi, type CreateExpenseRequest } from '../../api/ExpenseAPI';
 
 interface UnitInfo {
   id: number;
@@ -93,10 +84,8 @@ const BuildingUtilityInvoicePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [periodStart, setPeriodStart] = useState<string>('');
   const [periodEnd, setPeriodEnd] = useState<string>('');
-  const [dueDate, setDueDate] = useState<string>('');
   const [calculations, setCalculations] = useState<Map<number, UtilityBillingDTO>>(new Map());
   const [camSummary, setCamSummary] = useState<CAMSummary | null>(null);
-  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
   const [showCAMPreview, setShowCAMPreview] = useState(false);
@@ -112,17 +101,15 @@ const BuildingUtilityInvoicePage: React.FC = () => {
   // Load expenses from localStorage on component mount
   useEffect(() => {
     loadBuildings();
-    loadExpensesFromStorage();
+    loadExpensesFromBackend();
     
     // Set default dates for current month
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    const due = new Date(today.getFullYear(), today.getMonth() + 1, 15);
     
     setPeriodStart(firstDay.toISOString().split('T')[0]);
     setPeriodEnd(lastDay.toISOString().split('T')[0]);
-    setDueDate(due.toISOString().split('T')[0]);
   }, []);
 
   const loadBuildings = async () => {
@@ -415,8 +402,8 @@ const BuildingUtilityInvoicePage: React.FC = () => {
     }
   };
 
-  // Save Mall Owner Expense to localStorage
-  const saveMallOwnerExpense = () => {
+  // Save Mall Owner Expense to backend
+  const saveMallOwnerExpense = async () => {
     if (!selectedBuildingId || !camSummary) {
       setError('Please calculate CAM distribution first');
       return;
@@ -428,34 +415,47 @@ const BuildingUtilityInvoicePage: React.FC = () => {
     }
     
     try {
-      const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
-      
-      // Calculate mall owner's share for each component
-      const costPerSqFt = camSummary.totalCAMCosts / camSummary.totalLeasableArea;
+      // Calculate total mall owner area
       const totalMallOwnerArea = camSummary.totalVacantArea + camSummary.unallocatedArea;
       
-      const newExpense: MallOwnerExpense = {
-        id: `expense_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      // Get selected building
+      const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
+      if (!selectedBuilding) {
+        setError('Selected building not found');
+        return;
+      }
+      
+      // Calculate shares based on mall owner area
+      const generatorShare = totalMallOwnerArea * ((selectedBuilding.generatorFee || 0) / camSummary.totalLeasableArea);
+      const transformerShare = totalMallOwnerArea * ((selectedBuilding.transformerFee || 0) / camSummary.totalLeasableArea);
+      const otherCAMShare = totalMallOwnerArea * (otherCAMCosts / camSummary.totalLeasableArea);
+      
+      const request: CreateExpenseRequest = {
         buildingId: selectedBuildingId,
-        buildingName: selectedBuilding?.buildingName || 'Unknown Building',
         periodStart,
         periodEnd,
-        ownerCAM: camSummary.ownerCAM,
-        generatorShare: totalMallOwnerArea * ((selectedBuilding?.generatorFee || 0) / camSummary.totalLeasableArea),
-        transformerShare: totalMallOwnerArea * ((selectedBuilding?.transformerFee || 0) / camSummary.totalLeasableArea),
-        otherCAMShare: totalMallOwnerArea * (otherCAMCosts / camSummary.totalLeasableArea),
+        totalAmount: camSummary.ownerCAM,
+        generatorShare,
+        transformerShare,
+        otherCAMShare,
         description: expenseDescription || `Mall Owner CAM Expense for ${periodStart} to ${periodEnd}`,
-        dateRecorded: new Date().toISOString().split('T')[0],
-        status: 'PENDING'
+        otherCAMCosts,
+        totalVacantArea: camSummary.totalVacantArea,
+        totalUnallocatedArea: camSummary.unallocatedArea,
+        totalLeasableArea: camSummary.totalLeasableArea,
+        totalCAMCosts: camSummary.totalCAMCosts,
+        occupiedArea: camSummary.totalOccupiedArea,
+        occupiedUnitsCount: camSummary.occupiedUnitsCount,
+        vacantUnitsCount: camSummary.vacantUnitsCount,
       };
       
-      // Add to local state and storage
-      const updatedExpenses = [newExpense, ...mallOwnerExpenses];
-      setMallOwnerExpenses(updatedExpenses);
-      saveExpensesToStorage(updatedExpenses);
+      const response = await expenseApi.createExpense(request);
       
       setSuccess(`Mall owner expense of ${formatCurrency(camSummary.ownerCAM)} saved successfully!`);
-      setExpenseDescription('Mall Owner CAM Expense for Vacant Units'); // Reset description
+      setExpenseDescription('Mall Owner CAM Expense for Vacant Units');
+      
+      // Refresh expenses list
+      loadExpensesFromBackend();
       
       // Clear calculation after saving
       setTimeout(() => {
@@ -466,6 +466,17 @@ const BuildingUtilityInvoicePage: React.FC = () => {
     } catch (error: any) {
       setError('Failed to save mall owner expense: ' + (error.message || 'Unknown error'));
       console.error('Error saving expense:', error);
+    }
+  };
+
+  const loadExpensesFromBackend = async () => {
+    try {
+      const response = await expenseApi.getAllExpenses();
+      setMallOwnerExpenses(response.data || []);
+    } catch (error) {
+      console.error('Error loading expenses from backend:', error);
+      // Fallback to localStorage if backend fails
+      loadExpensesFromStorage();
     }
   };
 
