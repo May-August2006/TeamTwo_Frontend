@@ -7,6 +7,7 @@ import { ExpiringContractsReport } from '../../components/reports/ExpiringContra
 import { ContractHistoryReport } from '../../components/reports/ContractHistoryReport';
 import { RentalRevenueByBusinessTypeReport } from '../../components/reports/RentalRevenueByBusinessTypeReport';
 import { OutstandingBalancesReport } from '../../components/reports/OutstandingBalancesReport';
+import { UtilityConsumptionReport } from '../../components/reports/UtilityConsumptionReport';
 
 type ReportType = 
   | 'TENANT_CONTRACT_SUMMARY' 
@@ -100,6 +101,8 @@ export const ReportsPage: React.FC = () => {
         return <VacantOccupiedUnitsReport onBack={handleBackToReports} />;
         case 'REVENUE_BY_CATEGORY':  // Add this case
       return <RentalRevenueByBusinessTypeReport onBack={handleBackToReports} />;
+      case 'UTILITY_CONSUMPTION':
+  return <UtilityConsumptionReport onBack={handleBackToReports} />;
         case 'OUTSTANDING_BALANCES':
   return <OutstandingBalancesReport onBack={handleBackToReports} />;
       case 'MONTHLY_BILLING_SUMMARY':

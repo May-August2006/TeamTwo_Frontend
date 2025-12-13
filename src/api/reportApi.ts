@@ -107,6 +107,38 @@ async getOutstandingBalancesData(params: {
     responseType: 'blob'
   });
   return response.data;
-}
+},
 
+async getUtilityConsumptionData(params: {
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+    buildingId?: number;
+    utilityTypeId?: number;
+  }): Promise<any[]> {
+    const response = await API.get('/api/reports/utility-consumption/data', {
+      params
+    });
+    return response.data;
+  },
+
+  async generateUtilityConsumptionReport(params: {
+    year?: number;
+    month?: number;
+    startDate?: string;
+    endDate?: string;
+    format?: 'pdf' | 'excel';
+  }): Promise<Blob> {
+    const { format = 'pdf', ...queryParams } = params;
+    const endpoint = format === 'excel' 
+      ? '/api/reports/utility-consumption/excel'
+      : '/api/reports/utility-consumption/pdf';
+    
+    const response = await API.get(endpoint, {
+      params: queryParams,
+      responseType: 'blob'
+    });
+    return response.data;
+  }
 };
