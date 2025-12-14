@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import type { PaymentRequest, Invoice } from '../../types/payment';
-import { paymentApi } from '../../api/paymentApi';
-import { invoiceApi } from '../../api/InvoiceAPI';
-import { useAuth } from '../../context/AuthContext';
+/** @format */
+
+import React, { useState, useEffect } from "react";
+import type { PaymentRequest } from "../../types/payment";
+import { paymentApi } from "../../api/paymentApi";
+import { invoiceApi } from "../../api/InvoiceAPI";
+import { useAuth } from "../../context/AuthContext";
+import type { InvoiceDTO } from "../../types";
 
 interface PaymentFormProps {
   onPaymentRecorded: () => void;
@@ -10,35 +13,37 @@ interface PaymentFormProps {
   initialInvoiceId?: number;
 }
 
-const PaymentForm: React.FC<PaymentFormProps> = ({ 
-  onPaymentRecorded, 
+const PaymentForm: React.FC<PaymentFormProps> = ({
+  onPaymentRecorded,
   onCancel,
-  initialInvoiceId 
+  initialInvoiceId,
 }) => {
   const { userId, username, loading: authLoading, isAuthenticated } = useAuth();
   const [formData, setFormData] = useState<PaymentRequest>({
     invoiceId: initialInvoiceId || 0,
-    paymentDate: new Date().toISOString().split('T')[0],
-    paymentMethod: 'CASH',
+    paymentDate: new Date().toISOString().split("T")[0],
+    paymentMethod: "CASH",
     amount: 0,
-    referenceNumber: '',
-    notes: '',
-    receivedById: userId || 0
+    referenceNumber: "",
+    notes: "",
+    receivedById: userId || 0,
   });
 
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [invoices, setInvoices] = useState<InvoiceDTO[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDTO | null>(
+    null
+  );
   const [loading, setLoading] = useState(false);
   const [loadingInvoices, setLoadingInvoices] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   // Update formData when userId becomes available
   useEffect(() => {
     if (userId) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        receivedById: userId
+        receivedById: userId,
       }));
     }
   }, [userId]);
@@ -58,33 +63,25 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   const loadUnpaidInvoices = async () => {
     try {
       setLoadingInvoices(true);
-      setError('');
-      
+      setError("");
+
       // Check if user is authenticated
       if (!isAuthenticated || !userId) {
-        setError('User not authenticated. Please log in again.');
+        setError("User not authenticated. Please log in again.");
         setLoadingInvoices(false);
         return;
       }
 
       const response = await invoiceApi.getUnpaidInvoices();
-      
+
       // Handle different response structures
-      let unpaidInvoices: Invoice[] = [];
-      
-      if (Array.isArray(response)) {
-        unpaidInvoices = response;
-      } else if (response && Array.isArray(response.data)) {
-        unpaidInvoices = response.data;
-      } else if (response && response.data) {
-        unpaidInvoices = [response.data];
-      }
-      
-      console.log('Loaded invoices:', unpaidInvoices);
+      const unpaidInvoices = response.data;
+
+      console.log("Loaded invoices:", unpaidInvoices);
       setInvoices(unpaidInvoices);
     } catch (err) {
-      console.error('Error loading invoices:', err);
-      setError('Failed to load invoices. Please try again.');
+      console.error("Error loading invoices:", err);
+      setError("Failed to load invoices. Please try again.");
       setInvoices([]);
     } finally {
       setLoadingInvoices(false);
@@ -93,53 +90,63 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 
   const loadInvoiceDetails = async () => {
     try {
-      setError('');
+      setError("");
       const response = await invoiceApi.getById(formData.invoiceId);
-      
+
       const invoice = response.data || response;
-      
+
       if (invoice) {
         setSelectedInvoice(invoice);
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          amount: invoice.balanceAmount || invoice.totalAmount || 0
+          amount: invoice.balanceAmount || invoice.totalAmount || 0,
         }));
       }
     } catch (err: any) {
-      console.error('Error loading invoice details:', err);
+      console.error("Error loading invoice details:", err);
       if (err.response?.status === 401) {
-        setError('Unauthorized: You do not have permission to view invoice details');
+        setError(
+          "Unauthorized: You do not have permission to view invoice details"
+        );
       } else {
-        setError('Failed to load invoice details');
+        setError("Failed to load invoice details");
       }
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: name === 'amount' ? parseFloat(value) || 0 : value
+      [name]: name === "amount" ? parseFloat(value) || 0 : value,
     }));
   };
 
   const validateForm = (): boolean => {
     if (formData.invoiceId === 0) {
-      setError('Please select an invoice');
+      setError("Please select an invoice");
       return false;
     }
     if (formData.amount <= 0) {
-      setError('Amount must be greater than 0');
+      setError("Amount must be greater than 0");
       return false;
     }
     if (!formData.paymentDate) {
-      setError('Payment date is required');
+      setError("Payment date is required");
       return false;
     }
 
     // Validate amount doesn't exceed invoice balance
-    if (selectedInvoice && formData.amount > (selectedInvoice.balanceAmount || selectedInvoice.totalAmount)) {
-      setError('Payment amount cannot exceed the invoice balance');
+    if (
+      selectedInvoice &&
+      formData.amount >
+        (selectedInvoice.balanceAmount || selectedInvoice.totalAmount)
+    ) {
+      setError("Payment amount cannot exceed the invoice balance");
       return false;
     }
 
@@ -148,14 +155,14 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     if (!validateForm()) return;
 
     // Check if user exists before proceeding
     if (!isAuthenticated || !userId) {
-      setError('User information not available. Please log in again.');
+      setError("User information not available. Please log in again.");
       return;
     }
 
@@ -164,22 +171,24 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     try {
       const paymentData: PaymentRequest = {
         ...formData,
-        receivedById: userId
+        receivedById: userId,
       };
 
       const result = await paymentApi.recordPayment(paymentData);
-      
-      setSuccess(`Payment recorded successfully! Payment Number: ${result.paymentNumber}`);
-      
+
+      setSuccess(
+        `Payment recorded successfully! Payment Number: ${result.paymentNumber}`
+      );
+
       // Reset form
       setFormData({
         invoiceId: 0,
-        paymentDate: new Date().toISOString().split('T')[0],
-        paymentMethod: 'CASH',
+        paymentDate: new Date().toISOString().split("T")[0],
+        paymentMethod: "CASH",
         amount: 0,
-        referenceNumber: '',
-        notes: '',
-        receivedById: userId
+        referenceNumber: "",
+        notes: "",
+        receivedById: userId,
       });
       setSelectedInvoice(null);
 
@@ -190,19 +199,19 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       setTimeout(() => {
         onPaymentRecorded();
       }, 2000);
-
     } catch (err: any) {
-      console.error('Payment error details:', err);
-      
+      console.error("Payment error details:", err);
+
       // Extract meaningful error message
-      let errorMessage = 'Failed to record payment';
+      let errorMessage = "Failed to record payment";
       if (err.response?.data) {
         // Try to get error message from response
-        errorMessage = err.response.data.message || err.response.data || errorMessage;
+        errorMessage =
+          err.response.data.message || err.response.data || errorMessage;
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -210,12 +219,12 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   };
 
   const paymentMethods = [
-    { value: 'CASH', label: 'Cash' },
-    { value: 'CHECK', label: 'Check' },
-    { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
-    { value: 'CREDIT_CARD', label: 'Credit Card' },
-    { value: 'DEBIT_CARD', label: 'Debit Card' },
-    { value: 'MOBILE_PAYMENT', label: 'Mobile Payment' }
+    { value: "CASH", label: "Cash" },
+    { value: "CHECK", label: "Check" },
+    { value: "BANK_TRANSFER", label: "Bank Transfer" },
+    { value: "CREDIT_CARD", label: "Credit Card" },
+    { value: "DEBIT_CARD", label: "Debit Card" },
+    { value: "MOBILE_PAYMENT", label: "Mobile Payment" },
   ];
 
   // Add loading state for authentication
@@ -236,12 +245,26 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
         <div className="text-center py-8">
           <div className="text-red-600 mb-4">
-            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            <svg
+              className="w-16 h-16 mx-auto"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">Authentication Required</h3>
-          <p className="text-gray-600 mb-4">You need to be logged in to record payments.</p>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">
+            Authentication Required
+          </h3>
+          <p className="text-gray-600 mb-4">
+            You need to be logged in to record payments.
+          </p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
@@ -255,8 +278,10 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Record New Payment</h2>
-      
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        Record New Payment
+      </h2>
+
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
@@ -291,14 +316,20 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 >
                   <option value={0}>Select an invoice</option>
-                  {invoices.map(invoice => (
+                  {invoices.map((invoice) => (
                     <option key={invoice.id} value={invoice.id}>
-                      {invoice.invoiceNumber} - {invoice.tenantName} - {(invoice.balanceAmount || invoice.totalAmount)?.toLocaleString()} MMK
+                      {invoice.invoiceNumber} - {invoice.tenantName} -{" "}
+                      {(
+                        invoice.balanceAmount || invoice.totalAmount
+                      )?.toLocaleString()}{" "}
+                      MMK
                     </option>
                   ))}
                 </select>
                 <p className="text-sm text-gray-500 mt-1">
-                  {invoices.length === 0 ? 'No unpaid invoices found' : 'Only unpaid and partially paid invoices are shown'}
+                  {invoices.length === 0
+                    ? "No unpaid invoices found"
+                    : "Only unpaid and partially paid invoices are shown"}
                 </p>
               </>
             )}
@@ -315,7 +346,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               value={formData.paymentDate}
               onChange={handleInputChange}
               required
-              max={new Date().toISOString().split('T')[0]}
+              max={new Date().toISOString().split("T")[0]}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
           </div>
@@ -332,7 +363,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               required
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             >
-              {paymentMethods.map(method => (
+              {paymentMethods.map((method) => (
                 <option key={method.value} value={method.value}>
                   {method.label}
                 </option>
@@ -353,12 +384,20 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               required
               min="0"
               step="0.01"
-              max={selectedInvoice ? (selectedInvoice.balanceAmount || selectedInvoice.totalAmount) : undefined}
+              max={
+                selectedInvoice
+                  ? selectedInvoice.balanceAmount || selectedInvoice.totalAmount
+                  : undefined
+              }
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
             {selectedInvoice && (
               <p className="text-sm text-gray-500 mt-1">
-                Maximum allowed: {(selectedInvoice.balanceAmount || selectedInvoice.totalAmount)?.toLocaleString()} MMK
+                Maximum allowed:{" "}
+                {(
+                  selectedInvoice.balanceAmount || selectedInvoice.totalAmount
+                )?.toLocaleString()}{" "}
+                MMK
               </p>
             )}
           </div>
@@ -385,7 +424,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             </label>
             <input
               type="text"
-              value={username || 'Current User'}
+              value={username || "Current User"}
               disabled
               className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 text-gray-600"
             />
@@ -411,19 +450,27 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         {/* Invoice Details */}
         {selectedInvoice && (
           <div className="bg-gray-50 p-4 rounded-md border">
-            <h3 className="font-semibold text-lg mb-3 text-gray-800">Invoice Details</h3>
+            <h3 className="font-semibold text-lg mb-3 text-gray-800">
+              Invoice Details
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div>
                 <span className="font-medium">Invoice Number:</span>
-                <div className="font-semibold">{selectedInvoice.invoiceNumber}</div>
+                <div className="font-semibold">
+                  {selectedInvoice.invoiceNumber}
+                </div>
               </div>
               <div>
                 <span className="font-medium">Tenant:</span>
-                <div className="font-semibold">{selectedInvoice.tenantName}</div>
+                <div className="font-semibold">
+                  {selectedInvoice.tenantName}
+                </div>
               </div>
               <div>
                 <span className="font-medium">Room:</span>
-                <div className="font-semibold">{selectedInvoice.roomNumber}</div>
+                <div className="font-semibold">
+                  {selectedInvoice.roomNumber}
+                </div>
               </div>
               <div>
                 <span className="font-medium">Due Date:</span>
@@ -440,19 +487,24 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               <div>
                 <span className="font-medium">Balance Due:</span>
                 <div className="font-semibold text-red-600">
-                  {(selectedInvoice.balanceAmount || selectedInvoice.totalAmount)?.toLocaleString()} MMK
+                  {(
+                    selectedInvoice.balanceAmount || selectedInvoice.totalAmount
+                  )?.toLocaleString()}{" "}
+                  MMK
                 </div>
               </div>
               <div>
                 <span className="font-medium">Invoice Status:</span>
                 <div className="font-semibold">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    selectedInvoice.invoiceStatus === 'PAID' 
-                      ? 'bg-green-100 text-green-800'
-                      : selectedInvoice.invoiceStatus === 'PARTIAL'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      selectedInvoice.invoiceStatus === "PAID"
+                        ? "bg-green-100 text-green-800"
+                        : selectedInvoice.invoiceStatus === "PARTIAL"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
                     {selectedInvoice.invoiceStatus}
                   </span>
                 </div>
@@ -464,12 +516,17 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         {/* Payment Summary */}
         {formData.amount > 0 && selectedInvoice && (
           <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
-            <h3 className="font-semibold text-lg mb-3 text-blue-800">Payment Summary</h3>
+            <h3 className="font-semibold text-lg mb-3 text-blue-800">
+              Payment Summary
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="font-medium">Current Balance:</span>
                 <div className="font-semibold">
-                  {(selectedInvoice.balanceAmount || selectedInvoice.totalAmount)?.toLocaleString()} MMK
+                  {(
+                    selectedInvoice.balanceAmount || selectedInvoice.totalAmount
+                  )?.toLocaleString()}{" "}
+                  MMK
                 </div>
               </div>
               <div>
@@ -481,16 +538,20 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
               <div>
                 <span className="font-medium">Remaining Balance:</span>
                 <div className="font-semibold">
-                  {((selectedInvoice.balanceAmount || selectedInvoice.totalAmount) - formData.amount).toLocaleString()} MMK
+                  {(
+                    (selectedInvoice.balanceAmount ||
+                      selectedInvoice.totalAmount) - formData.amount
+                  ).toLocaleString()}{" "}
+                  MMK
                 </div>
               </div>
               <div>
                 <span className="font-medium">New Status:</span>
                 <div className="font-semibold">
-                  {formData.amount >= (selectedInvoice.balanceAmount || selectedInvoice.totalAmount) 
-                    ? 'PAID' 
-                    : 'PARTIAL'
-                  }
+                  {formData.amount >=
+                  (selectedInvoice.balanceAmount || selectedInvoice.totalAmount)
+                    ? "PAID"
+                    : "PARTIAL"}
                 </div>
               </div>
             </div>
@@ -509,19 +570,41 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           </button>
           <button
             type="submit"
-            disabled={loading || loadingInvoices || formData.invoiceId === 0 || !isAuthenticated || !userId}
+            disabled={
+              loading ||
+              loadingInvoices ||
+              formData.invoiceId === 0 ||
+              !isAuthenticated ||
+              !userId
+            }
             className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors duration-200"
           >
             {loading ? (
               <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
                 Processing...
               </>
             ) : (
-              'Record Payment'
+              "Record Payment"
             )}
           </button>
         </div>

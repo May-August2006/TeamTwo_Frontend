@@ -10,12 +10,14 @@ import type {
   LateFeePolicyRequest,
 } from "../../types";
 import { useAuth } from "../../context/AuthContext";
+import LateFeePaymentForm from "./LateFeePaymentForm";
 
 export function LateFeeManagementPage() {
   // -------------------------------------------------------------
   // STATE
   // -------------------------------------------------------------
   const [loading, setLoading] = useState(false);
+  const [showLateFeePayment, setShowLateFeePayment] = useState(false);
   const [invoices, setInvoices] = useState<InvoiceDTO[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDTO | null>(
     null
@@ -174,7 +176,16 @@ export function LateFeeManagementPage() {
   // =============================================================
   return (
     <div className="p-6 space-y-8">
-      <h1 className="text-2xl font-semibold">Late Fee Management</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Late Fee Management</h1>
+
+        <button
+          onClick={() => setShowLateFeePayment(true)}
+          className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
+        >
+          Pay Late Fee
+        </button>
+      </div>
 
       {/* ---------------------- POLICY SECTION ------------------------- */}
       <section className="bg-white rounded-xl shadow p-5">
@@ -351,6 +362,18 @@ export function LateFeeManagementPage() {
 
           <iframe src={pdfUrl} className="w-full h-[600px] border" />
         </section>
+      )}
+
+      {showLateFeePayment && (
+        <LateFeePaymentForm
+          initialInvoiceId={selectedInvoice?.id}
+          onPaymentRecorded={() => {
+            toast.success("Late Fee Payment Recorded!");
+            setShowLateFeePayment(false);
+            loadInvoices();
+          }}
+          onCancel={() => setShowLateFeePayment(false)}
+        />
       )}
     </div>
   );

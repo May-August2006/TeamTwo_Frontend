@@ -177,11 +177,13 @@ export interface Payment {
 export interface PaymentRequest {
   invoiceId: number;
   paymentDate: string;
-  paymentMethod: "CASH" | "CHECK" | "BANK_TRANSFER";
+  paymentMethod: string;
   amount: number;
   referenceNumber?: string;
   notes?: string;
   receivedById: number;
+  isLateFeePayment?: boolean;
+  lateFeeId?: number;
 }
 
 export interface InvoiceDTO {
@@ -327,7 +329,7 @@ export interface LateFeeResponseDTO {
   appliedAmount: number;
   reason: string;
   appliedByName?: string;
-  pdfUrl: string;
+  pdfUrl?: string;
 }
 
 export interface LateFeePolicyDTO {

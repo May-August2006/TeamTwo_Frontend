@@ -31,6 +31,9 @@ export const invoiceApi = {
 
   getUnpaidInvoices: () => API.get<InvoiceDTO[]>("/api/invoices/unpaid"),
 
+  getInvoicesWithLateFees: () =>
+    API.get<InvoiceDTO[]>("/api/invoices/lateFees"),
+
   // Get invoice by ID
   getById: (id: number) => API.get<InvoiceDTO>(`/api/invoices/${id}`),
 
