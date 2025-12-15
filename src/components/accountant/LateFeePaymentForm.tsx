@@ -33,7 +33,6 @@ const LateFeePaymentForm: React.FC<LateFeePaymentFormProps> = ({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // form data
   const [formData, setFormData] = useState<PaymentRequest>({
     invoiceId: initialInvoiceId || 0,
     paymentDate: new Date().toISOString().split("T")[0],
@@ -101,7 +100,7 @@ const LateFeePaymentForm: React.FC<LateFeePaymentFormProps> = ({
     }
   };
 
-  /** On input change */
+  /** On input change - safely handle numbers and strings */
   const handleInput = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -111,7 +110,12 @@ const LateFeePaymentForm: React.FC<LateFeePaymentFormProps> = ({
 
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "amount" ? parseFloat(value) || 0 : value,
+      [name]:
+        name === "amount"
+          ? parseFloat(value) || 0
+          : name === "invoiceId" || name === "lateFeeId"
+          ? Number(value)
+          : value,
     }));
   };
 
@@ -182,7 +186,7 @@ const LateFeePaymentForm: React.FC<LateFeePaymentFormProps> = ({
   if (authLoading) {
     return (
       <div className="p-4 text-center">
-        <div className="animate-spin h-8 w-8 border-b-2 border-red-600 mx-auto"></div>
+        <div className="animate-spin h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
         <p>Loading...</p>
       </div>
     );
@@ -326,7 +330,7 @@ const LateFeePaymentForm: React.FC<LateFeePaymentFormProps> = ({
           <button
             type="submit"
             disabled={loading || !formData.lateFeeId}
-            className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 disabled:opacity-50"
+            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
           >
             {loading ? "Processing..." : "Record Late Fee Payment"}
           </button>

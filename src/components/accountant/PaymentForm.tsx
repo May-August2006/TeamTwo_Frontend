@@ -6,6 +6,18 @@ import { paymentApi } from "../../api/paymentApi";
 import { invoiceApi } from "../../api/InvoiceAPI";
 import { useAuth } from "../../context/AuthContext";
 import type { InvoiceDTO } from "../../types";
+import {
+  X,
+  ArrowLeft,
+  Calendar,
+  CreditCard,
+  DollarSign,
+  FileText,
+  Building,
+  User,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
 
 interface PaymentFormProps {
   onPaymentRecorded: () => void;
@@ -65,7 +77,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       setLoadingInvoices(true);
       setError("");
 
-      // Check if user is authenticated
       if (!isAuthenticated || !userId) {
         setError("User not authenticated. Please log in again.");
         setLoadingInvoices(false);
@@ -73,11 +84,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       }
 
       const response = await invoiceApi.getUnpaidInvoices();
-
-      // Handle different response structures
       const unpaidInvoices = response.data;
-
-      console.log("Loaded invoices:", unpaidInvoices);
       setInvoices(unpaidInvoices);
     } catch (err) {
       console.error("Error loading invoices:", err);
@@ -92,7 +99,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     try {
       setError("");
       const response = await invoiceApi.getById(formData.invoiceId);
-
       const invoice = response.data || response;
 
       if (invoice) {
@@ -140,7 +146,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       return false;
     }
 
-    // Validate amount doesn't exceed invoice balance
     if (
       selectedInvoice &&
       formData.amount >
@@ -160,7 +165,6 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 
     if (!validateForm()) return;
 
-    // Check if user exists before proceeding
     if (!isAuthenticated || !userId) {
       setError("User information not available. Please log in again.");
       return;
@@ -192,26 +196,20 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
       });
       setSelectedInvoice(null);
 
-      // Refresh invoices list
       loadUnpaidInvoices();
 
-      // Notify parent component
       setTimeout(() => {
         onPaymentRecorded();
       }, 2000);
     } catch (err: any) {
       console.error("Payment error details:", err);
-
-      // Extract meaningful error message
       let errorMessage = "Failed to record payment";
       if (err.response?.data) {
-        // Try to get error message from response
         errorMessage =
           err.response.data.message || err.response.data || errorMessage;
       } else if (err.message) {
         errorMessage = err.message;
       }
-
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -219,45 +217,49 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   };
 
   const paymentMethods = [
-    { value: "CASH", label: "Cash" },
-    { value: "CHECK", label: "Check" },
-    { value: "BANK_TRANSFER", label: "Bank Transfer" },
-    { value: "CREDIT_CARD", label: "Credit Card" },
-    { value: "DEBIT_CARD", label: "Debit Card" },
-    { value: "MOBILE_PAYMENT", label: "Mobile Payment" },
+    { value: "CASH", label: "Cash", icon: <DollarSign className="w-4 h-4" /> },
+    { value: "CHECK", label: "Check", icon: <FileText className="w-4 h-4" /> },
+    {
+      value: "BANK_TRANSFER",
+      label: "Bank Transfer",
+      icon: <Building className="w-4 h-4" />,
+    },
+    {
+      value: "CREDIT_CARD",
+      label: "Credit Card",
+      icon: <CreditCard className="w-4 h-4" />,
+    },
+    {
+      value: "DEBIT_CARD",
+      label: "Debit Card",
+      icon: <CreditCard className="w-4 h-4" />,
+    },
+    {
+      value: "MOBILE_PAYMENT",
+      label: "Mobile Payment",
+      icon: <CreditCard className="w-4 h-4" />,
+    },
   ];
 
-  // Add loading state for authentication
   if (authLoading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-          <span className="ml-3 text-gray-600">Loading authentication...</span>
+      <div className="bg-white rounded-xl shadow-lg p-6 max-w-4xl mx-auto">
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-800"></div>
+          <span className="ml-3 text-gray-600 text-lg">
+            Loading authentication...
+          </span>
         </div>
       </div>
     );
   }
 
-  // Check if user is authenticated
   if (!isAuthenticated) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+      <div className="bg-white rounded-xl shadow-lg p-6 max-w-4xl mx-auto">
         <div className="text-center py-8">
           <div className="text-red-600 mb-4">
-            <svg
-              className="w-16 h-16 mx-auto"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
+            <AlertCircle className="w-16 h-16 mx-auto" />
           </div>
           <h3 className="text-xl font-semibold text-gray-800 mb-2">
             Authentication Required
@@ -267,7 +269,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            className="px-4 py-2 bg-blue-800 text-white rounded-lg hover:bg-blue-900 transition duration-200"
           >
             Reload Page
           </button>
@@ -277,338 +279,411 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">
-        Record New Payment
-      </h2>
-
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          {success}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Invoice Selection */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Invoice *
-            </label>
-            {loadingInvoices ? (
-              <div className="flex items-center justify-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-600"></div>
-                <span className="ml-2 text-gray-600">Loading invoices...</span>
-              </div>
-            ) : (
-              <>
-                <select
-                  name="invoiceId"
-                  value={formData.invoiceId}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                >
-                  <option value={0}>Select an invoice</option>
-                  {invoices.map((invoice) => (
-                    <option key={invoice.id} value={invoice.id}>
-                      {invoice.invoiceNumber} - {invoice.tenantName} -{" "}
-                      {(
-                        invoice.balanceAmount || invoice.totalAmount
-                      )?.toLocaleString()}{" "}
-                      MMK
-                    </option>
-                  ))}
-                </select>
-                <p className="text-sm text-gray-500 mt-1">
-                  {invoices.length === 0
-                    ? "No unpaid invoices found"
-                    : "Only unpaid and partially paid invoices are shown"}
-                </p>
-              </>
-            )}
-          </div>
-
-          {/* Payment Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Payment Date *
-            </label>
-            <input
-              type="date"
-              name="paymentDate"
-              value={formData.paymentDate}
-              onChange={handleInputChange}
-              required
-              max={new Date().toISOString().split("T")[0]}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            />
-          </div>
-
-          {/* Payment Method */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Payment Method *
-            </label>
-            <select
-              name="paymentMethod"
-              value={formData.paymentMethod}
-              onChange={handleInputChange}
-              required
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+    <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onCancel}
+              className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
             >
-              {paymentMethods.map((method) => (
-                <option key={method.value} value={method.value}>
-                  {method.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Amount */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Amount (MMK) *
-            </label>
-            <input
-              type="number"
-              name="amount"
-              value={formData.amount}
-              onChange={handleInputChange}
-              required
-              min="0"
-              step="0.01"
-              max={
-                selectedInvoice
-                  ? selectedInvoice.balanceAmount || selectedInvoice.totalAmount
-                  : undefined
-              }
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            />
-            {selectedInvoice && (
-              <p className="text-sm text-gray-500 mt-1">
-                Maximum allowed:{" "}
-                {(
-                  selectedInvoice.balanceAmount || selectedInvoice.totalAmount
-                )?.toLocaleString()}{" "}
-                MMK
-              </p>
-            )}
-          </div>
-
-          {/* Reference Number */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Reference Number
-            </label>
-            <input
-              type="text"
-              name="referenceNumber"
-              value={formData.referenceNumber}
-              onChange={handleInputChange}
-              placeholder="Check number, transaction ID, etc."
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-            />
-          </div>
-
-          {/* Received By */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Received By
-            </label>
-            <input
-              type="text"
-              value={username || "Current User"}
-              disabled
-              className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 text-gray-600"
-            />
-            <input type="hidden" name="receivedById" value={userId || 0} />
-          </div>
-        </div>
-
-        {/* Notes */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Notes
-          </label>
-          <textarea
-            name="notes"
-            value={formData.notes}
-            onChange={handleInputChange}
-            rows={3}
-            placeholder="Additional payment details, remarks, or comments..."
-            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-          />
-        </div>
-
-        {/* Invoice Details */}
-        {selectedInvoice && (
-          <div className="bg-gray-50 p-4 rounded-md border">
-            <h3 className="font-semibold text-lg mb-3 text-gray-800">
-              Invoice Details
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-              <div>
-                <span className="font-medium">Invoice Number:</span>
-                <div className="font-semibold">
-                  {selectedInvoice.invoiceNumber}
-                </div>
-              </div>
-              <div>
-                <span className="font-medium">Tenant:</span>
-                <div className="font-semibold">
-                  {selectedInvoice.tenantName}
-                </div>
-              </div>
-              <div>
-                <span className="font-medium">Room:</span>
-                <div className="font-semibold">
-                  {selectedInvoice.roomNumber}
-                </div>
-              </div>
-              <div>
-                <span className="font-medium">Due Date:</span>
-                <div className="font-semibold">
-                  {new Date(selectedInvoice.dueDate).toLocaleDateString()}
-                </div>
-              </div>
-              <div>
-                <span className="font-medium">Total Amount:</span>
-                <div className="font-semibold">
-                  {selectedInvoice.totalAmount?.toLocaleString()} MMK
-                </div>
-              </div>
-              <div>
-                <span className="font-medium">Balance Due:</span>
-                <div className="font-semibold text-red-600">
-                  {(
-                    selectedInvoice.balanceAmount || selectedInvoice.totalAmount
-                  )?.toLocaleString()}{" "}
-                  MMK
-                </div>
-              </div>
-              <div>
-                <span className="font-medium">Invoice Status:</span>
-                <div className="font-semibold">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs ${
-                      selectedInvoice.invoiceStatus === "PAID"
-                        ? "bg-green-100 text-green-800"
-                        : selectedInvoice.invoiceStatus === "PARTIAL"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {selectedInvoice.invoiceStatus}
-                  </span>
-                </div>
-              </div>
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Record New Payment
+              </h2>
+              <p className="text-gray-600">Enter payment details below</p>
             </div>
           </div>
-        )}
-
-        {/* Payment Summary */}
-        {formData.amount > 0 && selectedInvoice && (
-          <div className="bg-blue-50 p-4 rounded-md border border-blue-200">
-            <h3 className="font-semibold text-lg mb-3 text-blue-800">
-              Payment Summary
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium">Current Balance:</span>
-                <div className="font-semibold">
-                  {(
-                    selectedInvoice.balanceAmount || selectedInvoice.totalAmount
-                  )?.toLocaleString()}{" "}
-                  MMK
-                </div>
-              </div>
-              <div>
-                <span className="font-medium">Payment Amount:</span>
-                <div className="font-semibold text-green-600">
-                  {formData.amount.toLocaleString()} MMK
-                </div>
-              </div>
-              <div>
-                <span className="font-medium">Remaining Balance:</span>
-                <div className="font-semibold">
-                  {(
-                    (selectedInvoice.balanceAmount ||
-                      selectedInvoice.totalAmount) - formData.amount
-                  ).toLocaleString()}{" "}
-                  MMK
-                </div>
-              </div>
-              <div>
-                <span className="font-medium">New Status:</span>
-                <div className="font-semibold">
-                  {formData.amount >=
-                  (selectedInvoice.balanceAmount || selectedInvoice.totalAmount)
-                    ? "PAID"
-                    : "PARTIAL"}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex justify-end space-x-4 pt-6 border-t">
           <button
-            type="button"
             onClick={onCancel}
-            disabled={loading}
-            className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors duration-200"
+            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
           >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={
-              loading ||
-              loadingInvoices ||
-              formData.invoiceId === 0 ||
-              !isAuthenticated ||
-              !userId
-            }
-            className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors duration-200"
-          >
-            {loading ? (
-              <>
-                <svg
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Processing...
-              </>
-            ) : (
-              "Record Payment"
-            )}
+            <X className="w-5 h-5" />
           </button>
         </div>
-      </form>
+      </div>
+
+      <div className="p-6">
+        {error && (
+          <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+            <div className="flex">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
+            <div className="flex">
+              <CheckCircle className="h-5 w-5 text-green-400" />
+              <div className="ml-3">
+                <p className="text-sm text-green-700">{success}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left Column */}
+            <div className="space-y-6">
+              {/* Invoice Selection */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  Select Invoice *
+                </label>
+                {loadingInvoices ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-800"></div>
+                    <span className="ml-2 text-gray-600">
+                      Loading invoices...
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <select
+                      name="invoiceId"
+                      value={formData.invoiceId}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value={0}>Select an invoice</option>
+                      {invoices.map((invoice) => (
+                        <option key={invoice.id} value={invoice.id}>
+                          {invoice.invoiceNumber} - {invoice.tenantName} -{" "}
+                          {(
+                            invoice.balanceAmount || invoice.totalAmount
+                          )?.toLocaleString()}{" "}
+                          MMK
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-sm text-gray-500 mt-2">
+                      {invoices.length === 0
+                        ? "No unpaid invoices found"
+                        : `${invoices.length} unpaid invoices available`}
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {/* Payment Details */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-800 mb-4">
+                  Payment Details
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Payment Date *
+                    </label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="date"
+                        name="paymentDate"
+                        value={formData.paymentDate}
+                        onChange={handleInputChange}
+                        required
+                        max={new Date().toISOString().split("T")[0]}
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Payment Method *
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {paymentMethods.map((method) => (
+                        <label
+                          key={method.value}
+                          className={`flex flex-col items-center justify-center p-3 border rounded-lg cursor-pointer transition-all ${
+                            formData.paymentMethod === method.value
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-300 hover:border-blue-300"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value={method.value}
+                            checked={formData.paymentMethod === method.value}
+                            onChange={handleInputChange}
+                            className="sr-only"
+                          />
+                          <div className="mb-2 p-2 rounded-lg bg-white">
+                            {React.cloneElement(method.icon, {
+                              className: `w-4 h-4 ${
+                                formData.paymentMethod === method.value
+                                  ? "text-blue-600"
+                                  : "text-gray-400"
+                              }`,
+                            })}
+                          </div>
+                          <span className="text-xs font-medium">
+                            {method.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Amount (MMK) *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                        MMK
+                      </span>
+                      <input
+                        type="number"
+                        name="amount"
+                        value={formData.amount}
+                        onChange={handleInputChange}
+                        required
+                        min="0"
+                        step="0.01"
+                        max={
+                          selectedInvoice
+                            ? selectedInvoice.balanceAmount ||
+                              selectedInvoice.totalAmount
+                            : undefined
+                        }
+                        className="w-full pl-14 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    {selectedInvoice && (
+                      <p className="text-sm text-gray-500 mt-2">
+                        Maximum:{" "}
+                        {(
+                          selectedInvoice.balanceAmount ||
+                          selectedInvoice.totalAmount
+                        )?.toLocaleString()}{" "}
+                        MMK
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Reference Number
+                    </label>
+                    <input
+                      type="text"
+                      name="referenceNumber"
+                      value={formData.referenceNumber}
+                      onChange={handleInputChange}
+                      placeholder="Check number, transaction ID, etc."
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              {/* Invoice Details */}
+              {selectedInvoice && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h3 className="text-sm font-semibold text-blue-800 mb-4">
+                    Invoice Details
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-xs text-gray-500">
+                        Invoice Number
+                      </span>
+                      <div className="font-semibold text-gray-900">
+                        {selectedInvoice.invoiceNumber}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500">Tenant</span>
+                      <div className="font-semibold text-gray-900">
+                        {selectedInvoice.tenantName}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500">Room</span>
+                      <div className="font-semibold text-gray-900">
+                        {selectedInvoice.roomNumber}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500">Due Date</span>
+                      <div className="font-semibold text-gray-900">
+                        {new Date(selectedInvoice.dueDate).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500">
+                        Total Amount
+                      </span>
+                      <div className="font-semibold text-gray-900">
+                        {selectedInvoice.totalAmount?.toLocaleString()} MMK
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs text-gray-500">Balance Due</span>
+                      <div className="font-semibold text-red-600">
+                        {(
+                          selectedInvoice.balanceAmount ||
+                          selectedInvoice.totalAmount
+                        )?.toLocaleString()}{" "}
+                        MMK
+                      </div>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <span className="text-xs text-gray-500">Status</span>
+                      <div>
+                        <span
+                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                            selectedInvoice.invoiceStatus === "PAID"
+                              ? "bg-green-100 text-green-800"
+                              : selectedInvoice.invoiceStatus === "PARTIAL"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {selectedInvoice.invoiceStatus}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Payment Summary */}
+              {formData.amount > 0 && selectedInvoice && (
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <h3 className="text-sm font-semibold text-green-800 mb-4">
+                    Payment Summary
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Current Balance</span>
+                      <span className="font-semibold">
+                        {(
+                          selectedInvoice.balanceAmount ||
+                          selectedInvoice.totalAmount
+                        )?.toLocaleString()}{" "}
+                        MMK
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Payment Amount</span>
+                      <span className="font-bold text-green-600">
+                        {formData.amount.toLocaleString()} MMK
+                      </span>
+                    </div>
+                    <div className="h-px bg-gray-200"></div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Remaining Balance</span>
+                      <span className="font-semibold">
+                        {(
+                          (selectedInvoice.balanceAmount ||
+                            selectedInvoice.totalAmount) - formData.amount
+                        ).toLocaleString()}{" "}
+                        MMK
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">New Status</span>
+                      <span className="font-semibold">
+                        {formData.amount >=
+                        (selectedInvoice.balanceAmount ||
+                          selectedInvoice.totalAmount)
+                          ? "PAID"
+                          : "PARTIAL"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Received By */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-800 mb-4">
+                  Received By
+                </h3>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-blue-100">
+                    <User className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">
+                      {username || "Current User"}
+                    </div>
+                    <div className="text-sm text-gray-500">Accountant</div>
+                  </div>
+                </div>
+                <input type="hidden" name="receivedById" value={userId || 0} />
+              </div>
+
+              {/* Notes */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <label className="block text-sm font-semibold text-gray-800 mb-2">
+                  Notes
+                </label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleInputChange}
+                  rows={4}
+                  placeholder="Additional payment details, remarks, or comments..."
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={loading}
+              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={
+                loading ||
+                loadingInvoices ||
+                formData.invoiceId === 0 ||
+                !isAuthenticated ||
+                !userId
+              }
+              className="flex-1 px-6 py-3 bg-blue-800 text-white rounded-lg hover:bg-blue-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-5 h-5" />
+                  Record Payment
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

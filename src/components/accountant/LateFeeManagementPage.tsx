@@ -11,6 +11,7 @@ import type {
 } from "../../types";
 import { useAuth } from "../../context/AuthContext";
 import LateFeePaymentForm from "./LateFeePaymentForm";
+import { useRef } from "react";
 
 export function LateFeeManagementPage() {
   // -------------------------------------------------------------
@@ -25,6 +26,8 @@ export function LateFeeManagementPage() {
 
   const [lateDays, setLateDays] = useState(1);
   const [reason, setReason] = useState("");
+
+  const lateFeePaymentRef = useRef<HTMLDivElement | null>(null);
 
   const { userId } = useAuth();
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -180,8 +183,23 @@ export function LateFeeManagementPage() {
         <h1 className="text-2xl font-semibold">Late Fee Management</h1>
 
         <button
-          onClick={() => setShowLateFeePayment(true)}
-          className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
+          onClick={() => {
+            if (!selectedInvoice) {
+              toast.error("Please select an invoice first");
+              return;
+            }
+
+            setShowLateFeePayment(true);
+
+            // scroll AFTER render
+            setTimeout(() => {
+              lateFeePaymentRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            }, 100);
+          }}
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
         >
           Pay Late Fee
         </button>
@@ -365,15 +383,17 @@ export function LateFeeManagementPage() {
       )}
 
       {showLateFeePayment && (
-        <LateFeePaymentForm
-          initialInvoiceId={selectedInvoice?.id}
-          onPaymentRecorded={() => {
-            toast.success("Late Fee Payment Recorded!");
-            setShowLateFeePayment(false);
-            loadInvoices();
-          }}
-          onCancel={() => setShowLateFeePayment(false)}
-        />
+        <div ref={lateFeePaymentRef}>
+          <LateFeePaymentForm
+            initialInvoiceId={selectedInvoice?.id}
+            onPaymentRecorded={() => {
+              toast.success("Late Fee Payment Recorded!");
+              setShowLateFeePayment(false);
+              loadInvoices();
+            }}
+            onCancel={() => setShowLateFeePayment(false)}
+          />
+        </div>
       )}
     </div>
   );
