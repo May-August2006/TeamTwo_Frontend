@@ -1,6 +1,8 @@
 /** @format */
 
 export interface Branch {
+  message: string;
+  success: any;
   id: number;
   branchName: string;
   address: string;

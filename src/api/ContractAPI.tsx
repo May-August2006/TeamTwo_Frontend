@@ -61,38 +61,134 @@ export const contractApi = {
     API.post<string>('/api/contracts/check-expired'),
 
   // Download file
-  downloadFile: async (id: number) => {
-    const response = await API.get(`/api/contracts/${id}/download`);
+  // downloadFile: async (id: number) => {
+  //   const response = await API.get(`/api/contracts/${id}/download`);
     
-    if (response.data?.fileUrl) {
-      const link = document.createElement('a');
-      link.href = response.data.fileUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
+  //   if (response.data?.fileUrl) {
+  //     const link = document.createElement('a');
+  //     link.href = response.data.fileUrl;
+  //     link.target = '_blank';
+  //     link.rel = 'noopener noreferrer';
       
-      if (response.data.fileName) {
-        link.download = response.data.fileName;
+  //     if (response.data.fileName) {
+  //       link.download = response.data.fileName;
+  //     }
+      
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     document.body.removeChild(link);
+  //   }
+    
+  //   return response;
+  // },
+
+  // // Preview file
+  // previewFile: async (id: number) => {
+  //   const response = await API.get(`/api/contracts/${id}/preview`);
+    
+  //   if (response.data?.fileUrl) {
+  //     window.open(response.data.fileUrl, '_blank', 'noopener,noreferrer');
+  //   }
+    
+  //   return response;
+  // },
+
+  // Download file - SIMPLE WORKING VERSION
+  downloadFile: async (id: number) => {
+    try {
+      // Get the contract to get the file URL
+      const contractResponse = await API.get<Contract>(`/api/contracts/${id}`);
+      const contract = contractResponse.data;
+      
+      if (!contract.fileUrl) {
+        throw new Error('No file available for download');
       }
       
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Transform Cloudinary URL for download
+      let downloadUrl = contract.fileUrl;
+      
+      if (downloadUrl.includes('cloudinary.com')) {
+        // Add fl_attachment parameter to force download
+        if (downloadUrl.includes('?')) {
+          downloadUrl = downloadUrl + '&fl_attachment';
+        } else {
+          downloadUrl = downloadUrl + '?fl_attachment';
+        }
+        
+        // Optional: Add filename for better download experience
+        if (contract.fileName) {
+          const cleanFileName = contract.fileName
+            .replace(/[^a-zA-Z0-9.-]/g, '_')
+            .replace(/\s+/g, '_');
+          downloadUrl = downloadUrl + `:${cleanFileName}`;
+        }
+      }
+      
+      console.log('Download URL:', downloadUrl);
+      
+      // Open in new tab/window
+      window.open(downloadUrl, '_blank');
+      
+      return { data: { downloadUrl } };
+      
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      
+      // Try the API endpoint as fallback
+      try {
+        const response = await API.get(`/api/contracts/${id}/download`);
+        if (response.data?.downloadUrl) {
+          window.open(response.data.downloadUrl, '_blank');
+          return response;
+        }
+      } catch (apiError) {
+        console.error('API endpoint also failed:', apiError);
+      }
+      
+      throw error;
     }
-    
-    return response;
   },
 
-  // Preview file
+  // Preview file - SIMPLE WORKING VERSION
   previewFile: async (id: number) => {
-    const response = await API.get(`/api/contracts/${id}/preview`);
-    
-    if (response.data?.fileUrl) {
-      window.open(response.data.fileUrl, '_blank', 'noopener,noreferrer');
+    try {
+      // Get the contract to get the file URL
+      const contractResponse = await API.get<Contract>(`/api/contracts/${id}`);
+      const contract = contractResponse.data;
+      
+      if (!contract.fileUrl) {
+        throw new Error('No file available for preview');
+      }
+      
+      // For Cloudinary URLs, use as-is for preview
+      const previewUrl = contract.fileUrl;
+      
+      console.log('Preview URL:', previewUrl);
+      
+      // Open in new tab
+      window.open(previewUrl, '_blank', 'noopener,noreferrer');
+      
+      return { data: { previewUrl } };
+      
+    } catch (error) {
+      console.error('Error previewing file:', error);
+      
+      // Try the API endpoint as fallback
+      try {
+        const response = await API.get(`/api/contracts/${id}/preview`);
+        if (response.data?.fileUrl || response.data?.previewUrl) {
+          const url = response.data.fileUrl || response.data.previewUrl;
+          window.open(url, '_blank', 'noopener,noreferrer');
+          return response;
+        }
+      } catch (apiError) {
+        console.error('API endpoint also failed:', apiError);
+      }
+      
+      throw error;
     }
-    
-    return response;
   },
-
+  
   // Upload file to existing contract
   uploadFile: (id: number, formData: FormData) => 
     API.post<Contract>(`/api/contracts/${id}/upload-file`, formData, {

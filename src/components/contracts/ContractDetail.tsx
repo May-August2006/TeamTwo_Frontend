@@ -1,4 +1,4 @@
-// components/contracts/ContractDetail.tsx
+// components/contracts/ContractDetail.tsx - FULLY WORKING VERSION
 import React, { useState, useEffect } from 'react';
 import { contractApi } from '../../api/ContractAPI';
 import { TerminationModal } from './TerminationModal';
@@ -24,7 +24,7 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
   const [contract, setContract] = useState<Contract | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'financial' | 'utilities' | 'timeline'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'financial' | 'utilities' | 'timeline' | 'terms'>('overview');
   const [fileLoading, setFileLoading] = useState<string | null>(null);
   const [showTerminationModal, setShowTerminationModal] = useState(false);
 
@@ -63,37 +63,118 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
     }
   };
 
+  // WORKING DOWNLOAD FUNCTION - SIMPLE AND RELIABLE
   const handleDownloadFile = async () => {
-    if (!contract) return;
+  if (!contract?.fileUrl) {
+    alert('No file available for download');
+    return;
+  }
+  
+  try {
+    setFileLoading('download');
     
-    try {
-      setFileLoading('download');
-      const response = await contractApi.downloadFile(contract.id);
+    // Get the Cloudinary URL
+    const cloudinaryUrl = contract.fileUrl;
+    
+    // Get the original filename
+    const originalFileName = contract.fileOriginalName || contract.fileName || `contract-${contract.contractNumber}.pdf`;
+    
+    // EXTREMELY CLEAN filename for Cloudinary URL (only alphanumeric and underscore)
+    const cleanFileName = originalFileName
+      .replace(/[^a-zA-Z0-9]/g, '_')  // Replace ANY non-alphanumeric with underscore
+      .replace(/_+/g, '_')            // Replace multiple underscores with single
+      .replace(/^_+|_+$/g, '');       // Remove leading/trailing underscores
+    
+    console.log('Original filename:', originalFileName);
+    console.log('Clean filename:', cleanFileName);
+    
+    // Transform URL for download
+    let downloadUrl = cloudinaryUrl;
+    
+    if (cloudinaryUrl.includes('/upload/')) {
+      // Option 1: Try with EXTREMELY clean filename (no dots, no dashes)
+      downloadUrl = cloudinaryUrl.replace('/upload/', `/upload/fl_attachment:${cleanFileName}/`);
       
-      if (response.data?.fileUrl) {
-        window.open(response.data.fileUrl, '_blank');
-      }
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      alert('Failed to download contract file');
-    } finally {
-      setFileLoading(null);
+      // Option 2: Or try without filename (just fl_attachment)
+      // downloadUrl = cloudinaryUrl.replace('/upload/', '/upload/fl_attachment/');
     }
-  };
+    
+    console.log('Download URL:', downloadUrl);
+    
+    // Create download link
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    
+    // IMPORTANT: Set download attribute with ORIGINAL filename
+    link.download = originalFileName;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    
+    // Append to body and trigger click
+    document.body.appendChild(link);
+    link.click();
+    
+    // If that fails after 1 second, try without filename in URL
+    setTimeout(() => {
+      // Check if download started (we can't detect this perfectly, so we just try fallback)
+      const fallbackUrl = cloudinaryUrl.replace('/upload/', '/upload/fl_attachment/');
+      if (fallbackUrl !== downloadUrl) {
+        console.log('Trying fallback URL:', fallbackUrl);
+        window.open(fallbackUrl, '_blank');
+      }
+    }, 1000);
+    
+    // Clean up
+    setTimeout(() => {
+      if (document.body.contains(link)) {
+        document.body.removeChild(link);
+      }
+    }, 100);
+    
+  } catch (error) {
+    console.error('Error downloading file:', error);
+    
+    // SIMPLE FALLBACK: Use just fl_attachment without filename
+    if (contract?.fileUrl) {
+      const simpleUrl = contract.fileUrl.replace('/upload/', '/upload/fl_attachment/');
+      console.log('Fallback URL:', simpleUrl);
+      
+      const link = document.createElement('a');
+      link.href = simpleUrl;
+      link.download = contract.fileOriginalName || contract.fileName || `contract-${contract.contractNumber}.pdf`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (document.body.contains(link)) {
+          document.body.removeChild(link);
+        }
+      }, 100);
+    }
+    
+  } finally {
+    setFileLoading(null);
+  }
+};
 
+  // WORKING PREVIEW FUNCTION
   const handlePreviewFile = async () => {
-    if (!contract) return;
+    if (!contract?.fileUrl) {
+      alert('No file available for preview');
+      return;
+    }
     
     try {
       setFileLoading('preview');
-      const response = await contractApi.previewFile(contract.id);
       
-      if (response.data?.fileUrl) {
-        window.open(response.data.fileUrl, '_blank');
-      }
+      // Just open the Cloudinary URL directly in new tab
+      window.open(contract.fileUrl, '_blank', 'noopener,noreferrer');
+      
     } catch (error) {
       console.error('Error previewing file:', error);
-      alert('Failed to preview contract file');
+      alert('Failed to preview file. Please try downloading instead.');
     } finally {
       setFileLoading(null);
     }
@@ -146,6 +227,57 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
     }
   };
 
+  const formatDateTime = (dateString: string | undefined): string => {
+    if (!dateString) return '-';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return '-';
+    }
+  };
+
+  // Helper function to get business type
+  const getBusinessType = (contract: Contract): string => {
+    return contract.tenant?.businessType || 
+           contract.tenant?.tenantCategoryName || 
+           contract.tenant?.tenantCategory?.categoryName || 
+           '-';
+  };
+
+  // Helper function to get unit type display with specific type name
+  const getUnitTypeDisplay = (contract: Contract): string => {
+    if (contract.unit?.roomType?.typeName) {
+      return `${contract.unit?.unitType || 'Room'} - ${contract.unit.roomType.typeName}`;
+    }
+    if (contract.unit?.spaceType?.name) {
+      return `${contract.unit?.unitType || 'Space'} - ${contract.unit.spaceType.name}`;
+    }
+    if (contract.unit?.hallType?.name) {
+      return `${contract.unit?.unitType || 'Hall'} - ${contract.unit.hallType.name}`;
+    }
+    return contract.unit?.unitType || '-';
+  };
+
+  // Helper function to get specific type details
+  const getUnitTypeDetails = (contract: Contract): string => {
+    if (contract.unit?.roomType?.typeName) {
+      return `Room Type: ${contract.unit.roomType.typeName}`;
+    }
+    if (contract.unit?.spaceType?.name) {
+      return `Space Type: ${contract.unit.spaceType.name}`;
+    }
+    if (contract.unit?.hallType?.name) {
+      return `Hall Type: ${contract.unit.hallType.name}`;
+    }
+    return 'Type details not available';
+  };
+
   // Helper function to safely access nested properties
   const getTerminationDate = (contract: Contract): string | undefined => {
     return contract.terminationDate || (contract as any)?.terminationDetails?.terminationDate;
@@ -160,6 +292,65 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
       return contract.unit.isAvailable ? 'Available' : 'Occupied';
     }
     return 'Unknown';
+  };
+
+  // Helper to format contract terms for display
+  const formatContractTerms = (terms: string | undefined): string => {
+    if (!terms || terms.trim() === '') {
+      return 'No additional terms specified.';
+    }
+    return terms;
+  };
+
+  // Helper to get standard terms and conditions
+  const getStandardTermsAndConditions = () => {
+    return {
+      basicTerms: `Contract Number: ${contract?.contractNumber || 'N/A'}
+Tenant: ${contract?.tenant?.tenantName || 'N/A'}
+Unit: ${contract?.unit?.unitNumber || 'N/A'}
+Duration: ${contract?.contractDurationType || 'N/A'}
+Start Date: ${formatDate(contract?.startDate)}
+End Date: ${formatDate(contract?.endDate)}`,
+      
+      standardClauses: `1. PARTIES
+This Lease Agreement is made between the Landlord and the Tenant as specified in this contract.
+
+2. PREMISES
+The Landlord leases to the Tenant the premises described in this contract for commercial purposes only.
+
+3. TERM
+The lease term shall commence on the Start Date and continue until the End Date specified in this contract.
+
+4. RENT
+Tenant shall pay the monthly rental fee of ${formatCurrency(contract?.rentalFee)}, due on the first day of each month.
+Grace period: ${contract?.gracePeriodDays || 0} days.
+
+5. SECURITY DEPOSIT
+The security deposit of ${formatCurrency(contract?.securityDeposit)} shall be held by Landlord as security for the performance of Tenant's obligations.
+
+6. UTILITIES
+Utilities included in this contract are as specified. Additional utilities may be charged separately.
+
+7. USE OF PREMISES
+The premises shall be used only for the purpose specified in the tenant's business registration.
+
+8. MAINTENANCE
+Tenant shall maintain the premises in good condition and promptly report any necessary repairs.
+
+9. DEFAULT
+If Tenant fails to pay rent or breaches any terms, Landlord may terminate this agreement with ${contract?.noticePeriodDays || 0} days notice.
+
+10. RENEWAL
+Renewal notice must be given at least ${contract?.renewalNoticeDays || 0} days before contract expiration.
+
+11. TERMINATION
+Either party may terminate this agreement with proper notice as specified in the contract terms.
+
+12. GOVERNING LAW
+This agreement shall be governed by the laws of the Republic of the Union of Myanmar.`,
+      
+      additionalTerms: contract?.contractTerms || 'No additional terms specified.'
+    };
   };
 
   if (loading) {
@@ -196,6 +387,11 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
   const terminationDate = getTerminationDate(contract);
   const terminationReason = getTerminationReason(contract);
   const unitStatus = getUnitStatus(contract);
+  const unitTypeDisplay = getUnitTypeDisplay(contract);
+  const unitTypeDetails = getUnitTypeDetails(contract);
+  const businessType = getBusinessType(contract);
+  
+  const termsAndConditions = getStandardTermsAndConditions();
 
   return (
     <div className="space-y-6">
@@ -308,19 +504,20 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
 
       {/* Tab Navigation */}
       <div className="bg-white border-b border-gray-200">
-        <nav className="flex space-x-8 px-6">
+        <nav className="flex space-x-8 px-6 overflow-x-auto">
           {[
             { id: 'overview' as const, label: 'Overview' },
             { id: 'financial' as const, label: 'Financial' },
             { id: 'utilities' as const, label: 'Utilities' },
-            { id: 'timeline' as const, label: 'Timeline' }
+            { id: 'timeline' as const, label: 'Timeline' },
+            { id: 'terms' as const, label: 'Terms & Conditions' }
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
+              className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                activeTab === tab.id 
+                  ? 'border-blue-500 text-blue-600' 
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
@@ -350,10 +547,20 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                   <label className="text-sm font-medium text-gray-500">Phone</label>
                   <p className="text-gray-900">{contract.tenant?.phone || '-'}</p>
                 </div>
-                {contract.tenant?.businessType && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Business Type</label>
+                  <p className="text-gray-900">{businessType}</p>
+                </div>
+                {contract.tenant?.contactPerson && (
                   <div>
-                    <label className="text-sm font-medium text-gray-500">Business Type</label>
-                    <p className="text-gray-900">{contract.tenant.businessType}</p>
+                    <label className="text-sm font-medium text-gray-500">Contact Person</label>
+                    <p className="text-gray-900">{contract.tenant.contactPerson}</p>
+                  </div>
+                )}
+                {contract.tenant?.address && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Address</label>
+                    <p className="text-gray-900">{contract.tenant.address}</p>
                   </div>
                 )}
               </div>
@@ -369,7 +576,8 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Unit Type</label>
-                  <p className="text-gray-900">{contract.unit?.roomType?.typeName || '-'}</p>
+                  <p className="text-gray-900">{unitTypeDisplay}</p>
+                  <p className="text-sm text-gray-500 mt-1">{unitTypeDetails}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Space</label>
@@ -378,9 +586,24 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                   </p>
                 </div>
                 <div>
+                  <label className="text-sm font-medium text-gray-500">Location</label>
+                  <p className="text-gray-900">
+                    {contract.unit?.level?.levelName || '-'}, 
+                    {contract.unit?.level?.building?.buildingName || '-'}
+                    {contract.unit?.level?.building?.branch?.branchName && 
+                      `, ${contract.unit.level.building.branch.branchName}`}
+                  </p>
+                </div>
+                <div>
                   <label className="text-sm font-medium text-gray-500">Status</label>
                   <p className="text-gray-900">{unitStatus}</p>
                 </div>
+                {contract.unit?.hasMeter && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Meter</label>
+                    <p className="text-gray-900">Has meter installed</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -463,6 +686,10 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                     <span>Days Remaining:</span>
                     <span>{daysRemaining} days</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span>Contract Number:</span>
+                    <span className="font-mono">{contract.contractNumber}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -506,6 +733,11 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                         Rate: {formatCurrency(utility.ratePerUnit)}
                       </p>
                     )}
+                    {utility.calculationMethod && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        {utility.calculationMethod.replace('_', ' ')}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -522,13 +754,58 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-900">Contract Created</span>
-                  <span className="text-sm text-gray-500">{formatDate(contract.createdAt)}</span>
+                  <span className="text-sm text-gray-500">{formatDateTime(contract.createdAt)}</span>
                 </div>
                 <p className="text-sm text-gray-600 mt-1">
                   Contract was created with status: {contract.contractStatus}
                 </p>
+                {contract.createdBy?.username && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Created by: {contract.createdBy.username}
+                  </p>
+                )}
               </div>
             </div>
+
+            {contract.updatedAt && contract.updatedAt !== contract.createdAt && (
+              <div className="flex items-start space-x-4 p-4 border border-gray-200 rounded-lg">
+                <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-gray-900">Contract Updated</span>
+                    <span className="text-sm text-gray-500">{formatDateTime(contract.updatedAt)}</span>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Last modification to the contract
+                  </p>
+                  {contract.updatedBy?.username && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Updated by: {contract.updatedBy.username}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {contract.agreedToTerms && contract.termsAgreementTimestamp && (
+              <div className="flex items-start space-x-4 p-4 border border-green-200 rounded-lg bg-green-50">
+                <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-green-900">Terms Accepted</span>
+                    <span className="text-sm text-green-500">{formatDateTime(contract.termsAgreementTimestamp)}</span>
+                  </div>
+                  <p className="text-sm text-green-700 mt-1">
+                    Terms and conditions were accepted by tenant
+                  </p>
+                  {contract.termsAgreementVersion && (
+                    <p className="text-xs text-green-600 mt-1">
+                      Agreement Version: {contract.termsAgreementVersion}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {contract.contractStatus === 'TERMINATED' && terminationDate && (
               <div className="flex items-start space-x-4 p-4 border border-red-200 rounded-lg bg-red-50">
@@ -536,11 +813,147 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-red-900">Contract Terminated</span>
-                    <span className="text-sm text-red-500">{formatDate(terminationDate)}</span>
+                    <span className="text-sm text-red-500">{formatDateTime(terminationDate)}</span>
                   </div>
                   <p className="text-sm text-red-700 mt-1">
                     Reason: {terminationReason || 'Not specified'}
                   </p>
+                  {(contract as any)?.terminatedBy?.username && (
+                    <p className="text-xs text-red-600 mt-1">
+                      Terminated by: {(contract as any).terminatedBy.username}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'terms' && (
+          <div className="space-y-6">
+            {/* Basic Contract Information */}
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <h3 className="text-lg font-semibold text-blue-900 mb-3">Basic Contract Information</h3>
+              <pre className="text-sm text-blue-800 whitespace-pre-wrap font-mono">
+                {termsAndConditions.basicTerms}
+              </pre>
+            </div>
+
+            {/* Standard Terms and Conditions */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="bg-gray-50 p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Standard Terms and Conditions</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  These are the standard terms that apply to all contracts. 
+                  {contract.termsAgreementVersion && ` Version: ${contract.termsAgreementVersion}`}
+                </p>
+              </div>
+              <div className="p-6 bg-white">
+                <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
+                  {termsAndConditions.standardClauses}
+                </pre>
+              </div>
+            </div>
+
+            {/* Additional Contract Terms */}
+            <div className="border border-gray-200 rounded-lg overflow-hidden">
+              <div className="bg-gray-50 p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Additional Contract Terms</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  These are additional terms specific to this contract
+                </p>
+              </div>
+              <div className="p-6 bg-white">
+                <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
+                  {formatContractTerms(termsAndConditions.additionalTerms)}
+                </pre>
+              </div>
+            </div>
+
+            {/* Terms Agreement Status */}
+            <div className={`p-4 rounded-lg border ${
+              contract.agreedToTerms 
+                ? 'bg-green-50 border-green-200' 
+                : 'bg-yellow-50 border-yellow-200'
+            }`}>
+              <div className="flex items-start">
+                <div className={`flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center ${
+                  contract.agreedToTerms ? 'bg-green-100' : 'bg-yellow-100'
+                }`}>
+                  {contract.agreedToTerms ? (
+                    <svg className="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg className="h-4 w-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+                <div className="ml-3">
+                  <h3 className={`text-sm font-medium ${
+                    contract.agreedToTerms ? 'text-green-800' : 'text-yellow-800'
+                  }`}>
+                    {contract.agreedToTerms ? 'Terms and Conditions Accepted' : 'Terms and Conditions Pending'}
+                  </h3>
+                  <div className={`mt-2 text-sm ${contract.agreedToTerms ? 'text-green-700' : 'text-yellow-700'}`}>
+                    {contract.agreedToTerms ? (
+                      <div className="space-y-1">
+                        <p>
+                          Tenant has agreed to the terms and conditions of this contract.
+                          {contract.termsAgreementTimestamp && (
+                            <span> Agreement timestamp: {formatDateTime(contract.termsAgreementTimestamp)}</span>
+                          )}
+                        </p>
+                        {contract.termsAgreementVersion && (
+                          <p className="text-xs">Agreement Version: {contract.termsAgreementVersion}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p>
+                        Tenant has not yet agreed to the terms and conditions of this contract.
+                        This is required for the contract to be fully valid.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Utilities Summary */}
+            {contract.includedUtilities && contract.includedUtilities.length > 0 && (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-gray-50 p-4 border-b border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900">Included Utilities</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Utilities covered by this contract agreement
+                  </p>
+                </div>
+                <div className="p-4 bg-white">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {contract.includedUtilities.map(utility => (
+                      <div key={utility.id} className="flex items-center p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{utility.utilityName}</p>
+                          {utility.description && (
+                            <p className="text-xs text-gray-600 mt-1">{utility.description}</p>
+                          )}
+                        </div>
+                        {utility.ratePerUnit && (
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-green-600">
+                              {formatCurrency(utility.ratePerUnit)}
+                            </p>
+                            {utility.calculationMethod && (
+                              <p className="text-xs text-blue-600">
+                                {utility.calculationMethod.replace('_', ' ')}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

@@ -89,6 +89,15 @@ export const ContractList: React.FC<ContractListProps> = ({
     }
   };
 
+  // Helper function to get business type
+  const getBusinessType = (contract: Contract): string => {
+    return contract.tenant?.businessType || 
+           contract.tenant?.tenantCategoryName || 
+           contract.tenant?.tenantCategory?.categoryName || 
+           '-';
+  };
+
+
   // Filter and sort contracts
   const filteredAndSortedContracts = contracts
     .filter(contract => {
@@ -107,7 +116,9 @@ export const ContractList: React.FC<ContractListProps> = ({
           contract.unit?.unitNumber?.toLowerCase().includes(searchLower) ||
           contract.tenantSearchName?.toLowerCase().includes(searchLower) ||
           contract.tenantSearchEmail?.toLowerCase().includes(searchLower) ||
-          contract.tenantSearchPhone?.includes(searchTerm)
+          contract.tenantSearchPhone?.includes(searchTerm) ||
+          contract.unit?.unitType.toLowerCase().includes(searchLower) ||
+          getBusinessType(contract).toLowerCase().includes(searchLower)
         );
       }
 
@@ -191,7 +202,7 @@ export const ContractList: React.FC<ContractListProps> = ({
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Contracts Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Leases Management</h1>
           <p className="text-gray-600 mt-1">Manage all rental contracts and lease agreements</p>
         </div>
         <Button onClick={onCreateContract} variant="primary">
@@ -230,7 +241,7 @@ export const ContractList: React.FC<ContractListProps> = ({
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Search contracts by number, tenant, unit, email, or phone..."
+              placeholder="Search contracts by number, tenant, unit, business type, unit type..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -280,6 +291,9 @@ export const ContractList: React.FC<ContractListProps> = ({
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Unit
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Business Type
+                </th>
                 <th 
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('startDate')}
@@ -312,7 +326,7 @@ export const ContractList: React.FC<ContractListProps> = ({
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredAndSortedContracts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={10} className="px-6 py-8 text-center text-gray-500">
                     <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
@@ -336,6 +350,7 @@ export const ContractList: React.FC<ContractListProps> = ({
                 filteredAndSortedContracts.map((contract) => {
                   const daysRemaining = getDaysRemaining(contract.endDate);
                   const isExpiringSoon = daysRemaining <= 30 && daysRemaining > 0;
+                  const businessType = getBusinessType(contract);
 
                   return (
                     <tr key={contract.id} className="hover:bg-gray-50">
@@ -365,9 +380,14 @@ export const ContractList: React.FC<ContractListProps> = ({
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{contract.unit?.unitNumber || '-'}</div>
+                        <div className="text-sm font-medium text-gray-900">{contract.unit?.unitNumber || '-'}</div>
                         <div className="text-sm text-gray-500">
-                          {contract.unit?.roomType?.typeName || '-'}
+                          {contract.unit?.unitType || '-'}                          
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {businessType}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

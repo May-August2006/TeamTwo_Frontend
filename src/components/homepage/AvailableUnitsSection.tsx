@@ -7,22 +7,24 @@ import { Button } from "../common/ui/Button";
 import { AppointmentForm } from "./AppointmentForm";
 import { appointmentApi } from "../../api/appointmentApi";
 import { useAuth } from "../../context/AuthContext";
-import { LoginPromptModal } from "../common/ui/LoginPromptModal"; // Add this import
+import { LoginPromptModal } from "../common/ui/LoginPromptModal";
 
 interface AvailableUnitsSectionProps {
   onUnitDetail?: (unit: Unit) => void;
-  onAppointment?: (unit: Unit) => void; // Add this prop
+  onAppointment?: (unit: Unit) => void;
 }
 
 export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   onUnitDetail,
-  onAppointment, // Destructure this
+  onAppointment,
 }) => {
   const [availableUnits, setAvailableUnits] = useState<Unit[]>([]);
-  const [filteredUnits, setFilteredUnits] = useState<Unit[]>([]);
-  const [searchParams, setSearchParams] = useState<UnitSearchParams>({});
+  const [activeSearchParams, setActiveSearchParams] = useState<UnitSearchParams>({});
+  const [pendingSearchParams, setPendingSearchParams] = useState<UnitSearchParams>({});
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Appointment Modal state
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
@@ -38,33 +40,92 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   
   const { isAuthenticated, userId } = useAuth();
 
-  // Load units on mount
+  // Load units on initial mount
   useEffect(() => {
     loadAvailableUnits();
   }, []);
 
-  // Filter units when search changes
-  useEffect(() => {
-    filterUnits();
-  }, [searchParams, availableUnits]);
-
-  // Fetch available units
-  const loadAvailableUnits = async () => {
+  // Helper function to make public API calls (no authentication)
+  const publicFetch = async (url: string, options?: RequestInit) => {
     try {
-      setLoading(true);
-      setError(null);
-      console.log("🔄 Loading available units...");
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          // DON'T include Authorization header for public endpoints
+          ...options?.headers,
+        },
+      });
 
-      const response = await fetch("http://localhost:8080/api/units/available");
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      let data = await response.json();
-      console.log("📦 Raw API response:", data);
-
-      // Handle Spring Boot's ResponseEntity structure
-      if (data && data.data) {
-        data = data.data;
+      // Handle 401/403 gracefully for public endpoints
+      if (response.status === 401 || response.status === 403) {
+        console.warn(`Public endpoint ${url} returned auth error, but we'll continue`);
+        // Return empty array instead of throwing
+        return { data: [] };
       }
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return { data };
+    } catch (err) {
+      console.error('Public fetch error:', err);
+      throw err;
+    }
+  };
+
+  // Fetch available units (initial load or when applying/searching)
+  const loadAvailableUnits = async (params?: UnitSearchParams) => {
+    try {
+      if (params && Object.keys(params).length > 0) {
+        setSearching(true);
+      } else {
+        setLoading(true);
+      }
+      
+      setError(null);
+      console.log("🔄 Loading units...", params ? "with filters" : "all units");
+
+      let response;
+      
+      if (params && Object.keys(params).length > 0) {
+        // Remove empty/null parameters
+        const cleanParams: UnitSearchParams = {};
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            cleanParams[key as keyof UnitSearchParams] = value;
+          }
+        });
+        
+        if (Object.keys(cleanParams).length > 0) {
+          console.log("🔍 Searching with params:", cleanParams);
+          
+          // Build query string for search
+          const queryParams = new URLSearchParams();
+          Object.entries(cleanParams).forEach(([key, value]) => {
+            queryParams.append(key, value.toString());
+          });
+          
+          // Use public fetch for search endpoint
+          response = await publicFetch(
+            `http://localhost:8080/api/units/search?${queryParams}`
+          );
+        } else {
+          console.log("📋 Loading all available units");
+          // Use public fetch for available endpoint
+          response = await publicFetch('http://localhost:8080/api/units/available');
+        }
+      } else {
+        console.log("📋 Loading all available units");
+        // Use public fetch for available endpoint
+        response = await publicFetch('http://localhost:8080/api/units/available');
+      }
+
+      console.log("📦 API response:", response);
+
+      let data = response.data;
       
       // Handle pagination if needed
       if (data && Array.isArray(data.content)) {
@@ -76,7 +137,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
         throw new Error("Invalid data format");
       }
 
-      // Transform the data to match your frontend structure
+      // Transform the data
       const transformedData = data.map((unit: any) => ({
         ...unit,
         utilities: unit.utilities || [],
@@ -84,44 +145,47 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       }));
 
       setAvailableUnits(transformedData);
-      console.log(`✅ Loaded ${transformedData.length} units`, transformedData);
+      
+      if (params && Object.keys(params).length > 0) {
+        setActiveSearchParams(params);
+        console.log(`✅ Found ${transformedData.length} units with filters`);
+      } else {
+        setActiveSearchParams({});
+        console.log(`✅ Loaded ${transformedData.length} units`);
+      }
     } catch (err: any) {
       console.error("❌ Error loading units:", err);
       setError(err.message || "Failed to load units");
       setAvailableUnits([]);
     } finally {
       setLoading(false);
+      setSearching(false);
+      setIsInitialLoad(false);
     }
   };
 
-  // Apply search filters
-  const filterUnits = () => {
-    let filtered = [...availableUnits];
+  // Handle search when user clicks Apply Filters
+  const handleApplySearch = async () => {
+    console.log("🔍 Apply Filters clicked with params:", pendingSearchParams);
+    await loadAvailableUnits(pendingSearchParams);
+  };
 
-    if (searchParams.minSpace)
-      filtered = filtered.filter((r) => r.unitSpace >= searchParams.minSpace!);
-    if (searchParams.maxSpace)
-      filtered = filtered.filter((r) => r.unitSpace <= searchParams.maxSpace!);
-    if (searchParams.minRent)
-      filtered = filtered.filter((r) => r.rentalFee >= searchParams.minRent!);
-    if (searchParams.maxRent)
-      filtered = filtered.filter((r) => r.rentalFee <= searchParams.maxRent!);
-    if (searchParams.unitType)
-      filtered = filtered.filter(
-        (r) => r.unitType === searchParams.unitType
-      );
-    if (searchParams.roomTypeId)
-      filtered = filtered.filter(
-        (r) => r.roomType?.id === searchParams.roomTypeId
-      );
+  // Handle reset search
+  const handleResetSearch = () => {
+    console.log("🔄 Resetting filters");
+    setPendingSearchParams({});
+    loadAvailableUnits(); // Load all units without filters
+  };
 
-    setFilteredUnits(filtered);
+  // Handle pending filter changes (without applying search)
+  const handlePendingFilterChange = (params: UnitSearchParams) => {
+    console.log("📝 Filter changed (pending):", params);
+    setPendingSearchParams(params);
   };
 
   // View unit details
   const handleUnitDetail = (unit: Unit) => {
     if (!isAuthenticated) {
-      // Show login prompt instead of alert
       setPendingAction({ type: 'view', unit });
       setIsLoginPromptOpen(true);
       return;
@@ -133,19 +197,16 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   // Open appointment modal
   const handleAppointment = (unit: Unit) => {
     if (!isAuthenticated) {
-      // Show login prompt instead of alert
       setPendingAction({ type: 'appointment', unit });
       setIsLoginPromptOpen(true);
       return;
     }
     
-    // If parent provides onAppointment handler, use it
     if (onAppointment) {
       onAppointment(unit);
       return;
     }
     
-    // Otherwise use local appointment modal
     console.log("📅 Booking appointment for:", unit.unitNumber);
     setSelectedUnit(unit);
     setIsAppointmentOpen(true);
@@ -155,12 +216,9 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   const handleLoginConfirm = () => {
     setIsLoginPromptOpen(false);
     
-    // Save the intended action to session storage
     if (pendingAction) {
       sessionStorage.setItem('pendingAction', JSON.stringify(pendingAction));
       sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
-      
-      // Redirect to login page
       window.location.href = '/login';
     }
   };
@@ -177,7 +235,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     setIsAppointmentOpen(false);
   };
 
-  // Submit appointment to backend
+  // Submit appointment to backend (this still requires authentication)
   const submitAppointment = async (data: {
     roomId: number;
     appointmentDate: string;
@@ -186,18 +244,12 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     notes: string;
     guestPhone: string;
   }) => {
-    if (!userId) {
-      // This shouldn't happen since we check isAuthenticated first
-      return;
-    }
+    if (!userId) return;
 
     try {
       setIsBooking(true);
-
       const response = await appointmentApi.book(userId || 0, data);
       console.log("✅ Appointment booked:", response.data);
-
-      // Show success message (you can add toast notification here)
       alert("Appointment booked successfully!");
       closeAppointmentModal();
     } catch (err: any) {
@@ -206,6 +258,20 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     } finally {
       setIsBooking(false);
     }
+  };
+
+  // Count active filters (currently applied)
+  const countActiveFilters = () => {
+    return Object.values(activeSearchParams).filter(val => 
+      val !== undefined && val !== '' && val !== null
+    ).length;
+  };
+
+  // Count pending filters (not yet applied)
+  const countPendingFilters = () => {
+    return Object.values(pendingSearchParams).filter(val => 
+      val !== undefined && val !== '' && val !== null
+    ).length;
   };
 
   return (
@@ -225,32 +291,39 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
         {/* Search Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-[#0D1B2A]/10 p-6 mb-8">
           <SearchFilters
-            onSearch={setSearchParams}
-            onReset={() => setSearchParams({})}
+            onSearch={handlePendingFilterChange} // Just update pending params
+            onReset={handleResetSearch}
+            onApplySearch={handleApplySearch} // Called when Apply button is clicked
+            pendingFilters={pendingSearchParams}
+            activeFilters={activeSearchParams}
           />
         </div>
 
-        {/* Loading */}
-        {loading && (
+        {/* Loading State */}
+        {(loading || searching) && (
           <div className="flex justify-center items-center py-12 bg-white rounded-lg border border-[#0D1B2A]/10">
             <LoadingSpinner size="lg" />
             <span className="ml-3 text-[#0D1B2A]">
-              Loading available spaces...
+              {loading && isInitialLoad ? "Loading available spaces..." : 
+               searching ? "Searching spaces..." : 
+               "Loading..."}
             </span>
           </div>
         )}
 
-        {/* Error */}
-        {error && !loading && (
+        {/* Error State */}
+        {error && !loading && !searching && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
             <h3 className="text-lg font-semibold text-[#B71C1C] mb-2">
-              Unable to Load Spaces
+              {countActiveFilters() > 0 
+                ? "Unable to Search Spaces" 
+                : "Unable to Load Spaces"}
             </h3>
             <p className="text-[#D32F2F] mb-4">{error}</p>
             <Button
-              onClick={loadAvailableUnits}
+              onClick={() => loadAvailableUnits(activeSearchParams)}
               variant="secondary"
-              className="border-[#0D1B2A]"
+              className="border-[#0D1B2A] hover:bg-[#0D1B2A] hover:text-white"
             >
               Try Again
             </Button>
@@ -258,41 +331,89 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
         )}
 
         {/* Unit List */}
-        {!loading && !error && (
+        {!loading && !searching && !error && (
           <>
             <div className="flex justify-between items-center mb-6">
-              <p className="text-[#0D1B2A] opacity-80">
-                Showing {filteredUnits.length} of {availableUnits.length}{" "}
-                available spaces
-              </p>
-              {availableUnits.length > 0 && (
+              <div>
+                <p className="text-[#0D1B2A] opacity-80">
+                  {countActiveFilters() > 0 
+                    ? `Found ${availableUnits.length} matching spaces` 
+                    : `Showing all ${availableUnits.length} available spaces`}
+                </p>
+                
+                {/* Show pending filters indicator */}
+                {countPendingFilters() > 0 && countPendingFilters() !== countActiveFilters() && (
+                  <div className="flex items-center mt-1">
+                    <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                      ⚡ {countPendingFilters()} filter{countPendingFilters() !== 1 ? 's' : ''} pending - Click "Apply Filters" to search
+                    </span>
+                  </div>
+                )}
+                
+                {/* Show active filters count */}
+                {countActiveFilters() > 0 && (
+                  <p className="text-sm text-[#0D1B2A] opacity-60 mt-1">
+                    {countActiveFilters()} active filter{countActiveFilters() !== 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
+              
+              <div className="flex gap-2">
+                {countActiveFilters() > 0 && (
+                  <Button
+                    onClick={handleResetSearch}
+                    variant="secondary"
+                    size="sm"
+                    className="border-[#0D1B2A] hover:bg-[#0D1B2A] hover:text-white"
+                  >
+                    Clear All Filters
+                  </Button>
+                )}
                 <Button
-                  onClick={loadAvailableUnits}
+                  onClick={() => loadAvailableUnits(activeSearchParams)}
                   variant="secondary"
                   size="sm"
-                  className="border-[#0D1B2A]"
+                  className="border-[#0D1B2A] hover:bg-[#0D1B2A] hover:text-white"
                 >
-                  Refresh
+                  Refresh Results
                 </Button>
-              )}
+              </div>
             </div>
 
-            {filteredUnits.length === 0 ? (
+            {availableUnits.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg border border-[#0D1B2A]/10">
                 <h3 className="text-xl font-semibold text-[#0D1B2A] mb-2">
-                  No spaces match your criteria
+                  {countActiveFilters() > 0 
+                    ? "No spaces match your search criteria" 
+                    : "No available spaces found"}
                 </h3>
-                <Button
-                  onClick={() => setSearchParams({})}
-                  variant="secondary"
-                  className="border-[#0D1B2A]"
-                >
-                  Clear All Filters
-                </Button>
+                <p className="text-[#0D1B2A] opacity-80 mb-4">
+                  {countActiveFilters() > 0 
+                    ? "Try adjusting your filters or clear them to see all available spaces."
+                    : "Check back later for new available spaces."}
+                </p>
+                {countActiveFilters() > 0 && (
+                  <div className="flex gap-3 justify-center">
+                    <Button
+                      onClick={handleResetSearch}
+                      variant="secondary"
+                      className="border-[#0D1B2A] hover:bg-[#0D1B2A] hover:text-white"
+                    >
+                      Clear All Filters
+                    </Button>
+                    <Button
+                      onClick={() => loadAvailableUnits()}
+                      variant="primary"
+                      className="bg-[#D32F2F] hover:bg-[#B71C1C] text-white"
+                    >
+                      Show All Spaces
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {filteredUnits.map((unit) => (
+                {availableUnits.map((unit) => (
                   <UnitCard
                     key={unit.id}
                     unit={unit}
@@ -300,6 +421,16 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                     onAppointment={handleAppointment}
                   />
                 ))}
+              </div>
+            )}
+            
+            {/* Show "Apply Filters" reminder if there are pending filters */}
+            {countPendingFilters() > 0 && countPendingFilters() !== countActiveFilters() && (
+              <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg text-center">
+                <p className="text-amber-800">
+                  ⚡ You have {countPendingFilters()} filter{countPendingFilters() !== 1 ? 's' : ''} set but not applied.
+                  Click <strong>"Apply Filters"</strong> in the search section to see results.
+                </p>
               </div>
             )}
           </>

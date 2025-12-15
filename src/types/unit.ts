@@ -152,6 +152,7 @@ export interface BranchRequest {
 }
 
 export interface UnitSearchParams {
+  roomTypeId: any;
   branchId?: number;
   buildingId?: number;
   levelId?: number;

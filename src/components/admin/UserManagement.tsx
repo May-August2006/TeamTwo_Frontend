@@ -131,22 +131,22 @@ const UserManagement: React.FC = () => {
 
   // Validation patterns and limits
   const patterns = {
-    username: /^[a-zA-Z0-9_]{3,50}$/,
+    username: /^[a-zA-Z0-9_]{3,20}$/,
     email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    fullName: /^[a-zA-Z\s.'-]{2,100}$/,
+    fullName: /^[a-zA-Z\s.'-]{2,30}$/,
   };
 
   const maxLengths = {
-    username: 50,
-    email: 100,
-    fullName: 100,
+    username: 20,
+    email: 50,
+    fullName: 30,
   };
 
   // Validation messages
   const validationMessages = {
     username: {
       required: "Username is required",
-      invalid: "Username must be 3-50 characters (letters, numbers, underscores only)",
+      invalid: "Username must be 3-20 characters (letters, numbers, underscores only)",
       tooLong: `Username cannot exceed ${maxLengths.username} characters`,
       exists: "Username already exists"
     },
@@ -158,7 +158,7 @@ const UserManagement: React.FC = () => {
     },
     fullName: {
       required: "Full name is required",
-      invalid: "Full name must be 2-100 characters (letters, spaces, dots, apostrophes, hyphens only)",
+      invalid: "Full name must be 2-30 characters (letters, spaces, dots, apostrophes, hyphens only)",
       tooLong: `Full name cannot exceed ${maxLengths.fullName} characters`
     }
   };

@@ -19,6 +19,7 @@ export interface CreateContractRequest {
 }
 
 export interface Contract {
+  agreedToTerms: any;
   id: number;
   contractNumber: string;
   tenant?: Tenant;
@@ -70,14 +71,30 @@ export interface Tenant {
   };
 }
 
+export enum UnitType {
+  ROOM = 'ROOM',
+  SPACE = 'SPACE', 
+  HALL = 'HALL'
+}
+
 export interface Unit {
   id: number;
   unitNumber: string;
-  rentalFee?: number;
-  unitSpace?: number;
-  isAvailable?: boolean;
-  level?: Level;
+  unitType: UnitType;
+  unitTypeDisplay?: string;
+  hasMeter: boolean;
+  level: Level;
   roomType?: RoomType;
+  spaceType?: SpaceType;
+  hallType?: HallType;
+  unitSpace: number;
+  isAvailable: boolean;
+  rentalFee: number;
+  imageUrls: string[];
+  utilities: UtilityType[];
+  createdAt: string;
+  updatedAt: string;
+  currentTenantName?: string;
 }
 
 export interface Level {
@@ -108,10 +125,12 @@ export interface RoomType {
   id: number;
   typeName: string;
 }
+
 export interface SpaceType {
   id: number;
   name: string;
 }
+
 export interface HallType {
   id: number;
   name: string;
@@ -212,6 +231,9 @@ export interface UnitDTO {
   isAvailable?: boolean;
   level?: LevelDTO;
   roomType?: RoomTypeDTO;
+  spaceType?: SpaceTypeDTO;
+  hallType?: HallTypeDTO;
+  unitTypeDisplay?: string;
 }
 
 export interface LevelDTO {
@@ -241,6 +263,16 @@ export interface BranchDTO {
 export interface RoomTypeDTO {
   id: number;
   typeName: string;
+}
+
+export interface SpaceTypeDTO {
+  id: number;
+  name: string;
+}
+
+export interface HallTypeDTO {
+  id: number;
+  name: string;
 }
 
 export interface UtilityTypeDTO {
@@ -293,4 +325,28 @@ export interface PaginatedContracts {
   number: number;
   first: boolean;
   last: boolean;
+}
+
+// Validation constants
+export const CONTRACT_VALIDATION_RULES = {
+  contractNumberPattern: /^SGH-\d{4}-\d{3}$/,
+  minRentalFee: 1000,
+  maxRentalFee: 999999999,
+  maxNoticePeriodDays: 365,
+  maxRenewalNoticeDays: 365,
+  minGracePeriodDays: 0,
+  maxGracePeriodDays: 30,
+  maxContractTermsLength: 5000,
+  maxSecurityDeposit: 999999999
+};
+
+// Validation interfaces
+export interface ValidationError {
+  field: string;
+  message: string;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: ValidationError[];
 }

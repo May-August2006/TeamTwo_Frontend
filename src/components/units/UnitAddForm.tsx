@@ -1303,9 +1303,6 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
                 >
                   {utility.utilityName}
                 </label>
-                <p className="text-sm text-gray-500 mt-1">
-                  {utility.description}
-                </p>
                 <div className="flex items-center mt-1 text-xs text-gray-600">
                   <span className="font-medium">
                     {utility.ratePerUnit?.toLocaleString() || '0'} MMK
