@@ -1,3 +1,5 @@
+/** @format */
+
 import React, { useState, useEffect } from "react";
 import type { Unit, UnitSearchParams } from "../../types/unit";
 import { UnitCard } from "./UnitCard";
@@ -8,6 +10,10 @@ import { AppointmentForm } from "./AppointmentForm";
 import { appointmentApi } from "../../api/appointmentApi";
 import { useAuth } from "../../context/AuthContext";
 import { LoginPromptModal } from "../common/ui/LoginPromptModal";
+<<<<<<< HEAD
+=======
+import { userApi } from "../../api/UserAPI";
+>>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
 
 interface AvailableUnitsSectionProps {
   onUnitDetail?: (unit: Unit) => void;
@@ -26,25 +32,29 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // Appointment Modal state
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
-  
-  // Login Prompt state
+
   const [isLoginPromptOpen, setIsLoginPromptOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<{
-    type: 'view' | 'appointment';
+    type: "view" | "appointment";
     unit: Unit;
   } | null>(null);
-  
+  const [isCheckingApproval, setIsCheckingApproval] = useState(false);
+
   const { isAuthenticated, userId } = useAuth();
 
+<<<<<<< HEAD
   // Load units on initial mount
+=======
+  // Load units
+>>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
   useEffect(() => {
     loadAvailableUnits();
   }, []);
 
+<<<<<<< HEAD
   // Helper function to make public API calls (no authentication)
   const publicFetch = async (url: string, options?: RequestInit) => {
     try {
@@ -138,13 +148,29 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       }
 
       // Transform the data
+=======
+  useEffect(() => {
+    filterUnits();
+  }, [searchParams, availableUnits]);
+
+  const loadAvailableUnits = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch("http://localhost:8080/api/units/available");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      let data = await response.json();
+      if (data?.data) data = data.data;
+      if (Array.isArray(data?.content)) data = data.content;
+      if (!Array.isArray(data)) throw new Error("Invalid data format");
+>>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
       const transformedData = data.map((unit: any) => ({
         ...unit,
         utilities: unit.utilities || [],
-        imageUrls: unit.imageUrls || []
+        imageUrls: unit.imageUrls || [],
       }));
-
       setAvailableUnits(transformedData);
+<<<<<<< HEAD
       
       if (params && Object.keys(params).length > 0) {
         setActiveSearchParams(params);
@@ -153,8 +179,10 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
         setActiveSearchParams({});
         console.log(`✅ Loaded ${transformedData.length} units`);
       }
+=======
+>>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
     } catch (err: any) {
-      console.error("❌ Error loading units:", err);
+      console.error("Error loading units:", err);
       setError(err.message || "Failed to load units");
       setAvailableUnits([]);
     } finally {
@@ -164,6 +192,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     }
   };
 
+<<<<<<< HEAD
   // Handle search when user clicks Apply Filters
   const handleApplySearch = async () => {
     console.log("🔍 Apply Filters clicked with params:", pendingSearchParams);
@@ -187,13 +216,52 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   const handleUnitDetail = (unit: Unit) => {
     if (!isAuthenticated) {
       setPendingAction({ type: 'view', unit });
+=======
+  const filterUnits = () => {
+    let filtered = [...availableUnits];
+    if (searchParams.minSpace)
+      filtered = filtered.filter((r) => r.unitSpace >= searchParams.minSpace!);
+    if (searchParams.maxSpace)
+      filtered = filtered.filter((r) => r.unitSpace <= searchParams.maxSpace!);
+    if (searchParams.minRent)
+      filtered = filtered.filter((r) => r.rentalFee >= searchParams.minRent!);
+    if (searchParams.maxRent)
+      filtered = filtered.filter((r) => r.rentalFee <= searchParams.maxRent!);
+    if (searchParams.unitType)
+      filtered = filtered.filter((r) => r.unitType === searchParams.unitType);
+    if (searchParams.roomTypeId)
+      filtered = filtered.filter(
+        (r) => r.roomType?.id === searchParams.roomTypeId
+      );
+    setFilteredUnits(filtered);
+  };
+
+  /** View unit details (approval required) */
+  const handleUnitDetail = async (unit: Unit) => {
+    if (!isAuthenticated || !userId) {
+      setPendingAction({ type: "view", unit });
+>>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
       setIsLoginPromptOpen(true);
       return;
     }
-    console.log("👁️ Viewing unit:", unit.unitNumber);
+
+    try {
+      const res = await userApi.getById(userId);
+      if (res.data.approvalStatus !== "APPROVED") {
+        alert("Your account is pending approval. Redirecting to home page.");
+        return;
+      }
+    } catch (err) {
+      console.error("Failed to verify approval:", err);
+      alert("Failed to verify your account. Redirecting to home page.");
+      window.location.href = "/";
+      return;
+    }
+
     if (onUnitDetail) onUnitDetail(unit);
   };
 
+<<<<<<< HEAD
   // Open appointment modal
   const handleAppointment = (unit: Unit) => {
     if (!isAuthenticated) {
@@ -202,40 +270,109 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       return;
     }
     
+=======
+  /** Book appointment (login required, no approval) */
+  const handleAppointment = async (unit: Unit) => {
+    if (!isAuthenticated || !userId) {
+      setPendingAction({ type: "appointment", unit });
+      setIsLoginPromptOpen(true);
+      return;
+    }
+
+>>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
     if (onAppointment) {
       onAppointment(unit);
       return;
     }
+<<<<<<< HEAD
     
     console.log("📅 Booking appointment for:", unit.unitNumber);
+=======
+
+>>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
     setSelectedUnit(unit);
     setIsAppointmentOpen(true);
   };
 
-  // Handle login prompt confirm
-  const handleLoginConfirm = () => {
+  /** Login confirm modal */
+  const handleLoginConfirm = async () => {
     setIsLoginPromptOpen(false);
+<<<<<<< HEAD
     
     if (pendingAction) {
       sessionStorage.setItem('pendingAction', JSON.stringify(pendingAction));
       sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
       window.location.href = '/login';
+=======
+    if (!pendingAction) return;
+
+    // If already authenticated, check approval immediately
+    if (isAuthenticated && userId) {
+      await checkApprovalAndExecuteAfterLogin(pendingAction);
+      return;
+    }
+
+    // Not authenticated, save action and redirect to login
+    sessionStorage.setItem("pendingAction", JSON.stringify(pendingAction));
+    sessionStorage.setItem("redirectAfterLogin", window.location.pathname);
+    window.location.href = "/login";
+  };
+
+  const checkApprovalAndExecuteAfterLogin = async (action: {
+    type: "view" | "appointment";
+    unit: Unit;
+  }) => {
+    setIsCheckingApproval(true);
+    try {
+      const res = await userApi.getById(userId!);
+      console.log("✅ approvalStatus:", res.data.approvalStatus);
+
+      if (action.type === "view" && res.data.approvalStatus !== "APPROVED") {
+        alert(
+          "Your account is still pending approval. Viewing details unavailable."
+        );
+        setPendingAction(null);
+        sessionStorage.removeItem("pendingAction");
+        return;
+      }
+
+      // Execute the action
+      if (action.type === "view") {
+        if (onUnitDetail) onUnitDetail(action.unit);
+      } else if (action.type === "appointment") {
+        if (onAppointment) {
+          onAppointment(action.unit);
+        } else {
+          setSelectedUnit(action.unit);
+          setIsAppointmentOpen(true);
+        }
+      }
+
+      setPendingAction(null);
+      sessionStorage.removeItem("pendingAction");
+    } catch (err) {
+      console.error("Failed to verify approval:", err);
+      alert("Failed to verify your account. Please try again.");
+    } finally {
+      setIsCheckingApproval(false);
+>>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
     }
   };
 
-  // Handle login prompt cancel
   const handleLoginCancel = () => {
     setIsLoginPromptOpen(false);
     setPendingAction(null);
   };
 
-  // Close appointment modal
   const closeAppointmentModal = () => {
     setSelectedUnit(null);
     setIsAppointmentOpen(false);
   };
 
+<<<<<<< HEAD
   // Submit appointment to backend (this still requires authentication)
+=======
+>>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
   const submitAppointment = async (data: {
     roomId: number;
     appointmentDate: string;
@@ -245,21 +382,28 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     guestPhone: string;
   }) => {
     if (!userId) return;
+<<<<<<< HEAD
 
     try {
       setIsBooking(true);
       const response = await appointmentApi.book(userId || 0, data);
       console.log("✅ Appointment booked:", response.data);
+=======
+    try {
+      setIsBooking(true);
+      await appointmentApi.book(userId, data);
+>>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
       alert("Appointment booked successfully!");
       closeAppointmentModal();
     } catch (err: any) {
-      console.error("❌ Failed to book appointment:", err);
+      console.error("Failed to book appointment:", err);
       alert("Failed to book appointment. Please try again.");
     } finally {
       setIsBooking(false);
     }
   };
 
+<<<<<<< HEAD
   // Count active filters (currently applied)
   const countActiveFilters = () => {
     return Object.values(activeSearchParams).filter(val => 
@@ -273,6 +417,29 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       val !== undefined && val !== '' && val !== null
     ).length;
   };
+=======
+  /** Resume pending action if redirected back after login */
+  useEffect(() => {
+    const checkAndResumePendingAction = async () => {
+      const storedAction = sessionStorage.getItem("pendingAction");
+
+      if (!storedAction || !isAuthenticated || !userId) return;
+
+      const action = JSON.parse(storedAction) as {
+        type: "view" | "appointment";
+        unit: Unit;
+      };
+
+      // Remove immediately to prevent double execution
+      sessionStorage.removeItem("pendingAction");
+
+      // Check approval and execute
+      await checkApprovalAndExecuteAfterLogin(action);
+    };
+
+    checkAndResumePendingAction();
+  }, [isAuthenticated, userId]);
+>>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
 
   return (
     <section id="available-units" className="py-16 bg-[#E5E8EB]">
@@ -283,8 +450,8 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
             Available Retail Spaces
           </h2>
           <p className="text-lg text-[#0D1B2A] opacity-80 max-w-2xl mx-auto">
-            Browse through our carefully curated selection of retail spaces.
-            Each location is designed to help your business thrive.
+            Browse our selection of retail spaces designed to help your business
+            thrive.
           </p>
         </div>
 
@@ -454,11 +621,15 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
             isOpen={isLoginPromptOpen}
             onClose={handleLoginCancel}
             onConfirm={handleLoginConfirm}
-            title={pendingAction.type === 'view' ? 'View Details' : 'Book Appointment'}
+            title={
+              pendingAction.type === "view"
+                ? "View Details"
+                : "Book Appointment"
+            }
             message={
-              pendingAction.type === 'view'
-                ? 'You need to login to view unit details and pricing.'
-                : 'You need to login to book an appointment.'
+              pendingAction.type === "view"
+                ? "You need to login to view unit details and pricing."
+                : "You need to login to book an appointment."
             }
             confirmText="Login Now"
             cancelText="Maybe Later"

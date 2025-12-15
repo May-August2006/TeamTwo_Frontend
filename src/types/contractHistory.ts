@@ -9,7 +9,7 @@ export interface ContractHistoryDTO {
   changedByFullName: string;
   createdAt: string;
   tenantName: string;
-  roomNumber: string;
+  unitNumber: string;
   buildingName: string;
   oldValues: string;
   newValues: string;

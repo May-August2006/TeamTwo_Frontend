@@ -1,3 +1,5 @@
+/** @format */
+
 export interface User {
   message: any;
   user: User;
@@ -16,6 +18,7 @@ export interface User {
   buildingId?: number;
   branchName?: string;
   buildingName?: string;
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED";
 }
 
 export interface UserRequest {

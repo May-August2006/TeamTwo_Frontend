@@ -102,6 +102,20 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
           icon: <DollarSign className="w-4 h-4" />,
         },
         {
+          name: "Billing2",
+          path: "/manager/billing/bulk-readings",
+          icon: <DollarSign className="w-4 h-4" />,
+        },
+
+          {
+          name: "Billing3",
+          path: "/manager/billing/building-invoices",
+          icon: <DollarSign className="w-4 h-4" />,
+        },
+
+        
+        
+        {
           name: "Payments",
           path: "/manager/payments",
           icon: <CreditCard className="w-4 h-4" />,

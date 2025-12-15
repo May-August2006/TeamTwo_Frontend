@@ -27,10 +27,10 @@ export interface FloorOccupancy {
   occupancyRate: number;
 }
 
-export interface RoomStatus {
-  roomId: number;
-  roomNumber: string;
-  roomType: string;
+export interface UnitStatus { // Renamed from RoomStatus
+  unitId: number; // Changed from roomId
+  unitNumber: string; // Changed from roomNumber
+  unitType: string; 
   floor: string;
   building: string;
   branch: string;

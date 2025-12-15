@@ -4,11 +4,35 @@
 import API from "./api";
 import type { InvoiceDTO } from "../types";
 
+export interface InvoiceSummaryDTO {
+  id: number;
+  invoiceNumber: string;
+  issueDate: string; // ISO date string
+  dueDate: string; // ISO date string
+  totalAmount: number;
+  paidAmount: number;
+  balanceAmount: number;
+  invoiceStatus:
+    | "DRAFT"
+    | "ISSUED"
+    | "PAID"
+    | "PARTIAL"
+    | "OVERDUE"
+    | "CANCELLED"
+    | "UNPAID"; // match enum in backend
+  pdfUrl?: string; // optional if not always present
+  tenantName?: string; // if you include tenant info
+  roomNumber?: string; // optional, if included
+}
+
 export const invoiceApi = {
   // Get all invoices
-  getAll: () => API.get<InvoiceDTO[]>("/api/invoices"),
+  getAll: () => API.get<InvoiceSummaryDTO[]>("/api/invoices"),
 
   getUnpaidInvoices: () => API.get<InvoiceDTO[]>("/api/invoices/unpaid"),
+
+  getInvoicesWithLateFees: () =>
+    API.get<InvoiceDTO[]>("/api/invoices/lateFees"),
 
   // Get invoice by ID
   getById: (id: number) => API.get<InvoiceDTO>(`/api/invoices/${id}`),

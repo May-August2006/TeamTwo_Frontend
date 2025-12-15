@@ -22,6 +22,8 @@ export interface BranchRequest {
 }
 
 export interface Building {
+  buildingType: string;
+  totalUnits: string;
   id: number;
   branchId: number;
   branchName: string;
@@ -177,11 +179,13 @@ export interface Payment {
 export interface PaymentRequest {
   invoiceId: number;
   paymentDate: string;
-  paymentMethod: "CASH" | "CHECK" | "BANK_TRANSFER";
+  paymentMethod: string;
   amount: number;
   referenceNumber?: string;
   notes?: string;
   receivedById: number;
+  isLateFeePayment?: boolean;
+  lateFeeId?: number;
 }
 
 export interface InvoiceDTO {
@@ -200,6 +204,9 @@ export interface InvoiceDTO {
   invoiceItems: InvoiceItemDTO[]; // matches "invoiceItems" (not items)
   createdAt: string; // LocalDate → string
   updatedAt: string; // LocalDate → string
+
+  unpaidBalance: string;
+  daysOverdue: number;
 
   lateFees?: LateFeeResponseDTO[];
 }
@@ -324,5 +331,17 @@ export interface LateFeeResponseDTO {
   appliedAmount: number;
   reason: string;
   appliedByName?: string;
-  pdfUrl: string;
+  pdfUrl?: string;
+}
+
+export interface LateFeePolicyDTO {
+  id: number; // database ID
+  amountPerDay: number; // late fee amount per day
+  createdAt?: string; // optional, if backend includes timestamps
+  updatedAt?: string;
+}
+
+// Request payload for creating/updating policy
+export interface LateFeePolicyRequest {
+  amountPerDay: number; // late fee amount per day
 }

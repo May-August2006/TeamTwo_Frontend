@@ -33,10 +33,10 @@
     "dashboard": "Dashboard",
     "masterData": "Master Data Management",
     "branchManagement": "Branch Management",
-    "buildingManagement": "Building Management", 
+   "buildingManagement": "Building Management",
     "levelManagement": "Floor Management",
-    "utilityTypeManagement": "Utility Types",
     "unitManagement": "Unit Management",
+    "utilityTypeManagement": "Utility Types",
     "billing": "Billing Configuration",
     "users": "User Management"
   },

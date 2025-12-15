@@ -43,6 +43,7 @@ export const ExpiringContractsReport: React.FC<
         console.log("🔍 FIRST CONTRACT:", contractsData[0]);
         console.log("🔍 CONTRACT TENANT:", contractsData[0].tenant);
         console.log("🔍 BUSINESS TYPE:", contractsData[0].tenant?.businessType);
+        console.log("🔍 UNIT:", contractsData[0].unit); // Check unit structure
       }
 
       setContracts(contractsData);
@@ -143,11 +144,11 @@ export const ExpiringContractsReport: React.FC<
           contractId: contract.id,
           contractNumber: contract.contractNumber,
           tenantName: contract.tenant?.tenantName || "Unknown Tenant",
-          roomNumber: contract.room?.roomNumber || "Unknown Room",
+          unitNumber: contract.unit?.unitNumber || "Unknown Unit", // Changed from roomNumber to unitNumber
           buildingName:
-            contract.room?.level?.building?.buildingName || "Unknown Building",
+            contract.unit?.level?.building?.buildingName || "Unknown Building", // Changed path
           branchName:
-            contract.room?.level?.building?.branch?.branchName || "Main Branch",
+            contract.unit?.level?.building?.branch?.branchName || "Main Branch", // Changed path
           startDate: contract.startDate,
           endDate: contract.endDate,
           daysUntilExpiry,
@@ -298,7 +299,7 @@ export const ExpiringContractsReport: React.FC<
       "Contact Person": contract.contactPerson,
       Phone: contract.phone,
       Email: contract.email,
-      "Room Number": contract.roomNumber,
+      "Unit Number": contract.unitNumber, // Changed from Room Number to Unit Number
       Building: contract.buildingName,
       Branch: contract.branchName,
       "Business Type": contract.businessType,
@@ -325,7 +326,7 @@ export const ExpiringContractsReport: React.FC<
       { wch: 15 }, // Contact Person
       { wch: 15 }, // Phone
       { wch: 25 }, // Email
-      { wch: 12 }, // Room Number
+      { wch: 12 }, // Unit Number (was Room Number)
       { wch: 15 }, // Building
       { wch: 15 }, // Branch
       { wch: 15 }, // Business Type
@@ -428,7 +429,7 @@ const exportToPDF = async () => {
   const tableData = expiringContracts.map((contract) => [
     contract.contractNumber,
     contract.tenantName,
-    contract.roomNumber,
+    contract.unitNumber, // Changed from roomNumber to unitNumber
     contract.buildingName,
     contract.branchName,
     contract.businessType,
@@ -463,7 +464,7 @@ const exportToPDF = async () => {
   const tableColumns = [
     "Contract No.",
     "Tenant Name",
-    "Room No.",
+    "Unit No.", // Changed from "Room No." to "Unit No."
     "Building",
     "Branch",
     "Business Type",
@@ -476,46 +477,51 @@ const exportToPDF = async () => {
 
   // Add table to PDF with enhanced styling
   autoTable(doc, {
-    head: [tableColumns],
-    body: tableData,
-    startY: 50,
-    styles: {
-      fontSize: 7,
-      cellPadding: 3,
-      lineColor: [209, 213, 219], // Gray-300
-      lineWidth: 0.3,
-      font: "helvetica",
-      textColor: [31, 41, 55], // Gray-800
-    },
-    headStyles: {
-      fillColor: [239, 68, 68], // Red-500 for urgency
-      textColor: [255, 255, 255],
-      fontStyle: "bold",
-      fontSize: 8,
-      cellPadding: 4,
-      lineWidth: 0.3,
-      lineColor: [255, 255, 255],
-    },
-    bodyStyles: {
-      fontSize: 7,
-      cellPadding: 3,
-    },
-    alternateRowStyles: {
-      fillColor: [249, 250, 251], // Gray-50
-    },
-    columnStyles: {
-      0: { cellWidth: 20, fontStyle: "bold" }, // Contract No.
-      1: { cellWidth: 22 }, // Tenant Name
-      2: { cellWidth: 17, halign: "center" }, // Room No.
-      3: { cellWidth: 19 }, // Building
-      4: { cellWidth: 18 }, // Branch
-      5: { cellWidth: 24 }, // Business Type
-      6: { cellWidth: 15, halign: "center" }, // Start Date
-      7: { cellWidth: 15, halign: "center" }, // End Date
-      8: { cellWidth: 17, halign: "center", fontStyle: "bold" }, // Days Left
-      9: { cellWidth: 18, halign: "right" }, // Rental Fee
-      10: { cellWidth: 17, halign: "center", fontStyle: "bold" }, // Status
-    },
+  head: [tableColumns],
+  body: tableData,
+  startY: 50,
+
+  styles: {
+    fontSize: 7,
+    cellPadding: 3,
+    lineColor: [209, 213, 219], // Gray-300
+    lineWidth: 0.3,
+    font: "helvetica",
+    textColor: [31, 41, 55], // Gray-800
+  },
+
+  headStyles: {
+    fillColor: [59, 130, 246], // Blue-500 (updated)
+    textColor: [255, 255, 255], // White text
+    fontStyle: "bold",
+    fontSize: 8,
+    cellPadding: 4,
+    lineWidth: 0.3,
+    lineColor: [255, 255, 255],
+  },
+
+  bodyStyles: {
+    fontSize: 7,
+    cellPadding: 3,
+  },
+
+  alternateRowStyles: {
+    fillColor: [249, 250, 251], // Light gray (#F9FAFB)
+  },
+
+  columnStyles: {
+    0: { cellWidth: 25, fontStyle: "bold" },
+    1: { cellWidth: 22 },
+    2: { cellWidth: 20, halign: "center" },
+    3: { cellWidth: 25 },
+    4: { cellWidth: 28 },
+    5: { cellWidth: 25 },
+    6: { cellWidth: 25, halign: "center" },
+    7: { cellWidth: 25, halign: "center" },
+    8: { cellWidth: 25, halign: "center", fontStyle: "bold" },
+    9: { cellWidth: 24, halign: "right" },
+    10: { cellWidth: 25, halign: "center", fontStyle: "bold" },
+  },
     margin: { top: 50 },
     tableLineColor: [209, 213, 219], // Gray-300
     tableLineWidth: 0.3,
@@ -538,30 +544,6 @@ const exportToPDF = async () => {
           } else {
             color = [34, 197, 94]; // Green
           }
-
-          doc.setTextColor(color[0], color[1], color[2]);
-          doc.text(
-            data.cell.raw,
-            data.cell.x + data.cell.width / 2,
-            data.cell.y + data.cell.height / 2 + 2,
-            {
-              align: "center",
-              baseline: "middle",
-            }
-          );
-          doc.setTextColor(31, 41, 55);
-          return false;
-        }
-
-        if (data.column.index === 10) {
-          // Status column
-          const status = data.cell.raw as string;
-          let color: number[] = [100, 100, 100]; // Default gray
-
-          if (status === "Expired") color = [239, 68, 68]; // Red
-          else if (status === "Expiring Soon")
-            color = [249, 115, 22]; // Orange
-          else if (status === "Needs Renewal") color = [245, 158, 11]; // Yellow
 
           doc.setTextColor(color[0], color[1], color[2]);
           doc.text(
@@ -935,7 +917,7 @@ const exportToPDF = async () => {
                         {contract.tenantName}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {contract.roomNumber} • {contract.buildingName}
+                        {contract.unitNumber} • {contract.buildingName} {/* Changed from roomNumber to unitNumber */}
                       </div>
                       <div className="text-xs text-gray-400">
                         {contract.branchName}
@@ -1006,7 +988,7 @@ const exportToPDF = async () => {
                 <li>• Immediate tenant contact required</li>
                 <li>• Send formal expiration notice</li>
                 <li>• Initiate termination process if no renewal</li>
-                <li>• Update room availability status</li>
+                <li>• Update unit availability status</li> {/* Changed from room to unit */}
               </ul>
             </div>
           </div>

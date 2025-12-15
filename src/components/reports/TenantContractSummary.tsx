@@ -42,6 +42,12 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
       businessTypes.forEach(type => {
         initialFilters[type] = true;
       });
+      
+      // Add "Unknown" for contracts without business type
+      if (contracts.some(c => !c.tenant?.businessType)) {
+        initialFilters['Unknown'] = true;
+      }
+      
       setBusinessTypeFilter(initialFilters);
     }
   }, [contracts]);
@@ -72,10 +78,10 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
 
   const businessTypes = useMemo(() => {
     const types = contracts
-      .map(contract => contract.tenant?.businessType || 'Unknown Business Type')
-      .filter(type => type !== 'Unknown Business Type');
+      .map(contract => contract.tenant?.businessType || 'Unknown')
+      .filter((type, index, array) => array.indexOf(type) === index);
     
-    return Array.from(new Set(types)).sort();
+    return types.sort();
   }, [contracts]);
 
   // Filter contracts based on selected filters and search
@@ -95,11 +101,17 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
+        const tenantName = contract.tenant?.tenantName?.toLowerCase() || '';
+        const contractNumber = contract.contractNumber?.toLowerCase() || '';
+        const unitNumber = contract.unit?.unitNumber?.toLowerCase() || '';
+        const buildingName = contract.unit?.level?.building?.buildingName?.toLowerCase() || '';
+        
         return (
-          contract.tenant?.tenantName?.toLowerCase().includes(searchLower) ||
-          contract.contractNumber?.toLowerCase().includes(searchLower) ||
-          contract.room?.roomNumber?.toLowerCase().includes(searchLower) ||
-          (businessType && businessType.toLowerCase().includes(searchLower))
+          tenantName.includes(searchLower) ||
+          contractNumber.includes(searchLower) ||
+          unitNumber.includes(searchLower) ||
+          buildingName.includes(searchLower) ||
+          businessType.toLowerCase().includes(searchLower)
         );
       }
 
@@ -174,166 +186,195 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
   };
 
   const exportToExcel = () => {
-    const data = filteredContracts.map(contract => ({
-      'Tenant Name': contract.tenant?.tenantName || '',
-      'Contract No.': contract.contractNumber || '',
-      'Room No.': contract.room?.roomNumber || '',
-      'Size (sqm)': contract.room?.roomSpace || '',
-      'Start Date': contract.startDate ? new Date(contract.startDate) : '',
-      'End Date': contract.endDate ? new Date(contract.endDate) : '',
-      'Rental Fee (MMK)': contract.rentalFee || 0,
-      'Business Type': contract.tenant?.businessType || '',
-      'Contract Status': contract.contractStatus?.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || ''
-    }));
+  const data = filteredContracts.map(contract => ({
+    'Tenant Name': contract.tenant?.tenantName || '',
+    'Contract No.': contract.contractNumber || '',
+    'Unit No.': contract.unit?.unitNumber || '',
+    'Building': contract.unit?.level?.building?.buildingName || '',
+    'Start Date': contract.startDate ? new Date(contract.startDate) : '',
+    'End Date': contract.endDate ? new Date(contract.endDate) : '',
+    'Rental Fee (MMK)': contract.rentalFee || 0,
+    'Business Type': contract.tenant?.businessType || 'Unknown',
+    'Contract Status': contract.contractStatus?.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || ''
+  }));
 
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    
-    // Auto-adjust column widths
-    const colWidths = [
-      { wch: 25 }, // Tenant Name
-      { wch: 15 }, // Contract No.
-      { wch: 10 }, // Room No.
-      { wch: 12 }, // Size
-      { wch: 12 }, // Start Date
-      { wch: 12 }, // End Date
-      { wch: 15 }, // Rental Fee
-      { wch: 20 }, // Business Type
-      { wch: 15 }  // Contract Status
-    ];
-    worksheet['!cols'] = colWidths;
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  
+  // Auto-adjust column widths
+  const colWidths = [
+    { wch: 25 }, // Tenant Name
+    { wch: 15 }, // Contract No.
+    { wch: 12 }, // Unit No.
+    { wch: 20 }, // Building
+    { wch: 12 }, // Start Date
+    { wch: 12 }, // End Date
+    { wch: 15 }, // Rental Fee
+    { wch: 20 }, // Business Type
+    { wch: 15 }  // Contract Status
+  ];
+  worksheet['!cols'] = colWidths;
 
-    // Set date formatting
-    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-    for (let row = range.s.r + 1; row <= range.e.r; row++) {
-      ['E', 'F'].forEach(col => { // E=Start Date, F=End Date
-        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col.charCodeAt(0) - 65 });
-        if (worksheet[cellAddress]) {
-          worksheet[cellAddress].z = 'yyyy-mm-dd';
-        }
-      });
-    }
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tenant Contracts');
-    
-    XLSX.writeFile(workbook, `tenant-contract-summary-${new Date().toISOString().split('T')[0]}.xlsx`);
-  };
-
-  const exportToPDF = async () => {
-    const doc = new jsPDF();
-    
-    // Logo configuration
-    const logoUrl = '/src/assets/SeinGayHarLogo.png';
-    const logoWidth = 30;
-    const logoHeight = 15;
-    const logoX = doc.internal.pageSize.width - logoWidth - 14;
-    const logoY = 10;
-
-    try {
-      if (logoUrl) {
-        doc.addImage(logoUrl, 'PNG', logoX, logoY, logoWidth, logoHeight);
+  // Set date formatting
+  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+  for (let row = range.s.r + 1; row <= range.e.r; row++) {
+    ['E', 'F'].forEach((col) => { // E=Start Date, F=End Date
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col.charCodeAt(0) - 65 });
+      if (worksheet[cellAddress]) {
+        worksheet[cellAddress].z = 'yyyy-mm-dd';
       }
-    } catch (error) {
-      console.warn('Could not load logo:', error);
-    }
-
-    // Title
-    const titleX = 14;
-    
-    doc.setFontSize(16);
-    doc.setTextColor(40, 40, 40);
-    doc.text('Tenant Contract Summary Report', titleX, 20);
-    
-    // Subtitle
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()} | Total Records: ${filteredContracts.length}`, titleX, 27);
-    
-    // Prepare table data
-    const tableData = filteredContracts.map(contract => [
-      contract.tenant?.tenantName || '-',
-      contract.contractNumber || '-',
-      contract.room?.roomNumber || '-',
-      contract.room?.roomSpace ? `${contract.room.roomSpace}` : '-',
-      contract.startDate ? new Date(contract.startDate).toLocaleDateString() : '-',
-      contract.endDate ? new Date(contract.endDate).toLocaleDateString() : '-',
-      contract.rentalFee ? contract.rentalFee.toLocaleString() + ' MMK' : '-',
-      contract.tenant?.businessType || '-',
-      contract.contractStatus?.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '-'
-    ]);
-
-    // Define table columns
-    const tableColumns = [
-      { header: 'Tenant Name', dataKey: 'tenantName' },
-      { header: 'Contract No.', dataKey: 'contractNumber' },
-      { header: 'Room No.', dataKey: 'roomNumber' },
-      { header: 'Size (sqm)', dataKey: 'size' },
-      { header: 'Start Date', dataKey: 'startDate' },
-      { header: 'End Date', dataKey: 'endDate' },
-      { header: 'Rental Fee', dataKey: 'rentalFee' },
-      { header: 'Business Type', dataKey: 'businessType' },
-      { header: 'Status', dataKey: 'status' }
-    ];
-
-    // Add table to PDF
-    const startY = 35;
-    
-    autoTable(doc, {
-      head: [tableColumns.map(col => col.header)],
-      body: tableData,
-      startY: startY,
-      styles: {
-        fontSize: 8,
-        cellPadding: 3,
-      },
-      headStyles: {
-        fillColor: [59, 130, 246],
-        textColor: 255,
-        fontStyle: 'bold',
-      },
-      alternateRowStyles: {
-        fillColor: [249, 250, 251],
-      },
-      columnStyles: {
-        0: { cellWidth: 25 },
-        1: { cellWidth: 20 },
-        2: { cellWidth: 14 },
-        3: { cellWidth: 18 },
-        4: { cellWidth: 20 },
-        5: { cellWidth: 20 },
-        6: { cellWidth: 25 },
-        7: { cellWidth: 25 },
-        8: { cellWidth: 18 },
-      },
-      margin: { top: startY },
     });
+  }
 
-    // Add footer with page numbers
-    const pageCount = doc.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      
-      if (i > 1 && logoUrl) {
-        try {
-          const pageLogoX = doc.internal.pageSize.width - logoWidth - 14;
-          doc.addImage(logoUrl, 'PNG', pageLogoX, logoY, logoWidth, logoHeight);
-        } catch (error) {
-          // Continue without logo
-        }
-      }
-      
-      doc.setFontSize(8);
-      doc.setTextColor(100, 100, 100);
-      doc.text(
-        `Page ${i} of ${pageCount} | Generated on ${new Date().toLocaleDateString()}`,
-        doc.internal.pageSize.width / 2,
-        doc.internal.pageSize.height - 10,
-        { align: 'center' }
-      );
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Tenant Contracts');
+  
+  XLSX.writeFile(workbook, `tenant-contract-summary-${new Date().toISOString().split('T')[0]}.xlsx`);
+};
+  const exportToPDF = async () => {
+  const doc = new jsPDF();
+  
+  // Logo configuration
+  const logoUrl = '/src/assets/SeinGayHarLogo.png';
+  const logoWidth = 40;
+  const logoHeight = 20;
+  const logoX = 14; // Left aligned like in JRXML
+  const logoY = 10;
+
+  // Report title
+  doc.setFontSize(16);
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Contract History Report', doc.internal.pageSize.width / 2, 25, { align: 'center' });
+  
+  // Filter type (using business type filter status)
+  const activeFilters = [];
+  if (statusFilter !== 'ALL') {
+    activeFilters.push(`Status: ${statusFilter}`);
+  }
+  
+  const activeBusinessTypes = businessTypes.filter(type => businessTypeFilter[type]);
+  if (activeBusinessTypes.length > 0 && activeBusinessTypes.length < businessTypes.length) {
+    activeFilters.push(`Business Types: ${activeBusinessTypes.join(', ')}`);
+  }
+  
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(100, 100, 100);
+  doc.text(activeFilters.join(' | ') || 'All Contracts', doc.internal.pageSize.width / 2, 35, { align: 'center' });
+  
+  // Generated info
+  doc.setFontSize(9);
+  doc.text(`Generated on: ${new Date().toLocaleDateString()} | Total Records: ${filteredContracts.length}`, 14, 45);
+  
+  // Line separator
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.5);
+  doc.line(14, 50, doc.internal.pageSize.width - 14, 50);
+  
+  // Prepare table data
+  const tableData = filteredContracts.map(contract => [
+    contract.contractNumber || '-',
+    contract.tenant?.tenantName || '-',
+    contract.unit?.unitNumber || '-',
+    contract.contractStatus?.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '-',
+    contract.tenant?.contactPerson || contract.tenant?.tenantName || '-',
+    contract.startDate ? new Date(contract.startDate).toLocaleDateString() + ' to ' + (contract.endDate ? new Date(contract.endDate).toLocaleDateString() : '-') : '-',
+    formatCurrency(contract.rentalFee),
+  ]);
+
+  // Table configuration
+  const startY = 60;
+  const tableColumns = [
+    { header: 'Contract No.', dataKey: 'contractNumber', width: 25 },
+    { header: 'Tenant', dataKey: 'tenantName', width: 40 },
+    { header: 'Unit No.', dataKey: 'unitNumber', width: 25 },
+    { header: 'Status', dataKey: 'status', width: 25 },
+    { header: 'Contact Person', dataKey: 'contactPerson', width: 45 },
+    { header: 'Contract Period', dataKey: 'period', width: 60 },
+    { header: 'Rental Fee', dataKey: 'rentalFee', width: 30 }
+  ];
+
+  // Add table to PDF
+  autoTable(doc, {
+  head: [tableColumns.map(col => col.header)],
+  body: tableData,
+  startY: startY,
+  margin: { left: 14, right: 14 },
+
+  tableWidth: "auto",
+
+  styles: {
+    fontSize: 9,
+    cellPadding: 3,
+    overflow: 'linebreak',
+    cellWidth: 'wrap'
+  },
+
+  headStyles: {
+    fillColor: [102, 153, 255],
+    textColor: 255,
+    fontStyle: 'bold',
+    fontSize: 10,
+    halign: 'center'
+  },
+
+  // ❗ VERY IMPORTANT — NO FIXED WIDTHS
+  columnStyles: {
+    0: { halign: 'center' },
+    1: { halign: 'left' },
+    2: { halign: 'center' },
+    3: { halign: 'center' },
+    4: { halign: 'left' },
+    5: { halign: 'center' }
+  },
+
+  didParseCell: (data) => {
+    // Let long text wrap
+    if (typeof data.cell.raw === "string" && data.cell.raw.length > 20) {
+      data.cell.styles.cellWidth = 'wrap';
     }
+  },
 
-    doc.save(`tenant-contract-summary-${new Date().toISOString().split('T')[0]}.pdf`);
-  };
+  didDrawPage: (data) => {
+    const pageCount = doc.getNumberOfPages();
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Page ${data.pageNumber} of ${pageCount}`,
+      doc.internal.pageSize.width / 2,
+      doc.internal.pageSize.height - 10,
+      { align: 'center' }
+    );
+
+    // logo
+    if (data.pageNumber === 1) {
+      try {
+        doc.addImage(logoUrl, 'PNG', logoX, logoY, logoWidth, logoHeight);
+      } catch (e) {}
+    }
+  }
+});
+
+
+  // Summary section
+  const finalY = (doc as any).lastAutoTable?.finalY || startY;
+  const summaryY = finalY + 15;
+  
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.5);
+  doc.line(14, summaryY - 5, doc.internal.pageSize.width - 14, summaryY - 5);
+  
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(100, 100, 100);
+  doc.text(
+    'End of Contract History Report',
+    doc.internal.pageSize.width / 2,
+    summaryY + 5,
+    { align: 'center' }
+  );
+
+  doc.save(`contract-history-${new Date().toISOString().split('T')[0]}.pdf`);
+};
 
   if (loading) {
     return (
@@ -432,7 +473,7 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
             </label>
             <input
               type="text"
-              placeholder="Search by tenant, contract, room, or business type..."
+              placeholder="Search by tenant, contract, unit, building, or business type..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -507,97 +548,98 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
       </div>
 
       {/* Report Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tenant Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contract No.
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Room No.
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Size
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Start Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  End Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Rental Fee
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Business Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredContracts.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
-                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No contracts found</h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Try adjusting your filters or search terms.
-                    </p>
-                  </td>
-                </tr>
-              ) : (
-                filteredContracts.map((contract) => (
-                  <tr key={contract.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {contract.tenant?.tenantName || '-'}
-                      </div>
-                      {contract.tenant?.contactPerson && (
-                        <div className="text-sm text-gray-500">
-                          {contract.tenant.contactPerson}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
-                      {contract.contractNumber || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {contract.room?.roomNumber || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {contract.room?.roomSpace ? `${contract.room.roomSpace} sqm` : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(contract.startDate)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(contract.endDate)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                      {formatCurrency(contract.rentalFee)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {contract.tenant?.businessType || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(contract.contractStatus)}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Report Table */}
+<div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+  <div className="overflow-x-auto">
+    <table className="w-full">
+      <thead className="bg-gray-50">
+        <tr>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Tenant Name
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Contract No.
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Unit No.
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Building
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Start Date
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            End Date
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Rental Fee
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Business Type
+          </th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Status
+          </th>
+        </tr>
+      </thead>
+      <tbody className="bg-white divide-y divide-gray-200">
+        {filteredContracts.length === 0 ? (
+          <tr>
+            <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No contracts found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Try adjusting your filters or search terms.
+              </p>
+            </td>
+          </tr>
+        ) : (
+          filteredContracts.map((contract) => (
+            <tr key={contract.id} className="hover:bg-gray-50 transition-colors">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm font-medium text-gray-900">
+                  {contract.tenant?.tenantName || '-'}
+                </div>
+                {contract.tenant?.contactPerson && (
+                  <div className="text-sm text-gray-500">
+                    {contract.tenant.contactPerson}
+                  </div>
+                )}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                {contract.contractNumber || '-'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {contract.unit?.unitNumber || '-'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {contract.unit?.level?.building?.buildingName || '-'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {formatDate(contract.startDate)}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {formatDate(contract.endDate)}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                {formatCurrency(contract.rentalFee)}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                {contract.tenant?.businessType || 'Unknown'}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                {getStatusBadge(contract.contractStatus)}
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>
 
       {/* Summary Stats */}
       {filteredContracts.length > 0 && (

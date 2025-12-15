@@ -204,4 +204,7 @@ export const contractApi = {
   terminateWithDetails: (id: number, terminationData: LeaseTerminationRequest) =>
     API.post<TerminationResult>(`/api/contracts/${id}/terminate`, terminationData),
 
+  getActiveByUnit: (unitId: number) => 
+    API.get<Contract[]>(`/api/contracts/unit/${unitId}/active`),
+
 };

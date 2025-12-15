@@ -5,6 +5,9 @@ import { TenantContractSummary } from '../../components/reports/TenantContractSu
 import { VacantOccupiedUnitsReport } from '../../components/reports/VacantOccupiedUnitsReport';
 import { ExpiringContractsReport } from '../../components/reports/ExpiringContractsReport';
 import { ContractHistoryReport } from '../../components/reports/ContractHistoryReport';
+import { RentalRevenueByBusinessTypeReport } from '../../components/reports/RentalRevenueByBusinessTypeReport';
+import { OutstandingBalancesReport } from '../../components/reports/OutstandingBalancesReport';
+import { UtilityConsumptionReport } from '../../components/reports/UtilityConsumptionReport';
 
 type ReportType = 
   | 'TENANT_CONTRACT_SUMMARY' 
@@ -59,11 +62,11 @@ export const ReportsPage: React.FC = () => {
       icon: "⚡"
     },
     {
-      id: 'OUTSTANDING_BALANCES' as ReportType,
-      title: "Outstanding Balances",
-      description: "List of all tenants with unpaid invoices",
-      icon: "📝"
-    },
+    id: 'OUTSTANDING_BALANCES' as ReportType,
+    title: "Outstanding Balances",
+    description: "List of all tenants with unpaid invoices",
+    icon: "📝"
+  },
     {
       id: 'REVENUE_BY_CATEGORY' as ReportType,
       title: "Revenue by Category",
@@ -96,7 +99,14 @@ export const ReportsPage: React.FC = () => {
         return <ContractHistoryReport onBack={handleBackToReports} />;
       case 'VACANT_OCCUPIED_UNITS':
         return <VacantOccupiedUnitsReport onBack={handleBackToReports} />;
+        case 'REVENUE_BY_CATEGORY':  // Add this case
+      return <RentalRevenueByBusinessTypeReport onBack={handleBackToReports} />;
+      case 'UTILITY_CONSUMPTION':
+  return <UtilityConsumptionReport onBack={handleBackToReports} />;
+        case 'OUTSTANDING_BALANCES':
+  return <OutstandingBalancesReport onBack={handleBackToReports} />;
       case 'MONTHLY_BILLING_SUMMARY':
+        
         return (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">💰</div>

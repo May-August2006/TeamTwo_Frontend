@@ -4,7 +4,7 @@ import { unitApi } from '../../api/UnitAPI';
 import { contractApi } from '../../api/ContractAPI';
 import type { Unit } from '../../types/unit';
 import type { Contract } from '../../types/contract';
-import type { OccupancyStats, BuildingOccupancy, FloorOccupancy, RoomStatus } from '../../types/occupancy';
+import type { OccupancyStats, BuildingOccupancy, FloorOccupancy, UnitStatus } from '../../types/occupancy'; // Changed import
 import { Button } from '../common/ui/Button';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
 import * as XLSX from 'xlsx';
@@ -16,11 +16,11 @@ interface VacantOccupiedUnitsReportProps {
 }
 
 export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps> = ({ onBack }) => {
-  const [rooms, setRooms] = useState<Unit[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'buildings' | 'floors' | 'rooms'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'buildings' | 'floors' | 'units'>('overview'); // Changed 'rooms' to 'units'
 
   useEffect(() => {
     loadData();
@@ -31,16 +31,16 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
       setLoading(true);
       setError(null);
       
-      // Load all rooms and contracts in parallel
-      const [roomsResponse, contractsResponse] = await Promise.all([
+      // Load all units and contracts in parallel
+      const [unitsResponse, contractsResponse] = await Promise.all([
         unitApi.getAll(),
         contractApi.getAll()
       ]);
 
-      const roomsData = Array.isArray(roomsResponse.data) ? roomsResponse.data : [];
+      const unitsData = Array.isArray(unitsResponse.data) ? unitsResponse.data : [];
       const contractsData = Array.isArray(contractsResponse.data) ? contractsResponse.data : [];
 
-      setRooms(roomsData);
+      setUnits(unitsData);
       setContracts(contractsData);
 
     } catch (err) {
@@ -52,13 +52,13 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
   };
 
   // CORRECTED: Get branch name from the nested structure
-  const getBranchName = (room: Unit): string => {
-    return room.level?.building?.branch?.branchName || 'Main Branch';
+  const getBranchName = (unit: Unit): string => {
+    return unit.level?.building?.branch?.branchName || 'Main Branch';
   };
 
   // Calculate overall occupancy statistics
   const occupancyStats = useMemo((): OccupancyStats => {
-    const totalUnits = rooms.length;
+    const totalUnits = units.length;
     const occupiedUnits = contracts.filter(contract => 
       contract.contractStatus === 'ACTIVE' || contract.contractStatus === 'EXPIRING'
     ).length;
@@ -73,16 +73,16 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
       occupancyRate,
       vacancyRate
     };
-  }, [rooms, contracts]);
+  }, [units, contracts]);
 
   // Building-wise occupancy
   const buildingOccupancy = useMemo((): BuildingOccupancy[] => {
     const buildingsMap = new Map<string, BuildingOccupancy>();
     
-    rooms.forEach(room => {
-      const buildingName = room.level?.building?.buildingName || 'Unknown Building';
-      const buildingId = room.level?.building?.id || 0;
-      const branchName = getBranchName(room);
+    units.forEach(unit => {
+      const buildingName = unit.level?.building?.buildingName || 'Unknown Building';
+      const buildingId = unit.level?.building?.id || 0;
+      const branchName = getBranchName(unit);
       const key = `${buildingId}-${buildingName}`;
       
       if (!buildingsMap.has(key)) {
@@ -100,9 +100,9 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
       const building = buildingsMap.get(key)!;
       building.totalUnits++;
       
-      // Check if room is occupied by active contract
+      // Check if unit is occupied by active contract
       const isOccupied = contracts.some(contract => 
-        contract.unit?.id === room.id && 
+        contract.unit?.id === unit.id && 
         (contract.contractStatus === 'ACTIVE' || contract.contractStatus === 'EXPIRING')
       );
       
@@ -118,17 +118,17 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
       ...building,
       occupancyRate: building.totalUnits > 0 ? (building.occupiedUnits / building.totalUnits) * 100 : 0
     })).sort((a, b) => a.buildingName.localeCompare(b.buildingName));
-  }, [rooms, contracts]);
+  }, [units, contracts]);
 
   // Floor-wise occupancy
   const floorOccupancy = useMemo((): FloorOccupancy[] => {
     const floorsMap = new Map<string, FloorOccupancy>();
     
-    rooms.forEach(room => {
-      const floorName = room.level?.levelName || 'Unknown Floor';
-      const floorId = room.level?.id || 0;
-      const buildingName = room.level?.building?.buildingName || 'Unknown Building';
-      const branchName = getBranchName(room);
+    units.forEach(unit => {
+      const floorName = unit.level?.levelName || 'Unknown Floor';
+      const floorId = unit.level?.id || 0;
+      const buildingName = unit.level?.building?.buildingName || 'Unknown Building';
+      const branchName = getBranchName(unit);
       const key = `${floorId}-${floorName}-${buildingName}`;
       
       if (!floorsMap.has(key)) {
@@ -146,9 +146,9 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
       const floor = floorsMap.get(key)!;
       floor.totalUnits++;
       
-      // Check if room is occupied by active contract
+      // Check if unit is occupied by active contract
       const isOccupied = contracts.some(contract => 
-        contract.unit?.id === room.id && 
+        contract.unit?.id === unit.id && 
         (contract.contractStatus === 'ACTIVE' || contract.contractStatus === 'EXPIRING')
       );
       
@@ -169,32 +169,44 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
       if (buildingCompare !== 0) return buildingCompare;
       return a.floorName.localeCompare(b.floorName);
     });
-  }, [rooms, contracts]);
+  }, [units, contracts]);
 
-  // Detailed room status
-  const roomStatus = useMemo((): RoomStatus[] => {
-    return rooms.map(room => {
+  // Detailed unit status
+  const unitStatus = useMemo((): UnitStatus[] => {
+    return units.map(unit => {
       const activeContract = contracts.find(contract => 
-        contract.unit?.id === room.id && 
+        contract.unit?.id === unit.id && 
         (contract.contractStatus === 'ACTIVE' || contract.contractStatus === 'EXPIRING')
       );
       
+      // Determine unit type based on your UnitType enum
+      let unitTypeStr = 'Unknown';
+      if (unit.roomType?.typeName) {
+        unitTypeStr = unit.roomType.typeName;
+      } else if (unit.spaceType?.name) {
+        unitTypeStr = unit.spaceType.name;
+      } else if (unit.hallType?.name) {
+        unitTypeStr = unit.hallType.name;
+      } else {
+        unitTypeStr = unit.unitType;
+      }
+      
       return {
-        roomId: room.id,
-        roomNumber: room.unitNumber,
-        roomType: room.roomType?.typeName || 'Unknown',
-        floor: room.level?.levelName || 'Unknown',
-        building: room.level?.building?.buildingName || 'Unknown',
-        branch: getBranchName(room),
+        unitId: unit.id,
+        unitNumber: unit.unitNumber,
+        unitType: unitTypeStr,
+        floor: unit.level?.levelName || 'Unknown',
+        building: unit.level?.building?.buildingName || 'Unknown',
+        branch: getBranchName(unit),
         status: (activeContract ? 'OCCUPIED' : 'VACANT') as 'OCCUPIED' | 'VACANT',
         currentTenant: activeContract?.tenant?.tenantName,
         contractEndDate: activeContract?.endDate,
-        size: room.unitSpace || 0,
-        rentalFee: room.rentalFee || 0,
-        isAvailable: room.isAvailable
+        size: unit.unitSpace || 0,
+        rentalFee: unit.rentalFee || 0,
+        isAvailable: unit.isAvailable
       };
-    }).sort((a, b) => a.roomNumber.localeCompare(b.roomNumber));
-  }, [rooms, contracts]);
+    }).sort((a, b) => a.unitNumber.localeCompare(b.unitNumber));
+  }, [units, contracts]);
 
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat('en-US').format(amount) + ' MMK';
@@ -227,179 +239,232 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
     );
   };
 
- // Export to Excel function
-const exportToExcel = () => {
-  // Prepare data for all tabs
-  const overviewData = [{
-    'Total Units': occupancyStats.totalUnits,
-    'Occupied Units': occupancyStats.occupiedUnits,
-    'Vacant Units': occupancyStats.vacantUnits,
-    'Occupancy Rate': `${occupancyStats.occupancyRate.toFixed(1)}%`,
-    'Vacancy Rate': `${occupancyStats.vacancyRate.toFixed(1)}%`,
-    'Generated Date': new Date().toLocaleDateString()
-  }];
+  // Export to Excel function
+  const exportToExcel = () => {
+    // Prepare data for all tabs
+    const overviewData = [{
+      'Total Units': occupancyStats.totalUnits,
+      'Occupied Units': occupancyStats.occupiedUnits,
+      'Vacant Units': occupancyStats.vacantUnits,
+      'Occupancy Rate': `${occupancyStats.occupancyRate.toFixed(1)}%`,
+      'Vacancy Rate': `${occupancyStats.vacancyRate.toFixed(1)}%`,
+      'Generated Date': new Date().toLocaleDateString()
+    }];
 
-  const buildingData = buildingOccupancy.map(building => ({
-    'Building Name': building.buildingName,
-    'Branch': building.branchName,
-    'Total Units': building.totalUnits,
-    'Occupied Units': building.occupiedUnits,
-    'Vacant Units': building.vacantUnits,
-    'Occupancy Rate': `${building.occupancyRate.toFixed(1)}%`
-  }));
+    const buildingData = buildingOccupancy.map(building => ({
+      'Building Name': building.buildingName,
+      'Branch': building.branchName,
+      'Total Units': building.totalUnits,
+      'Occupied Units': building.occupiedUnits,
+      'Vacant Units': building.vacantUnits,
+      'Occupancy Rate': `${building.occupancyRate.toFixed(1)}%`
+    }));
 
-  const floorData = floorOccupancy.map(floor => ({
-    'Floor Name': floor.floorName,
-    'Building': floor.buildingName,
-    'Total Units': floor.totalUnits,
-    'Occupied Units': floor.occupiedUnits,
-    'Vacant Units': floor.vacantUnits,
-    'Occupancy Rate': `${floor.occupancyRate.toFixed(1)}%`
-  }));
+    const floorData = floorOccupancy.map(floor => ({
+      'Floor Name': floor.floorName,
+      'Building': floor.buildingName,
+      'Total Units': floor.totalUnits,
+      'Occupied Units': floor.occupiedUnits,
+      'Vacant Units': floor.vacantUnits,
+      'Occupancy Rate': `${floor.occupancyRate.toFixed(1)}%`
+    }));
 
-  const roomData = roomStatus.map(room => ({
-    'Room Number': room.roomNumber,
-    'Room Type': room.roomType,
-    'Building': room.building,
-    'Floor': room.floor,
-    'Branch': room.branch,
-    'Size (sqm)': room.size,
-    'Rental Fee (MMK)': room.rentalFee,
-    'Status': room.status === 'OCCUPIED' ? 'Occupied' : 'Vacant',
-    'Current Tenant': room.currentTenant || '',
-    'Contract End Date': room.contractEndDate ? new Date(room.contractEndDate) : ''
-  }));
+    const unitData = unitStatus.map(unit => ({
+      'Unit Number': unit.unitNumber,
+      'Unit Type': unit.unitType,
+      'Building': unit.building,
+      'Floor': unit.floor,
+      'Branch': unit.branch,
+      'Size (sqm)': unit.size,
+      'Rental Fee (MMK)': unit.rentalFee,
+      'Status': unit.status === 'OCCUPIED' ? 'Occupied' : 'Vacant',
+      'Current Tenant': unit.currentTenant || '',
+      'Contract End Date': unit.contractEndDate ? new Date(unit.contractEndDate) : ''
+    }));
 
-  // Create workbook with multiple sheets
-  const workbook = XLSX.utils.book_new();
+    // Create workbook with multiple sheets
+    const workbook = XLSX.utils.book_new();
 
-  // Overview sheet
-  const overviewSheet = XLSX.utils.json_to_sheet(overviewData);
-  XLSX.utils.book_append_sheet(workbook, overviewSheet, 'Overview');
+    // Overview sheet
+    const overviewSheet = XLSX.utils.json_to_sheet(overviewData);
+    XLSX.utils.book_append_sheet(workbook, overviewSheet, 'Overview');
 
-  // Buildings sheet
-  const buildingSheet = XLSX.utils.json_to_sheet(buildingData);
-  XLSX.utils.book_append_sheet(workbook, buildingSheet, 'Buildings');
+    // Buildings sheet
+    const buildingSheet = XLSX.utils.json_to_sheet(buildingData);
+    XLSX.utils.book_append_sheet(workbook, buildingSheet, 'Buildings');
 
-  // Floors sheet
-  const floorSheet = XLSX.utils.json_to_sheet(floorData);
-  XLSX.utils.book_append_sheet(workbook, floorSheet, 'Floors');
+    // Floors sheet
+    const floorSheet = XLSX.utils.json_to_sheet(floorData);
+    XLSX.utils.book_append_sheet(workbook, floorSheet, 'Floors');
 
-  // Rooms sheet
-  const roomSheet = XLSX.utils.json_to_sheet(roomData);
-  XLSX.utils.book_append_sheet(workbook, roomSheet, 'Rooms');
+    // Units sheet (changed from Rooms)
+    const unitSheet = XLSX.utils.json_to_sheet(unitData);
+    XLSX.utils.book_append_sheet(workbook, unitSheet, 'Units');
 
-  // Set column widths for better formatting
-  const buildingColWidths = [
-    { wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 15 }
-  ];
-  buildingSheet['!cols'] = buildingColWidths;
+    // Set column widths for better formatting
+    const buildingColWidths = [
+      { wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 15 }
+    ];
+    buildingSheet['!cols'] = buildingColWidths;
 
-  const roomColWidths = [
-    { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, 
-    { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 20 }, { wch: 15 }
-  ];
-  roomSheet['!cols'] = roomColWidths;
+    const unitColWidths = [
+      { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, 
+      { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 20 }, { wch: 15 }
+    ];
+    unitSheet['!cols'] = unitColWidths;
 
-  // Save the file
-  XLSX.writeFile(workbook, `occupancy-report-${new Date().toISOString().split('T')[0]}.xlsx`);
-};
+    // Save the file
+    XLSX.writeFile(workbook, `occupancy-report-${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
 
-// Export to PDF function with logo on right side
-const exportToPDF = async () => {
-  // Create new PDF document
-  const doc = new jsPDF('l', 'mm', 'a4');
-  
-  // Logo configuration - moved to right side
-  const logoUrl = '/src/assets/SeinGayHarLogo.png';
-  const logoWidth = 30;
-  const logoHeight = 15;
-  const logoX = doc.internal.pageSize.width - logoWidth - 14; // Right side with 14mm margin
-  const logoY = 10;
+  // Export to PDF function with logo on right side
+  const exportToPDF = async () => {
+    // Create new PDF document
+    const doc = new jsPDF('l', 'mm', 'a4');
+    
+    // Logo configuration - moved to right side
+    const logoUrl = '/src/assets/SeinGayHarLogo.png';
+    const logoWidth = 30;
+    const logoHeight = 15;
+    const logoX = doc.internal.pageSize.width - logoWidth - 14; // Right side with 14mm margin
+    const logoY = 10;
 
-  try {
-    // Add logo if available
-    if (logoUrl) {
-      doc.addImage(logoUrl, 'PNG', logoX, logoY, logoWidth, logoHeight);
+    try {
+      // Add logo if available
+      if (logoUrl) {
+        doc.addImage(logoUrl, 'PNG', logoX, logoY, logoWidth, logoHeight);
+      }
+    } catch (error) {
+      console.warn('Could not load logo:', error);
+      // Continue without logo if there's an error
     }
-  } catch (error) {
-    console.warn('Could not load logo:', error);
-    // Continue without logo if there's an error
-  }
 
-  // Title - remains on left side
-  const titleX = 14;
-  
-  doc.setFontSize(18);
-  doc.setTextColor(30, 64, 175);
-  doc.setFont('helvetica', 'bold');
-  doc.text('VACANT VS OCCUPIED UNITS REPORT', titleX, 20);
-  
-  // Subtitle
-  doc.setFontSize(10);
-  doc.setTextColor(75, 85, 99);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Generated on: ${new Date().toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric'
-  })}`, titleX, 28);
-  
-  doc.text(`Total Units: ${occupancyStats.totalUnits} | Occupied: ${occupancyStats.occupiedUnits} | Vacant: ${occupancyStats.vacantUnits} | Occupancy Rate: ${occupancyStats.occupancyRate.toFixed(1)}%`, titleX, 34);
+    // Title - remains on left side
+    const titleX = 14;
+    
+    doc.setFontSize(18);
+    doc.setTextColor(30, 64, 175);
+    doc.setFont('helvetica', 'bold');
+    doc.text('VACANT VS OCCUPIED UNITS REPORT', titleX, 20);
+    
+    // Subtitle
+    doc.setFontSize(10);
+    doc.setTextColor(75, 85, 99);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generated on: ${new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric'
+    })}`, titleX, 28);
+    
+    doc.text(`Total Units: ${occupancyStats.totalUnits} | Occupied: ${occupancyStats.occupiedUnits} | Vacant: ${occupancyStats.vacantUnits} | Occupancy Rate: ${occupancyStats.occupancyRate.toFixed(1)}%`, titleX, 34);
 
-  // Rest of your existing PDF code remains the same...
-  // Summary Stats
-  doc.setFillColor(239, 246, 255);
-  doc.rect(titleX, 38, 260, 8, 'F');
-  doc.setFontSize(9);
-  doc.setTextColor(30, 64, 175);
-  doc.setFont('helvetica', 'bold');
-  doc.text(`OCCUPIED: ${occupancyStats.occupiedUnits} | VACANT: ${occupancyStats.vacantUnits} | OCCUPANCY RATE: ${occupancyStats.occupancyRate.toFixed(1)}%`, titleX + 2, 43);
+    // Summary Stats
+    doc.setFillColor(239, 246, 255);
+    doc.rect(titleX, 38, 260, 8, 'F');
+    doc.setFontSize(9);
+    doc.setTextColor(30, 64, 175);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`OCCUPIED: ${occupancyStats.occupiedUnits} | VACANT: ${occupancyStats.vacantUnits} | OCCUPANCY RATE: ${occupancyStats.occupancyRate.toFixed(1)}%`, titleX + 2, 43);
 
-  // Building-wise Table
-  const startY = 50;
-  
-  doc.setFontSize(12);
-  doc.setTextColor(30, 64, 175);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Building-wise Occupancy', titleX, startY);
+    // Building-wise Table
+    const startY = 50;
+    
+    doc.setFontSize(12);
+    doc.setTextColor(30, 64, 175);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Building-wise Occupancy', titleX, startY);
 
-  const buildingTableData = buildingOccupancy.map(building => [
-    building.buildingName,
-    building.branchName,
-    building.totalUnits.toString(),
-    building.occupiedUnits.toString(),
-    building.vacantUnits.toString(),
-    `${building.occupancyRate.toFixed(1)}%`
-  ]);
+    const buildingTableData = buildingOccupancy.map(building => [
+      building.buildingName,
+      building.branchName,
+      building.totalUnits.toString(),
+      building.occupiedUnits.toString(),
+      building.vacantUnits.toString(),
+      `${building.occupancyRate.toFixed(1)}%`
+    ]);
 
-  autoTable(doc, {
-    head: [['Building', 'Branch', 'Total Units', 'Occupied', 'Vacant', 'Occupancy Rate']],
-    body: buildingTableData,
-    startY: startY + 5,
-    styles: {
-      fontSize: 8,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [30, 64, 175],
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-    },
-    columnStyles: {
-      0: { cellWidth: 25 },
-      1: { cellWidth: 20 },
-      2: { cellWidth: 15, halign: 'center' },
-      3: { cellWidth: 20, halign: 'center' },
-      4: { cellWidth: 15, halign: 'center' },
-      5: { cellWidth: 21, halign: 'center' }
-    },
-  });
+    autoTable(doc, {
+      head: [['Building', 'Branch', 'Total Units', 'Occupied', 'Vacant', 'Occupancy Rate']],
+      body: buildingTableData,
+      startY: startY + 5,
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
+      },
+      headStyles: {
+        fillColor: [30, 64, 175],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 15, halign: 'center' },
+        3: { cellWidth: 20, halign: 'center' },
+        4: { cellWidth: 15, halign: 'center' },
+        5: { cellWidth: 21, halign: 'center' }
+      },
+    });
 
-  // Floor-wise Table (on new page if needed)
-  const finalY = (doc as any).lastAutoTable.finalY + 10;
-  
-  if (finalY > 180) {
+    // Floor-wise Table (on new page if needed)
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    
+    if (finalY > 180) {
+      doc.addPage();
+      // Add logo to new page on right side
+      if (logoUrl) {
+        try {
+          const newPageLogoX = doc.internal.pageSize.width - logoWidth - 14;
+          doc.addImage(logoUrl, 'PNG', newPageLogoX, logoY, logoWidth, logoHeight);
+        } catch (error) {
+          // Continue without logo
+        }
+      }
+      doc.setFontSize(12);
+      doc.setTextColor(30, 64, 175);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Floor-wise Occupancy', titleX, 20);
+    } else {
+      doc.setFontSize(12);
+      doc.setTextColor(30, 64, 175);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Floor-wise Occupancy', titleX, finalY);
+    }
+
+    const floorTableData = floorOccupancy.map(floor => [
+      floor.floorName,
+      floor.buildingName,
+      floor.totalUnits.toString(),
+      floor.occupiedUnits.toString(),
+      floor.vacantUnits.toString(),
+      `${floor.occupancyRate.toFixed(1)}%`
+    ]);
+
+    autoTable(doc, {
+      head: [['Floor', 'Building', 'Total Units', 'Occupied', 'Vacant', 'Occupancy Rate']],
+      body: floorTableData,
+      startY: finalY > 180 ? 25 : finalY + 5,
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
+      },
+      headStyles: {
+        fillColor: [59, 130, 246],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      columnStyles: {
+        0: { cellWidth: 20 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 15, halign: 'center' },
+        3: { cellWidth: 20, halign: 'center' },
+        4: { cellWidth: 15, halign: 'center' },
+        5: { cellWidth: 21, halign: 'center' }
+      },
+    });
+
+    // Unit Details Table (on new page)
     doc.addPage();
     // Add logo to new page on right side
     if (logoUrl) {
@@ -413,138 +478,84 @@ const exportToPDF = async () => {
     doc.setFontSize(12);
     doc.setTextColor(30, 64, 175);
     doc.setFont('helvetica', 'bold');
-    doc.text('Floor-wise Occupancy', titleX, 20);
-  } else {
-    doc.setFontSize(12);
-    doc.setTextColor(30, 64, 175);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Floor-wise Occupancy', titleX, finalY);
-  }
+    doc.text('Detailed Unit Status', titleX, 20);
 
-  const floorTableData = floorOccupancy.map(floor => [
-    floor.floorName,
-    floor.buildingName,
-    floor.totalUnits.toString(),
-    floor.occupiedUnits.toString(),
-    floor.vacantUnits.toString(),
-    `${floor.occupancyRate.toFixed(1)}%`
-  ]);
+    const unitTableData = unitStatus.map(unit => [
+      unit.unitNumber,
+      unit.unitType,
+      unit.building,
+      unit.floor,
+      unit.branch,
+      unit.size.toString(),
+      `${unit.rentalFee.toLocaleString()} MMK`,
+      unit.status === 'OCCUPIED' ? 'Occupied' : 'Vacant',
+      unit.currentTenant || '',
+      unit.contractEndDate ? new Date(unit.contractEndDate).toLocaleDateString('en-US') : ''
+    ]);
 
-  autoTable(doc, {
-    head: [['Floor', 'Building', 'Total Units', 'Occupied', 'Vacant', 'Occupancy Rate']],
-    body: floorTableData,
-    startY: finalY > 180 ? 25 : finalY + 5,
-    styles: {
-      fontSize: 8,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [59, 130, 246],
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-    },
-    columnStyles: {
-      0: { cellWidth: 20 },
-      1: { cellWidth: 25 },
-      2: { cellWidth: 15, halign: 'center' },
-      3: { cellWidth: 20, halign: 'center' },
-      4: { cellWidth: 15, halign: 'center' },
-      5: { cellWidth: 21, halign: 'center' }
-    },
-  });
+    autoTable(doc, {
+      head: [['Unit No.', 'Type', 'Building', 'Floor', 'Branch', 'Size', 'Rental Fee', 'Status', 'Current Tenant', 'Contract End']],
+      body: unitTableData,
+      startY: 25,
+      styles: {
+        fontSize: 6,
+        cellPadding: 2,
+      },
+      headStyles: {
+        fillColor: [16, 185, 129],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+      },
+      columnStyles: {
+        0: { cellWidth: 12 },
+        1: { cellWidth: 15 },
+        2: { cellWidth: 18 },
+        3: { cellWidth: 12 },
+        4: { cellWidth: 15 },
+        5: { cellWidth: 10, halign: 'center' },
+        6: { cellWidth: 15, halign: 'right' },
+        7: { cellWidth: 12, halign: 'center' },
+        8: { cellWidth: 20 },
+        9: { cellWidth: 15, halign: 'center' }
+      },
+      didDrawCell: (data) => {
+        if (data.section === 'body' && data.column.index === 7) {
+          const status = data.cell.raw as string;
+          const color = status === 'Occupied' ? [34, 197, 94] : [59, 130, 246];
+          
+          doc.setTextColor(color[0], color[1], color[2]);
+          doc.text(data.cell.raw, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 1, {
+            align: 'center',
+            baseline: 'middle'
+          });
+          doc.setTextColor(31, 41, 55);
+          return false;
+        }
+      },
+    });
 
-  // Room Details Table (on new page)
-  doc.addPage();
-  // Add logo to new page on right side
-  if (logoUrl) {
-    try {
-      const newPageLogoX = doc.internal.pageSize.width - logoWidth - 14;
-      doc.addImage(logoUrl, 'PNG', newPageLogoX, logoY, logoWidth, logoHeight);
-    } catch (error) {
-      // Continue without logo
+    // Add footer to all pages
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      
+      doc.setDrawColor(209, 213, 219);
+      doc.setLineWidth(0.5);
+      doc.line(14, doc.internal.pageSize.height - 20, doc.internal.pageSize.width - 14, doc.internal.pageSize.height - 20);
+      
+      doc.setFontSize(8);
+      doc.setTextColor(107, 114, 128);
+      doc.text(
+        `Page ${i} of ${pageCount} • Generated on ${new Date().toLocaleDateString()}`,
+        doc.internal.pageSize.width / 2,
+        doc.internal.pageSize.height - 15,
+        { align: 'center' }
+      );
     }
-  }
-  doc.setFontSize(12);
-  doc.setTextColor(30, 64, 175);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Detailed Room Status', titleX, 20);
 
-  const roomTableData = roomStatus.map(room => [
-    room.roomNumber,
-    room.roomType,
-    room.building,
-    room.floor,
-    room.branch,
-    room.size.toString(),
-    `${room.rentalFee.toLocaleString()} MMK`,
-    room.status === 'OCCUPIED' ? 'Occupied' : 'Vacant',
-    room.currentTenant || '',
-    room.contractEndDate ? new Date(room.contractEndDate).toLocaleDateString('en-US') : ''
-  ]);
-
-  autoTable(doc, {
-    head: [['Room No.', 'Type', 'Building', 'Floor', 'Branch', 'Size', 'Rental Fee', 'Status', 'Current Tenant', 'Contract End']],
-    body: roomTableData,
-    startY: 25,
-    styles: {
-      fontSize: 6,
-      cellPadding: 2,
-    },
-    headStyles: {
-      fillColor: [16, 185, 129],
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-    },
-    columnStyles: {
-      0: { cellWidth: 12 },
-      1: { cellWidth: 15 },
-      2: { cellWidth: 18 },
-      3: { cellWidth: 12 },
-      4: { cellWidth: 15 },
-      5: { cellWidth: 10, halign: 'center' },
-      6: { cellWidth: 15, halign: 'right' },
-      7: { cellWidth: 12, halign: 'center' },
-      8: { cellWidth: 20 },
-      9: { cellWidth: 15, halign: 'center' }
-    },
-    didDrawCell: (data) => {
-      if (data.section === 'body' && data.column.index === 7) {
-        const status = data.cell.raw as string;
-        const color = status === 'Occupied' ? [34, 197, 94] : [59, 130, 246];
-        
-        doc.setTextColor(color[0], color[1], color[2]);
-        doc.text(data.cell.raw, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 1, {
-          align: 'center',
-          baseline: 'middle'
-        });
-        doc.setTextColor(31, 41, 55);
-        return false;
-      }
-    },
-  });
-
-  // Add footer to all pages
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    
-    doc.setDrawColor(209, 213, 219);
-    doc.setLineWidth(0.5);
-    doc.line(14, doc.internal.pageSize.height - 20, doc.internal.pageSize.width - 14, doc.internal.pageSize.height - 20);
-    
-    doc.setFontSize(8);
-    doc.setTextColor(107, 114, 128);
-    doc.text(
-      `Page ${i} of ${pageCount} • Generated on ${new Date().toLocaleDateString()}`,
-      doc.internal.pageSize.width / 2,
-      doc.internal.pageSize.height - 15,
-      { align: 'center' }
-    );
-  }
-
-  // Save the PDF
-  doc.save(`occupancy-report-${new Date().toISOString().split('T')[0]}.pdf`);
-};
+    // Save the PDF
+    doc.save(`occupancy-report-${new Date().toISOString().split('T')[0]}.pdf`);
+  };
 
   if (loading) {
     return (
@@ -589,7 +600,7 @@ const exportToPDF = async () => {
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Vacant vs Occupied Units Report</h1>
                 <p className="text-gray-600 mt-1">
-                  Real-time occupancy analysis based on actual room and contract data
+                  Real-time occupancy analysis based on actual unit and contract data
                 </p>
               </div>
             </div>
@@ -636,7 +647,7 @@ const exportToPDF = async () => {
             { id: 'overview' as const, label: 'Overview' },
             { id: 'buildings' as const, label: 'By Building' },
             { id: 'floors' as const, label: 'By Floor' },
-            { id: 'rooms' as const, label: 'Room Details' }
+            { id: 'units' as const, label: 'Unit Details' } // Changed from 'rooms' to 'units'
           ].map(tab => (
             <button
               key={tab.id}
@@ -850,14 +861,14 @@ const exportToPDF = async () => {
           </div>
         )}
 
-        {activeTab === 'rooms' && (
+        {activeTab === 'units' && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">Detailed Room Status</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Detailed Unit Status</h3>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Room No.</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit No.</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Building</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Floor</th>
@@ -870,18 +881,18 @@ const exportToPDF = async () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {roomStatus.map(room => (
-                    <tr key={room.roomId}>
-                      <td className="px-6 py-4 font-medium">{room.roomNumber}</td>
-                      <td className="px-6 py-4">{room.roomType}</td>
-                      <td className="px-6 py-4">{room.building}</td>
-                      <td className="px-6 py-4">{room.floor}</td>
-                      <td className="px-6 py-4 text-gray-600">{room.branch}</td>
-                      <td className="px-6 py-4">{room.size} sqm</td>
-                      <td className="px-6 py-4">{formatCurrency(room.rentalFee)}</td>
-                      <td className="px-6 py-4">{getStatusBadge(room.status)}</td>
-                      <td className="px-6 py-4">{room.currentTenant || '-'}</td>
-                      <td className="px-6 py-4">{formatDate(room.contractEndDate)}</td>
+                  {unitStatus.map(unit => (
+                    <tr key={unit.unitId}>
+                      <td className="px-6 py-4 font-medium">{unit.unitNumber}</td>
+                      <td className="px-6 py-4">{unit.unitType}</td>
+                      <td className="px-6 py-4">{unit.building}</td>
+                      <td className="px-6 py-4">{unit.floor}</td>
+                      <td className="px-6 py-4 text-gray-600">{unit.branch}</td>
+                      <td className="px-6 py-4">{unit.size} sqm</td>
+                      <td className="px-6 py-4">{formatCurrency(unit.rentalFee)}</td>
+                      <td className="px-6 py-4">{getStatusBadge(unit.status)}</td>
+                      <td className="px-6 py-4">{unit.currentTenant || '-'}</td>
+                      <td className="px-6 py-4">{formatDate(unit.contractEndDate)}</td>
                     </tr>
                   ))}
                 </tbody>
