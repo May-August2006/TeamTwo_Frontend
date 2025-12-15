@@ -1,20 +1,21 @@
-import React, { useState } from 'react';
-import { 
-  Home, 
-  Users, 
-  DollarSign, 
-  CreditCard, 
+/** @format */
+
+import React from "react";
+import {
+  Home,
+  Users,
+  DollarSign,
+  CreditCard,
   Receipt,
   FileText,
   BarChart3,
   X,
   ChevronRight,
   ChevronDown,
-  Zap,
   Tag,
   Calculator,
-  Building2
-} from 'lucide-react';
+  Building2,
+} from "lucide-react";
 
 interface SidebarProps {
   activeSection: string;
@@ -67,7 +68,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       name: "Billing & Utilities",
       icon: <DollarSign className="w-5 h-5" />,
       children: [
-
         {
           name: "Utility Calculation",
           value: "usage-entry",
@@ -140,12 +140,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         `}
       >
         {/* Logo Section */}
-        <div className={`flex items-center justify-between p-4 border-b border-stone-200 bg-stone-50 ${isCollapsed ? 'px-3' : 'px-6'}`}>
+        <div
+          className={`flex items-center justify-between p-4 border-b border-stone-200 bg-stone-50 ${
+            isCollapsed ? "px-3" : "px-6"
+          }`}
+        >
           {!isCollapsed && (
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-br from-red-600 to-red-700 rounded-lg shadow-md">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md">
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
                 </svg>
               </div>
               <div>
@@ -156,9 +170,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
           {isCollapsed && (
-            <div className="p-2 bg-gradient-to-br from-red-600 to-red-700 rounded-lg shadow-md mx-auto">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md mx-auto">
+              <svg
+                className="w-6 h-6 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
               </svg>
             </div>
           )}
@@ -167,7 +191,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               onClick={onToggleCollapse}
               className="hidden lg:block p-2 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors duration-150"
             >
-              <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
+              <ChevronRight
+                className={`w-4 h-4 transition-transform duration-300 ${
+                  isCollapsed ? "rotate-180" : ""
+                }`}
+              />
             </button>
             <button
               onClick={onClose}
@@ -180,35 +208,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Navigation */}
         <div className="flex flex-col h-full">
-          <nav className={`flex-1 p-4 space-y-1 overflow-y-auto ${isCollapsed ? 'px-2' : ''}`}>
+          <nav
+            className={`flex-1 p-4 space-y-1 overflow-y-auto ${
+              isCollapsed ? "px-2" : ""
+            }`}
+          >
             {menuItems.map((item, index) => (
               <div key={index}>
                 {item.children ? (
                   <div className="space-y-1">
                     <button
                       onClick={() => toggleSection(item.name)}
-                      className={`flex items-center justify-between w-full p-3 text-left rounded-lg text-stone-700 hover:bg-red-50 hover:text-red-700 transition-colors duration-150 group ${
-                        isCollapsed ? 'justify-center relative' : ''
+                      className={`flex items-center justify-between w-full p-3 text-left rounded-lg text-stone-700 hover:bg-blue-50 hover:text-blue-700 transition-colors duration-150 group ${
+                        isCollapsed ? "justify-center relative" : ""
                       }`}
-                      title={isCollapsed ? item.name : ''}
+                      title={isCollapsed ? item.name : ""}
                     >
-                      <div className={`flex items-center space-x-3 ${isCollapsed ? 'justify-center' : ''}`}>
-                        <div className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 ${
-                          item.children.some(child => isActive(child.value)) ? 'from-red-100 to-red-50' : ''
-                        }`}>
-                          {React.cloneElement(item.icon, { 
-                            className: `w-4 h-4 ${item.children.some(child => isActive(child.value)) ? 'text-red-600 font-bold' : 'text-stone-600'}`
+                      <div
+                        className={`flex items-center space-x-3 ${
+                          isCollapsed ? "justify-center" : ""
+                        }`}
+                      >
+                        <div
+                          className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-200 ${
+                            item.children.some((child) => isActive(child.value))
+                              ? "from-blue-100 to-blue-50"
+                              : ""
+                          }`}
+                        >
+                          {React.cloneElement(item.icon, {
+                            className: `w-4 h-4 ${
+                              item.children.some((child) =>
+                                isActive(child.value)
+                              )
+                                ? "text-blue-600 font-bold"
+                                : "text-stone-600"
+                            }`,
                           })}
                         </div>
-                        {!isCollapsed && <span className="font-semibold">{item.name}</span>}
+                        {!isCollapsed && (
+                          <span className="font-semibold">{item.name}</span>
+                        )}
                       </div>
-                      {!isCollapsed && (
-                        openSections.has(item.name) ? (
+                      {!isCollapsed &&
+                        (openSections.has(item.name) ? (
                           <ChevronDown className="w-4 h-4" />
                         ) : (
                           <ChevronRight className="w-4 h-4" />
-                        )
-                      )}
+                        ))}
                     </button>
 
                     {/* Dropdown for collapsed sidebar */}
@@ -222,19 +269,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               flex items-center space-x-3 w-full px-4 py-3 text-left transition-colors duration-150
                               ${
                                 isActive(child.value)
-                                  ? "bg-red-50 text-red-700 border-l-2 border-red-600 font-medium"
+                                  ? "bg-blue-50 text-blue-700 border-l-2 border-blue-600 font-medium"
                                   : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
                               }
                             `}
                           >
-                            <div className={`p-1.5 rounded-md ${
-                              isActive(child.value) ? 'bg-red-100' : 'bg-stone-100'
-                            }`}>
-                              {React.cloneElement(child.icon, { 
-                                className: `w-4 h-4 ${isActive(child.value) ? 'text-red-600 font-bold' : 'text-stone-600'}`
+                            <div
+                              className={`p-1.5 rounded-md ${
+                                isActive(child.value)
+                                  ? "bg-blue-100"
+                                  : "bg-stone-100"
+                              }`}
+                            >
+                              {React.cloneElement(child.icon, {
+                                className: `w-4 h-4 ${
+                                  isActive(child.value)
+                                    ? "text-blue-600 font-bold"
+                                    : "text-stone-600"
+                                }`,
                               })}
                             </div>
-                            <span className="text-sm font-medium">{child.name}</span>
+                            <span className="text-sm font-medium">
+                              {child.name}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -251,19 +308,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               flex items-center space-x-3 w-full p-3 text-left rounded-lg transition-colors duration-150 group
                               ${
                                 isActive(child.value)
-                                  ? "bg-red-50 text-red-700 border-l-2 border-red-600 font-medium"
+                                  ? "bg-blue-50 text-blue-700 border-l-2 border-blue-600 font-medium"
                                   : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
                               }
                             `}
                           >
-                            <div className={`p-1.5 rounded-md group-hover:bg-white transition-colors duration-150 ${
-                              isActive(child.value) ? 'bg-white' : 'bg-stone-100'
-                            }`}>
-                              {React.cloneElement(child.icon, { 
-                                className: `w-4 h-4 ${isActive(child.value) ? 'text-red-600 font-bold' : 'text-stone-600'}`
+                            <div
+                              className={`p-1.5 rounded-md group-hover:bg-white transition-colors duration-150 ${
+                                isActive(child.value)
+                                  ? "bg-white"
+                                  : "bg-stone-100"
+                              }`}
+                            >
+                              {React.cloneElement(child.icon, {
+                                className: `w-4 h-4 ${
+                                  isActive(child.value)
+                                    ? "text-blue-600 font-bold"
+                                    : "text-stone-600"
+                                }`,
                               })}
                             </div>
-                            <span className="text-sm font-medium">{child.name}</span>
+                            <span className="text-sm font-medium">
+                              {child.name}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -276,21 +343,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       flex items-center space-x-3 w-full p-3 text-left rounded-lg transition-colors duration-150 group
                       ${
                         isActive(item.value!)
-                          ? "bg-red-50 text-red-700 border-l-2 border-red-600 font-medium"
+                          ? "bg-blue-50 text-blue-700 border-l-2 border-blue-600 font-medium"
                           : "text-stone-700 hover:bg-stone-100 hover:text-stone-900"
                       }
-                      ${isCollapsed ? 'justify-center relative' : ''}
+                      ${isCollapsed ? "justify-center relative" : ""}
                     `}
-                    title={isCollapsed ? item.name : ''}
+                    title={isCollapsed ? item.name : ""}
                   >
-                    <div className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 ${
-                      isActive(item.value!) ? 'from-red-100 to-red-50' : ''
-                    } ${isCollapsed ? '' : 'mr-2'}`}>
-                      {React.cloneElement(item.icon, { 
-                        className: `w-4 h-4 ${isActive(item.value!) ? 'text-red-600 font-bold' : 'text-stone-600'}`
+                    <div
+                      className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-200 ${
+                        isActive(item.value!) ? "from-blue-100 to-blue-50" : ""
+                      } ${isCollapsed ? "" : "mr-2"}`}
+                    >
+                      {React.cloneElement(item.icon, {
+                        className: `w-4 h-4 ${
+                          isActive(item.value!)
+                            ? "text-blue-600 font-bold"
+                            : "text-stone-600"
+                        }`,
                       })}
                     </div>
-                    {!isCollapsed && <span className="font-semibold">{item.name}</span>}
+                    {!isCollapsed && (
+                      <span className="font-semibold">{item.name}</span>
+                    )}
                   </button>
                 )}
               </div>
@@ -309,7 +384,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <p className="text-sm font-semibold text-stone-900 truncate">
                       Accountant User
                     </p>
-                    <p className="text-xs text-stone-500 truncate">Accountant</p>
+                    <p className="text-xs text-stone-500 truncate">
+                      Accountant
+                    </p>
                   </div>
                 </div>
               </div>
