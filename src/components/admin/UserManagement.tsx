@@ -187,12 +187,8 @@ const UserManagement: React.FC = () => {
   const validationMessages = {
     username: {
       required: "Username is required",
-<<<<<<< HEAD
-      invalid: "Username must be 3-20 characters (letters, numbers, underscores only)",
-=======
       invalid:
         "Username must be 3-50 characters (letters, numbers, underscores only)",
->>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
       tooLong: `Username cannot exceed ${maxLengths.username} characters`,
       exists: "Username already exists",
     },
@@ -204,10 +200,6 @@ const UserManagement: React.FC = () => {
     },
     fullName: {
       required: "Full name is required",
-<<<<<<< HEAD
-      invalid: "Full name must be 2-30 characters (letters, spaces, dots, apostrophes, hyphens only)",
-      tooLong: `Full name cannot exceed ${maxLengths.fullName} characters`
-=======
       invalid:
         "Full name must be 2-100 characters (letters, spaces, dots, apostrophes, hyphens only)",
       tooLong: `Full name cannot exceed ${maxLengths.fullName} characters`,
@@ -236,7 +228,6 @@ const UserManagement: React.FC = () => {
         );
       default:
         return users;
->>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
     }
   };
 
