@@ -4,7 +4,7 @@ export interface User {
   message: any;
   user: User;
   errors: boolean;
-  errors(errors: any): unknown;
+
   success: boolean;
   status: string;
   id: number;

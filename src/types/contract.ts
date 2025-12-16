@@ -1,3 +1,5 @@
+/** @format */
+
 // types/contract.ts
 export interface CreateContractRequest {
   contractNumber: string;
@@ -7,7 +9,7 @@ export interface CreateContractRequest {
   endDate: string;
   rentalFee: number;
   securityDeposit?: number;
-  contractDurationType: ContractDurationType;
+  contractDurationType: ContractDurationType | "";
   gracePeriodDays?: number;
   noticePeriodDays?: number;
   renewalNoticeDays?: number;
@@ -71,11 +73,13 @@ export interface Tenant {
   };
 }
 
-export enum UnitType {
-  ROOM = 'ROOM',
-  SPACE = 'SPACE', 
-  HALL = 'HALL'
-}
+export const UnitType = {
+  ROOM: "ROOM",
+  SPACE: "SPACE",
+  HALL: "HALL",
+} as const;
+
+export type UnitType = (typeof UnitType)[keyof typeof UnitType];
 
 export interface Unit {
   id: number;
@@ -141,7 +145,7 @@ export interface UtilityType {
   utilityName: string;
   description?: string;
   ratePerUnit?: number;
-  calculationMethod?: 'FIXED' | 'METERED' | 'PER_UNIT';
+  calculationMethod?: "FIXED" | "METERED" | "PER_UNIT";
 }
 
 export interface User {
@@ -152,8 +156,13 @@ export interface User {
   lastName?: string;
 }
 
-export type ContractStatus = 'ACTIVE' | 'EXPIRING' | 'TERMINATED' | 'EXPIRED';
-export type ContractDurationType = 'THREE_MONTHS' | 'SIX_MONTHS' | 'ONE_YEAR' | 'TWO_YEARS';
+export type ContractStatus = "ACTIVE" | "EXPIRING" | "TERMINATED" | "EXPIRED";
+export type ContractDurationType =
+  | "THREE_MONTHS"
+  | "SIX_MONTHS"
+  | "ONE_YEAR"
+  | "TWO_YEARS"
+  | "";
 
 export interface LeaseTerminationRequest {
   terminationDate: string;
@@ -299,7 +308,13 @@ export interface FileDownloadResponse {
 export interface ContractHistory {
   id: number;
   contractId: number;
-  actionType: 'CREATED' | 'UPDATED' | 'RENEWED' | 'TERMINATED' | 'AMENDED' | 'DEPOSIT_SETTLED';
+  actionType:
+    | "CREATED"
+    | "UPDATED"
+    | "RENEWED"
+    | "TERMINATED"
+    | "AMENDED"
+    | "DEPOSIT_SETTLED";
   description: string;
   changedBy: User;
   createdAt: string;
@@ -337,7 +352,7 @@ export const CONTRACT_VALIDATION_RULES = {
   minGracePeriodDays: 0,
   maxGracePeriodDays: 30,
   maxContractTermsLength: 5000,
-  maxSecurityDeposit: 999999999
+  maxSecurityDeposit: 999999999,
 };
 
 // Validation interfaces
