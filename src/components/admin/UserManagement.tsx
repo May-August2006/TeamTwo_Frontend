@@ -1,6 +1,6 @@
 /** @format */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Edit,
   Trash2,
@@ -19,8 +19,6 @@ import {
   ThumbsUp,
   ThumbsDown,
   Clock,
-  UserCheck,
-  UserX,
 } from "lucide-react";
 import { userApi } from "../../api/UserAPI";
 import { buildingApi } from "../../api/BuildingAPI";
@@ -38,14 +36,14 @@ interface User {
   approvalStatus?: "PENDING" | "APPROVED" | "REJECTED";
   lastLogin?: string;
   branchId?: number;
-  buildingId?: number; 
-  accountantBuildingId?: number; 
+  buildingId?: number;
+  accountantBuildingId?: number;
   branchName?: string;
   buildingName?: string;
-  accountantBuildingName?: string; 
+  accountantBuildingName?: string;
   building?: any;
   branch?: any;
-  accountantBuilding?: any; 
+  accountantBuilding?: any;
 }
 
 interface Building {
@@ -55,7 +53,7 @@ interface Building {
   branchId: number;
   managerId?: number;
   managerName?: string;
-  accountantId?: number; 
+  accountantId?: number;
   accountantName?: string;
 }
 
@@ -128,6 +126,7 @@ const UserManagement: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(true);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState<number | null>(null);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
@@ -146,7 +145,7 @@ const UserManagement: React.FC = () => {
   });
 
   const [activeTab, setActiveTab] = useState<TabType>("all");
-  // const { t } = useTranslation();
+  const notificationTimeoutsRef = useRef<{ [key: number]: NodeJS.Timeout }>({});
 
   const [newUser, setNewUser] = useState<UserRequest>({
     username: "",
@@ -187,12 +186,8 @@ const UserManagement: React.FC = () => {
   const validationMessages = {
     username: {
       required: "Username is required",
-<<<<<<< HEAD
-      invalid: "Username must be 3-20 characters (letters, numbers, underscores only)",
-=======
       invalid:
-        "Username must be 3-50 characters (letters, numbers, underscores only)",
->>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
+        "Username must be 3-20 characters (letters, numbers, underscores only)",
       tooLong: `Username cannot exceed ${maxLengths.username} characters`,
       exists: "Username already exists",
     },
@@ -204,17 +199,13 @@ const UserManagement: React.FC = () => {
     },
     fullName: {
       required: "Full name is required",
-<<<<<<< HEAD
-      invalid: "Full name must be 2-30 characters (letters, spaces, dots, apostrophes, hyphens only)",
-      tooLong: `Full name cannot exceed ${maxLengths.fullName} characters`
-=======
       invalid:
-        "Full name must be 2-100 characters (letters, spaces, dots, apostrophes, hyphens only)",
+        "Full name must be 2-30 characters (letters, spaces, dots, apostrophes, hyphens only)",
       tooLong: `Full name cannot exceed ${maxLengths.fullName} characters`,
     },
   };
 
-  const getFilteredUsers = () => {
+  const getFilteredUsers = (): User[] => {
     switch (activeTab) {
       case "all":
         return users;
@@ -236,7 +227,6 @@ const UserManagement: React.FC = () => {
         );
       default:
         return users;
->>>>>>> 49c5c5f420be1c547d4d245121c652784fa32ab6
     }
   };
 
@@ -429,7 +419,13 @@ const UserManagement: React.FC = () => {
     const newNotification: Notification = { id, type, message };
     setNotifications((prev) => [...prev, newNotification]);
 
-    setTimeout(() => {
+    // Clear any existing timeout for this id
+    if (notificationTimeoutsRef.current[id]) {
+      clearTimeout(notificationTimeoutsRef.current[id]);
+    }
+
+    // Set new timeout
+    notificationTimeoutsRef.current[id] = setTimeout(() => {
       removeNotification(id);
     }, 5000);
   };
@@ -438,6 +434,12 @@ const UserManagement: React.FC = () => {
     setNotifications((prev) =>
       prev.filter((notification) => notification.id !== id)
     );
+
+    // Clear the timeout
+    if (notificationTimeoutsRef.current[id]) {
+      clearTimeout(notificationTimeoutsRef.current[id]);
+      delete notificationTimeoutsRef.current[id];
+    }
   };
 
   const showConfirmation = (config: Omit<Confirmation, "isOpen">) => {
@@ -465,10 +467,17 @@ const UserManagement: React.FC = () => {
 
   useEffect(() => {
     fetchAllData();
+
+    // Cleanup on component unmount
+    return () => {
+      Object.values(notificationTimeoutsRef.current).forEach(clearTimeout);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchAllData = async () => {
     try {
+      setLoadingUsers(true);
       await Promise.all([
         fetchUsers(),
         fetchBuildings(),
@@ -479,6 +488,8 @@ const UserManagement: React.FC = () => {
     } catch (error) {
       setErrors({ general: "Failed to load data. Please refresh the page." });
       addNotification("error", "Failed to load data. Please refresh the page.");
+    } finally {
+      setLoadingUsers(false);
     }
   };
 
@@ -487,15 +498,27 @@ const UserManagement: React.FC = () => {
       setErrors({});
       const response = await userApi.getAll();
 
-      console.log("API Response:", response); // Add this for debugging
-      console.log("API Data:", response.data); // Add this for debugging
+      console.log("API Response:", response);
+      console.log("API Data:", response.data);
 
-      let usersData = response.data;
+      let usersData: User[] = [];
 
-      if (response.data && Array.isArray(response.data)) {
-        usersData = response.data;
-      } else if (response.data && response.data.content) {
-        usersData = response.data.content;
+      if (response.data) {
+        // Check if response is paginated (has content property)
+        if (Array.isArray(response.data)) {
+          usersData = response.data;
+        } else if (
+          response.data.content &&
+          Array.isArray(response.data.content)
+        ) {
+          usersData = response.data.content;
+        } else if (
+          typeof response.data === "object" &&
+          !Array.isArray(response.data)
+        ) {
+          // Single user object
+          usersData = [response.data];
+        }
       }
 
       // Ensure all guest users have an approvalStatus
@@ -536,15 +559,15 @@ const UserManagement: React.FC = () => {
     }
   };
 
-const fetchAvailableBuildings = async () => {
-  try {
-    const response = await buildingApi.getAll();
-    setAvailableBuildings(response.data);
-  } catch (error) {
-    console.error("Error fetching buildings:", error);
-    setAvailableBuildings([]);
-  }
-};
+  const fetchAvailableBuildings = async () => {
+    try {
+      const response = await buildingApi.getAll();
+      setAvailableBuildings(response.data);
+    } catch (error) {
+      console.error("Error fetching buildings:", error);
+      setAvailableBuildings([]);
+    }
+  };
 
   const fetchAvailableBranches = async () => {
     try {
@@ -556,40 +579,42 @@ const fetchAvailableBuildings = async () => {
     }
   };
 
-const getUserBuildingName = (user: User): string => {
-  // For managers
-  if (user.roleName === "ROLE_MANAGER") {
-    if (user.buildingId) {
-      const building = buildings.find((b) => b.id === user.buildingId);
-      return building ? building.buildingName : "Unknown Building";
+  const getUserBuildingName = (user: User): string => {
+    // For managers
+    if (user.roleName === "ROLE_MANAGER") {
+      if (user.buildingId) {
+        const building = buildings.find((b) => b.id === user.buildingId);
+        return building ? building.buildingName : "Unknown Building";
+      }
+      if (user.building) {
+        return user.building.buildingName || "Unknown Building";
+      }
+      if (user.buildingName) {
+        return user.buildingName;
+      }
     }
-    if (user.building) {
-      return user.building.buildingName || "Unknown Building";
+
+    // For accountants
+    if (user.roleName === "ROLE_ACCOUNTANT") {
+      // Try to find building where this user is accountant
+      const accountantBuilding = buildings.find(
+        (b) => b.accountantId === user.id
+      );
+      if (accountantBuilding) {
+        return accountantBuilding.buildingName;
+      }
+
+      // Fallback to stored data
+      if (user.accountantBuildingName) {
+        return user.accountantBuildingName;
+      }
+      if (user.accountantBuilding) {
+        return user.accountantBuilding.buildingName || "Unknown Building";
+      }
     }
-    if (user.buildingName) {
-      return user.buildingName;
-    }
-  }
-  
-  // For accountants
-  if (user.roleName === "ROLE_ACCOUNTANT") {
-    // Try to find building where this user is accountant
-    const accountantBuilding = buildings.find((b) => b.accountantId === user.id);
-    if (accountantBuilding) {
-      return accountantBuilding.buildingName;
-    }
-    
-    // Fallback to stored data
-    if (user.accountantBuildingName) {
-      return user.accountantBuildingName;
-    }
-    if (user.accountantBuilding) {
-      return user.accountantBuilding.buildingName || "Unknown Building";
-    }
-  }
-  
-  return "";
-};
+
+    return "";
+  };
 
   const getUserBranchName = (user: User): string => {
     if (user.branchId) {
@@ -608,22 +633,24 @@ const getUserBuildingName = (user: User): string => {
     return "";
   };
 
- const getUserBuildingId = (user: User): number | undefined => {
-  if (user.roleName === "ROLE_MANAGER") {
-    if (user.buildingId) return user.buildingId;
-    if (user.building) return user.building.id;
-  }
-  
-  if (user.roleName === "ROLE_ACCOUNTANT") {
-    // Find building where this user is accountant
-    const accountantBuilding = buildings.find((b) => b.accountantId === user.id);
-    if (accountantBuilding) return accountantBuilding.id;
-    
-    if (user.accountantBuilding) return user.accountantBuilding.id;
-  }
-  
-  return undefined;
-};
+  const getUserBuildingId = (user: User): number | undefined => {
+    if (user.roleName === "ROLE_MANAGER") {
+      if (user.buildingId) return user.buildingId;
+      if (user.building) return user.building.id;
+    }
+
+    if (user.roleName === "ROLE_ACCOUNTANT") {
+      // Find building where this user is accountant
+      const accountantBuilding = buildings.find(
+        (b) => b.accountantId === user.id
+      );
+      if (accountantBuilding) return accountantBuilding.id;
+
+      if (user.accountantBuilding) return user.accountantBuilding.id;
+    }
+
+    return undefined;
+  };
 
   const getUserBranchId = (user: User): number | undefined => {
     if (user.branchId) return user.branchId;
@@ -976,72 +1003,95 @@ const getUserBuildingName = (user: User): string => {
   };
 
   const handleAssignUser = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-  setErrors({});
+    e.preventDefault();
+    setLoading(true);
+    setErrors({});
 
-  try {
-    if (assignment.assignmentType === "manager" && assignment.buildingId) {
-      await buildingApi.assignManager(assignment.buildingId, assignment.userId);
-      addNotification("success", "Manager assigned to building successfully!");
-    } else if (assignment.assignmentType === "accountant" && assignment.buildingId) {
-      // NEW: Assign accountant to building instead of branch
-      await buildingApi.assignAccountant(assignment.buildingId, assignment.userId);
-      addNotification("success", "Accountant assigned to building successfully!");
-    } else {
-      throw new Error("Invalid assignment parameters");
+    try {
+      if (assignment.assignmentType === "manager" && assignment.buildingId) {
+        await buildingApi.assignManager(
+          assignment.buildingId,
+          assignment.userId
+        );
+        addNotification(
+          "success",
+          "Manager assigned to building successfully!"
+        );
+      } else if (
+        assignment.assignmentType === "accountant" &&
+        assignment.buildingId
+      ) {
+        // NEW: Assign accountant to building instead of branch
+        await buildingApi.assignAccountant(
+          assignment.buildingId,
+          assignment.userId
+        );
+        addNotification(
+          "success",
+          "Accountant assigned to building successfully!"
+        );
+      } else {
+        throw new Error("Invalid assignment parameters");
+      }
+
+      setShowAssignModal(false);
+      setAssignment({
+        userId: 0,
+        buildingId: 0,
+        branchId: 0,
+        assignmentType: "",
+      });
+
+      fetchAllData();
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to assign user";
+      setErrors({ general: errorMessage });
+      addNotification("error", errorMessage);
+    } finally {
+      setLoading(false);
     }
-
-    setShowAssignModal(false);
-    setAssignment({
-      userId: 0,
-      buildingId: 0,
-      branchId: 0,
-      assignmentType: "",
-    });
-
-    fetchAllData();
-  } catch (error: any) {
-    const errorMessage = error.response?.data?.message || "Failed to assign user";
-    setErrors({ general: errorMessage });
-    addNotification("error", errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleRemoveAssignmentClick = (user: User) => {
-  const buildingId = getUserBuildingId(user);
+    const buildingId = getUserBuildingId(user);
 
-  showConfirmation({
-    title: "Remove Assignment",
-    message: `Are you sure you want to remove ${user.fullName} from their assignment?`,
-    confirmText: "Remove",
-    cancelText: "Cancel",
-    onConfirm: async () => {
-      try {
-        if (user.roleName === "ROLE_MANAGER" && buildingId) {
-          await buildingApi.removeManager(buildingId);
-          addNotification("success", "Manager removed from building successfully!");
-        } else if (user.roleName === "ROLE_ACCOUNTANT" && buildingId) {
-          // NEW: Remove accountant from building
-          await buildingApi.removeAccountant(buildingId);
-          addNotification("success", "Accountant removed from building successfully!");
+    showConfirmation({
+      title: "Remove Assignment",
+      message: `Are you sure you want to remove ${user.fullName} from their assignment?`,
+      confirmText: "Remove",
+      cancelText: "Cancel",
+      onConfirm: async () => {
+        try {
+          if (user.roleName === "ROLE_MANAGER" && buildingId) {
+            await buildingApi.removeManager(buildingId);
+            addNotification(
+              "success",
+              "Manager removed from building successfully!"
+            );
+          } else if (user.roleName === "ROLE_ACCOUNTANT" && buildingId) {
+            // NEW: Remove accountant from building
+            await buildingApi.removeAccountant(buildingId);
+            addNotification(
+              "success",
+              "Accountant removed from building successfully!"
+            );
+          }
+
+          fetchAllData();
+        } catch (error: any) {
+          const errorMessage =
+            error.response?.data?.message || "Failed to remove assignment";
+          setErrors({ general: errorMessage });
+          addNotification("error", errorMessage);
         }
-
-        fetchAllData();
-      } catch (error: any) {
-        const errorMessage = error.response?.data?.message || "Failed to remove assignment";
-        setErrors({ general: errorMessage });
-        addNotification("error", errorMessage);
-      }
-      setMobileMenuOpen(null);
-    },
-    onCancel: () => {
-      setMobileMenuOpen(null);
-    },
-  });
-};
+        setMobileMenuOpen(null);
+      },
+      onCancel: () => {
+        setMobileMenuOpen(null);
+      },
+    });
+  };
 
   const handleDeleteUserClick = (id: number) => {
     const user = users.find((u) => u.id === id);
@@ -1107,10 +1157,13 @@ const getUserBuildingName = (user: User): string => {
     setNewUser({ ...newUser, branchId });
   };
 
-  const handleAssignmentBuildingChange = (value: string, forRole: "manager" | "accountant") => {
-  const buildingId = value ? parseInt(value) : 0;
-  setAssignment({ ...assignment, buildingId });
-};
+  const handleAssignmentBuildingChange = (
+    value: string,
+    forRole: "manager" | "accountant"
+  ) => {
+    const buildingId = value ? parseInt(value) : 0;
+    setAssignment({ ...assignment, buildingId });
+  };
 
   const handleAssignmentBranchChange = (value: string) => {
     const branchId = value ? parseInt(value) : 0;
@@ -1198,9 +1251,11 @@ const getUserBuildingName = (user: User): string => {
     setEmailAvailable(null);
   };
 
-const showBuildingSelectionForAccountant = newUser.roleName === "ROLE_ACCOUNTANT";
-const showBuildingSelectionForManager = newUser.roleName === "ROLE_MANAGER";
-const showBuildingSelection = showBuildingSelectionForManager || showBuildingSelectionForAccountant;
+  const showBuildingSelectionForAccountant =
+    newUser.roleName === "ROLE_ACCOUNTANT";
+  const showBuildingSelectionForManager = newUser.roleName === "ROLE_MANAGER";
+  const showBuildingSelection =
+    showBuildingSelectionForManager || showBuildingSelectionForAccountant;
   const toggleMobileMenu = (userId: number) => {
     setMobileMenuOpen(mobileMenuOpen === userId ? null : userId);
   };
@@ -1212,7 +1267,7 @@ const showBuildingSelection = showBuildingSelectionForManager || showBuildingSel
   }: {
     value: string;
     maxLength: number;
-    field: string;
+    field: keyof typeof maxLengths;
   }) => {
     const currentLength = value.length;
     const isNearLimit = currentLength > maxLength * 0.8;
@@ -1434,7 +1489,27 @@ const showBuildingSelection = showBuildingSelectionForManager || showBuildingSel
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-stone-200">
-              {filteredUsers.length === 0 ? (
+              {loadingUsers ? (
+                <tr>
+                  <td
+                    colSpan={
+                      activeTab === "guests" ||
+                      activeTab === "pending-approval" ||
+                      activeTab === "all"
+                        ? 6
+                        : 5
+                    }
+                    className="px-4 sm:px-6 py-8 text-center text-stone-500"
+                  >
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+                      <span className="ml-3 text-gray-600">
+                        Loading users...
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredUsers.length === 0 ? (
                 <tr>
                   <td
                     colSpan={
@@ -1456,7 +1531,7 @@ const showBuildingSelection = showBuildingSelectionForManager || showBuildingSel
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user) => {
+                filteredUsers.map((user: User) => {
                   const buildingName = getUserBuildingName(user);
                   const branchName = getUserBranchName(user);
                   const hasAssignment = buildingName || branchName;
@@ -1516,28 +1591,29 @@ const showBuildingSelection = showBuildingSelectionForManager || showBuildingSel
                         </td>
                       )}
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-neutral-800">
-  {buildingName && user.roleName === "ROLE_MANAGER" && (
-    <div className="flex items-center space-x-1 text-stone-700">
-      <Building className="w-4 h-4" />
-      <span>{buildingName} (Manager)</span>
-    </div>
-  )}
-  {buildingName && user.roleName === "ROLE_ACCOUNTANT" && (
-    <div className="flex items-center space-x-1 text-stone-700">
-      <Briefcase className="w-4 h-4" />
-      <span>{buildingName} (Accountant)</span>
-    </div>
-  )}
-  {branchName && user.roleName === "ROLE_ACCOUNTANT" && (
-    <div className="flex items-center space-x-1 text-stone-700">
-      <Briefcase className="w-4 h-4" />
-      <span>{branchName} (Accountant)</span>
-    </div>
-  )}
-  {!buildingName && !branchName && (
-    <span className="text-stone-400">Not assigned</span>
-  )}
-</td>
+                        {buildingName && user.roleName === "ROLE_MANAGER" && (
+                          <div className="flex items-center space-x-1 text-stone-700">
+                            <Building className="w-4 h-4" />
+                            <span>{buildingName} (Manager)</span>
+                          </div>
+                        )}
+                        {buildingName &&
+                          user.roleName === "ROLE_ACCOUNTANT" && (
+                            <div className="flex items-center space-x-1 text-stone-700">
+                              <Briefcase className="w-4 h-4" />
+                              <span>{buildingName} (Accountant)</span>
+                            </div>
+                          )}
+                        {branchName && user.roleName === "ROLE_ACCOUNTANT" && (
+                          <div className="flex items-center space-x-1 text-stone-700">
+                            <Briefcase className="w-4 h-4" />
+                            <span>{branchName} (Accountant)</span>
+                          </div>
+                        )}
+                        {!buildingName && !branchName && (
+                          <span className="text-stone-400">Not assigned</span>
+                        )}
+                      </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -1682,7 +1758,12 @@ const showBuildingSelection = showBuildingSelectionForManager || showBuildingSel
 
         {/* Mobile Cards */}
         <div className="md:hidden">
-          {filteredUsers.length === 0 ? (
+          {loadingUsers ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+              <span className="ml-3 text-gray-600">Loading users...</span>
+            </div>
+          ) : filteredUsers.length === 0 ? (
             <div className="p-8 text-center text-stone-500">
               <div className="flex flex-col items-center justify-center">
                 <Users className="w-12 h-12 text-stone-300 mb-2" />
@@ -1693,7 +1774,7 @@ const showBuildingSelection = showBuildingSelectionForManager || showBuildingSel
               </div>
             </div>
           ) : (
-            filteredUsers.map((user) => {
+            filteredUsers.map((user: User) => {
               const buildingName = getUserBuildingName(user);
               const branchName = getUserBranchName(user);
               const hasAssignment = buildingName || branchName;
@@ -2096,40 +2177,41 @@ const showBuildingSelection = showBuildingSelectionForManager || showBuildingSel
                 )}
 
                 {showBuildingSelection && (
-  <div>
-    <label className="block text-sm font-medium text-stone-700">
-      {newUser.roleName === "ROLE_MANAGER" 
-        ? "Assign to Building (as Manager)" 
-        : "Assign to Building (as Accountant)"}
-    </label>
-    <select
-      value={newUser.buildingId || ""}
-      onChange={(e) => handleBuildingChange(e.target.value)}
-      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
-    >
-      <option value="">Select a building (optional)</option>
-      {newUser.roleName === "ROLE_MANAGER" 
-        ? availableBuildings.filter(b => !b.managerId).map((building) => (
-            <option key={building.id} value={building.id}>
-              {building.buildingName} - {building.branchName}
-            </option>
-          ))
-        : availableBuildings.filter(b => !b.accountantId).map((building) => (
-            <option key={building.id} value={building.id}>
-              {building.buildingName} - {building.branchName}
-            </option>
-          ))
-      }
-    </select>
-    <p className="text-xs text-stone-500 mt-1">
-      {newUser.roleName === "ROLE_MANAGER" 
-        ? "Only buildings without managers are shown"
-        : "Only buildings without accountants are shown"}
-    </p>
-  </div>
-)}
-
-                
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700">
+                      {newUser.roleName === "ROLE_MANAGER"
+                        ? "Assign to Building (as Manager)"
+                        : "Assign to Building (as Accountant)"}
+                    </label>
+                    <select
+                      value={newUser.buildingId || ""}
+                      onChange={(e) => handleBuildingChange(e.target.value)}
+                      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
+                    >
+                      <option value="">Select a building (optional)</option>
+                      {newUser.roleName === "ROLE_MANAGER"
+                        ? availableBuildings
+                            .filter((b) => !b.managerId)
+                            .map((building) => (
+                              <option key={building.id} value={building.id}>
+                                {building.buildingName} - {building.branchName}
+                              </option>
+                            ))
+                        : availableBuildings
+                            .filter((b) => !b.accountantId)
+                            .map((building) => (
+                              <option key={building.id} value={building.id}>
+                                {building.buildingName} - {building.branchName}
+                              </option>
+                            ))}
+                    </select>
+                    <p className="text-xs text-stone-500 mt-1">
+                      {newUser.roleName === "ROLE_MANAGER"
+                        ? "Only buildings without managers are shown"
+                        : "Only buildings without accountants are shown"}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {errors.general && (
@@ -2290,7 +2372,8 @@ const showBuildingSelection = showBuildingSelectionForManager || showBuildingSel
           </div>
         </div>
       )}
-{/* Assign User Modal */}
+
+      {/* Assign User Modal */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-neutral-800 bg-opacity-70 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -2303,70 +2386,78 @@ const showBuildingSelection = showBuildingSelectionForManager || showBuildingSel
             <form onSubmit={handleAssignUser}>
               <div className="space-y-4">
                 {assignment.assignmentType === "manager" && (
-  <div>
-    <label className="block text-sm font-medium text-stone-700">
-      Select Building
-    </label>
-    <select
-      required
-      value={assignment.buildingId}
-      onChange={(e) =>
-        handleAssignmentBuildingChange(e.target.value, "manager")
-      }
-      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
-    >
-      <option value="">Choose a building...</option>
-      {availableBuildings
-        .filter(b => !b.managerId) // CHANGED: Only check for manager, not accountant
-        .map((building) => (
-          <option key={building.id} value={building.id}>
-            {building.buildingName} - {building.branchName}
-          </option>
-        ))}
-      {availableBuildings.filter(b => !b.managerId).length === 0 && (
-        <option value="" disabled>
-          No available buildings without managers
-        </option>
-      )}
-    </select>
-    <p className="text-xs text-stone-500 mt-1">
-      Only buildings without managers are shown
-    </p>
-  </div>
-)}
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700">
+                      Select Building
+                    </label>
+                    <select
+                      required
+                      value={assignment.buildingId}
+                      onChange={(e) =>
+                        handleAssignmentBuildingChange(
+                          e.target.value,
+                          "manager"
+                        )
+                      }
+                      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
+                    >
+                      <option value="">Choose a building...</option>
+                      {availableBuildings
+                        .filter((b) => !b.managerId)
+                        .map((building) => (
+                          <option key={building.id} value={building.id}>
+                            {building.buildingName} - {building.branchName}
+                          </option>
+                        ))}
+                      {availableBuildings.filter((b) => !b.managerId).length ===
+                        0 && (
+                        <option value="" disabled>
+                          No available buildings without managers
+                        </option>
+                      )}
+                    </select>
+                    <p className="text-xs text-stone-500 mt-1">
+                      Only buildings without managers are shown
+                    </p>
+                  </div>
+                )}
 
-{assignment.assignmentType === "accountant" && (
-  <div>
-    <label className="block text-sm font-medium text-stone-700">
-      Select Building
-    </label>
-    <select
-      required
-      value={assignment.buildingId}
-      onChange={(e) =>
-        handleAssignmentBuildingChange(e.target.value, "accountant")
-      }
-      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
-    >
-      <option value="">Choose a building...</option>
-      {availableBuildings
-        .filter(b => !b.accountantId) // CHANGED: Only check for accountant, not manager
-        .map((building) => (
-          <option key={building.id} value={building.id}>
-            {building.buildingName} - {building.branchName}
-          </option>
-        ))}
-      {availableBuildings.filter(b => !b.accountantId).length === 0 && (
-        <option value="" disabled>
-          No available buildings without accountants
-        </option>
-      )}
-    </select>
-    <p className="text-xs text-stone-500 mt-1">
-      Only buildings without accountants are shown
-    </p>
-  </div>
-)}
+                {assignment.assignmentType === "accountant" && (
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700">
+                      Select Building
+                    </label>
+                    <select
+                      required
+                      value={assignment.buildingId}
+                      onChange={(e) =>
+                        handleAssignmentBuildingChange(
+                          e.target.value,
+                          "accountant"
+                        )
+                      }
+                      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
+                    >
+                      <option value="">Choose a building...</option>
+                      {availableBuildings
+                        .filter((b) => !b.accountantId)
+                        .map((building) => (
+                          <option key={building.id} value={building.id}>
+                            {building.buildingName} - {building.branchName}
+                          </option>
+                        ))}
+                      {availableBuildings.filter((b) => !b.accountantId)
+                        .length === 0 && (
+                        <option value="" disabled>
+                          No available buildings without accountants
+                        </option>
+                      )}
+                    </select>
+                    <p className="text-xs text-stone-500 mt-1">
+                      Only buildings without accountants are shown
+                    </p>
+                  </div>
+                )}
               </div>
 
               {errors.general && (
@@ -2388,9 +2479,11 @@ const showBuildingSelection = showBuildingSelectionForManager || showBuildingSel
                   disabled={
                     loading ||
                     (assignment.assignmentType === "manager" &&
-                      availableBuildings.filter(b => !b.managerId).length === 0) ||
+                      availableBuildings.filter((b) => !b.managerId).length ===
+                        0) ||
                     (assignment.assignmentType === "accountant" &&
-                      availableBuildings.filter(b => !b.accountantId).length === 0)
+                      availableBuildings.filter((b) => !b.accountantId)
+                        .length === 0)
                   }
                   className="px-4 py-2 text-sm font-medium text-white bg-red-700 rounded-md hover:bg-red-800 disabled:opacity-50 transition-colors"
                 >
