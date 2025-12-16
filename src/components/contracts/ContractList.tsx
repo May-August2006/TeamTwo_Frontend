@@ -45,8 +45,8 @@ export const ContractList: React.FC<ContractListProps> = ({
       const response = await contractApi.getAll();
       setContracts(response.data || []);
     } catch (err) {
-      console.error("Error loading contracts:", err);
-      setError("Failed to load contracts");
+      console.error("Error loading Leases:", err);
+      setError("Failed to load Leases");
     } finally {
       setLoading(false);
     }
@@ -204,7 +204,7 @@ export const ContractList: React.FC<ContractListProps> = ({
     return (
       <div className="flex justify-center items-center py-12">
         <LoadingSpinner size="lg" />
-        <span className="ml-2 text-gray-600">Loading contracts...</span>
+        <span className="ml-2 text-gray-600">Loading Leases...</span>
       </div>
     );
   }
@@ -229,11 +229,11 @@ export const ContractList: React.FC<ContractListProps> = ({
             Leases Management
           </h1>
           <p className="text-gray-600 mt-1">
-            Manage all rental contracts and lease agreements
+            Manage all rental lease agreements
           </p>
         </div>
         <Button onClick={onCreateContract} variant="primary">
-          Create New Contract
+          Create New Lease
         </Button>
       </div>
 
@@ -276,7 +276,7 @@ export const ContractList: React.FC<ContractListProps> = ({
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Search contracts by number, tenant, unit, business type, unit type..."
+              placeholder="Search Leases by number, tenant, unit, business type, unit type..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -318,7 +318,7 @@ export const ContractList: React.FC<ContractListProps> = ({
                   onClick={() => handleSort("contractNumber")}
                 >
                   <div className="flex items-center space-x-1">
-                    <span>Contract</span>
+                    <span>Lease</span>
                     <span className="text-xs">
                       {getSortIcon("contractNumber")}
                     </span>
@@ -383,17 +383,17 @@ export const ContractList: React.FC<ContractListProps> = ({
                       />
                     </svg>
                     <h3 className="mt-2 text-sm font-medium text-gray-900">
-                      No contracts found
+                      No Leases found
                     </h3>
                     <p className="mt-1 text-sm text-gray-500">
                       {contracts.length === 0
-                        ? "Get started by creating a new contract."
+                        ? "Get started by creating a new Lease."
                         : "Try adjusting your search or filter criteria."}
                     </p>
                     {contracts.length === 0 && (
                       <div className="mt-4">
                         <Button onClick={onCreateContract} variant="primary">
-                          Create New Contract
+                          Create New Lease
                         </Button>
                       </div>
                     )}
@@ -535,7 +535,7 @@ export const ContractList: React.FC<ContractListProps> = ({
           <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
             <p className="text-sm text-gray-600">
               Showing {filteredAndSortedContracts.length} of {contracts.length}{" "}
-              contracts
+              Leases
             </p>
           </div>
         )}

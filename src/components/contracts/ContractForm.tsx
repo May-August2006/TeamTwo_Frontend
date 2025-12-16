@@ -28,7 +28,7 @@ interface ContractFormProps {
   isEdit?: boolean;
 }
 
-// Contract duration options with their month values
+//  Lease duration options with their month values
 const contractDurationOptions = [
   { value: "THREE_MONTHS", label: "3 Months", months: 3 },
   { value: "SIX_MONTHS", label: "6 Months", months: 6 },
@@ -181,7 +181,7 @@ TERMS AND CONDITIONS FOR COMMERCIAL LEASE AGREEMENT
 This Lease Agreement is made between the Landlord and the Tenant as specified in this contract.
 
 2. PREMISES
-The Landlord leases to the Tenant the premises described in this contract for commercial purposes only.
+The Landlord leases to the Tenant the premises described in this  Lease for commercial purposes only.
 
 3. TERM
 The lease term shall commence on the Start Date and continue until the End Date specified in this contract.
@@ -193,7 +193,7 @@ Tenant shall pay the monthly rental fee as specified in this contract, due on th
 The security deposit shall be held by Landlord as security for the performance of Tenant's obligations.
 
 6. UTILITIES
-Utilities included in this contract are as specified. Additional utilities may be charged separately.
+Utilities included in this  Lease are as specified. Additional utilities may be charged separately.
 
 7. USE OF PREMISES
 The premises shall be used only for the purpose specified in the tenant's business registration.
@@ -760,7 +760,7 @@ useEffect(() => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // 1. Contract Number validation (STRICT)
+    // 1.  Lease Number validation (STRICT)
     if (!formData.contractNumber.trim()) {
       newErrors.contractNumber = "Contract number is required";
     } else if (
@@ -784,7 +784,7 @@ useEffect(() => {
       newErrors.unitId = "Please select a unit";
     }
 
-    // 4. Contract Duration validation (STRICT)
+    // 4.  Lease Duration validation (STRICT)
     if (!formData.contractDurationType) {
       newErrors.contractDurationType = "Contract duration is required";
     }
@@ -860,7 +860,7 @@ useEffect(() => {
       newErrors.renewalNoticeDays = `Renewal notice must be between ${VALIDATION_RULES.minRenewalNoticeDays} and ${VALIDATION_RULES.maxRenewalNoticeDays} days`;
     }
 
-    // 12. Contract Terms validation with character limit (STRICT)
+    // 12.  Lease Terms validation with character limit (STRICT)
     if (
       formData.contractTerms &&
       formData.contractTerms.length > VALIDATION_RULES.maxContractTermsLength
@@ -995,14 +995,14 @@ useEffect(() => {
     } catch (error: any) {
       console.error("Submission error:", error);
 
-      // SPECIFIC HANDLING FOR DUPLICATE CONTRACT NUMBER
+      // SPECIFIC HANDLING FOR DUPLICATE  Lease NUMBER
       if (
         error.response?.data?.error?.includes("already exists") ||
         error.response?.data?.contractNumber?.includes("already exists") ||
         error.message?.includes("already exists")
       ) {
         showError(
-          "Contract number already exists. Please use a different contract number."
+          "Contract number already exists. Please use a different  Lease number."
         );
         setErrors((prev) => ({
           ...prev,
@@ -1010,7 +1010,7 @@ useEffect(() => {
             "Contract number already exists. Please use a different number.",
         }));
 
-        // Focus on contract number field
+        // Focus on  Lease number field
         setTimeout(() => {
           contractNumberInputRef.current?.focus();
           contractNumberInputRef.current?.scrollIntoView({
@@ -1128,7 +1128,7 @@ useEffect(() => {
     }
   };
 
-  // STRICT: Contract number change handler
+  // STRICT:  Lease number change handler
   const handleContractNumberChange = (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -1172,7 +1172,7 @@ useEffect(() => {
       contractNumber: value,
     }));
 
-    // Clear contract number error when user types
+    // Clear  Lease number error when user types
     if (errors.contractNumber) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -1499,13 +1499,13 @@ useEffect(() => {
   const getFormTitle = () => {
     if (isRenewal) return "Renew Contract";
     if (isEdit) return "Edit Contract";
-    return "Create New Contract";
+    return "Create New Lease";
   };
 
   const getSubmitButtonText = () => {
     if (isRenewal) return "Renew Contract";
     if (isEdit) return "Update Contract";
-    return "Create Contract";
+    return "Create Lease";
   };
 
   // Check if there are any errors
@@ -1526,10 +1526,10 @@ useEffect(() => {
                 </h2>
                 <p className="text-gray-600 mt-1">
                   {isRenewal
-                    ? "Renew contract with new terms"
+                    ? "Renew Lease with new terms"
                     : isEdit
-                    ? "Update contract details"
-                    : "Fill in the details to create a new rental contract"}
+                    ? "Update Lease details"
+                    : "Fill in the details to create a new rental Lease"}
                 </p>
               </div>
               <button
@@ -1629,28 +1629,28 @@ useEffect(() => {
                       </svg>
                       <span className="text-blue-800 font-medium">
                         {isRenewal
-                          ? `Renewing contract ${
+                          ? `Renewing Lease ${
                               initialData.contractNumber
-                            }. Original contract ends on ${new Date(
+                            }. Original Lease ends on ${new Date(
                               initialData.endDate
                             ).toLocaleDateString()}.`
-                          : `Editing contract ${initialData.contractNumber}. Current status: ${initialData.contractStatus}.`}
+                          : `Editing  Lease ${initialData.contractNumber}. Current status: ${initialData.contractStatus}.`}
                       </span>
                     </div>
                   </div>
                 )}
 
-                {/* Contract Information Section */}
+                {/*  Lease Information Section */}
                 <div className="bg-white p-6 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Contract Information
+                    Lease Information
                   </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Contract Number */}
+                    {/*  Lease Number */}
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Contract Number *
+                        Lease Number *
                         <span className="text-xs text-gray-500 ml-2">
                           Format: SGH-YYYY-NNNN (e.g., SGH-2025-9999)
                         </span>
@@ -1705,7 +1705,7 @@ useEffect(() => {
                     {(isEdit || isRenewal) && initialData?.fileUrl && (
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Current Contract Document
+                          Current Lease Document
                         </label>
                         <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md">
                           <div className="flex items-center">
@@ -1753,7 +1753,7 @@ useEffect(() => {
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         {isEdit || isRenewal
-                          ? "Upload New Contract Document"
+                          ? "Upload New Lease Document"
                           : "Contract Document"}
                         <span className="text-xs text-gray-500 ml-2">
                           Optional - you can upload later
@@ -1788,7 +1788,7 @@ useEffect(() => {
                                 />
                               </svg>
                               <span className="font-medium">
-                                Choose Contract File
+                                ChooseLeaseFile
                               </span>
                               <span className="text-sm mt-1">
                                 or drag and drop
@@ -1875,10 +1875,10 @@ useEffect(() => {
                       </div>
                     </div>
 
-                    {/* Contract Duration */}
+                    {/*  Lease Duration */}
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Contract Duration *
+                         Lease Duration *
                       </label>
                       <select
                         name="contractDurationType"
@@ -1958,7 +1958,7 @@ useEffect(() => {
                       )}
                       {!formData.contractDurationType && (
                         <p className="text-xs text-yellow-600 mt-1">
-                          Please select contract duration first
+                          Please select  Lease duration first
                         </p>
                       )}
                     </div>
@@ -2383,7 +2383,7 @@ useEffect(() => {
                         )}
                       {!formData.contractDurationType && (
                         <p className="text-xs text-yellow-600 mt-1">
-                          Please select contract duration first
+                          Please select  Lease duration first
                         </p>
                       )}
                     </div>
@@ -2477,10 +2477,10 @@ useEffect(() => {
                   </div>
                 </div>
 
-                {/* Contract Terms Section */}
+                {/*  Lease Terms Section */}
                 <div className="bg-white p-6 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Contract Terms
+                     Lease Terms
                   </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2568,11 +2568,11 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  {/* Contract Terms Textarea */}
+                  {/*  Lease Terms Textarea */}
                   <div className="mt-4">
                     <div className="flex justify-between items-center mb-1">
                       <label className="block text-sm font-medium text-gray-700">
-                        Additional Contract Terms
+                        Additional  Lease Terms
                         <span className="text-xs text-gray-500 ml-2">
                           Optional
                         </span>

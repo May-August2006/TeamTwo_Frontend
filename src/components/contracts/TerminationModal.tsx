@@ -63,7 +63,7 @@ export const TerminationModal: React.FC<TerminationModalProps> = ({
       if (contract?.startDate) {
         const startDate = new Date(contract.startDate);
         if (terminationDate < startDate) {
-          newErrors.terminationDate = 'Termination date cannot be before contract start date';
+          newErrors.terminationDate = 'Termination date cannot be before Lease start date';
         }
       }
     }
@@ -223,7 +223,7 @@ export const TerminationModal: React.FC<TerminationModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Contract Preview */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-medium text-blue-900 mb-2">Contract Details</h3>
+            <h3 className="font-medium text-blue-900 mb-2">Lease Details</h3>
             <div className="text-sm text-blue-700 space-y-1">
               <p><strong>Tenant:</strong> {contract.tenant?.tenantName || 'N/A'}</p>
               <p><strong>Unit:</strong> {contract.unit?.unitNumber || 'N/A'}</p>
@@ -285,7 +285,7 @@ export const TerminationModal: React.FC<TerminationModalProps> = ({
               <p className="text-red-500 text-sm mt-1">{errors.terminationDate}</p>
             )}
             <p className="text-xs text-gray-500 mt-1">
-              Must be between today and contract end date ({new Date(contract.endDate).toLocaleDateString()})
+              Must be between today and Lease end date ({new Date(contract.endDate).toLocaleDateString()})
             </p>
           </div>
 
@@ -376,7 +376,7 @@ export const TerminationModal: React.FC<TerminationModalProps> = ({
             <ul className="text-sm text-red-700 mt-2 space-y-1">
               <li>• This action <strong>cannot be undone</strong></li>
               <li>• The unit will be marked as available immediately</li>
-              <li>• Contract status will be changed to "TERMINATED"</li>
+              <li>• Lease status will be changed to "TERMINATED"</li>
               <li>• All future billing will be stopped</li>
               <li>• Tenant will be notified of termination</li>
             </ul>

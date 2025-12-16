@@ -40,8 +40,8 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
       console.log('Contract data:', response.data);
       setContract(response.data);
     } catch (err) {
-      console.error('Error loading contract:', err);
-      setError('Failed to load contract details');
+      console.error('Error loading Lease:', err);
+      setError('Failed to load  Lease details');
     } finally {
       setLoading(false);
     }
@@ -55,7 +55,7 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
     setContract(terminatedContract);
     setShowTerminationModal(false);
     
-    // Reload contract to get latest data
+    // Reload  Lease to get latest data
     loadContract();
     
     if (onTerminate) {
@@ -294,7 +294,7 @@ export const ContractDetail: React.FC<ContractDetailProps> = ({
     return 'Unknown';
   };
 
-  // Helper to format contract terms for display
+  // Helper to format  Lease terms for display
   const formatContractTerms = (terms: string | undefined): string => {
     if (!terms || terms.trim() === '') {
       return 'No additional terms specified.';
@@ -313,13 +313,13 @@ Start Date: ${formatDate(contract?.startDate)}
 End Date: ${formatDate(contract?.endDate)}`,
       
       standardClauses: `1. PARTIES
-This Lease Agreement is made between the Landlord and the Tenant as specified in this contract.
+This Lease Agreement is made between the Landlord and the Tenant as specified in this Lease.
 
 2. PREMISES
-The Landlord leases to the Tenant the premises described in this contract for commercial purposes only.
+The Landlord leases to the Tenant the premises described in this  Lease for commercial purposes only.
 
 3. TERM
-The lease term shall commence on the Start Date and continue until the End Date specified in this contract.
+The lease term shall commence on the Start Date and continue until the End Date specified in this Lease.
 
 4. RENT
 Tenant shall pay the monthly rental fee of ${formatCurrency(contract?.rentalFee)}, due on the first day of each month.
@@ -329,7 +329,7 @@ Grace period: ${contract?.gracePeriodDays || 0} days.
 The security deposit of ${formatCurrency(contract?.securityDeposit)} shall be held by Landlord as security for the performance of Tenant's obligations.
 
 6. UTILITIES
-Utilities included in this contract are as specified. Additional utilities may be charged separately.
+Utilities included in this  Lease are as specified. Additional utilities may be charged separately.
 
 7. USE OF PREMISES
 The premises shall be used only for the purpose specified in the tenant's business registration.
@@ -341,10 +341,10 @@ Tenant shall maintain the premises in good condition and promptly report any nec
 If Tenant fails to pay rent or breaches any terms, Landlord may terminate this agreement with ${contract?.noticePeriodDays || 0} days notice.
 
 10. RENEWAL
-Renewal notice must be given at least ${contract?.renewalNoticeDays || 0} days before contract expiration.
+Renewal notice must be given at least ${contract?.renewalNoticeDays || 0} days before  Lease expiration.
 
 11. TERMINATION
-Either party may terminate this agreement with proper notice as specified in the contract terms.
+Either party may terminate this agreement with proper notice as specified in the  Lease terms.
 
 12. GOVERNING LAW
 This agreement shall be governed by the laws of the Republic of the Union of Myanmar.`,
@@ -357,7 +357,7 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
     return (
       <div className="flex justify-center items-center py-12">
         <LoadingSpinner size="lg" />
-        <span className="ml-2 text-gray-600">Loading contract details...</span>
+        <span className="ml-2 text-gray-600">Loading  Lease details...</span>
       </div>
     );
   }
@@ -448,13 +448,13 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
             
             {onEdit && contract.contractStatus !== 'TERMINATED' && contract.contractStatus !== 'EXPIRED' && (
               <Button variant="primary" onClick={() => onEdit(contract)}>
-                Edit Contract
+                Edit Lease
               </Button>
             )}
             
             {onRenew && canTerminate && daysRemaining <= 60 && (
               <Button variant="primary" onClick={() => onRenew(contract)}>
-                Renew Contract
+                Renew Lease
               </Button>
             )}
             
@@ -463,7 +463,7 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
                 variant="danger" 
                 onClick={handleTerminateContract}
               >
-                Terminate Contract
+                Terminate Lease
               </Button>
             )}
           </div>
@@ -475,7 +475,7 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
           <div className="flex items-center">
             <span className="text-orange-800 font-medium">
-              Contract expires in {daysRemaining} days
+               Lease expires in {daysRemaining} days
             </span>
           </div>
         </div>
@@ -485,7 +485,7 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center">
             <span className="text-red-800 font-medium">
-              Contract has expired today
+               Lease has expired today
             </span>
           </div>
         </div>
@@ -607,7 +607,7 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
               </div>
             </div>
 
-            {/* Contract Terms */}
+            {/*  Lease Terms */}
             <div className="lg:col-span-2">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Contract Terms</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -742,7 +742,7 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500">No utilities included in this contract.</p>
+              <p className="text-gray-500">No utilities included in this Lease.</p>
             )}
           </div>
         )}
@@ -757,7 +757,7 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
                   <span className="text-sm text-gray-500">{formatDateTime(contract.createdAt)}</span>
                 </div>
                 <p className="text-sm text-gray-600 mt-1">
-                  Contract was created with status: {contract.contractStatus}
+                   Lease was created with status: {contract.contractStatus}
                 </p>
                 {contract.createdBy?.username && (
                   <p className="text-xs text-gray-500 mt-1">
@@ -776,7 +776,7 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
                     <span className="text-sm text-gray-500">{formatDateTime(contract.updatedAt)}</span>
                   </div>
                   <p className="text-sm text-gray-600 mt-1">
-                    Last modification to the contract
+                    Last modification to the Lease
                   </p>
                   {contract.updatedBy?.username && (
                     <p className="text-xs text-gray-500 mt-1">
@@ -831,9 +831,9 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
 
         {activeTab === 'terms' && (
           <div className="space-y-6">
-            {/* Basic Contract Information */}
+            {/* Basic  Lease Information */}
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h3 className="text-lg font-semibold text-blue-900 mb-3">Basic Contract Information</h3>
+              <h3 className="text-lg font-semibold text-blue-900 mb-3">Basic  Lease Information</h3>
               <pre className="text-sm text-blue-800 whitespace-pre-wrap font-mono">
                 {termsAndConditions.basicTerms}
               </pre>
@@ -844,7 +844,7 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
               <div className="bg-gray-50 p-4 border-b border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900">Standard Terms and Conditions</h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  These are the standard terms that apply to all contracts. 
+                  These are the standard terms that apply to all Leases. 
                   {contract.termsAgreementVersion && ` Version: ${contract.termsAgreementVersion}`}
                 </p>
               </div>
@@ -855,12 +855,12 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
               </div>
             </div>
 
-            {/* Additional Contract Terms */}
+            {/* Additional  Lease Terms */}
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="bg-gray-50 p-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">Additional Contract Terms</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Additional  Lease Terms</h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  These are additional terms specific to this contract
+                  These are additional terms specific to this Lease
                 </p>
               </div>
               <div className="p-6 bg-white">
@@ -900,7 +900,7 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
                     {contract.agreedToTerms ? (
                       <div className="space-y-1">
                         <p>
-                          Tenant has agreed to the terms and conditions of this contract.
+                          Tenant has agreed to the terms and conditions of this Lease.
                           {contract.termsAgreementTimestamp && (
                             <span> Agreement timestamp: {formatDateTime(contract.termsAgreementTimestamp)}</span>
                           )}
@@ -911,8 +911,8 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
                       </div>
                     ) : (
                       <p>
-                        Tenant has not yet agreed to the terms and conditions of this contract.
-                        This is required for the contract to be fully valid.
+                        Tenant has not yet agreed to the terms and conditions of this Lease.
+                        This is required for the  Lease to be fully valid.
                       </p>
                     )}
                   </div>
@@ -926,7 +926,7 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
                 <div className="bg-gray-50 p-4 border-b border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900">Included Utilities</h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    Utilities covered by this contract agreement
+                    Utilities covered by this  Lease agreement
                   </p>
                 </div>
                 <div className="p-4 bg-white">
@@ -962,7 +962,7 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
       </div>
 
       {/* Termination Modal */}
-      {showTerminationModal && contract && (
+      {showTerminationModal &&  Lease && (
         <TerminationModal
           isOpen={showTerminationModal}
           onClose={() => setShowTerminationModal(false)}

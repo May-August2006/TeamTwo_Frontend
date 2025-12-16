@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Contract } from '../../types/contract';
+import type {  Contract, Lease } from '../../types/contract';
 import { contractApi } from '../../api/ContractAPI';
 import { ContractList } from '../../components/contracts/ContractList';
 import { Button } from '../../components/common/ui/Button';
@@ -36,12 +36,12 @@ export const LeaseManagement: React.FC = () => {
 
   const refreshList = () => setListRefreshKey(prev => prev + 1);
 
-  // Contract Creation
+  //  Lease Creation
   const handleCreateContract = async (formData: FormData) => {
     setLoading(prev => ({ ...prev, create: true }));
     try {
       const response = await contractApi.create(formData);
-      showSuccess(`Contract created successfully! Contract Number: ${response.data?.contractNumber || 'N/A'}`);
+      showSuccess(`Contract created successfully!  Lease Number: ${response.data?.contractNumber || 'N/A'}`);
       refreshList();
       setShowContractForm(false);
       setContractToEdit(null);
@@ -56,11 +56,11 @@ export const LeaseManagement: React.FC = () => {
     }
   };
 
-  // Contract Editing
+  //  Lease Editing
   const handleEditContract = async (formData: FormData) => {
     if (!contractToEdit) {
-      showError('No contract selected for editing');
-      return Promise.reject(new Error('No contract selected'));
+      showError('No Lease selected for editing');
+      return Promise.reject(new Error('No  Lease selected'));
     }
 
     setLoading(prev => ({ ...prev, edit: true }));
@@ -87,11 +87,11 @@ export const LeaseManagement: React.FC = () => {
     }
   };
 
-  // Contract Renewal
+  //  Lease Renewal
   const handleRenewContract = async (formData: FormData) => {
     if (!contractToRenew) {
-      showError('No contract selected for renewal');
-      return Promise.reject(new Error('No contract selected'));
+      showError('No  Lease selected for renewal');
+      return Promise.reject(new Error('No  Lease selected'));
     }
 
     setLoading(prev => ({ ...prev, renew: true }));
@@ -113,7 +113,7 @@ export const LeaseManagement: React.FC = () => {
     }
   };
 
-  // Contract Termination
+  //  Lease Termination
   const handleTerminateContract = (contract: Contract) => {
     setContractToTerminate(contract);
     setShowTerminationModal(true);
@@ -156,14 +156,14 @@ export const LeaseManagement: React.FC = () => {
     }
   };
 
-  // Load contract for detail view
+  // Load  Lease for detail view
   const loadContractForView = async (contractId: number) => {
     try {
       const response = await contractApi.getById(contractId);
       setSelectedContract(response.data);
     } catch (error: any) {
       console.error('Error loading contract:', error);
-      showError('Failed to load contract details. Please try again.');
+      showError('Failed to load  Lease details. Please try again.');
     }
   };
 
@@ -229,8 +229,8 @@ export const LeaseManagement: React.FC = () => {
   const getFormTitle = () => {
     switch (contractFormMode) {
       case 'create': return 'Create New Contract';
-      case 'edit': return `Edit Contract ${contractToEdit?.contractNumber}`;
-      case 'renew': return `Renew Contract ${contractToRenew?.contractNumber}`;
+      case 'edit': return `Edit  Lease ${contractToEdit?.contractNumber}`;
+      case 'renew': return `Renew  Lease ${contractToRenew?.contractNumber}`;
       default: return 'Contract Form';
     }
   };
@@ -244,7 +244,7 @@ export const LeaseManagement: React.FC = () => {
 
   const getViewDescription = () => {
     if (currentView === 'view' && selectedContract) {
-      return `Viewing details for contract ${selectedContract.contractNumber}`;
+      return `Viewing details for  Lease ${selectedContract.contractNumber}`;
     }
     return 'Manage all rental contracts and lease agreements';
   };
@@ -298,7 +298,7 @@ export const LeaseManagement: React.FC = () => {
           />
         )}
 
-        {/* Contract Detail View */}
+        {/*  Lease Detail View */}
         {currentView === 'view' && selectedContract && (
           <div className="bg-white rounded-xl shadow-sm border border-stone-200">
             <div className="p-6">
@@ -313,7 +313,7 @@ export const LeaseManagement: React.FC = () => {
           </div>
         )}
 
-        {/* Contract Form Modal */}
+        {/*  Lease Form Modal */}
         {showContractForm && (
           <ContractForm
             isOpen={showContractForm}
