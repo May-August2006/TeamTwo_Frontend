@@ -8,6 +8,7 @@ import { ContractHistoryReport } from '../../components/reports/ContractHistoryR
 import { RentalRevenueByBusinessTypeReport } from '../../components/reports/RentalRevenueByBusinessTypeReport';
 import { OutstandingBalancesReport } from '../../components/reports/OutstandingBalancesReport';
 import { UtilityConsumptionReport } from '../../components/reports/UtilityConsumptionReport';
+import { MonthlyCollectionReport } from '../../components/reports/MonthlyCollectionReport';
 
 type ReportType = 
   | 'TENANT_CONTRACT_SUMMARY' 
@@ -106,6 +107,8 @@ export const ReportsPage: React.FC = () => {
         case 'OUTSTANDING_BALANCES':
   return <OutstandingBalancesReport onBack={handleBackToReports} />;
       case 'MONTHLY_BILLING_SUMMARY':
+        return <MonthlyCollectionReport onBack={handleBackToReports} />;
+      case 'EXPENSE_VS_REVENUE':
         
         return (
           <div className="text-center py-12">
