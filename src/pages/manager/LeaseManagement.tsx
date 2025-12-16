@@ -1,122 +1,195 @@
-/** @format */
-
 import React, { useState } from 'react';
-import type { Contract } from '../../types/contract';
+import type {  Contract, Lease } from '../../types/contract';
 import { contractApi } from '../../api/ContractAPI';
 import { ContractList } from '../../components/contracts/ContractList';
 import { Button } from '../../components/common/ui/Button';
 import { ContractForm } from '../../components/contracts/ContractForm';
 import { ContractDetail } from '../../components/contracts/ContractDetail';
 import { TerminationModal } from '../../components/contracts/TerminationModal';
+import { useNotification } from '../../context/NotificationContext';
 
-type ViewMode = 'list' | 'create' | 'edit' | 'view' | 'renew';
+type ViewMode = 'list' | 'view';
 
 export const LeaseManagement: React.FC = () => {
+  const { showSuccess, showError, showInfo } = useNotification();
+  
   const [currentView, setCurrentView] = useState<ViewMode>('list');
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [listRefreshKey, setListRefreshKey] = useState(0);
+  
+  // Modal states
+  const [showContractForm, setShowContractForm] = useState(false);
+  const [contractFormMode, setContractFormMode] = useState<'create' | 'edit' | 'renew'>('create');
+  const [contractToEdit, setContractToEdit] = useState<Contract | null>(null);
+  const [contractToRenew, setContractToRenew] = useState<Contract | null>(null);
+  
   const [showTerminationModal, setShowTerminationModal] = useState(false);
   const [contractToTerminate, setContractToTerminate] = useState<Contract | null>(null);
+  
+  // Loading states
+  const [loading, setLoading] = useState({
+    create: false,
+    edit: false,
+    renew: false,
+    terminate: false
+  });
 
   const refreshList = () => setListRefreshKey(prev => prev + 1);
 
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 5000);
-  };
-
-  // Contract Creation
+  //  Lease Creation
   const handleCreateContract = async (formData: FormData) => {
-    setLoading(true);
+    setLoading(prev => ({ ...prev, create: true }));
     try {
-      await contractApi.create(formData);
-      showMessage('success', 'Contract created successfully!');
+      const response = await contractApi.create(formData);
+      showSuccess(`Contract created successfully!  Lease Number: ${response.data?.contractNumber || 'N/A'}`);
       refreshList();
-      setCurrentView('list');
+      setShowContractForm(false);
+      setContractToEdit(null);
+      return Promise.resolve(); // Indicate success
     } catch (error: any) {
       console.error('Error creating contract:', error);
-      showMessage('error', error.response?.data?.error || 'Failed to create contract');
+      
+      // Let ContractForm handle the error, just re-throw it
+      throw error;
     } finally {
-      setLoading(false);
+      setLoading(prev => ({ ...prev, create: false }));
     }
   };
 
-  // Contract Editing
+  //  Lease Editing
   const handleEditContract = async (formData: FormData) => {
-    if (!selectedContract) return;
+    if (!contractToEdit) {
+      showError('No Lease selected for editing');
+      return Promise.reject(new Error('No  Lease selected'));
+    }
 
-    setLoading(true);
+    setLoading(prev => ({ ...prev, edit: true }));
     try {
-      await contractApi.update(selectedContract.id, formData);
-      showMessage('success', `Contract ${selectedContract.contractNumber} updated successfully!`);
+      const response = await contractApi.update(contractToEdit.id, formData);
+      showSuccess(`Contract ${contractToEdit.contractNumber} updated successfully!`);
       refreshList();
-      setCurrentView('list');
-      setSelectedContract(null);
+      setShowContractForm(false);
+      setContractToEdit(null);
+      
+      // If we're viewing this contract, update the view
+      if (currentView === 'view' && selectedContract?.id === contractToEdit.id) {
+        loadContractForView(contractToEdit.id);
+      }
+      
+      return Promise.resolve(); // Indicate success
     } catch (error: any) {
       console.error('Error updating contract:', error);
-      showMessage('error', error.response?.data?.error || 'Failed to update contract');
+      
+      // Let ContractForm handle the error, just re-throw it
+      throw error;
     } finally {
-      setLoading(false);
+      setLoading(prev => ({ ...prev, edit: false }));
     }
   };
 
-  // Contract Renewal
+  //  Lease Renewal
   const handleRenewContract = async (formData: FormData) => {
-    if (!selectedContract) return;
+    if (!contractToRenew) {
+      showError('No  Lease selected for renewal');
+      return Promise.reject(new Error('No  Lease selected'));
+    }
 
-    setLoading(true);
+    setLoading(prev => ({ ...prev, renew: true }));
     try {
-      await contractApi.renew(selectedContract.id, formData);
-      showMessage('success', `Contract ${selectedContract.contractNumber} renewed successfully!`);
+      const response = await contractApi.renew(contractToRenew.id, formData);
+      showSuccess(`Contract ${contractToRenew.contractNumber} renewed successfully!`);
       refreshList();
-      setCurrentView('list');
-      setSelectedContract(null);
+      setShowContractForm(false);
+      setContractToRenew(null);
+      
+      return Promise.resolve(); // Indicate success
     } catch (error: any) {
       console.error('Error renewing contract:', error);
-      showMessage('error', error.response?.data?.error || 'Failed to renew contract');
+      
+      // Let ContractForm handle the error, just re-throw it
+      throw error;
     } finally {
-      setLoading(false);
+      setLoading(prev => ({ ...prev, renew: false }));
     }
   };
 
-  // Contract Termination
+  //  Lease Termination
   const handleTerminateContract = (contract: Contract) => {
     setContractToTerminate(contract);
     setShowTerminationModal(true);
   };
 
-  const handleTerminationSuccess = (terminatedContract: Contract) => {
-    showMessage('success', `Contract ${terminatedContract.contractNumber} terminated successfully!`);
-    refreshList();
-    setShowTerminationModal(false);
-    setContractToTerminate(null);
-    
-    if (selectedContract && selectedContract.id === terminatedContract.id) {
-      setSelectedContract(terminatedContract);
+  const handleTerminationConfirm = async (terminationData: any) => {
+    if (!contractToTerminate) return;
+
+    setLoading(prev => ({ ...prev, terminate: true }));
+    try {
+      const response = await contractApi.terminateWithDetails(contractToTerminate.id, terminationData);
+      
+      showSuccess(`Contract ${contractToTerminate.contractNumber} terminated successfully!`);
+      refreshList();
+      setShowTerminationModal(false);
+      setContractToTerminate(null);
+      
+      // If we're viewing this contract, update the view
+      if (currentView === 'view' && selectedContract?.id === contractToTerminate.id) {
+        setSelectedContract(response.data.contract);
+      }
+      
+      // If we're in list view, show info about unit availability
+      if (response.data.unitReleased) {
+        showInfo(`Unit ${contractToTerminate.unit?.unitNumber || 'N/A'} has been marked as available.`);
+      }
+    } catch (error: any) {
+      console.error('Error terminating contract:', error);
+      
+      if (error.response?.status === 400) {
+        const errorData = error.response.data;
+        showError(errorData.error || 'Failed to terminate contract');
+      } else if (error.response?.status === 404) {
+        showError('Contract not found. It may have been deleted.');
+      } else {
+        showError('Failed to terminate contract. Please try again.');
+      }
+    } finally {
+      setLoading(prev => ({ ...prev, terminate: false }));
+    }
+  };
+
+  // Load  Lease for detail view
+  const loadContractForView = async (contractId: number) => {
+    try {
+      const response = await contractApi.getById(contractId);
+      setSelectedContract(response.data);
+    } catch (error: any) {
+      console.error('Error loading contract:', error);
+      showError('Failed to load  Lease details. Please try again.');
     }
   };
 
   // Navigation Handlers
-  const handleViewContract = (contract: Contract) => {
+  const handleViewContract = async (contract: Contract) => {
     setSelectedContract(contract);
     setCurrentView('view');
   };
 
   const handleEditContractView = (contract: Contract) => {
-    setSelectedContract(contract);
-    setCurrentView('edit');
+    setContractToEdit(contract);
+    setContractFormMode('edit');
+    setShowContractForm(true);
   };
 
   const handleRenewContractView = (contract: Contract) => {
-    setSelectedContract(contract);
-    setCurrentView('renew');
+    setContractToRenew(contract);
+    setContractFormMode('renew');
+    setShowContractForm(true);
   };
 
   const handleCreateNew = () => {
-    setCurrentView('create');
-    setSelectedContract(null);
+    setContractToEdit(null);
+    setContractToRenew(null);
+    setContractFormMode('create');
+    setShowContractForm(true);
   };
 
   const handleBackToList = () => {
@@ -124,50 +197,92 @@ export const LeaseManagement: React.FC = () => {
     setSelectedContract(null);
   };
 
-  const getViewTitle = () => {
-    switch (currentView) {
+  const handleCloseContractForm = () => {
+    setShowContractForm(false);
+    setContractToEdit(null);
+    setContractToRenew(null);
+  };
+
+  const handleCloseTerminationModal = () => {
+    setShowTerminationModal(false);
+    setContractToTerminate(null);
+  };
+
+  const getCurrentLoading = () => {
+    if (loading.create) return 'create';
+    if (loading.edit) return 'edit';
+    if (loading.renew) return 'renew';
+    if (loading.terminate) return 'terminate';
+    return null;
+  };
+
+  const getFormInitialData = () => {
+    if (contractFormMode === 'edit' && contractToEdit) {
+      return contractToEdit;
+    }
+    if (contractFormMode === 'renew' && contractToRenew) {
+      return contractToRenew;
+    }
+    return undefined;
+  };
+
+  const getFormTitle = () => {
+    switch (contractFormMode) {
       case 'create': return 'Create New Contract';
-      case 'edit': return `Edit Contract ${selectedContract?.contractNumber}`;
-      case 'renew': return `Renew Contract ${selectedContract?.contractNumber}`;
-      case 'view': return `Contract Details - ${selectedContract?.contractNumber}`;
-      default: return 'Contracts Management';
+      case 'edit': return `Edit  Lease ${contractToEdit?.contractNumber}`;
+      case 'renew': return `Renew  Lease ${contractToRenew?.contractNumber}`;
+      default: return 'Contract Form';
     }
   };
 
+  const getViewTitle = () => {
+    if (currentView === 'view' && selectedContract) {
+      return `Lease Details - ${selectedContract.contractNumber}`;
+    }
+    return 'Leases Management';
+  };
+
   const getViewDescription = () => {
-    switch (currentView) {
-      case 'create': return 'Fill in the details to create a new rental contract';
-      case 'edit': return `Update contract details for ${selectedContract?.contractNumber}`;
-      case 'renew': return `Renew contract ${selectedContract?.contractNumber} with new terms`;
-      case 'view': return `Viewing details for contract ${selectedContract?.contractNumber}`;
-      default: return 'Manage all rental contracts and lease agreements';
+    if (currentView === 'view' && selectedContract) {
+      return `Viewing details for  Lease ${selectedContract.contractNumber}`;
+    }
+    return 'Manage all rental contracts and lease agreements';
+  };
+
+  const handleContractFormSubmit = async (formData: FormData) => {
+    try {
+      if (contractFormMode === 'create') {
+        await handleCreateContract(formData);
+      } else if (contractFormMode === 'edit') {
+        await handleEditContract(formData);
+      } else if (contractFormMode === 'renew') {
+        await handleRenewContract(formData);
+      }
+      // If successful, the form will be closed in the respective handler
+    } catch (error) {
+      // Error is handled by ContractForm component
+      // The form will stay open for user to fix errors
+      throw error;
     }
   };
 
   return (
     <div className="min-h-screen bg-stone-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Success/Error Messages */}
-        {message && (
-          <div className={`mb-6 p-4 rounded-md flex items-center ${
-            message.type === 'success' 
-              ? 'bg-green-50 border border-green-200 text-green-800' 
-              : 'bg-red-50 border border-red-200 text-red-800'
-          }`}>
-            <svg 
-              className={`w-5 h-5 mr-3 ${
-                message.type === 'success' ? 'text-green-400' : 'text-red-400'
-              }`} 
-              fill="currentColor" 
-              viewBox="0 0 20 20"
-            >
-              {message.type === 'success' ? (
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              ) : (
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              )}
-            </svg>
-            <span className="font-medium">{message.text}</span>
+        {/* Header for Detail View */}
+        {currentView === 'view' && (
+          <div className="mb-6 bg-white rounded-xl shadow-sm border border-stone-200">
+            <div className="p-6 border-b border-stone-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-stone-900">{getViewTitle()}</h1>
+                  <p className="text-stone-600 mt-1">{getViewDescription()}</p>
+                </div>
+                <Button onClick={handleBackToList} variant="secondary">
+                  Back to List
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -183,53 +298,9 @@ export const LeaseManagement: React.FC = () => {
           />
         )}
 
-        {/* Form Views (Create, Edit, Renew) */}
-        {(currentView === 'create' || currentView === 'edit' || currentView === 'renew') && (
-          <div className="bg-white rounded-xl shadow-sm border border-stone-200">
-            <div className="p-6 border-b border-stone-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold text-stone-900">{getViewTitle()}</h1>
-                  <p className="text-stone-600 mt-1">{getViewDescription()}</p>
-                </div>
-                <Button onClick={handleBackToList} variant="secondary">
-                  Back to List
-                </Button>
-              </div>
-            </div>
-
-            <div className="p-6">
-              <ContractForm
-                onSubmit={
-                  currentView === 'create' ? handleCreateContract :
-                  currentView === 'edit' ? handleEditContract :
-                  handleRenewContract
-                }
-                onCancel={handleBackToList}
-                isLoading={loading}
-                initialData={selectedContract || undefined}
-                isRenewal={currentView === 'renew'}
-                isEdit={currentView === 'edit'}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Contract Detail View */}
+        {/*  Lease Detail View */}
         {currentView === 'view' && selectedContract && (
           <div className="bg-white rounded-xl shadow-sm border border-stone-200">
-            <div className="p-6 border-b border-stone-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold text-stone-900">{getViewTitle()}</h1>
-                  <p className="text-stone-600 mt-1">{getViewDescription()}</p>
-                </div>
-                <Button onClick={handleBackToList} variant="secondary">
-                  Back to List
-                </Button>
-              </div>
-            </div>
-
             <div className="p-6">
               <ContractDetail
                 contractId={selectedContract.id}
@@ -242,13 +313,31 @@ export const LeaseManagement: React.FC = () => {
           </div>
         )}
 
+        {/*  Lease Form Modal */}
+        {showContractForm && (
+          <ContractForm
+            isOpen={showContractForm}
+            onSubmit={handleContractFormSubmit}
+            onClose={handleCloseContractForm}
+            isLoading={
+              (contractFormMode === 'create' && loading.create) ||
+              (contractFormMode === 'edit' && loading.edit) ||
+              (contractFormMode === 'renew' && loading.renew)
+            }
+            initialData={getFormInitialData()}
+            isRenewal={contractFormMode === 'renew'}
+            isEdit={contractFormMode === 'edit'}
+          />
+        )}
+
         {/* Termination Modal */}
         {showTerminationModal && contractToTerminate && (
           <TerminationModal
             isOpen={showTerminationModal}
-            onClose={() => setShowTerminationModal(false)}
-            onSuccess={handleTerminationSuccess}
+            onClose={handleCloseTerminationModal}
+            onSuccess={handleTerminationConfirm}
             contract={contractToTerminate}
+            isLoading={loading.terminate}
           />
         )}
       </div>

@@ -5,6 +5,7 @@ import { Menu, LogOut, Bell } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "../common/ui/LanguageSwitcher";
 import Logo from '../../assets/SeinGayHarLogo.png';
+import ChangePasswordButton from "../ChangePasswordButton";
 
 interface TenantHeaderProps {
   onMenuToggle: () => void;
@@ -52,6 +53,13 @@ const TenantHeader: React.FC<TenantHeaderProps> = ({
             <span className="hidden sm:block">{t('header.logout')}</span>
           </button>
         </div>
+        <div className="flex items-center space-x-3">
+        <ChangePasswordButton 
+            buttonStyle="primary"
+            buttonSize="md"
+            buttonText="Change Password"
+        />
+    </div>
 
       </div>
     </header>

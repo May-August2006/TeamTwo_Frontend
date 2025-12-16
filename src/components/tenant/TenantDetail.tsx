@@ -58,59 +58,7 @@ const TenantDetail: React.FC<TenantDetailProps> = ({ tenant, onClose, onEdit }) 
             </div>
           </div>
 
-          {/* Contract Information - Only these three fields as requested */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Contract Information</h3>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Contract Name/Number */}
-                <div className="text-center">
-                  <label className="block text-sm font-medium text-gray-600 mb-2">Contract Number</label>
-                  <div className={`p-3 rounded-lg ${
-                    tenant.contractNumber 
-                      ? 'bg-white border border-gray-200' 
-                      : 'bg-gray-100 border border-gray-200'
-                  }`}>
-                    <p className="text-sm font-medium text-gray-900">
-                      {tenant.contractNumber || 'No Contract'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Contract Status */}
-                <div className="text-center">
-                  <label className="block text-sm font-medium text-gray-600 mb-2">Contract Status</label>
-                  <div className="p-3 rounded-lg bg-white border border-gray-200">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                      tenant.contractStatus === 'ACTIVE' 
-                        ? 'bg-green-100 text-green-800' 
-                        : tenant.contractStatus === 'EXPIRED' 
-                        ? 'bg-red-100 text-red-800'
-                        : tenant.contractStatus === 'PENDING'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {tenant.contractStatus || 'No Status'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Room Number */}
-                <div className="text-center">
-                  <label className="block text-sm font-medium text-gray-600 mb-2">Room Number</label>
-                  <div className={`p-3 rounded-lg ${
-                    tenant.roomName 
-                      ? 'bg-white border border-gray-200' 
-                      : 'bg-gray-100 border border-gray-200'
-                  }`}>
-                    <p className="text-sm font-medium text-gray-900">
-                      {tenant.roomName || 'No Room'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          
 
           {/* Additional Information */}
           <div>

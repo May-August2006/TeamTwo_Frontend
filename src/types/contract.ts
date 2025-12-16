@@ -1,3 +1,5 @@
+/** @format */
+
 // types/contract.ts
 export interface CreateContractRequest {
   contractNumber: string;
@@ -7,7 +9,7 @@ export interface CreateContractRequest {
   endDate: string;
   rentalFee: number;
   securityDeposit?: number;
-  contractDurationType: ContractDurationType;
+  contractDurationType: ContractDurationType | "";
   gracePeriodDays?: number;
   noticePeriodDays?: number;
   renewalNoticeDays?: number;
@@ -19,6 +21,7 @@ export interface CreateContractRequest {
 }
 
 export interface Contract {
+  agreedToTerms: any;
   id: number;
   contractNumber: string;
   tenant?: Tenant;
@@ -70,14 +73,32 @@ export interface Tenant {
   };
 }
 
+export const UnitType = {
+  ROOM: "ROOM",
+  SPACE: "SPACE",
+  HALL: "HALL",
+} as const;
+
+export type UnitType = (typeof UnitType)[keyof typeof UnitType];
+
 export interface Unit {
   id: number;
   unitNumber: string;
-  rentalFee?: number;
-  unitSpace?: number;
-  isAvailable?: boolean;
-  level?: Level;
+  unitType: UnitType;
+  unitTypeDisplay?: string;
+  hasMeter: boolean;
+  level: Level;
   roomType?: RoomType;
+  spaceType?: SpaceType;
+  hallType?: HallType;
+  unitSpace: number;
+  isAvailable: boolean;
+  rentalFee: number;
+  imageUrls: string[];
+  utilities: UtilityType[];
+  createdAt: string;
+  updatedAt: string;
+  currentTenantName?: string;
 }
 
 export interface Level {
@@ -108,10 +129,12 @@ export interface RoomType {
   id: number;
   typeName: string;
 }
+
 export interface SpaceType {
   id: number;
   name: string;
 }
+
 export interface HallType {
   id: number;
   name: string;
@@ -122,7 +145,7 @@ export interface UtilityType {
   utilityName: string;
   description?: string;
   ratePerUnit?: number;
-  calculationMethod?: 'FIXED' | 'METERED' | 'PER_UNIT';
+  calculationMethod?: "FIXED" | "METERED" | "PER_UNIT";
 }
 
 export interface User {
@@ -133,8 +156,13 @@ export interface User {
   lastName?: string;
 }
 
-export type ContractStatus = 'ACTIVE' | 'EXPIRING' | 'TERMINATED' | 'EXPIRED';
-export type ContractDurationType = 'THREE_MONTHS' | 'SIX_MONTHS' | 'ONE_YEAR' | 'TWO_YEARS';
+export type ContractStatus = "ACTIVE" | "EXPIRING" | "TERMINATED" | "EXPIRED";
+export type ContractDurationType =
+  | "THREE_MONTHS"
+  | "SIX_MONTHS"
+  | "ONE_YEAR"
+  | "TWO_YEARS"
+  | "";
 
 export interface LeaseTerminationRequest {
   terminationDate: string;
@@ -212,6 +240,9 @@ export interface UnitDTO {
   isAvailable?: boolean;
   level?: LevelDTO;
   roomType?: RoomTypeDTO;
+  spaceType?: SpaceTypeDTO;
+  hallType?: HallTypeDTO;
+  unitTypeDisplay?: string;
 }
 
 export interface LevelDTO {
@@ -243,6 +274,16 @@ export interface RoomTypeDTO {
   typeName: string;
 }
 
+export interface SpaceTypeDTO {
+  id: number;
+  name: string;
+}
+
+export interface HallTypeDTO {
+  id: number;
+  name: string;
+}
+
 export interface UtilityTypeDTO {
   id: number;
   utilityName: string;
@@ -267,7 +308,13 @@ export interface FileDownloadResponse {
 export interface ContractHistory {
   id: number;
   contractId: number;
-  actionType: 'CREATED' | 'UPDATED' | 'RENEWED' | 'TERMINATED' | 'AMENDED' | 'DEPOSIT_SETTLED';
+  actionType:
+    | "CREATED"
+    | "UPDATED"
+    | "RENEWED"
+    | "TERMINATED"
+    | "AMENDED"
+    | "DEPOSIT_SETTLED";
   description: string;
   changedBy: User;
   createdAt: string;
@@ -293,4 +340,28 @@ export interface PaginatedContracts {
   number: number;
   first: boolean;
   last: boolean;
+}
+
+// Validation constants
+export const CONTRACT_VALIDATION_RULES = {
+  contractNumberPattern: /^SGH-\d{4}-\d{3}$/,
+  minRentalFee: 1000,
+  maxRentalFee: 999999999,
+  maxNoticePeriodDays: 365,
+  maxRenewalNoticeDays: 365,
+  minGracePeriodDays: 0,
+  maxGracePeriodDays: 30,
+  maxContractTermsLength: 5000,
+  maxSecurityDeposit: 999999999,
+};
+
+// Validation interfaces
+export interface ValidationError {
+  field: string;
+  message: string;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: ValidationError[];
 }

@@ -10,12 +10,15 @@ import type {
   LateFeePolicyRequest,
 } from "../../types";
 import { useAuth } from "../../context/AuthContext";
+import LateFeePaymentForm from "./LateFeePaymentForm";
+import { useRef } from "react";
 
 export function LateFeeManagementPage() {
   // -------------------------------------------------------------
   // STATE
   // -------------------------------------------------------------
   const [loading, setLoading] = useState(false);
+  const [showLateFeePayment, setShowLateFeePayment] = useState(false);
   const [invoices, setInvoices] = useState<InvoiceDTO[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDTO | null>(
     null
@@ -23,6 +26,8 @@ export function LateFeeManagementPage() {
 
   const [lateDays, setLateDays] = useState(1);
   const [reason, setReason] = useState("");
+
+  const lateFeePaymentRef = useRef<HTMLDivElement | null>(null);
 
   const { userId } = useAuth();
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -174,7 +179,31 @@ export function LateFeeManagementPage() {
   // =============================================================
   return (
     <div className="p-6 space-y-8">
-      <h1 className="text-2xl font-semibold">Late Fee Management</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Late Fee Management</h1>
+
+        <button
+          onClick={() => {
+            if (!selectedInvoice) {
+              toast.error("Please select an invoice first");
+              return;
+            }
+
+            setShowLateFeePayment(true);
+
+            // scroll AFTER render
+            setTimeout(() => {
+              lateFeePaymentRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
+            }, 100);
+          }}
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+        >
+          Pay Late Fee
+        </button>
+      </div>
 
       {/* ---------------------- POLICY SECTION ------------------------- */}
       <section className="bg-white rounded-xl shadow p-5">
@@ -351,6 +380,20 @@ export function LateFeeManagementPage() {
 
           <iframe src={pdfUrl} className="w-full h-[600px] border" />
         </section>
+      )}
+
+      {showLateFeePayment && (
+        <div ref={lateFeePaymentRef}>
+          <LateFeePaymentForm
+            initialInvoiceId={selectedInvoice?.id}
+            onPaymentRecorded={() => {
+              toast.success("Late Fee Payment Recorded!");
+              setShowLateFeePayment(false);
+              loadInvoices();
+            }}
+            onCancel={() => setShowLateFeePayment(false)}
+          />
+        </div>
       )}
     </div>
   );

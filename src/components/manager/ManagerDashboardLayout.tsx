@@ -7,9 +7,9 @@ import { ManagerSidebar } from "./ManagerSidebar";
 import { ToastProvider } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
 
-export const ManagerDashboardLayout: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const ManagerDashboardLayout: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
@@ -48,7 +48,6 @@ export const ManagerDashboardLayout: React.FC<{ children: React.ReactNode }> = (
   return (
     <ToastProvider>
       <div className="min-h-screen bg-stone-50 flex">
-
         {/* Sidebar */}
         <ManagerSidebar
           isOpen={mobileOpen}
@@ -58,6 +57,9 @@ export const ManagerDashboardLayout: React.FC<{ children: React.ReactNode }> = (
           onNavigate={(path) => {
             navigate(path);
             if (isMobile) setMobileOpen(false);
+          }}
+          onClose={function (): void {
+            throw new Error("Function not implemented.");
           }}
         />
 

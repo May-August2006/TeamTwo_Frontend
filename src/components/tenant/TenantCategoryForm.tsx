@@ -29,7 +29,7 @@ const TenantCategoryForm: React.FC<TenantCategoryFormProps> = ({
       setFormData({
         categoryName: category.categoryName,
         businessType: category.businessType,
-        description: category.description,
+        description: category.description || '',
       });
     }
   }, [category, isEditing]);
@@ -37,14 +37,25 @@ const TenantCategoryForm: React.FC<TenantCategoryFormProps> = ({
   const validateForm = (): boolean => {
     const newErrors: { [key: string]: string } = {};
 
+    // Category Name validation
     if (!formData.categoryName.trim()) {
       newErrors.categoryName = 'Category name is required';
     } else if (formData.categoryName.trim().length < 2) {
       newErrors.categoryName = 'Category name must be at least 2 characters';
+    } else if (formData.categoryName.trim().length > 50) {
+      newErrors.categoryName = 'Category name cannot exceed 50 characters';
     }
 
+    // Business Type validation
     if (!formData.businessType.trim()) {
       newErrors.businessType = 'Business type is required';
+    } else if (formData.businessType.trim().length > 50) {
+      newErrors.businessType = 'Business type cannot exceed 50 characters';
+    }
+
+    // Description validation
+    if (formData.description.trim().length > 1000) {
+      newErrors.description = 'Description cannot exceed 1000 characters';
     }
 
     setErrors(newErrors);
@@ -75,6 +86,33 @@ const TenantCategoryForm: React.FC<TenantCategoryFormProps> = ({
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
+    // Apply character limits
+    let processedValue = value;
+    if (name === 'categoryName' && value.length > 50) {
+      processedValue = value.slice(0, 50);
+    } else if (name === 'businessType' && value.length > 50) {
+      processedValue = value.slice(0, 50);
+    } else if (name === 'description' && value.length > 1000) {
+      processedValue = value.slice(0, 1000);
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: processedValue,
+    }));
+
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: '',
+      }));
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -86,15 +124,21 @@ const TenantCategoryForm: React.FC<TenantCategoryFormProps> = ({
         
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label htmlFor="categoryName" className="block text-sm font-medium text-gray-700 mb-1">
-              Category Name *
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label htmlFor="categoryName" className="block text-sm font-medium text-gray-700">
+                Category Name *
+              </label>
+              <span className="text-xs text-gray-500">
+                {formData.categoryName.length}/50
+              </span>
+            </div>
             <input
               type="text"
               id="categoryName"
               name="categoryName"
               value={formData.categoryName}
-              onChange={handleChange}
+              onChange={handleInputChange}
+              maxLength={50}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
                 errors.categoryName ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -107,15 +151,21 @@ const TenantCategoryForm: React.FC<TenantCategoryFormProps> = ({
           </div>
 
           <div>
-            <label htmlFor="businessType" className="block text-sm font-medium text-gray-700 mb-1">
-              Business Type *
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label htmlFor="businessType" className="block text-sm font-medium text-gray-700">
+                Business Type *
+              </label>
+              <span className="text-xs text-gray-500">
+                {formData.businessType.length}/50
+              </span>
+            </div>
             <input
               type="text"
               id="businessType"
               name="businessType"
               value={formData.businessType}
-              onChange={handleChange}
+              onChange={handleInputChange}
+              maxLength={50}
               className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
                 errors.businessType ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -128,19 +178,30 @@ const TenantCategoryForm: React.FC<TenantCategoryFormProps> = ({
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                Description
+              </label>
+              <span className="text-xs text-gray-500">
+                {formData.description.length}/1000
+              </span>
+            </div>
             <textarea
               id="description"
               name="description"
               value={formData.description}
-              onChange={handleChange}
+              onChange={handleInputChange}
+              maxLength={1000}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
-              placeholder="Enter description"
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
+                errors.description ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="Enter description (optional)"
               disabled={isLoading}
             />
+            {errors.description && (
+              <p className="mt-1 text-sm text-red-600">{errors.description}</p>
+            )}
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">

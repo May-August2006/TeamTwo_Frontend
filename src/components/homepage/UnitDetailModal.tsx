@@ -192,7 +192,7 @@ export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
             Close
           </Button>
           <Button
-            onClick={handleBookAppointment}
+            onClick={() => onAppointment(unit)}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
           >
             {isAuthenticated ? 'Book Appointment' : 'Login to Book'}

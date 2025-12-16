@@ -1,6 +1,12 @@
 /** @format */
 
 export interface User {
+  message: any;
+  user: User;
+  errors: boolean;
+
+  success: boolean;
+  status: string;
   id: number;
   username: string;
   email: string;
