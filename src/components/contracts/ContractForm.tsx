@@ -50,7 +50,7 @@ const VALIDATION_RULES = {
   maxNoticePeriodDays: 365,
   minRenewalNoticeDays: 60,
   maxRenewalNoticeDays: 365,
-  minUtilitiesCount: 3, // Minimum 3 utilities required
+  // REMOVED: minUtilitiesCount: 3, // Minimum 3 utilities required
   maxContractTermsLength: 5000,
   // Character limits for ALL fields
   maxContractNumberLength: 20,
@@ -330,7 +330,14 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
       try {
         const utilitiesResponse = await utilityApi.getAll();
         const utilitiesData = extractArrayData<UtilityType>(utilitiesResponse);
-        setUtilities(utilitiesData);
+        
+        // Filter out Generator and Transformer utilities (these are building-level fees)
+        const filteredUtilities = utilitiesData.filter(utility => 
+          !utility.utilityName.toLowerCase().includes('generator') && 
+          !utility.utilityName.toLowerCase().includes('transformer')
+        );
+        
+        setUtilities(filteredUtilities);
       } catch (utilityError) {
         console.warn("Failed to load utilities:", utilityError);
         setUtilities([]);
@@ -417,16 +424,41 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
     }
   }, [searchTerm.unit, units]);
 
-  // Validate utilities count whenever it changes
+  // Auto-select Electricity and Water when ROOM type unit is selected
   useEffect(() => {
-    if (selectedUtilityIds.length < VALIDATION_RULES.minUtilitiesCount) {
-      setUtilitiesError(
-        `Please select at least ${VALIDATION_RULES.minUtilitiesCount} utilities`
+    if (selectedUnit && selectedUnit.unitType === "ROOM") {
+      // Find Electricity and Water utility IDs
+      const electricityUtility = utilities.find(u => 
+        u.utilityName.toLowerCase().includes('electricity')
       );
-    } else {
-      setUtilitiesError("");
+      const waterUtility = utilities.find(u => 
+        u.utilityName.toLowerCase().includes('water')
+      );
+      
+      const newUtilityIds = [...selectedUtilityIds];
+      let changed = false;
+      
+      if (electricityUtility && !newUtilityIds.includes(electricityUtility.id)) {
+        newUtilityIds.push(electricityUtility.id);
+        changed = true;
+      }
+      
+      if (waterUtility && !newUtilityIds.includes(waterUtility.id)) {
+        newUtilityIds.push(waterUtility.id);
+        changed = true;
+      }
+      
+      if (changed) {
+        setSelectedUtilityIds(newUtilityIds);
+        setFormData((prev) => ({
+          ...prev,
+          utilityTypeIds: newUtilityIds,
+        }));
+        
+        showSuccess("Electricity and Water utilities auto-selected for ROOM type unit");
+      }
     }
-  }, [selectedUtilityIds]);
+  }, [selectedUnit, utilities]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -618,10 +650,7 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
     }));
 
     // Clear utilities error when user selects/deselects
-    if (
-      newUtilityIds.length >= VALIDATION_RULES.minUtilitiesCount &&
-      utilitiesError
-    ) {
+    if (utilitiesError) {
       setUtilitiesError("");
     }
   };
@@ -738,10 +767,8 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
       newErrors.contractTerms = `Contract terms cannot exceed ${VALIDATION_RULES.maxContractTermsLength} characters`;
     }
 
-    // 13. Utilities validation - AT LEAST 3 REQUIRED
-    if (selectedUtilityIds.length < VALIDATION_RULES.minUtilitiesCount) {
-      newErrors.utilities = `Please select at least ${VALIDATION_RULES.minUtilitiesCount} utilities`;
-    }
+    // 13. REMOVED: Utilities validation - AT LEAST 3 REQUIRED
+    // No minimum utilities requirement
 
     // 14. Terms agreement validation (STRICT - MOST IMPORTANT FIX)
     if (!agreedToTerms && !isEdit) {
@@ -2490,26 +2517,28 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
                   <div className="mt-6">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-medium text-gray-700">
-                        Included Utilities * (Select at least{" "}
-                        {VALIDATION_RULES.minUtilitiesCount})
+                        Included Utilities
+                        {selectedUnit?.unitType === "ROOM" && (
+                          <span className="text-xs text-green-600 ml-2">
+                            (Electricity and Water auto-selected for ROOM type)
+                          </span>
+                        )}
                       </h4>
                       <div className="flex items-center">
                         <span
                           className={`text-xs font-medium px-2 py-1 rounded ${
-                            selectedUtilityIds.length >=
-                            VALIDATION_RULES.minUtilitiesCount
+                            selectedUtilityIds.length > 0
                               ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
                           }`}
                         >
-                          Selected: {selectedUtilityIds.length} / Minimum:{" "}
-                          {VALIDATION_RULES.minUtilitiesCount}
+                          Selected: {selectedUtilityIds.length}
                         </span>
                       </div>
                     </div>
 
                     {/* Utilities Error Message */}
-                    {(errors.utilities || utilitiesError) && (
+                    {utilitiesError && (
                       <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                         <div className="flex items-center">
                           <svg
@@ -2524,7 +2553,7 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
                             />
                           </svg>
                           <span className="text-red-800 font-medium">
-                            {errors.utilities || utilitiesError}
+                            {utilitiesError}
                           </span>
                         </div>
                       </div>
@@ -2562,15 +2591,10 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
                                     VALIDATION_RULES.maxUtilityNameLength &&
                                   "..."}
                               </div>
-                              {/* {utility.description && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {utility.description.substring(0, VALIDATION_RULES.maxUtilityDescriptionLength)}
-                                  {utility.description.length > VALIDATION_RULES.maxUtilityDescriptionLength && '...'}
-                                </p>
-                              )} */}
                               {utility.ratePerUnit && (
                                 <p className="text-xs text-gray-500 mt-1">
-                                  {utility.ratePerUnit} Per Unit
+                                  {utility.ratePerUnit}{" "}
+                                  {utility.calculationMethod !== "FIXED" && "Per Unit"}
                                 </p>
                               )}
                             </label>
@@ -2615,17 +2639,18 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
                         </svg>
                         <div>
                           <p className="text-sm text-blue-800 font-medium">
-                            {selectedUtilityIds.length >=
-                            VALIDATION_RULES.minUtilitiesCount
-                              ? `✓ You have selected ${selectedUtilityIds.length} utilities (minimum requirement met)`
-                              : `Please select ${
-                                  VALIDATION_RULES.minUtilitiesCount -
-                                  selectedUtilityIds.length
-                                } more utility/utilities`}
+                            {selectedUtilityIds.length > 0
+                              ? `✓ You have selected ${selectedUtilityIds.length} utilities`
+                              : `No utilities selected (optional)`}
                           </p>
+                          {selectedUnit?.unitType === "ROOM" && (
+                            <p className="text-xs text-green-600 mt-1">
+                              Note: Electricity and Water are auto-selected for ROOM type units
+                            </p>
+                          )}
                           {selectedUtilityIds.length > 0 && (
                             <p className="text-xs text-blue-600 mt-1">
-                              Selected utilities:{" "}
+                              Selected:{" "}
                               {utilities
                                 .filter((u) =>
                                   selectedUtilityIds.includes(u.id)
@@ -2722,9 +2747,7 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
                       disabled={
                         loading ||
                         isLoading ||
-                        (!agreedToTerms && !isEdit) ||
-                        selectedUtilityIds.length <
-                          VALIDATION_RULES.minUtilitiesCount
+                        (!agreedToTerms && !isEdit)
                       }
                       className="w-full sm:w-auto"
                     >
