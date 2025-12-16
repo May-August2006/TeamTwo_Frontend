@@ -306,51 +306,82 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
   };
 
   const loadInitialData = async () => {
+  try {
+    setTenantsLoading(true);
+    setUnitsLoading(true);
+    setUtilitiesLoading(true);
+
+    // Load tenants
+    const tenantsResponse = await tenantApi.getAll();
+    const tenantsData = extractArrayData<Tenant>(tenantsResponse);
+    setTenants(tenantsData);
+
+    // Load units
+    let unitsResponse;
+    if (isEdit || isRenewal) {
+      unitsResponse = await unitApi.getAll();
+    } else {
+      unitsResponse = await unitApi.getAvailable();
+    }
+    const unitsData = extractArrayData<Unit>(unitsResponse);
+    setUnits(unitsData);
+
+    // Load utilities
     try {
-      setTenantsLoading(true);
-      setUnitsLoading(true);
-      setUtilitiesLoading(true);
+      const utilitiesResponse = await utilityApi.getAll();
+      const utilitiesData = extractArrayData<UtilityType>(utilitiesResponse);
+      
+      // Filter out Generator and Transformer utilities (these are building-level fees)
+      const filteredUtilities = utilitiesData.filter(utility => 
+        !utility.utilityName.toLowerCase().includes('generator') && 
+        !utility.utilityName.toLowerCase().includes('transformer')
+      );
+      
+      setUtilities(filteredUtilities);
 
-      // Load tenants
-      const tenantsResponse = await tenantApi.getAll();
-      const tenantsData = extractArrayData<Tenant>(tenantsResponse);
-      setTenants(tenantsData);
-
-      // Load units
-      let unitsResponse;
-      if (isEdit || isRenewal) {
-        unitsResponse = await unitApi.getAll();
-      } else {
-        unitsResponse = await unitApi.getAvailable();
-      }
-      const unitsData = extractArrayData<Unit>(unitsResponse);
-      setUnits(unitsData);
-
-      // Load utilities
-      try {
-        const utilitiesResponse = await utilityApi.getAll();
-        const utilitiesData = extractArrayData<UtilityType>(utilitiesResponse);
-        
-        // Filter out Generator and Transformer utilities (these are building-level fees)
-        const filteredUtilities = utilitiesData.filter(utility => 
-          !utility.utilityName.toLowerCase().includes('generator') && 
-          !utility.utilityName.toLowerCase().includes('transformer')
+      // IMPORTANT: If editing/renewing a SPACE type unit, remove Electricity and Water
+      if ((isEdit || isRenewal) && initialData?.unit?.unitType === "SPACE") {
+        const electricityUtility = filteredUtilities.find(u => 
+          u.utilityName.toLowerCase().includes('electricity')
+        );
+        const waterUtility = filteredUtilities.find(u => 
+          u.utilityName.toLowerCase().includes('water')
         );
         
-        setUtilities(filteredUtilities);
-      } catch (utilityError) {
-        console.warn("Failed to load utilities:", utilityError);
-        setUtilities([]);
+        let newUtilityIds = [...selectedUtilityIds];
+        let changed = false;
+        
+        if (electricityUtility && newUtilityIds.includes(electricityUtility.id)) {
+          newUtilityIds = newUtilityIds.filter(id => id !== electricityUtility.id);
+          changed = true;
+        }
+        
+        if (waterUtility && newUtilityIds.includes(waterUtility.id)) {
+          newUtilityIds = newUtilityIds.filter(id => id !== waterUtility.id);
+          changed = true;
+        }
+        
+        if (changed) {
+          setSelectedUtilityIds(newUtilityIds);
+          setFormData((prev) => ({
+            ...prev,
+            utilityTypeIds: newUtilityIds,
+          }));
+        }
       }
-    } catch (error) {
-      console.error("Error loading initial data:", error);
-      showError("Failed to load form data. Please try again.");
-    } finally {
-      setTenantsLoading(false);
-      setUnitsLoading(false);
-      setUtilitiesLoading(false);
+    } catch (utilityError) {
+      console.warn("Failed to load utilities:", utilityError);
+      setUtilities([]);
     }
-  };
+  } catch (error) {
+    console.error("Error loading initial data:", error);
+    showError("Failed to load form data. Please try again.");
+  } finally {
+    setTenantsLoading(false);
+    setUnitsLoading(false);
+    setUtilitiesLoading(false);
+  }
+};
 
   // Calculate end date when start date or duration changes
   useEffect(() => {
@@ -425,19 +456,22 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
   }, [searchTerm.unit, units]);
 
   // Auto-select Electricity and Water when ROOM type unit is selected
-  useEffect(() => {
-    if (selectedUnit && selectedUnit.unitType === "ROOM") {
-      // Find Electricity and Water utility IDs
-      const electricityUtility = utilities.find(u => 
-        u.utilityName.toLowerCase().includes('electricity')
-      );
-      const waterUtility = utilities.find(u => 
-        u.utilityName.toLowerCase().includes('water')
-      );
-      
-      const newUtilityIds = [...selectedUtilityIds];
-      let changed = false;
-      
+// Hide Electricity and Water when SPACE type unit is selected
+useEffect(() => {
+  if (selectedUnit) {
+    let newUtilityIds = [...selectedUtilityIds];
+    let changed = false;
+    
+    // Find Electricity and Water utility IDs
+    const electricityUtility = utilities.find(u => 
+      u.utilityName.toLowerCase().includes('electricity')
+    );
+    const waterUtility = utilities.find(u => 
+      u.utilityName.toLowerCase().includes('water')
+    );
+    
+    if (selectedUnit.unitType === "ROOM") {
+      // Auto-select Electricity and Water for ROOM type
       if (electricityUtility && !newUtilityIds.includes(electricityUtility.id)) {
         newUtilityIds.push(electricityUtility.id);
         changed = true;
@@ -449,16 +483,71 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
       }
       
       if (changed) {
+        showSuccess("Electricity and Water utilities auto-selected for ROOM type unit");
+      }
+    } else if (selectedUnit.unitType === "SPACE") {
+      // Auto-remove Electricity and Water for SPACE type
+      if (electricityUtility && newUtilityIds.includes(electricityUtility.id)) {
+        newUtilityIds = newUtilityIds.filter(id => id !== electricityUtility.id);
+        changed = true;
+      }
+      
+      if (waterUtility && newUtilityIds.includes(waterUtility.id)) {
+        newUtilityIds = newUtilityIds.filter(id => id !== waterUtility.id);
+        changed = true;
+      }
+      
+      if (changed) {
+        showSuccess("Electricity and Water utilities removed for SPACE type unit");
+      }
+    }
+    
+    if (changed) {
+      setSelectedUtilityIds(newUtilityIds);
+      setFormData((prev) => ({
+        ...prev,
+        utilityTypeIds: newUtilityIds,
+      }));
+    }
+  }
+}, [selectedUnit, utilities, selectedUtilityIds, showSuccess, isEdit, isRenewal]);
+
+
+// Handle initial loading for edit/renewal cases
+useEffect(() => {
+  if ((isEdit || isRenewal) && initialData && selectedUnit && utilities.length > 0) {
+    if (selectedUnit.unitType === "SPACE") {
+      // Find Electricity and Water utility IDs
+      const electricityUtility = utilities.find(u => 
+        u.utilityName.toLowerCase().includes('electricity')
+      );
+      const waterUtility = utilities.find(u => 
+        u.utilityName.toLowerCase().includes('water')
+      );
+      
+      let newUtilityIds = [...selectedUtilityIds];
+      let changed = false;
+      
+      if (electricityUtility && newUtilityIds.includes(electricityUtility.id)) {
+        newUtilityIds = newUtilityIds.filter(id => id !== electricityUtility.id);
+        changed = true;
+      }
+      
+      if (waterUtility && newUtilityIds.includes(waterUtility.id)) {
+        newUtilityIds = newUtilityIds.filter(id => id !== waterUtility.id);
+        changed = true;
+      }
+      
+      if (changed) {
         setSelectedUtilityIds(newUtilityIds);
         setFormData((prev) => ({
           ...prev,
           utilityTypeIds: newUtilityIds,
         }));
-        
-        showSuccess("Electricity and Water utilities auto-selected for ROOM type unit");
       }
     }
-  }, [selectedUnit, utilities]);
+  }
+}, [isEdit, isRenewal, initialData, selectedUnit, utilities, selectedUtilityIds]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -639,21 +728,33 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
   };
 
   const handleUtilityToggle = (utilityId: number) => {
-    const newUtilityIds = selectedUtilityIds.includes(utilityId)
-      ? selectedUtilityIds.filter((id) => id !== utilityId)
-      : [...selectedUtilityIds, utilityId];
+  // Check if this utility is Electricity or Water for a SPACE type unit
+  const utility = utilities.find(u => u.id === utilityId);
+  const isElectricityOrWater = utility && 
+    (utility.utilityName.toLowerCase().includes('electricity') || 
+     utility.utilityName.toLowerCase().includes('water'));
+  
+  // Don't allow toggling Electricity/Water for SPACE type units
+  if (selectedUnit?.unitType === "SPACE" && isElectricityOrWater) {
+    showError("Electricity and Water are not applicable for SPACE type units");
+    return;
+  }
 
-    setSelectedUtilityIds(newUtilityIds);
-    setFormData((prev) => ({
-      ...prev,
-      utilityTypeIds: newUtilityIds,
-    }));
+  const newUtilityIds = selectedUtilityIds.includes(utilityId)
+    ? selectedUtilityIds.filter((id) => id !== utilityId)
+    : [...selectedUtilityIds, utilityId];
 
-    // Clear utilities error when user selects/deselects
-    if (utilitiesError) {
-      setUtilitiesError("");
-    }
-  };
+  setSelectedUtilityIds(newUtilityIds);
+  setFormData((prev) => ({
+    ...prev,
+    utilityTypeIds: newUtilityIds,
+  }));
+
+  // Clear utilities error when user selects/deselects
+  if (utilitiesError) {
+    setUtilitiesError("");
+  }
+};
 
   // STRICT VALIDATION FUNCTION
   const validateForm = (): boolean => {
@@ -2517,13 +2618,18 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
                   <div className="mt-6">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-medium text-gray-700">
-                        Included Utilities
-                        {selectedUnit?.unitType === "ROOM" && (
-                          <span className="text-xs text-green-600 ml-2">
-                            (Electricity and Water auto-selected for ROOM type)
-                          </span>
-                        )}
-                      </h4>
+  Included Utilities
+  {selectedUnit?.unitType === "ROOM" && (
+    <span className="text-xs text-green-600 ml-2">
+      (Electricity and Water auto-selected for ROOM type)
+    </span>
+  )}
+  {selectedUnit?.unitType === "SPACE" && (
+    <span className="text-xs text-gray-600 ml-2">
+      (Electricity and Water not applicable for SPACE type)
+    </span>
+  )}
+</h4>
                       <div className="flex items-center">
                         <span
                           className={`text-xs font-medium px-2 py-1 rounded ${
@@ -2560,48 +2666,75 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
                     )}
 
                     {utilitiesLoading ? (
-                      <div className="flex items-center">
-                        <LoadingSpinner size="sm" />
-                        <span className="ml-2 text-gray-600">
-                          Loading utilities...
-                        </span>
-                      </div>
-                    ) : utilities.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        {utilities.map((utility) => (
-                          <div key={utility.id} className="flex items-start">
-                            <input
-                              type="checkbox"
-                              id={`utility-${utility.id}`}
-                              checked={selectedUtilityIds.includes(utility.id)}
-                              onChange={() => handleUtilityToggle(utility.id)}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
-                            />
-                            <label
-                              htmlFor={`utility-${utility.id}`}
-                              className="ml-2 text-sm text-gray-900 cursor-pointer flex-1"
-                            >
-                              <div className="font-medium">
-                                {utility.utilityName?.substring(
-                                  0,
-                                  VALIDATION_RULES.maxUtilityNameLength
-                                ) || "Utility"}
-                                {utility.utilityName &&
-                                  utility.utilityName.length >
-                                    VALIDATION_RULES.maxUtilityNameLength &&
-                                  "..."}
-                              </div>
-                              {utility.ratePerUnit && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  {utility.ratePerUnit}{" "}
-                                  {utility.calculationMethod !== "FIXED" && "Per Unit"}
-                                </p>
-                              )}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
+  <div className="flex items-center">
+    <LoadingSpinner size="sm" />
+    <span className="ml-2 text-gray-600">
+      Loading utilities...
+    </span>
+  </div>
+) : utilities.length > 0 ? (
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+    {utilities
+      .filter(utility => {
+        // Hide Electricity and Water for SPACE type units
+        if (selectedUnit?.unitType === "SPACE") {
+          const isElectricity = utility.utilityName.toLowerCase().includes('electricity');
+          const isWater = utility.utilityName.toLowerCase().includes('water');
+          return !isElectricity && !isWater;
+        }
+        return true;
+      })
+      .map((utility) => (
+        <div key={utility.id} className="flex items-start">
+          <input
+            type="checkbox"
+            id={`utility-${utility.id}`}
+            checked={selectedUtilityIds.includes(utility.id)}
+            onChange={() => handleUtilityToggle(utility.id)}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
+            // Disable Electricity and Water for SPACE type
+            disabled={selectedUnit?.unitType === "SPACE" && 
+              (utility.utilityName.toLowerCase().includes('electricity') || 
+               utility.utilityName.toLowerCase().includes('water'))}
+          />
+          <label
+            htmlFor={`utility-${utility.id}`}
+            className={`ml-2 text-sm cursor-pointer flex-1 ${
+              selectedUnit?.unitType === "SPACE" && 
+              (utility.utilityName.toLowerCase().includes('electricity') || 
+               utility.utilityName.toLowerCase().includes('water'))
+                ? "text-gray-400" 
+                : "text-gray-900"
+            }`}
+          >
+            <div className="font-medium">
+              {utility.utilityName?.substring(
+                0,
+                VALIDATION_RULES.maxUtilityNameLength
+              ) || "Utility"}
+              {utility.utilityName &&
+                utility.utilityName.length >
+                  VALIDATION_RULES.maxUtilityNameLength &&
+                "..."}
+            </div>
+            {utility.ratePerUnit && (
+              <p className="text-xs text-gray-500 mt-1">
+                {utility.ratePerUnit}{" "}
+                {utility.calculationMethod !== "FIXED" && "Per Unit"}
+              </p>
+            )}
+            {selectedUnit?.unitType === "SPACE" && 
+             (utility.utilityName.toLowerCase().includes('electricity') || 
+              utility.utilityName.toLowerCase().includes('water')) && (
+              <p className="text-xs text-red-500 mt-1">
+                Not applicable for SPACE type units
+              </p>
+            )}
+          </label>
+        </div>
+      ))}
+  </div>
+) : (
                       <div className="text-center py-4 bg-gray-50 rounded-lg border border-gray-200">
                         <svg
                           className="w-8 h-8 text-gray-400 mx-auto mb-2"
@@ -2648,6 +2781,12 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
                               Note: Electricity and Water are auto-selected for ROOM type units
                             </p>
                           )}
+
+                          {selectedUnit?.unitType === "SPACE" && (
+  <p className="text-xs text-gray-600 mt-1">
+    Note: Electricity and Water are not applicable for SPACE type units
+  </p>
+)}
                           {selectedUtilityIds.length > 0 && (
                             <p className="text-xs text-blue-600 mt-1">
                               Selected:{" "}
