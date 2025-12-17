@@ -1,5 +1,6 @@
 import API from "./api";
 import type { Building, BuildingRequest } from "../types";
+import type { Unit } from "../types/unit";
 
 // Define BuildingUtilityConfig interface locally
 export interface BuildingUtilityConfig {
@@ -88,5 +89,10 @@ calculateCAMDistribution: (buildingId: number) =>
   // Update getAvailableBuildings to filter for accountants too
   getAvailableBuildingsForAccountants: () => 
     API.get<Building[]>('/api/buildings/available-for-accountants'),
+
+  // Add these methods to buildingApi object:
+getMyAssignedBuilding: () => API.get<Building>('/api/buildings/my-assigned-building'),
+getOccupiedUnitsByBuilding: (buildingId: number) => 
+    API.get<Unit[]>(`/api/units/occupied/by-building/${buildingId}`),
 
 };

@@ -1,12 +1,13 @@
-// BulkMeterReadingPage.tsx - Updated version
+// BulkMeterReadingPage.tsx - Complete fixed version
 import React, { useState, useEffect } from 'react';
 import { Save, Upload, Download, Building2 } from 'lucide-react';
 import { unitApi } from '../../api/UnitAPI';
 import { meterReadingApi } from '../../api/MeterReadingAPI';
 import { utilityApi } from '../../api/UtilityAPI';
-import { buildingApi } from '../../api/BuildingAPI'; // ✅ Added building API
+import { buildingApi } from '../../api/BuildingAPI';
 import type { Unit, UtilityType } from '../../types/unit';
 import type { Building } from '../../types';
+import { jwtDecode } from 'jwt-decode';
 
 interface BulkReading {
   unitId: number;
@@ -15,6 +16,7 @@ interface BulkReading {
   waterReading: number;
   previousElectricityReading?: number;
   previousWaterReading?: number;
+  isDisabled?: boolean;
 }
 
 const BulkMeterReadingPage: React.FC = () => {
@@ -27,6 +29,25 @@ const BulkMeterReadingPage: React.FC = () => {
   const [electricityUtility, setElectricityUtility] = useState<UtilityType | null>(null);
   const [waterUtility, setWaterUtility] = useState<UtilityType | null>(null);
   const [buildingUnits, setBuildingUnits] = useState<Unit[]>([]);
+  const [assignedBuildingId, setAssignedBuildingId] = useState<number | null>(null);
+  const [occupiedUnits, setOccupiedUnits] = useState<Unit[]>([]);
+  const [unitsWithMonthlyReadings, setUnitsWithMonthlyReadings] = useState<Set<number>>(new Set());
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Get user role from JWT token
+  const getUserRole = (): string => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token);
+        return decoded.role || 'ROLE_GUEST';
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        return 'ROLE_GUEST';
+      }
+    }
+    return 'ROLE_GUEST';
+  };
 
   useEffect(() => {
     loadData();
@@ -37,17 +58,30 @@ const BulkMeterReadingPage: React.FC = () => {
     try {
       setLoading(true);
       
-      // Load buildings, units, and utilities in parallel
-      const [buildingsResponse, unitsResponse, utilitiesResponse] = await Promise.all([
-        buildingApi.getAll(), // Fetch real buildings
-        unitApi.getAll(),
-        utilityApi.getAll()
-      ]);
+      // First, get user's assigned building if they're not admin
+      const userRole = getUserRole();
+      setIsAdmin(userRole === 'ROLE_ADMIN');
       
+      if (!isAdmin) {
+        try {
+          const assignedBuildingResponse = await buildingApi.getMyAssignedBuilding();
+          if (assignedBuildingResponse.data) {
+            setAssignedBuildingId(assignedBuildingResponse.data.id);
+            // Auto-select assigned building
+            await handleBuildingChange(assignedBuildingResponse.data.id);
+            return; // Skip loading other buildings
+          }
+        } catch (error) {
+          console.log('No assigned building for user');
+        }
+      }
+      
+      // Load all buildings for admin users
+      const buildingsResponse = await buildingApi.getAll();
       setBuildings(buildingsResponse.data || []);
-      setUnits(unitsResponse.data || []);
       
-      // Find electricity and water utility types
+      // Load utilities
+      const utilitiesResponse = await utilityApi.getAll();
       const utils = utilitiesResponse.data || [];
       const electricUtility = utils.find((u: UtilityType) => 
         u.utilityName.toLowerCase().includes('electric'));
@@ -65,21 +99,55 @@ const BulkMeterReadingPage: React.FC = () => {
   };
 
   const handleBuildingChange = async (selectedBuildingId: number) => {
+    // Check if user has permission for this building
+    if (assignedBuildingId && selectedBuildingId !== assignedBuildingId && !isAdmin) {
+      alert('You can only access meter readings for your assigned building');
+      return;
+    }
+    
     setBuildingId(selectedBuildingId);
     
     try {
       setLoading(true);
       
-      // Fetch units for this building
-      const unitsResponse = await buildingApi.getUnitsByBuilding(selectedBuildingId);
-      console.log('Units response:', unitsResponse); // Add logging
+      // Get occupied units only
+      const occupiedUnitsResponse = await buildingApi.getOccupiedUnitsByBuilding(selectedBuildingId);
+      const occupiedUnitsData = occupiedUnitsResponse.data || [];
       
-      const buildingUnitsData = unitsResponse.data || [];
+      // Filter only units with meters
+      const unitsWithMeters = occupiedUnitsData.filter((unit: Unit) => unit.hasMeter);
       
-      // Filter units that have meters
-      const unitsWithMeters = buildingUnitsData.filter((unit: any) => unit.hasMeter);
-      
+      setOccupiedUnits(unitsWithMeters);
       setBuildingUnits(unitsWithMeters);
+      
+      // Check for monthly readings for each unit
+      const unitsWithReadings = new Set<number>();
+      for (const unit of unitsWithMeters) {
+        // Check both electricity and water
+        if (electricityUtility) {
+          try {
+            const hasElecReading = await meterReadingApi.checkMonthlyReading(
+              unit.id, electricityUtility.id, readingDate
+            );
+            if (hasElecReading) unitsWithReadings.add(unit.id);
+          } catch (error) {
+            // No reading exists
+          }
+        }
+        
+        if (waterUtility) {
+          try {
+            const hasWaterReading = await meterReadingApi.checkMonthlyReading(
+              unit.id, waterUtility.id, readingDate
+            );
+            if (hasWaterReading) unitsWithReadings.add(unit.id);
+          } catch (error) {
+            // No reading exists
+          }
+        }
+      }
+      
+      setUnitsWithMonthlyReadings(unitsWithReadings);
       
       // Create bulk readings array with previous readings
       const initialReadings: BulkReading[] = await Promise.all(
@@ -117,14 +185,15 @@ const BulkMeterReadingPage: React.FC = () => {
             electricityReading: 0,
             waterReading: 0,
             previousElectricityReading,
-            previousWaterReading
+            previousWaterReading,
+            isDisabled: unitsWithReadings.has(unit.id)
           };
         })
       );
       
       setBulkReadings(initialReadings);
       
-    } catch (error: any) { // Changed to catch any type
+    } catch (error: any) {
       console.error('Error loading building units:', error);
       console.error('Error status:', error.response?.status);
       console.error('Error message:', error.response?.data);
@@ -139,6 +208,7 @@ const BulkMeterReadingPage: React.FC = () => {
       setLoading(false);
     }
   };
+
   const handleReadingChange = (unitId: number, field: keyof BulkReading, value: string) => {
     setBulkReadings(prev => prev.map(reading => {
       if (reading.unitId === unitId) {
@@ -185,12 +255,123 @@ const BulkMeterReadingPage: React.FC = () => {
     window.URL.revokeObjectURL(url);
   };
 
+  const validateCSVFormat = (csvText: string): boolean => {
+    const rows = csvText.split('\n').filter(row => row.trim());
+    if (rows.length < 2) return false;
+    
+    const headers = rows[0].split(',').map(h => h.trim());
+    const expectedHeaders = ['Unit Number', 'Electricity Reading (kWh)', 'Water Reading (gal)'];
+    
+    return expectedHeaders.every(header => headers.includes(header));
+  };
+
+  const processCSVData = async (csvText: string): Promise<any[]> => {
+    const rows = csvText.split('\n').filter(row => row.trim());
+    const headers = rows[0].split(',').map(h => h.trim());
+    const dataRows = rows.slice(1);
+    
+    const processedReadings = [];
+    const errors: string[] = [];
+    
+    for (const [index, row] of dataRows.entries()) {
+      const columns = row.split(',').map(col => col.trim());
+      
+      if (columns.length >= 3) {
+        const unitNumber = columns[0];
+        const electricityReading = parseFloat(columns[1]);
+        const waterReading = parseFloat(columns[2]);
+        
+        // Validate numeric values
+        if (isNaN(electricityReading) || isNaN(waterReading)) {
+          errors.push(`Row ${index + 2}: Invalid numeric values`);
+          continue;
+        }
+        
+        // Find unit
+        const unit = occupiedUnits.find(u => u.unitNumber === unitNumber);
+        if (!unit) {
+          errors.push(`Row ${index + 2}: Unit ${unitNumber} not found in building`);
+          continue;
+        }
+        
+        // Check if unit already has reading for this month
+        if (unitsWithMonthlyReadings.has(unit.id)) {
+          errors.push(`Row ${index + 2}: Unit ${unitNumber} already has readings for this month`);
+          continue;
+        }
+        
+        processedReadings.push({
+          unitId: unit.id,
+          electricityReading,
+          waterReading
+        });
+      }
+    }
+    
+    if (errors.length > 0) {
+      alert(`Some rows were skipped:\n${errors.join('\n')}`);
+    }
+    
+    return processedReadings;
+  };
+
+  const submitBulkReadingsFromCSV = async (processedReadings: any[]) => {
+    try {
+      const bulkRequests = processedReadings.flatMap(reading => {
+        const requests = [];
+        
+        if (electricityUtility && reading.electricityReading > 0) {
+          requests.push({
+            unitId: reading.unitId,
+            utilityTypeId: electricityUtility.id,
+            currentReading: reading.electricityReading,
+            readingDate: readingDate,
+            notes: 'Imported from CSV'
+          });
+        }
+        
+        if (waterUtility && reading.waterReading > 0) {
+          requests.push({
+            unitId: reading.unitId,
+            utilityTypeId: waterUtility.id,
+            currentReading: reading.waterReading,
+            readingDate: readingDate,
+            notes: 'Imported from CSV'
+          });
+        }
+        
+        return requests;
+      });
+      
+      if (bulkRequests.length === 0) {
+        alert('No valid readings to submit from CSV');
+        return;
+      }
+      
+      // Use the validated bulk API
+      await meterReadingApi.createBulkValidatedReadings(bulkRequests);
+      
+      alert(`Successfully submitted ${bulkRequests.length} readings from CSV!`);
+      
+      // Refresh the page
+      if (buildingId) {
+        await handleBuildingChange(buildingId);
+      }
+      
+    } catch (error: any) {
+      console.error('Error submitting CSV readings:', error);
+      const errorMessage = error.response?.data?.message || 
+                         'Error submitting readings. Please check the format and try again.';
+      alert(`Failed to submit CSV readings: ${errorMessage}`);
+    }
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!buildingId) {
-      alert('Please select a building first');
+    if (!buildingId || !readingDate) {
+      alert('Please select a building and reading date first');
       event.target.value = '';
       return;
     }
@@ -201,33 +382,22 @@ const BulkMeterReadingPage: React.FC = () => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         const csvText = e.target?.result as string;
-        const rows = csvText.split('\n').filter(row => row.trim());
         
-        // Skip header row
-        const dataRows = rows.slice(1);
+        // Validate CSV format
+        if (!validateCSVFormat(csvText)) {
+          alert('Invalid CSV format. Please use the provided template.');
+          event.target.value = '';
+          return;
+        }
         
-        const updatedReadings = [...bulkReadings];
+        const processedReadings = await processCSVData(csvText);
         
-        dataRows.forEach(row => {
-          const columns = row.split(',');
-          if (columns.length >= 3) {
-            const unitNumber = columns[0].trim();
-            const electricityReading = parseFloat(columns[1]) || 0;
-            const waterReading = parseFloat(columns[2]) || 0;
-            
-            // Find the reading for this unit and update it
-            const index = updatedReadings.findIndex(r => r.unitNumber === unitNumber);
-            if (index !== -1) {
-              updatedReadings[index] = {
-                ...updatedReadings[index],
-                electricityReading,
-                waterReading
-              };
-            }
-          }
-        });
-        
-        setBulkReadings(updatedReadings);
+        if (processedReadings.length > 0) {
+          // Auto-submit the processed readings
+          await submitBulkReadingsFromCSV(processedReadings);
+        } else {
+          alert('No valid readings found in CSV file');
+        }
       };
       
       reader.readAsText(file);
@@ -237,87 +407,84 @@ const BulkMeterReadingPage: React.FC = () => {
       alert('Error processing CSV file. Please check the format.');
     } finally {
       setLoading(false);
-      event.target.value = ''; // Reset file input
+      event.target.value = '';
     }
   };
 
   const submitBulkReadings = async () => {
-  if (!buildingId || !readingDate) {
-    alert('Please select a building and reading date');
-    return;
-  }
-
-  if (bulkReadings.length === 0) {
-    alert('No readings to submit');
-    return;
-  }
-
-  // Validate readings
-  const invalidReadings = bulkReadings.filter(reading => {
-    const elecConsumption = reading.electricityReading - (reading.previousElectricityReading || 0);
-    const waterConsumption = reading.waterReading - (reading.previousWaterReading || 0);
-    return elecConsumption < 0 || waterConsumption < 0;
-  });
-
-  if (invalidReadings.length > 0) {
-    alert(`Found ${invalidReadings.length} readings where current reading is less than previous reading. Please check the values.`);
-    return;
-  }
-
-  try {
-    setLoading(true);
-    
-    // Prepare bulk requests
-    const bulkRequests = bulkReadings.flatMap(reading => {
-      const requests = [];
-      
-      // Electricity reading
-      if (electricityUtility && reading.electricityReading > 0) {
-        requests.push({
-          unitId: reading.unitId,
-          utilityTypeId: electricityUtility.id, // Using utilityTypeId as per Java controller
-          currentReading: reading.electricityReading,
-          readingDate: readingDate,
-          notes: 'Bulk reading entry'
-        });
-      }
-      
-      // Water reading
-      if (waterUtility && reading.waterReading > 0) {
-        requests.push({
-          unitId: reading.unitId,
-          utilityTypeId: waterUtility.id, // Using utilityTypeId as per Java controller
-          currentReading: reading.waterReading,
-          readingDate: readingDate,
-          notes: 'Bulk reading entry'
-        });
-      }
-      
-      return requests;
-    });
-
-    if (bulkRequests.length === 0) {
-      alert('No valid readings to submit');
+    if (!buildingId || !readingDate) {
+      alert('Please select a building and reading date');
       return;
     }
-
-    // Submit all readings in bulk
-    await meterReadingApi.createBulkMeterReadings(bulkRequests);
     
-    alert(`Successfully submitted ${bulkRequests.length} meter readings!`);
+    // Validate readings
+    const invalidReadings = bulkReadings.filter(reading => {
+      const elecConsumption = reading.electricityReading - (reading.previousElectricityReading || 0);
+      const waterConsumption = reading.waterReading - (reading.previousWaterReading || 0);
+      return elecConsumption < 0 || waterConsumption < 0;
+    });
     
-    // Reset form
-    setBulkReadings([]);
-    setBuildingId(null);
-    setBuildingUnits([]);
+    if (invalidReadings.length > 0) {
+      alert(`Found ${invalidReadings.length} readings where current reading is less than previous reading. Please check the values.`);
+      return;
+    }
     
-  } catch (error) {
-    console.error('Error submitting bulk readings:', error);
-    alert('Error submitting readings. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      setLoading(true);
+      
+      // Prepare bulk requests
+      const bulkRequests = bulkReadings.flatMap(reading => {
+        const requests = [];
+        
+        // Electricity reading
+        if (electricityUtility && reading.electricityReading > 0) {
+          requests.push({
+            unitId: reading.unitId,
+            utilityTypeId: electricityUtility.id,
+            currentReading: reading.electricityReading,
+            readingDate: readingDate,
+            notes: 'Bulk reading entry'
+          });
+        }
+        
+        // Water reading
+        if (waterUtility && reading.waterReading > 0) {
+          requests.push({
+            unitId: reading.unitId,
+            utilityTypeId: waterUtility.id,
+            currentReading: reading.waterReading,
+            readingDate: readingDate,
+            notes: 'Bulk reading entry'
+          });
+        }
+        
+        return requests;
+      });
+      
+      if (bulkRequests.length === 0) {
+        alert('No valid readings to submit');
+        return;
+      }
+      
+      // Submit all readings in bulk using validated API
+      await meterReadingApi.createBulkMeterReadings(bulkRequests);
+      
+      alert(`Successfully submitted ${bulkRequests.length} meter readings!`);
+      
+      // Refresh the page
+      if (buildingId) {
+        await handleBuildingChange(buildingId);
+      }
+      
+    } catch (error: any) {
+      console.error('Error submitting bulk readings:', error);
+      const errorMessage = error.response?.data?.message || 
+                         'Error submitting readings. Please try again.';
+      alert(`Failed to submit readings: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
@@ -329,6 +496,11 @@ const BulkMeterReadingPage: React.FC = () => {
             <h1 className="text-3xl font-bold text-gray-900">Bulk Meter Reading Entry</h1>
           </div>
           <p className="text-gray-600">Enter meter readings for all units in a building at once</p>
+          {!isAdmin && assignedBuildingId && (
+            <p className="text-sm text-blue-600 mt-1">
+              You are assigned to: {buildings.find(b => b.id === assignedBuildingId)?.buildingName}
+            </p>
+          )}
         </div>
 
         {/* Controls */}
@@ -342,14 +514,26 @@ const BulkMeterReadingPage: React.FC = () => {
                 value={buildingId || ''}
                 onChange={(e) => handleBuildingChange(Number(e.target.value))}
                 className="w-full border border-gray-300 rounded px-3 py-2"
-                disabled={loading}
+                disabled={loading || (assignedBuildingId && !isAdmin)}
               >
-                <option value="">Select building...</option>
-                {buildings.map((building) => (
-                  <option key={building.id} value={building.id}>
-                    {building.buildingName} - {building.buildingType || 'Commercial'}
-                  </option>
-                ))}
+                {isAdmin ? (
+                  <>
+                    <option value="">Select building...</option>
+                    {buildings.map((building) => (
+                      <option key={building.id} value={building.id}>
+                        {building.buildingName} - {building.buildingType || 'Commercial'}
+                      </option>
+                    ))}
+                  </>
+                ) : assignedBuildingId ? (
+                  <>
+                    <option value={assignedBuildingId}>
+                      {buildings.find(b => b.id === assignedBuildingId)?.buildingName || 'My Assigned Building'}
+                    </option>
+                  </>
+                ) : (
+                  <option value="">No building assigned</option>
+                )}
               </select>
             </div>
 
@@ -369,13 +553,13 @@ const BulkMeterReadingPage: React.FC = () => {
             <div className="flex items-end space-x-2">
               <button
                 onClick={downloadCSVTemplate}
-                disabled={loading}
+                disabled={loading || !buildingId}
                 className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 flex items-center"
               >
                 <Download className="w-4 h-4 mr-2" />
                 CSV Template
               </button>
-              <label className={`px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 flex items-center cursor-pointer ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              <label className={`px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 flex items-center cursor-pointer ${loading || !buildingId ? 'opacity-50 cursor-not-allowed' : ''}`}>
                 <Upload className="w-4 h-4 mr-2" />
                 Import CSV
                 <input
@@ -383,7 +567,7 @@ const BulkMeterReadingPage: React.FC = () => {
                   accept=".csv"
                   onChange={handleFileUpload}
                   className="hidden"
-                  disabled={loading}
+                  disabled={loading || !buildingId}
                 />
               </label>
             </div>
@@ -400,8 +584,8 @@ const BulkMeterReadingPage: React.FC = () => {
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Units with Meters:</span>
-                  <span className="font-medium ml-2">{buildingUnits.length}</span>
+                  <span className="text-gray-600">Occupied Units with Meters:</span>
+                  <span className="font-medium ml-2">{occupiedUnits.length}</span>
                 </div>
                 <div>
                   <span className="text-gray-600">Electricity Utility:</span>
@@ -416,6 +600,13 @@ const BulkMeterReadingPage: React.FC = () => {
                   </span>
                 </div>
               </div>
+              {unitsWithMonthlyReadings.size > 0 && (
+                <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                  <p className="text-sm text-yellow-800">
+                    ⚠️ {unitsWithMonthlyReadings.size} units already have readings for this month and are disabled
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -431,6 +622,7 @@ const BulkMeterReadingPage: React.FC = () => {
                   </h2>
                   <p className="text-sm text-gray-600">
                     Date: {readingDate} | Units: {bulkReadings.length}
+                    {unitsWithMonthlyReadings.size > 0 && ` (${unitsWithMonthlyReadings.size} disabled)`}
                   </p>
                 </div>
                 <div className="text-sm">
@@ -467,12 +659,18 @@ const BulkMeterReadingPage: React.FC = () => {
                   {bulkReadings.map((reading) => {
                     const elecConsumption = reading.electricityReading - (reading.previousElectricityReading || 0);
                     const waterConsumption = reading.waterReading - (reading.previousWaterReading || 0);
+                    const isDisabled = unitsWithMonthlyReadings.has(reading.unitId);
                     
                     return (
-                      <tr key={reading.unitId} className="hover:bg-gray-50">
+                      <tr key={reading.unitId} className={`hover:bg-gray-50 ${isDisabled ? 'bg-gray-50' : ''}`}>
                         <td className="px-6 py-4">
                           <div className="font-medium text-gray-900">
                             {reading.unitNumber}
+                            {isDisabled && (
+                              <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                                Already Read
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4">
@@ -487,9 +685,13 @@ const BulkMeterReadingPage: React.FC = () => {
                                 'electricityReading', 
                                 e.target.value
                               )}
-                              className="w-32 border border-gray-300 rounded px-3 py-1"
+                              className={`w-32 border rounded px-3 py-1 ${
+                                isDisabled || loading
+                                  ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' 
+                                  : 'border-gray-300'
+                              }`}
                               placeholder="Current reading"
-                              disabled={loading}
+                              disabled={loading || isDisabled}
                             />
                             <span className="text-xs text-gray-500">
                               Prev: {reading.previousElectricityReading?.toFixed(2) || '0.00'}
@@ -508,9 +710,13 @@ const BulkMeterReadingPage: React.FC = () => {
                                 'waterReading', 
                                 e.target.value
                               )}
-                              className="w-32 border border-gray-300 rounded px-3 py-1"
+                              className={`w-32 border rounded px-3 py-1 ${
+                                isDisabled || loading
+                                  ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' 
+                                  : 'border-gray-300'
+                              }`}
                               placeholder="Current reading"
-                              disabled={loading}
+                              disabled={loading || isDisabled}
                             />
                             <span className="text-xs text-gray-500">
                               Prev: {reading.previousWaterReading?.toFixed(2) || '0.00'}
@@ -525,11 +731,11 @@ const BulkMeterReadingPage: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 text-sm">
                           <div className="space-y-1">
-                            <div className="text-green-600 font-medium">
-                              Electricity: +{elecConsumption.toFixed(2)} kWh
+                            <div className={`font-medium ${elecConsumption >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              Electricity: {elecConsumption >= 0 ? '+' : ''}{elecConsumption.toFixed(2)} kWh
                             </div>
-                            <div className="text-blue-600 font-medium">
-                              Water: +{waterConsumption.toFixed(2)} gal
+                            <div className={`font-medium ${waterConsumption >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                              Water: {waterConsumption >= 0 ? '+' : ''}{waterConsumption.toFixed(2)} gal
                             </div>
                           </div>
                         </td>
@@ -566,7 +772,7 @@ const BulkMeterReadingPage: React.FC = () => {
                   </button>
                   <button
                     onClick={submitBulkReadings}
-                    disabled={loading}
+                    disabled={loading || bulkReadings.filter(r => !unitsWithMonthlyReadings.has(r.unitId)).length === 0}
                     className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 flex items-center"
                   >
                     <Save className="w-4 h-4 mr-2" />
@@ -584,13 +790,18 @@ const BulkMeterReadingPage: React.FC = () => {
             <div className="text-gray-400 mb-4">
               <Building2 className="mx-auto h-16 w-16" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Building</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {isAdmin ? 'Select a Building' : 'No Building Assigned'}
+            </h3>
             <p className="text-sm text-gray-600 mb-6">
-              Choose a building from the dropdown above to start entering meter readings for all units at once.
+              {isAdmin 
+                ? 'Choose a building from the dropdown above to start entering meter readings for all units at once.'
+                : 'You have not been assigned to any building. Please contact your administrator.'
+              }
             </p>
             
-            {/* Buildings Grid */}
-            {buildings.length > 0 && (
+            {/* Buildings Grid - Only show for admin */}
+            {isAdmin && buildings.length > 0 && (
               <div className="max-w-2xl mx-auto">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Available Buildings</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

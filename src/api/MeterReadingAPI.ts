@@ -75,6 +75,15 @@ export const unitService = {
 
   searchUnits: (params: any): Promise<Unit[]> =>
     API.get('/api/units/search', { params }).then(response => response.data),
+
+  // Add these to meterReadingApi object:
+checkMonthlyReading: (unitId: number, utilityTypeId: number, readingDate: string) => 
+    API.get<{ hasReading: boolean }>(`/api/meter-readings/check-monthly/${unitId}`, {
+        params: { utilityTypeId, readingDate }
+    }).then(response => response.data),
+
+createBulkValidatedReadings: (requests: CreateMeterReadingRequest[]): Promise<MeterReading[]> =>
+    API.post('/api/meter-readings/bulk-validated', requests).then(response => response.data),
 };
 
 // ✅ For backward compatibility (temporary)
