@@ -148,16 +148,7 @@ const AccountantDashboard: React.FC = () => {
             </button>
           </div>
         );
-      case "bulk-readings":
-        return (
-          <button
-            onClick={() => {}}
-            className="w-full sm:w-auto px-4 py-3 rounded-xl shadow-lg text-white font-semibold transform active:scale-95 transition duration-150 text-sm sm:text-base"
-            style={{ backgroundColor: PRIMARY_COLOR }}
-          >
-            + Add Bulk Reading
-          </button>
-        );
+      
       case "building-invoices":
         return (
           <button
