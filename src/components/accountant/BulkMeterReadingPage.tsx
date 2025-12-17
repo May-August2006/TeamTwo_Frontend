@@ -54,49 +54,51 @@ const BulkMeterReadingPage: React.FC = () => {
     setReadingDate(new Date().toISOString().split('T')[0]);
   }, []);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      
-      // First, get user's assigned building if they're not admin
-      const userRole = getUserRole();
-      setIsAdmin(userRole === 'ROLE_ADMIN');
-      
-      if (!isAdmin) {
-        try {
-          const assignedBuildingResponse = await buildingApi.getMyAssignedBuilding();
-          if (assignedBuildingResponse.data) {
-            setAssignedBuildingId(assignedBuildingResponse.data.id);
-            // Auto-select assigned building
-            await handleBuildingChange(assignedBuildingResponse.data.id);
-            return; // Skip loading other buildings
-          }
-        } catch (error) {
-          console.log('No assigned building for user');
+ // Update the loadData function in BulkMeterReadingPage.tsx
+
+const loadData = async () => {
+  try {
+    setLoading(true);
+    
+    // First, get user's assigned building if they're not admin
+    const userRole = getUserRole();
+    setIsAdmin(userRole === 'ROLE_ADMIN');
+    
+    // Load utilities FIRST (regardless of user type)
+    const utilitiesResponse = await utilityApi.getAll();
+    const utils = utilitiesResponse.data || [];
+    const electricUtility = utils.find((u: UtilityType) => 
+      u.utilityName.toLowerCase().includes('electric'));
+    const waterUtility = utils.find((u: UtilityType) => 
+      u.utilityName.toLowerCase().includes('water'));
+    
+    setElectricityUtility(electricUtility || null);
+    setWaterUtility(waterUtility || null);
+    
+    if (!isAdmin) {
+      try {
+        const assignedBuildingResponse = await buildingApi.getMyAssignedBuilding();
+        if (assignedBuildingResponse.data) {
+          setAssignedBuildingId(assignedBuildingResponse.data.id);
+          // Auto-select assigned building
+          await handleBuildingChange(assignedBuildingResponse.data.id);
+          return; // Skip loading other buildings
         }
+      } catch (error) {
+        console.log('No assigned building for user');
       }
-      
-      // Load all buildings for admin users
-      const buildingsResponse = await buildingApi.getAll();
-      setBuildings(buildingsResponse.data || []);
-      
-      // Load utilities
-      const utilitiesResponse = await utilityApi.getAll();
-      const utils = utilitiesResponse.data || [];
-      const electricUtility = utils.find((u: UtilityType) => 
-        u.utilityName.toLowerCase().includes('electric'));
-      const waterUtility = utils.find((u: UtilityType) => 
-        u.utilityName.toLowerCase().includes('water'));
-      
-      setElectricityUtility(electricUtility || null);
-      setWaterUtility(waterUtility || null);
-      
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+    
+    // Load all buildings for admin users
+    const buildingsResponse = await buildingApi.getAll();
+    setBuildings(buildingsResponse.data || []);
+    
+  } catch (error) {
+    console.error('Error loading data:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleBuildingChange = async (selectedBuildingId: number) => {
     // Check if user has permission for this building
@@ -266,105 +268,145 @@ const BulkMeterReadingPage: React.FC = () => {
   };
 
   const processCSVData = async (csvText: string): Promise<any[]> => {
-    const rows = csvText.split('\n').filter(row => row.trim());
-    const headers = rows[0].split(',').map(h => h.trim());
-    const dataRows = rows.slice(1);
+  const rows = csvText.split('\n').filter(row => row.trim());
+  const headers = rows[0].split(',').map(h => h.trim());
+  const dataRows = rows.slice(1);
+  
+  const processedReadings = [];
+  const errors: string[] = [];
+  
+  // DEBUG: Log what units we have
+  console.log('Occupied units with meters:', occupiedUnits.map(u => ({ id: u.id, number: u.unitNumber })));
+  
+  for (const [index, row] of dataRows.entries()) {
+    const columns = row.split(',').map(col => col.trim());
     
-    const processedReadings = [];
-    const errors: string[] = [];
-    
-    for (const [index, row] of dataRows.entries()) {
-      const columns = row.split(',').map(col => col.trim());
+    if (columns.length >= 3) {
+      const unitNumber = columns[0];
+      const electricityReading = parseFloat(columns[1]);
+      const waterReading = parseFloat(columns[2]);
       
-      if (columns.length >= 3) {
-        const unitNumber = columns[0];
-        const electricityReading = parseFloat(columns[1]);
-        const waterReading = parseFloat(columns[2]);
-        
-        // Validate numeric values
-        if (isNaN(electricityReading) || isNaN(waterReading)) {
-          errors.push(`Row ${index + 2}: Invalid numeric values`);
-          continue;
-        }
-        
-        // Find unit
-        const unit = occupiedUnits.find(u => u.unitNumber === unitNumber);
-        if (!unit) {
-          errors.push(`Row ${index + 2}: Unit ${unitNumber} not found in building`);
-          continue;
-        }
-        
-        // Check if unit already has reading for this month
-        if (unitsWithMonthlyReadings.has(unit.id)) {
-          errors.push(`Row ${index + 2}: Unit ${unitNumber} already has readings for this month`);
-          continue;
-        }
-        
-        processedReadings.push({
-          unitId: unit.id,
-          electricityReading,
-          waterReading
-        });
+      console.log(`Processing row ${index + 2}: Unit ${unitNumber}, Elec: ${electricityReading}, Water: ${waterReading}`);
+      
+      // Validate numeric values (allow 0)
+      if (isNaN(electricityReading) || isNaN(waterReading)) {
+        errors.push(`Row ${index + 2}: Invalid numeric values`);
+        continue;
       }
-    }
-    
-    if (errors.length > 0) {
-      alert(`Some rows were skipped:\n${errors.join('\n')}`);
-    }
-    
-    return processedReadings;
-  };
-
-  const submitBulkReadingsFromCSV = async (processedReadings: any[]) => {
-    try {
-      const bulkRequests = processedReadings.flatMap(reading => {
-        const requests = [];
-        
-        if (electricityUtility && reading.electricityReading > 0) {
-          requests.push({
-            unitId: reading.unitId,
-            utilityTypeId: electricityUtility.id,
-            currentReading: reading.electricityReading,
-            readingDate: readingDate,
-            notes: 'Imported from CSV'
-          });
-        }
-        
-        if (waterUtility && reading.waterReading > 0) {
-          requests.push({
-            unitId: reading.unitId,
-            utilityTypeId: waterUtility.id,
-            currentReading: reading.waterReading,
-            readingDate: readingDate,
-            notes: 'Imported from CSV'
-          });
-        }
-        
-        return requests;
+      
+      // Find unit
+      const unit = occupiedUnits.find(u => u.unitNumber === unitNumber);
+      
+      if (!unit) {
+        errors.push(`Row ${index + 2}: Unit ${unitNumber} not found or doesn't have meters`);
+        continue;
+      }
+      
+      // Check if unit already has reading for this month
+      if (unitsWithMonthlyReadings.has(unit.id)) {
+        errors.push(`Row ${index + 2}: Unit ${unitNumber} already has readings for this month`);
+        continue;
+      }
+      
+      processedReadings.push({
+        unitId: unit.id,
+        electricityReading,
+        waterReading
       });
       
-      if (bulkRequests.length === 0) {
-        alert('No valid readings to submit from CSV');
-        return;
-      }
-      
-      // Use the validated bulk API
-      await meterReadingApi.createBulkValidatedReadings(bulkRequests);
-      
-      alert(`Successfully submitted ${bulkRequests.length} readings from CSV!`);
-      
-      // Refresh the page
-      if (buildingId) {
-        await handleBuildingChange(buildingId);
-      }
-      
-    } catch (error: any) {
-      console.error('Error submitting CSV readings:', error);
-      const errorMessage = error.response?.data?.message || 
-                         'Error submitting readings. Please check the format and try again.';
-      alert(`Failed to submit CSV readings: ${errorMessage}`);
+      console.log(`Added unit ${unitNumber} (ID: ${unit.id}) to processed readings`);
     }
-  };
+  }
+  
+  console.log('Processed readings:', processedReadings);
+  console.log('Errors:', errors);
+  
+  if (errors.length > 0) {
+    alert(`Some rows were skipped:\n${errors.join('\n')}`);
+  }
+  
+  return processedReadings;
+};
+
+  const submitBulkReadingsFromCSV = async (processedReadings: any[]) => {
+  try {
+    console.log('Submitting CSV readings:', processedReadings);
+    console.log('Electricity utility:', electricityUtility);
+    console.log('Water utility:', waterUtility);
+    console.log('Reading date:', readingDate);
+    
+    const bulkRequests = processedReadings.flatMap(reading => {
+      const requests = [];
+      
+      // Check if electricity utility exists and reading is valid (>= 0)
+      if (electricityUtility && reading.electricityReading >= 0) { // Changed > to >=
+        console.log(`Adding electricity reading for unit ${reading.unitId}: ${reading.electricityReading}`);
+        requests.push({
+          unitId: reading.unitId,
+          utilityTypeId: electricityUtility.id,
+          currentReading: reading.electricityReading,
+          readingDate: readingDate,
+          notes: 'Imported from CSV'
+        });
+      } else if (!electricityUtility) {
+        console.log('No electricity utility configured');
+      }
+      
+      // Check if water utility exists and reading is valid (>= 0)
+      if (waterUtility && reading.waterReading >= 0) { // Changed > to >=
+        console.log(`Adding water reading for unit ${reading.unitId}: ${reading.waterReading}`);
+        requests.push({
+          unitId: reading.unitId,
+          utilityTypeId: waterUtility.id,
+          currentReading: reading.waterReading,
+          readingDate: readingDate,
+          notes: 'Imported from CSV'
+        });
+      } else if (!waterUtility) {
+        console.log('No water utility configured');
+      }
+      
+      console.log('Requests for this reading:', requests);
+      return requests;
+    });
+    
+    console.log('Total bulk requests:', bulkRequests);
+    console.log('Bulk requests length:', bulkRequests.length);
+    
+    if (bulkRequests.length === 0) {
+      alert('No valid readings to submit from CSV. Check if utilities are configured and readings are valid.');
+      return;
+    }
+    
+    // Try the new API first, fallback to old API
+    try {
+      console.log('Attempting to submit via validated bulk API...');
+      // First try the new validated API
+      await meterReadingApi.createBulkValidatedReadings(bulkRequests);
+      console.log('Submitted via validated API');
+    } catch (apiError) {
+      console.log('Validated API not available, using regular API', apiError);
+      // Fallback to regular bulk API
+      await meterReadingApi.createBulkMeterReadings(bulkRequests);
+      console.log('Submitted via regular API');
+    }
+    
+    alert(`Successfully submitted ${bulkRequests.length} readings from CSV!`);
+    
+    // Refresh the page
+    if (buildingId) {
+      await handleBuildingChange(buildingId);
+    }
+    
+  } catch (error: any) {
+    console.error('Error submitting CSV readings:', error);
+    console.error('Error response:', error.response);
+    const errorMessage = error.response?.data?.message || 
+                       error.message ||
+                       'Error submitting readings. Please check the format and try again.';
+    alert(`Failed to submit CSV readings: ${errorMessage}`);
+  }
+};
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
