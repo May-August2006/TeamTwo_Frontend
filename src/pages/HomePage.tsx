@@ -49,6 +49,20 @@ const HomePage: React.FC = () => {
     setIsDetailModalOpen(true);
   };
 
+  const handleViewSpaces = () => {
+    // This will scroll directly to the units grid section
+    setTimeout(() => {
+      const unitsGrid = document.querySelector('#units-grid-section');
+      if (unitsGrid) {
+        unitsGrid.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start',
+          inline: 'nearest'
+        });
+      }
+    }, 100);
+  }; // <-- Added missing closing brace here
+
   // Handle appointment request
   const handleAppointment = (unit: Unit) => {
     console.log('🏠 HomePage: Appointment requested', unit.unitNumber);
@@ -153,6 +167,7 @@ const HomePage: React.FC = () => {
 
       <Homepage 
         onUnitDetail={handleUnitDetail}
+        onViewSpaces={handleViewSpaces}
       />
 
       {/* Unit Detail Modal - Only shown when user is logged in */}

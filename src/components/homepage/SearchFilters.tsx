@@ -3,11 +3,11 @@ import type { UnitSearchParams, RoomType, SpaceType, HallType, Branch, Building,
 import { Button } from '../common/ui/Button';
 
 interface SearchFiltersProps {
-  onSearch: (params: UnitSearchParams) => void; // Called on filter change (pending)
+  onSearch: (params: UnitSearchParams) => void;
   onReset: () => void;
-  onApplySearch: () => void; // New: Called when Apply Filters is clicked
-  pendingFilters?: UnitSearchParams; // The pending (not yet applied) filters
-  activeFilters?: UnitSearchParams; // The currently active filters
+  onApplySearch: () => void;
+  pendingFilters?: UnitSearchParams;
+  activeFilters?: UnitSearchParams;
 }
 
 export const SearchFilters: React.FC<SearchFiltersProps> = ({ 
@@ -17,29 +17,20 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
   pendingFilters = {},
   activeFilters = {}
 }) => {
-  // Filter states - initialize with pendingFilters if provided
   const [filters, setFilters] = useState<UnitSearchParams>(pendingFilters || {});
-  
-  // Data for dropdowns
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [spaceTypes, setSpaceTypes] = useState<SpaceType[]>([]);
   const [hallTypes, setHallTypes] = useState<HallType[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
-  
-  // Loading states
   const [loadingRoomTypes, setLoadingRoomTypes] = useState(false);
   const [loadingSpaceTypes, setLoadingSpaceTypes] = useState(false);
   const [loadingHallTypes, setLoadingHallTypes] = useState(false);
   const [loadingBranches, setLoadingBranches] = useState(false);
   const [loadingBuildings, setLoadingBuildings] = useState(false);
   const [loadingLevels, setLoadingLevels] = useState(false);
-  
-  // Error states
   const [error, setError] = useState<string | null>(null);
-  
-  // Validation errors - fixed initialization
   const [validationErrors, setValidationErrors] = useState<{
     minSpace?: string;
     maxSpace?: string;
@@ -47,12 +38,10 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
     maxRent?: string;
   }>({});
 
-  // Helper function for public API calls
   const publicFetch = async (url: string): Promise<any> => {
     try {
       const response = await fetch(url);
       
-      // Handle 401/403 gracefully for public endpoints
       if (response.status === 401 || response.status === 403) {
         console.warn(`Public endpoint ${url} returned auth error, returning empty array`);
         return [];
@@ -64,7 +53,6 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
       
       const data = await response.json();
       
-      // Handle different response structures
       if (Array.isArray(data)) {
         return data;
       } else if (data && Array.isArray(data.content)) {
@@ -82,13 +70,10 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
     }
   };
 
-  // Update local filters when pendingFilters prop changes
   useEffect(() => {
     if (pendingFilters) {
-      console.log('🔄 Updating filters from props:', pendingFilters);
       setFilters(pendingFilters);
       
-      // Load dependent data if needed
       if (pendingFilters.branchId && !pendingFilters.buildingId) {
         loadBuildings(pendingFilters.branchId);
       }
@@ -98,12 +83,10 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
     }
   }, [pendingFilters]);
 
-  // Load initial data
   useEffect(() => {
     loadInitialData();
   }, []);
 
-  // Load buildings when branch is selected
   useEffect(() => {
     if (filters.branchId) {
       loadBuildings(filters.branchId);
@@ -113,7 +96,6 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
     }
   }, [filters.branchId]);
 
-  // Load levels when building is selected
   useEffect(() => {
     if (filters.buildingId) {
       loadLevels(filters.buildingId);
@@ -214,31 +196,25 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
     }
   };
 
-  // Fixed validation function
   const validateNumericField = (
     field: 'minSpace' | 'maxSpace' | 'minRent' | 'maxRent',
     value: number | undefined,
     relatedField?: 'minSpace' | 'maxSpace' | 'minRent' | 'maxRent'
   ): string | null => {
-    // Allow empty values
     if (value === undefined || value === null || value === 0) {
       return null;
     }
     
-    // Handle string values if any
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
     
-    // Check if it's a valid number
     if (isNaN(numValue)) {
       return 'Please enter a valid number';
     }
     
-    // Check for negative values
     if (numValue < 0) {
       return 'Value cannot be negative';
     }
     
-    // Check for maximum limits
     if (field.includes('Space') && numValue > 10000) {
       return 'Space value is too large (max: 10,000 sqm)';
     }
@@ -247,10 +223,8 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
       return 'Rent value is too large (max: 100,000,000 MMK)';
     }
     
-    // Only check min/max relationship if both values exist
     if (field.includes('min') && relatedField && filters[relatedField]) {
       const maxValue = filters[relatedField] as number;
-      // Only validate if maxValue is a valid number and greater than 0
       if (maxValue && !isNaN(maxValue) && maxValue > 0) {
         if (numValue > maxValue) {
           return `Minimum cannot be greater than maximum`;
@@ -260,7 +234,6 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
     
     if (field.includes('max') && relatedField && filters[relatedField]) {
       const minValue = filters[relatedField] as number;
-      // Only validate if minValue is a valid number and greater than 0
       if (minValue && !isNaN(minValue) && minValue > 0) {
         if (numValue < minValue) {
           return `Maximum cannot be less than minimum`;
@@ -275,10 +248,8 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
     field: 'minSpace' | 'maxSpace' | 'minRent' | 'maxRent',
     value: string
   ) => {
-    // Parse the value
     const numValue = value === '' ? undefined : parseFloat(value);
     
-    // Validate the field
     let validationError: string | null = null;
     let relatedField: 'minSpace' | 'maxSpace' | 'minRent' | 'maxRent' | undefined;
     
@@ -287,63 +258,47 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
     if (field === 'minRent') relatedField = 'maxRent';
     if (field === 'maxRent') relatedField = 'minRent';
     
-    // Only validate if we have a value
     if (numValue !== undefined && !isNaN(numValue)) {
       validationError = validateNumericField(field, numValue, relatedField);
     }
     
-    // Update validation errors
     setValidationErrors(prev => ({
       ...prev,
       [field]: validationError || undefined
     }));
     
-    // Update filters
     handleFilterChange(field, numValue);
   };
 
   const handleFilterChange = (key: keyof UnitSearchParams, value: any) => {
     const newFilters = { ...filters, [key]: value };
     
-    // Reset dependent filters when parent changes
     if (key === 'branchId') {
       delete newFilters.buildingId;
       delete newFilters.levelId;
-      // Note: Don't clear buildings/levels arrays, just the filter values
     }
     if (key === 'buildingId') {
       delete newFilters.levelId;
     }
     if (key === 'unitType') {
-      // Reset type-specific filters when unit type changes
       delete newFilters.roomTypeId;
       delete newFilters.spaceTypeId;
       delete newFilters.hallTypeId;
     }
     
-    console.log(`🔧 Filter changed: ${key} = ${value}`, newFilters);
     setFilters(newFilters);
-    
-    // Notify parent about pending filter changes
     onSearch(newFilters);
   };
 
   const handleReset = () => {
-    console.log('🔄 Resetting filters');
     setFilters({});
     setValidationErrors({});
-    onReset(); // This will clear both pending and active filters
+    onReset();
   };
 
-  // Fixed handleApply function
   const handleApply = () => {
-    console.log('✅ Applying filters:', filters);
-    console.log('✅ Validation errors state:', validationErrors);
-    
-    // Re-validate all fields before applying
     const errors: typeof validationErrors = {};
     
-    // Validate min/max space if they exist
     if (filters.minSpace !== undefined && filters.minSpace !== 0) {
       const minSpaceError = validateNumericField('minSpace', filters.minSpace, 'maxSpace');
       if (minSpaceError) errors.minSpace = minSpaceError;
@@ -354,7 +309,6 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
       if (maxSpaceError) errors.maxSpace = maxSpaceError;
     }
     
-    // Validate min/max rent if they exist
     if (filters.minRent !== undefined && filters.minRent !== 0) {
       const minRentError = validateNumericField('minRent', filters.minRent, 'maxRent');
       if (minRentError) errors.minRent = minRentError;
@@ -365,32 +319,18 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
       if (maxRentError) errors.maxRent = maxRentError;
     }
     
-    console.log('✅ Post-validation errors:', errors);
-    
-    // Check if there are any blocking errors
     const hasBlockingErrors = Object.values(errors).some(error => error !== undefined);
     
     if (hasBlockingErrors) {
-      console.error('❌ Cannot apply filters - validation errors:', errors);
-      
-      // Update UI with new errors
       setValidationErrors(errors);
-      
-      // Find the first error message to show
       const firstError = Object.values(errors).find(error => error);
       if (firstError) {
         alert(`Please fix: ${firstError}`);
       }
-      
       return;
     }
     
-    // Clear any validation errors
     setValidationErrors({});
-    
-    console.log('✅ Validation passed, calling onApplySearch');
-    
-    // Call parent to actually apply the search
     onApplySearch();
   };
 
@@ -403,11 +343,11 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
       case 'ROOM':
         return (
           <div>
-            <label className="block text-sm font-medium text-[#0D1B2A] mb-2">Room Type</label>
+            <label className="block text-sm font-medium text-[#0F172A] mb-3">Room Type</label>
             <select
               value={filters.roomTypeId || ''}
               onChange={(e) => handleFilterChange('roomTypeId', e.target.value ? Number(e.target.value) : undefined)}
-              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D32F2F] focus:border-[#D32F2F] transition-all duration-200 bg-white"
+              className="w-full border border-[#E2E8F0] rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
               disabled={loadingRoomTypes}
             >
               <option value="">All Room Types</option>
@@ -415,17 +355,17 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
                 <option key={type.id} value={type.id}>{type.typeName}</option>
               ))}
             </select>
-            {loadingRoomTypes && <p className="text-[#0D1B2A] opacity-60 text-xs mt-2">Loading...</p>}
+            {loadingRoomTypes && <p className="text-[#64748B] text-xs mt-2">Loading...</p>}
           </div>
         );
       case 'SPACE':
         return (
           <div>
-            <label className="block text-sm font-medium text-[#0D1B2A] mb-2">Space Type</label>
+            <label className="block text-sm font-medium text-[#0F172A] mb-3">Space Type</label>
             <select
               value={filters.spaceTypeId || ''}
               onChange={(e) => handleFilterChange('spaceTypeId', e.target.value ? Number(e.target.value) : undefined)}
-              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D32F2F] focus:border-[#D32F2F] transition-all duration-200 bg-white"
+              className="w-full border border-[#E2E8F0] rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
               disabled={loadingSpaceTypes}
             >
               <option value="">All Space Types</option>
@@ -433,17 +373,17 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
                 <option key={type.id} value={type.id}>{type.name}</option>
               ))}
             </select>
-            {loadingSpaceTypes && <p className="text-[#0D1B2A] opacity-60 text-xs mt-2">Loading...</p>}
+            {loadingSpaceTypes && <p className="text-[#64748B] text-xs mt-2">Loading...</p>}
           </div>
         );
       case 'HALL':
         return (
           <div>
-            <label className="block text-sm font-medium text-[#0D1B2A] mb-2">Hall Type</label>
+            <label className="block text-sm font-medium text-[#0F172A] mb-3">Hall Type</label>
             <select
               value={filters.hallTypeId || ''}
               onChange={(e) => handleFilterChange('hallTypeId', e.target.value ? Number(e.target.value) : undefined)}
-              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D32F2F] focus:border-[#D32F2F] transition-all duration-200 bg-white"
+              className="w-full border border-[#E2E8F0] rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
               disabled={loadingHallTypes}
             >
               <option value="">All Hall Types</option>
@@ -451,7 +391,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
                 <option key={type.id} value={type.id}>{type.name}</option>
               ))}
             </select>
-            {loadingHallTypes && <p className="text-[#0D1B2A] opacity-60 text-xs mt-2">Loading...</p>}
+            {loadingHallTypes && <p className="text-[#64748B] text-xs mt-2">Loading...</p>}
           </div>
         );
       default:
@@ -459,49 +399,46 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
     }
   };
 
-  // Debug: Log validation errors
   useEffect(() => {
     console.log('🔍 Validation errors updated:', validationErrors);
-    console.log('🔍 Apply button should be disabled?', Object.keys(validationErrors).filter(key => validationErrors[key as keyof typeof validationErrors]).length > 0);
   }, [validationErrors]);
 
-  // Debug: Log filters
   useEffect(() => {
     console.log('🔍 Filters updated:', filters);
   }, [filters]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Status Indicator */}
-      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[#1E40AF]/5 to-[#3B82F6]/5 border border-[#1E40AF]/20 rounded-xl">
         <div className="text-sm">
           {Object.keys(activeFilters).length > 0 ? (
-            <span className="text-green-600 font-medium">
+            <span className="text-[#1E40AF] font-medium">
               ✓ Search filters applied
             </span>
           ) : (
-            <span className="text-gray-600">
+            <span className="text-[#64748B]">
               No active search filters
             </span>
           )}
         </div>
         <div className="text-sm">
-          <span className="font-medium">{activeFiltersCount}</span> pending filter{activeFiltersCount !== 1 ? 's' : ''}
+          <span className="font-medium text-[#0F172A]">{activeFiltersCount}</span> pending filter{activeFiltersCount !== 1 ? 's' : ''}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {/* Location Filters */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-[#0D1B2A] border-b pb-2">Location</h3>
+        <div className="space-y-6">
+          <h3 className="text-lg font-semibold text-[#0F172A] border-b pb-3">Location</h3>
           
           {/* Branch Filter */}
           <div>
-            <label className="block text-sm font-medium text-[#0D1B2A] mb-2">Branch</label>
+            <label className="block text-sm font-medium text-[#0F172A] mb-3">Branch</label>
             <select
               value={filters.branchId || ''}
               onChange={(e) => handleFilterChange('branchId', e.target.value ? Number(e.target.value) : undefined)}
-              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D32F2F] focus:border-[#D32F2F] transition-all duration-200 bg-white"
+              className="w-full border border-[#E2E8F0] rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
               disabled={loadingBranches}
             >
               <option value="">All Branches</option>
@@ -509,16 +446,16 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
                 <option key={branch.id} value={branch.id}>{branch.branchName}</option>
               ))}
             </select>
-            {loadingBranches && <p className="text-[#0D1B2A] opacity-60 text-xs mt-2">Loading...</p>}
+            {loadingBranches && <p className="text-[#64748B] text-xs mt-2">Loading...</p>}
           </div>
 
           {/* Building Filter */}
           <div>
-            <label className="block text-sm font-medium text-[#0D1B2A] mb-2">Building</label>
+            <label className="block text-sm font-medium text-[#0F172A] mb-3">Building</label>
             <select
               value={filters.buildingId || ''}
               onChange={(e) => handleFilterChange('buildingId', e.target.value ? Number(e.target.value) : undefined)}
-              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D32F2F] focus:border-[#D32F2F] transition-all duration-200 bg-white"
+              className="w-full border border-[#E2E8F0] rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
               disabled={loadingBuildings || !filters.branchId}
             >
               <option value="">All Buildings</option>
@@ -526,17 +463,17 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
                 <option key={building.id} value={building.id}>{building.buildingName}</option>
               ))}
             </select>
-            {loadingBuildings && <p className="text-[#0D1B2A] opacity-60 text-xs mt-2">Loading...</p>}
-            {!filters.branchId && <p className="text-[#0D1B2A] opacity-60 text-xs mt-2">Select a branch first</p>}
+            {loadingBuildings && <p className="text-[#64748B] text-xs mt-2">Loading...</p>}
+            {!filters.branchId && <p className="text-[#64748B] text-xs mt-2">Select a branch first</p>}
           </div>
 
           {/* Level/Floor Filter */}
           <div>
-            <label className="block text-sm font-medium text-[#0D1B2A] mb-2">Floor</label>
+            <label className="block text-sm font-medium text-[#0F172A] mb-3">Floor</label>
             <select
               value={filters.levelId || ''}
               onChange={(e) => handleFilterChange('levelId', e.target.value ? Number(e.target.value) : undefined)}
-              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D32F2F] focus:border-[#D32F2F] transition-all duration-200 bg-white"
+              className="w-full border border-[#E2E8F0] rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
               disabled={loadingLevels || !filters.buildingId}
             >
               <option value="">All Floors</option>
@@ -544,22 +481,22 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
                 <option key={level.id} value={level.id}>{level.levelName} (Level {level.levelNumber})</option>
               ))}
             </select>
-            {loadingLevels && <p className="text-[#0D1B2A] opacity-60 text-xs mt-2">Loading...</p>}
-            {!filters.buildingId && <p className="text-[#0D1B2A] opacity-60 text-xs mt-2">Select a building first</p>}
+            {loadingLevels && <p className="text-[#64748B] text-xs mt-2">Loading...</p>}
+            {!filters.buildingId && <p className="text-[#64748B] text-xs mt-2">Select a building first</p>}
           </div>
         </div>
 
         {/* Unit Type Filters */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-[#0D1B2A] border-b pb-2">Unit Type</h3>
+        <div className="space-y-6">
+          <h3 className="text-lg font-semibold text-[#0F172A] border-b pb-3">Unit Type</h3>
           
           {/* Unit Type Filter */}
           <div>
-            <label className="block text-sm font-medium text-[#0D1B2A] mb-2">Unit Type</label>
+            <label className="block text-sm font-medium text-[#0F172A] mb-3">Unit Type</label>
             <select
               value={filters.unitType || ''}
               onChange={(e) => handleFilterChange('unitType', e.target.value || undefined)}
-              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D32F2F] focus:border-[#D32F2F] transition-all duration-200 bg-white"
+              className="w-full border border-[#E2E8F0] rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
             >
               <option value="">All Unit Types</option>
               <option value="ROOM">Room</option>
@@ -573,21 +510,21 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
         </div>
 
         {/* Space & Price Filters */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-[#0D1B2A] border-b pb-2">Space & Price</h3>
+        <div className="space-y-6">
+          <h3 className="text-lg font-semibold text-[#0F172A] border-b pb-3">Space & Price</h3>
           
           <div className="grid grid-cols-2 gap-4">
             {/* Min Space */}
             <div>
-              <label className="block text-sm font-medium text-[#0D1B2A] mb-2">Min Space (sqm)</label>
+              <label className="block text-sm font-medium text-[#0F172A] mb-3">Min Space (sqm)</label>
               <input
                 type="number"
                 value={filters.minSpace || ''}
                 onChange={(e) => handleNumericFilterChange('minSpace', e.target.value)}
-                className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 transition-all duration-200 ${
+                className={`w-full border rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 transition-all duration-200 ${
                   validationErrors.minSpace 
                     ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-[#E5E8EB] focus:ring-[#D32F2F] focus:border-[#D32F2F]'
+                    : 'border-[#E2E8F0] focus:ring-[#1E40AF] focus:border-[#1E40AF]'
                 }`}
                 placeholder="0"
                 min="0"
@@ -595,21 +532,21 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
                 step="0.5"
               />
               {validationErrors.minSpace && (
-                <p className="text-red-500 text-xs mt-1">{validationErrors.minSpace}</p>
+                <p className="text-red-500 text-xs mt-2">{validationErrors.minSpace}</p>
               )}
             </div>
 
             {/* Max Space */}
             <div>
-              <label className="block text-sm font-medium text-[#0D1B2A] mb-2">Max Space (sqm)</label>
+              <label className="block text-sm font-medium text-[#0F172A] mb-3">Max Space (sqm)</label>
               <input
                 type="number"
                 value={filters.maxSpace || ''}
                 onChange={(e) => handleNumericFilterChange('maxSpace', e.target.value)}
-                className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 transition-all duration-200 ${
+                className={`w-full border rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 transition-all duration-200 ${
                   validationErrors.maxSpace 
                     ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-[#E5E8EB] focus:ring-[#D32F2F] focus:border-[#D32F2F]'
+                    : 'border-[#E2E8F0] focus:ring-[#1E40AF] focus:border-[#1E40AF]'
                 }`}
                 placeholder="1000"
                 min="0"
@@ -617,23 +554,23 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
                 step="0.5"
               />
               {validationErrors.maxSpace && (
-                <p className="text-red-500 text-xs mt-1">{validationErrors.maxSpace}</p>
+                <p className="text-red-500 text-xs mt-2">{validationErrors.maxSpace}</p>
               )}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {/* <div className="grid grid-cols-2 gap-4"> */}
             {/* Min Rent */}
-            <div>
-              <label className="block text-sm font-medium text-[#0D1B2A] mb-2">Min Rent (MMK)</label>
+            {/* <div>
+              <label className="block text-sm font-medium text-[#0F172A] mb-3">Min Rent (MMK)</label>
               <input
                 type="number"
                 value={filters.minRent || ''}
                 onChange={(e) => handleNumericFilterChange('minRent', e.target.value)}
-                className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 transition-all duration-200 ${
+                className={`w-full border rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 transition-all duration-200 ${
                   validationErrors.minRent 
                     ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-[#E5E8EB] focus:ring-[#D32F2F] focus:border-[#D32F2F]'
+                    : 'border-[#E2E8F0] focus:ring-[#1E40AF] focus:border-[#1E40AF]'
                 }`}
                 placeholder="0"
                 min="0"
@@ -641,21 +578,21 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
                 step="1000"
               />
               {validationErrors.minRent && (
-                <p className="text-red-500 text-xs mt-1">{validationErrors.minRent}</p>
+                <p className="text-red-500 text-xs mt-2">{validationErrors.minRent}</p>
               )}
-            </div>
+            </div> */}
 
             {/* Max Rent */}
-            <div>
-              <label className="block text-sm font-medium text-[#0D1B2A] mb-2">Max Rent (MMK)</label>
+            {/* <div>
+              <label className="block text-sm font-medium text-[#0F172A] mb-3">Max Rent (MMK)</label>
               <input
                 type="number"
                 value={filters.maxRent || ''}
                 onChange={(e) => handleNumericFilterChange('maxRent', e.target.value)}
-                className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 transition-all duration-200 ${
+                className={`w-full border rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 transition-all duration-200 ${
                   validationErrors.maxRent 
                     ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-[#E5E8EB] focus:ring-[#D32F2F] focus:border-[#D32F2F]'
+                    : 'border-[#E2E8F0] focus:ring-[#1E40AF] focus:border-[#1E40AF]'
                 }`}
                 placeholder="1000000"
                 min="0"
@@ -663,76 +600,75 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
                 step="1000"
               />
               {validationErrors.maxRent && (
-                <p className="text-red-500 text-xs mt-1">{validationErrors.maxRent}</p>
+                <p className="text-red-500 text-xs mt-2">{validationErrors.maxRent}</p>
               )}
-            </div>
-          </div>
+            </div> */}
+          {/* </div> */}
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-between items-center pt-6 border-t border-[#E5E8EB]">
-        <div className="text-sm text-[#0D1B2A] opacity-70">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center pt-8 border-t border-[#E2E8F0] gap-6">
+        <div className="text-sm text-[#64748B]">
           {activeFiltersCount > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
               {filters.branchId && (
-                <span className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">
+                <span className="bg-gradient-to-r from-[#1E40AF]/10 to-[#3B82F6]/10 text-[#1E40AF] text-xs px-3 py-1.5 rounded-full border border-[#1E40AF]/20">
                   Branch: {branches.find(b => b.id === filters.branchId)?.branchName || filters.branchId}
                 </span>
               )}
               {filters.buildingId && (
-                <span className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">
+                <span className="bg-gradient-to-r from-[#1E40AF]/10 to-[#3B82F6]/10 text-[#1E40AF] text-xs px-3 py-1.5 rounded-full border border-[#1E40AF]/20">
                   Building: {buildings.find(b => b.id === filters.buildingId)?.buildingName || filters.buildingId}
                 </span>
               )}
               {filters.levelId && (
-                <span className="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">
+                <span className="bg-gradient-to-r from-[#1E40AF]/10 to-[#3B82F6]/10 text-[#1E40AF] text-xs px-3 py-1.5 rounded-full border border-[#1E40AF]/20">
                   Floor: {levels.find(l => l.id === filters.levelId)?.levelName || filters.levelId}
                 </span>
               )}
               {filters.unitType && (
-                <span className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full">
+                <span className="bg-gradient-to-r from-[#10B981]/10 to-[#34D399]/10 text-[#059669] text-xs px-3 py-1.5 rounded-full border border-[#10B981]/20">
                   Type: {filters.unitType}
                 </span>
               )}
               {filters.minSpace && filters.minSpace !== 0 && (
-                <span className="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full">
+                <span className="bg-gradient-to-r from-[#F59E0B]/10 to-[#FBBF24]/10 text-[#D97706] text-xs px-3 py-1.5 rounded-full border border-[#F59E0B]/20">
                   Min Space: {filters.minSpace} sqm
                 </span>
               )}
               {filters.maxSpace && filters.maxSpace !== 0 && (
-                <span className="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full">
+                <span className="bg-gradient-to-r from-[#F59E0B]/10 to-[#FBBF24]/10 text-[#D97706] text-xs px-3 py-1.5 rounded-full border border-[#F59E0B]/20">
                   Max Space: {filters.maxSpace} sqm
                 </span>
               )}
               {filters.minRent && filters.minRent !== 0 && (
-                <span className="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full">
+                <span className="bg-gradient-to-r from-[#8B5CF6]/10 to-[#A78BFA]/10 text-[#7C3AED] text-xs px-3 py-1.5 rounded-full border border-[#8B5CF6]/20">
                   Min Rent: {filters.minRent.toLocaleString()} MMK
                 </span>
               )}
               {filters.maxRent && filters.maxRent !== 0 && (
-                <span className="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full">
+                <span className="bg-gradient-to-r from-[#8B5CF6]/10 to-[#A78BFA]/10 text-[#7C3AED] text-xs px-3 py-1.5 rounded-full border border-[#8B5CF6]/20">
                   Max Rent: {filters.maxRent.toLocaleString()} MMK
                 </span>
               )}
             </div>
           )}
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-4">
           <Button 
             onClick={handleReset} 
             variant="secondary" 
-            size="sm"
-            className="border-[#0D1B2A] hover:bg-[#0D1B2A] hover:text-white"
+            size="md"
+            className="border-[#1E40AF] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white transition-all duration-300"
           >
             Reset Filters
           </Button>
           <Button 
             onClick={handleApply} 
             variant="primary" 
-            size="sm"
-            className="bg-[#D32F2F] hover:bg-[#B71C1C] text-white"
-            // Fixed: Only disable if there are actual validation errors
+            size="md"
+            className="bg-gradient-to-r from-[#1E40AF] to-[#3B82F6] hover:from-[#1E3A8A] hover:to-[#2563EB] text-white shadow-lg hover:shadow-xl transition-all duration-300"
             disabled={Object.keys(validationErrors).filter(key => validationErrors[key as keyof typeof validationErrors]).length > 0}
           >
             Apply Filters
