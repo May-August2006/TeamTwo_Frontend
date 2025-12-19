@@ -21,7 +21,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
   isLoading = false 
 }) => {
   const [formData, setFormData] = useState({
-    unitNumber: '',
+    unitNumber: 'UN-',
     unitType: UnitType.ROOM,
     hasMeter: true,
     levelId: '',
@@ -66,6 +66,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
   // Load initial data
   useEffect(() => {
@@ -245,23 +246,36 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     }
   };
 
-  // Validate unit number
+  // Validate unit number with UN- prefix format
   const validateUnitNumber = (value: string): string => {
-    const trimmed = value.trim();
+    const trimmed = value.trim().toUpperCase();
     
     if (!trimmed) {
       return 'Unit number is required';
     }
     
-    // Check if it contains only valid characters (letters, numbers, dash, underscore)
-    const isValidFormat = /^[A-Z0-9_-]+$/.test(trimmed);
-    if (!isValidFormat) {
-      return 'Unit number can only contain uppercase letters, numbers, dash (-) and underscore (_)';
+    // Check for UN- prefix
+    if (!trimmed.startsWith('UN-')) {
+      return 'Unit number must start with UN-';
     }
     
-    // Check length
-    if (trimmed.length > 20) {
-      return 'Unit number cannot exceed 20 characters';
+    // Check for UN- prefix and number format
+    const isValidFormat = /^UN-\d{1,3}$/.test(trimmed);
+    if (!isValidFormat) {
+      return 'Unit number must be in format UN- followed by 1-3 digits';
+    }
+    
+    // Extract the number part
+    const numberPart = trimmed.substring(3);
+    if (numberPart === '') {
+      return 'Please enter a number between 001 and 999';
+    }
+    
+    const number = parseInt(numberPart, 10);
+    
+    // Check if number is between 1 and 999
+    if (number < 1 || number > 999) {
+      return 'Unit number must be between UN-001 and UN-999';
     }
     
     return '';
@@ -489,7 +503,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     if (unitNumberError) {
       newErrors.unitNumber = unitNumberError;
     } else if (formData.levelId) {
-      // Check for duplicates
+      // Check for duplicates - only within same level
       const isDuplicate = await checkDuplicateUnitNumber(formData.unitNumber, formData.levelId);
       if (isDuplicate) {
         newErrors.unitNumber = 'Unit number already exists on this level';
@@ -642,21 +656,47 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     }
   };
 
+  const handleFieldTouch = (fieldName: string) => {
+    setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
+  };
+
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
     // Special handling for unit number
     if (name === 'unitNumber') {
-      // Convert to uppercase immediately
-      const uppercaseValue = value.toUpperCase();
+      let processedValue = value.toUpperCase();
+      
+      // Always ensure UN- prefix
+      if (!processedValue.startsWith('UN-')) {
+        processedValue = 'UN-' + processedValue.replace(/^UN/, '');
+      }
+      
+      // Only allow digits after UN-
+      if (processedValue.length > 3) {
+        const prefix = processedValue.substring(0, 3); // UN-
+        const numberPart = processedValue.substring(3);
+        
+        // Only keep digits in number part
+        const digitsOnly = numberPart.replace(/\D/g, '');
+        
+        // Limit to 3 digits
+        const limitedDigits = digitsOnly.substring(0, 3);
+        
+        // Reconstruct value
+        processedValue = prefix + limitedDigits;
+      }
       
       setFormData(prev => ({
         ...prev,
-        [name]: uppercaseValue
+        [name]: processedValue
       }));
 
-      // Validate unit number
-      const unitNumberError = validateUnitNumber(uppercaseValue);
+      // Mark field as touched
+      handleFieldTouch(name);
+
+      // Validate unit number immediately
+      const unitNumberError = validateUnitNumber(processedValue);
       if (unitNumberError) {
         setErrors(prev => ({
           ...prev,
@@ -673,6 +713,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     } else if (name === 'levelId') {
       // Handle level change
       setFormData(prev => ({ ...prev, levelId: value }));
+      handleFieldTouch(name);
       
       if (value) {
         await fetchLevelDetails(parseInt(value));
@@ -690,6 +731,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         ...prev,
         [name]: value
       }));
+      handleFieldTouch(name);
 
       // Clear error when user starts typing
       if (errors[name]) {
@@ -705,18 +747,41 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
 
   const handleUnitNumberBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     const { value } = e.target;
-    const uppercaseValue = value.toUpperCase();
+    let processedValue = value.toUpperCase();
     
-    // Ensure uppercase on blur
-    if (value !== uppercaseValue) {
+    // Ensure UN- prefix
+    if (!processedValue.startsWith('UN-')) {
+      processedValue = 'UN-' + processedValue.replace(/^UN/, '');
+    }
+    
+    // Format number part to 3 digits with leading zeros
+    if (processedValue.startsWith('UN-')) {
+      const numberPart = processedValue.substring(3);
+      if (numberPart !== '') {
+        const number = parseInt(numberPart, 10);
+        if (!isNaN(number) && number >= 1 && number <= 999) {
+          // Pad with leading zeros to 3 digits
+          processedValue = 'UN-' + number.toString().padStart(3, '0');
+        } else if (numberPart === '') {
+          // If empty after UN-, keep as is for error message
+          processedValue = 'UN-';
+        }
+      }
+    }
+    
+    // Update if value changed
+    if (value !== processedValue) {
       setFormData(prev => ({
         ...prev,
-        unitNumber: uppercaseValue
+        unitNumber: processedValue
       }));
     }
 
+    // Mark field as touched
+    handleFieldTouch('unitNumber');
+
     // Validate unit number on blur
-    const unitNumberError = validateUnitNumber(uppercaseValue);
+    const unitNumberError = validateUnitNumber(processedValue);
     if (unitNumberError) {
       setErrors(prev => ({
         ...prev,
@@ -725,11 +790,11 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       return;
     }
 
-    // Check for duplicates when user leaves the field (only if valid)
-    if (formData.levelId && uppercaseValue) {
+    // Check for duplicates when user leaves the field (only if valid and has level selected)
+    if (formData.levelId && processedValue && processedValue !== 'UN-') {
       setIsCheckingDuplicate(true);
       try {
-        const isDuplicate = await checkDuplicateUnitNumber(uppercaseValue, formData.levelId);
+        const isDuplicate = await checkDuplicateUnitNumber(processedValue, formData.levelId);
         if (isDuplicate) {
           setErrors(prev => ({
             ...prev,
@@ -755,17 +820,32 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
 
   const handleUnitSpaceBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { value } = e.target;
+    handleFieldTouch('unitSpace');
     validateUnitSpaceField(value);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const { name } = e.currentTarget;
+  const handleUnitNumberKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const { selectionStart, value } = e.currentTarget;
     
-    if (name === 'unitNumber') {
-      // Allow only alphanumeric, dash, underscore, and backspace
-      const char = String.fromCharCode(e.charCode);
-      if (!/^[A-Za-z0-9_-]$/.test(char) && e.charCode !== 0) {
+    // Allow navigation keys (arrows, home, end, tab)
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Tab'].includes(e.key)) {
+      return;
+    }
+    
+    // Allow Ctrl/Command keys for shortcuts
+    if (e.ctrlKey || e.metaKey) {
+      return;
+    }
+    
+    // If cursor is in the UN- prefix area (positions 0-2), prevent most actions
+    if (selectionStart !== null && selectionStart < 3) {
+      // Allow arrow keys (already handled above) but prevent typing/deleting
+      if (e.key === 'Backspace' || e.key === 'Delete' || (e.key.length === 1 && !e.ctrlKey && !e.metaKey)) {
         e.preventDefault();
+        // Move cursor to after the prefix if user tries to type
+        if (e.key.length === 1) {
+          e.currentTarget.setSelectionRange(3, 3);
+        }
       }
     }
   };
@@ -792,7 +872,6 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
               name="roomTypeId"
               value={formData.roomTypeId}
               onChange={handleChange}
-              required
               className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.roomTypeId ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -804,6 +883,16 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
                 </option>
               ))}
             </select>
+            {touchedFields.roomTypeId && errors.roomTypeId && (
+              <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600 text-sm font-medium flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  {errors.roomTypeId}
+                </p>
+              </div>
+            )}
             {selectedRoomType && selectedRoomType.basePrice && (
               <div className="mt-2 text-sm text-gray-600">
                 <p>Base Price: <span className="font-semibold">{selectedRoomType.basePrice} MMK per sqm</span></p>
@@ -814,9 +903,6 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
                   <p>Max Space: {selectedRoomType.maxSpace} sqm</p>
                 )}
               </div>
-            )}
-            {errors.roomTypeId && (
-              <p className="text-red-500 text-sm mt-1">{errors.roomTypeId}</p>
             )}
           </div>
         );
@@ -831,7 +917,6 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
               name="spaceTypeId"
               value={formData.spaceTypeId}
               onChange={handleChange}
-              required
               className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.spaceTypeId ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -843,6 +928,16 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
                 </option>
               ))}
             </select>
+            {touchedFields.spaceTypeId && errors.spaceTypeId && (
+              <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600 text-sm font-medium flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  {errors.spaceTypeId}
+                </p>
+              </div>
+            )}
             {selectedSpaceType && (
               <div className="mt-2 text-sm text-gray-600">
                 <p>Base Price: <span className="font-semibold">{selectedSpaceType.basePricePerSqm} MMK per sqm</span></p>
@@ -857,9 +952,6 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
                 )}
               </div>
             )}
-            {errors.spaceTypeId && (
-              <p className="text-red-500 text-sm mt-1">{errors.spaceTypeId}</p>
-            )}
           </div>
         );
 
@@ -873,7 +965,6 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
               name="hallTypeId"
               value={formData.hallTypeId}
               onChange={handleChange}
-              required
               className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.hallTypeId ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -885,6 +976,16 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
                 </option>
               ))}
             </select>
+            {touchedFields.hallTypeId && errors.hallTypeId && (
+              <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-red-600 text-sm font-medium flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  {errors.hallTypeId}
+                </p>
+              </div>
+            )}
             {selectedHallType && selectedHallType.basePrice && (
               <div className="mt-2 text-sm text-gray-600">
                 <p>Base Price: <span className="font-semibold">{selectedHallType.basePrice} MMK per sqm</span></p>
@@ -895,9 +996,6 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
                   <p>Max Space: {selectedHallType.maxSpace} sqm</p>
                 )}
               </div>
-            )}
-            {errors.hallTypeId && (
-              <p className="text-red-500 text-sm mt-1">{errors.hallTypeId}</p>
             )}
           </div>
         );
@@ -988,7 +1086,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       {/* Branch Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -998,7 +1096,6 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
           name="branchId"
           value={formData.branchId}
           onChange={handleChange}
-          required
           className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.branchId ? 'border-red-500' : 'border-gray-300'
           }`}
@@ -1010,8 +1107,15 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             </option>
           ))}
         </select>
-        {errors.branchId && (
-          <p className="text-red-500 text-sm mt-1">{errors.branchId}</p>
+        {touchedFields.branchId && errors.branchId && (
+          <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-600 text-sm font-medium flex items-center">
+              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              {errors.branchId}
+            </p>
+          </div>
         )}
       </div>
 
@@ -1024,7 +1128,6 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
           name="buildingId"
           value={formData.buildingId}
           onChange={handleChange}
-          required
           disabled={!formData.branchId || buildingsLoading}
           className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${
             errors.buildingId ? 'border-red-500' : 'border-gray-300'
@@ -1042,8 +1145,15 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         {buildingsLoading && (
           <p className="text-blue-500 text-sm mt-1">Loading buildings...</p>
         )}
-        {errors.buildingId && (
-          <p className="text-red-500 text-sm mt-1">{errors.buildingId}</p>
+        {touchedFields.buildingId && errors.buildingId && (
+          <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-600 text-sm font-medium flex items-center">
+              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              {errors.buildingId}
+            </p>
+          </div>
         )}
       </div>
 
@@ -1056,7 +1166,6 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
           name="levelId"
           value={formData.levelId}
           onChange={handleChange}
-          required
           disabled={!formData.buildingId || levelsLoading}
           className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${
             errors.levelId ? 'border-red-500' : 'border-gray-300'
@@ -1096,8 +1205,15 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
           </div>
         )}
         
-        {errors.levelId && (
-          <p className="text-red-500 text-sm mt-1">{errors.levelId}</p>
+        {touchedFields.levelId && errors.levelId && (
+          <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-600 text-sm font-medium flex items-center">
+              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              {errors.levelId}
+            </p>
+          </div>
         )}
       </div>
 
@@ -1112,15 +1228,14 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             name="unitNumber"
             value={formData.unitNumber}
             onChange={handleChange}
+            onKeyDown={handleUnitNumberKeyDown}
             onBlur={handleUnitNumberBlur}
-            onKeyPress={handleKeyPress}
-            required
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase ${
               errors.unitNumber ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="Enter unit number (e.g., A-101, B_202)"
+            placeholder="Enter UN-001 to UN-999"
             style={{ textTransform: 'uppercase' }}
-            maxLength={20}
+            maxLength={7}
             disabled={isCheckingDuplicate}
           />
           {isCheckingDuplicate && (
@@ -1131,16 +1246,23 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         </div>
         <div className="flex justify-between items-center mt-1">
           <p className="text-xs text-gray-500">
-            Use uppercase letters, numbers, dash (-) or underscore (_).
+            Format: UN-001 to UN-999 (UN- prefix is fixed)
           </p>
           <span className="text-xs text-gray-400">
-            {formData.unitNumber.length}/20
+            {formData.unitNumber.length}/7
           </span>
         </div>
-        {errors.unitNumber && (
-          <p className="text-red-500 text-sm mt-1">{errors.unitNumber}</p>
+        {touchedFields.unitNumber && errors.unitNumber && (
+          <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-600 text-sm font-medium flex items-center">
+              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              {errors.unitNumber}
+            </p>
+          </div>
         )}
-        {!errors.unitNumber && formData.unitNumber && formData.levelId && !isCheckingDuplicate && (
+        {!errors.unitNumber && formData.unitNumber && formData.levelId && !isCheckingDuplicate && formData.unitNumber !== 'UN-' && (
           <p className="text-green-500 text-sm mt-1">✓ Unit number format is valid</p>
         )}
       </div>
@@ -1155,7 +1277,6 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             name="unitType"
             value={formData.unitType}
             onChange={handleChange}
-            required
             className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value={UnitType.ROOM}>Room</option>
@@ -1171,7 +1292,10 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             id="hasMeter"
             name="hasMeter"
             checked={formData.hasMeter}
-            onChange={(e) => setFormData(prev => ({ ...prev, hasMeter: e.target.checked }))}
+            onChange={(e) => {
+              setFormData(prev => ({ ...prev, hasMeter: e.target.checked }));
+              handleFieldTouch('hasMeter');
+            }}
             disabled={formData.unitType === UnitType.SPACE}
             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
           />
@@ -1199,7 +1323,6 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             value={formData.unitSpace}
             onChange={handleChange}
             onBlur={handleUnitSpaceBlur}
-            required
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.unitSpace ? 'border-red-500' : 'border-gray-300'
             }`}
@@ -1226,7 +1349,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
           )}
           
           {renderRealTimeCalculation()}
-          {errors.unitSpace && (
+          {touchedFields.unitSpace && errors.unitSpace && (
             <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
               <p className="text-red-600 text-sm font-medium flex items-center">
                 <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -1252,7 +1375,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
               name="rentalFee"
               value={formData.rentalFee}
               onChange={handleChange}
-              required
+              onBlur={() => handleFieldTouch('rentalFee')}
               className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.rentalFee ? 'border-red-500' : 'border-gray-300'
               }`}
@@ -1268,7 +1391,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             )}
           </div>
           
-          {errors.rentalFee && (
+          {touchedFields.rentalFee && errors.rentalFee && (
             <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
               <p className="text-red-600 text-sm font-medium flex items-center">
                 <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">

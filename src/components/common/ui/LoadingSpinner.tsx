@@ -19,7 +19,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   return (
     <div className={`inline-block ${className}`}>
       <svg 
-        className={`animate-spin text-[#D32F2F] ${sizeClasses[size]}`} 
+        className={`animate-spin text-[#1E40AF] ${sizeClasses[size]}`} 
         fill="none" 
         viewBox="0 0 24 24"
       >

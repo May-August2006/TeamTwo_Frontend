@@ -19,7 +19,11 @@ export const ManagerDashboardLayout: React.FC<{
   const { logout } = useAuth();
 
   const handleResize = useCallback(() => {
-    setIsMobile(window.innerWidth < 1024);
+    const mobile = window.innerWidth < 1024;
+    setIsMobile(mobile);
+    if (mobile) {
+      setIsCollapsed(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -30,14 +34,15 @@ export const ManagerDashboardLayout: React.FC<{
   useEffect(() => {
     if (isMobile) {
       setIsCollapsed(false);
-    } else {
-      setMobileOpen(false);
     }
   }, [isMobile]);
 
   const handleDrawerToggle = () => {
-    if (isMobile) setMobileOpen(!mobileOpen);
-    else setIsCollapsed(!isCollapsed);
+    if (isMobile) {
+      setMobileOpen(!mobileOpen);
+    } else {
+      setIsCollapsed(!isCollapsed);
+    }
   };
 
   const handleLogout = () => {
@@ -47,47 +52,40 @@ export const ManagerDashboardLayout: React.FC<{
 
   return (
     <ToastProvider>
-      <div className="min-h-screen bg-stone-50 flex">
-        {/* Sidebar */}
-        <ManagerSidebar
-          isOpen={mobileOpen}
-          isCollapsed={isCollapsed}
-          onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-          currentPath={location.pathname}
-          onNavigate={(path) => {
-            navigate(path);
-            if (isMobile) setMobileOpen(false);
-          }}
-          onClose={function (): void {
-            throw new Error("Function not implemented.");
-          }}
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <ManagerHeader
+          onMenuToggle={handleDrawerToggle}
+          sidebarCollapsed={isCollapsed}
+          isMobile={isMobile}
+          onLogout={handleLogout}
         />
 
-        {/* Main Area */}
-        <div
-          className={`flex-1 flex flex-col transition-all duration-300
-          ${isMobile ? "" : isCollapsed ? "lg:ml-20" : "lg:ml-64"}
-        `}
-        >
-          <ManagerHeader
-            onMenuToggle={handleDrawerToggle}
-            sidebarCollapsed={isCollapsed}
-            isMobile={isMobile}
-            onLogout={handleLogout}
+        <div className="flex">
+          {/* Sidebar */}
+          <ManagerSidebar
+            isOpen={mobileOpen}
+            onClose={() => setMobileOpen(false)}
+            currentPath={location.pathname}
+            onNavigate={(path) => {
+              navigate(path);
+              if (isMobile) setMobileOpen(false);
+            }}
+            isCollapsed={isCollapsed}
+            onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
           />
 
-          {/* Page Content */}
-          <main className="flex-1 p-4 sm:p-6 mt-16 overflow-auto">
-            {children}
+          {/* Main Content - IMPROVED SPACING */}
+          <main className={`
+            flex-1 min-h-screen transition-all duration-300 
+            ${isMobile ? '' : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}
+          `}>
+            {/* Adjusted top spacing - increased from pt-20 to pt-24 */}
+            <div className="pt-24 pb-8 px-4 sm:px-6 lg:px-8 max-w-full overflow-x-hidden">
+              {children}
+            </div>
           </main>
         </div>
-
-        {isMobile && mobileOpen && (
-          <div
-            className="fixed inset-0 bg-stone-900 bg-opacity-70 z-30 lg:hidden"
-            onClick={() => setMobileOpen(false)}
-          ></div>
-        )}
       </div>
     </ToastProvider>
   );

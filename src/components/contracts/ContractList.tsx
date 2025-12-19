@@ -1,10 +1,10 @@
-/** @format */
-
 // components/contracts/ContractList.tsx
 import React, { useState, useEffect } from "react";
 import { contractApi } from "../../api/ContractAPI";
+import { buildingApi } from "../../api/BuildingAPI";
 import { Button } from "../common/ui/Button";
 import { LoadingSpinner } from "../common/ui/LoadingSpinner";
+import { useAuth } from "../../context/AuthContext";
 import type { Contract, ContractStatus } from "../../types/contract";
 
 interface ContractListProps {
@@ -22,34 +22,137 @@ export const ContractList: React.FC<ContractListProps> = ({
   onTerminateContract,
   onCreateContract,
 }) => {
-  const [contracts, setContracts] = useState<Contract[]>([]);
+  const { user } = useAuth();
+  const [allContracts, setAllContracts] = useState<Contract[]>([]); // All loaded contracts
+  const [displayContracts, setDisplayContracts] = useState<Contract[]>([]); // Contracts to display
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<ContractStatus | "ALL">(
-    "ALL"
-  );
-  const [sortBy, setSortBy] = useState<
-    "startDate" | "endDate" | "contractNumber"
-  >("startDate");
+  const [statusFilter, setStatusFilter] = useState<ContractStatus | "ALL">("ALL");
+  const [sortBy, setSortBy] = useState<"startDate" | "endDate" | "contractNumber">("startDate");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [buildingId, setBuildingId] = useState<number | null>(null);
+  const [buildingName, setBuildingName] = useState<string>("");
 
   useEffect(() => {
-    loadContracts();
+    loadBuildingAndContracts();
   }, []);
 
-  const loadContracts = async () => {
+  const loadBuildingAndContracts = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await contractApi.getAll();
-      setContracts(response.data || []);
+
+      // If user is manager, get their assigned building
+      if (user?.role === "ROLE_MANAGER") {
+        try {
+          const buildingResponse = await buildingApi.getMyAssignedBuilding();
+          if (buildingResponse.data) {
+            setBuildingId(buildingResponse.data.id);
+            setBuildingName(buildingResponse.data.buildingName);
+            
+            // Load contracts for this specific building
+            const contractsResponse = await buildingApi.getContractsByBuilding(buildingResponse.data.id);
+            const contracts = contractsResponse.data || [];
+            setAllContracts(contracts);
+            setDisplayContracts(contracts); // Initially display all
+          } else {
+            // Manager doesn't have building assigned yet
+            setAllContracts([]);
+            setDisplayContracts([]);
+            setError("No building assigned to you yet. Please contact administrator.");
+          }
+        } catch (buildingErr) {
+          console.error("Error loading building:", buildingErr);
+          setAllContracts([]);
+          setDisplayContracts([]);
+          setError("Failed to load your assigned building information.");
+        }
+      } else if (user?.role === "ROLE_ADMIN") {
+        // Admin can see all contracts
+        const response = await contractApi.getAll();
+        const contracts = response.data || [];
+        setAllContracts(contracts);
+        setDisplayContracts(contracts);
+      } else {
+        // Other roles (like accountant) - get building if assigned
+        try {
+          const buildingResponse = await buildingApi.getMyAssignedBuilding();
+          if (buildingResponse.data) {
+            setBuildingId(buildingResponse.data.id);
+            setBuildingName(buildingResponse.data.buildingName);
+            const contractsResponse = await buildingApi.getContractsByBuilding(buildingResponse.data.id);
+            const contracts = contractsResponse.data || [];
+            setAllContracts(contracts);
+            setDisplayContracts(contracts);
+          } else {
+            const response = await contractApi.getAll();
+            const contracts = response.data || [];
+            setAllContracts(contracts);
+            setDisplayContracts(contracts);
+          }
+        } catch (err) {
+          console.error("Error loading building for non-manager:", err);
+          const response = await contractApi.getAll();
+          const contracts = response.data || [];
+          setAllContracts(contracts);
+          setDisplayContracts(contracts);
+        }
+      }
     } catch (err) {
       console.error("Error loading Leases:", err);
       setError("Failed to load Leases");
+      setAllContracts([]);
+      setDisplayContracts([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Apply search and filter when search button is clicked
+  const handleSearch = () => {
+    if (searchTerm.length > 100) return; // Don't search if over limit
+    
+    let filtered = [...allContracts];
+    
+    // Convert search term to uppercase for case-insensitive search
+    const searchUpper = searchTerm.trim().toUpperCase();
+    
+    // Apply search filter if search term exists
+    if (searchUpper) {
+      filtered = filtered.filter((contract) => 
+        contract.contractNumber?.toUpperCase().includes(searchUpper) ||
+        contract.tenant?.tenantName?.toUpperCase().includes(searchUpper) ||
+        contract.tenant?.email?.toUpperCase().includes(searchUpper) ||
+        contract.unit?.unitNumber?.toUpperCase().includes(searchUpper) ||
+        contract.tenantSearchName?.toUpperCase().includes(searchUpper) ||
+        contract.tenantSearchEmail?.toUpperCase().includes(searchUpper) ||
+        contract.tenantSearchPhone?.includes(searchTerm) || // Keep original for phone numbers
+        contract.unit?.unitType.toUpperCase().includes(searchUpper) ||
+        getBusinessType(contract).toUpperCase().includes(searchUpper) ||
+        contract.buildingName?.toUpperCase().includes(searchUpper)
+      );
+    }
+    
+    // Apply status filter if not "ALL"
+    if (statusFilter !== "ALL") {
+      filtered = filtered.filter((contract) => 
+        contract.contractStatus === statusFilter
+      );
+    }
+    
+    setDisplayContracts(filtered);
+  };
+
+  // Clear all filters and show all contracts
+  const handleClear = () => {
+    setSearchTerm("");
+    setStatusFilter("ALL");
+    setDisplayContracts([...allContracts]); // Reset to show all contracts
+  };
+
+  const reloadContracts = () => {
+    loadBuildingAndContracts();
   };
 
   const getStatusBadge = (status: ContractStatus) => {
@@ -95,6 +198,7 @@ export const ContractList: React.FC<ContractListProps> = ({
     try {
       const end = new Date(endDate);
       const today = new Date();
+      today.setHours(0, 0, 0, 0);
       const diffTime = end.getTime() - today.getTime();
       const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       return Math.max(days, 0);
@@ -113,58 +217,33 @@ export const ContractList: React.FC<ContractListProps> = ({
     );
   };
 
-  // Filter and sort contracts
-  const filteredAndSortedContracts = contracts
-    .filter((contract) => {
-      // Status filter
-      if (statusFilter !== "ALL" && contract.contractStatus !== statusFilter) {
-        return false;
-      }
+  // Sort display contracts
+  const sortedContracts = [...displayContracts].sort((a, b) => {
+    let aValue: any, bValue: any;
 
-      // Search filter
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        return (
-          contract.contractNumber?.toLowerCase().includes(searchLower) ||
-          contract.tenant?.tenantName?.toLowerCase().includes(searchLower) ||
-          contract.tenant?.email?.toLowerCase().includes(searchLower) ||
-          contract.unit?.unitNumber?.toLowerCase().includes(searchLower) ||
-          contract.tenantSearchName?.toLowerCase().includes(searchLower) ||
-          contract.tenantSearchEmail?.toLowerCase().includes(searchLower) ||
-          contract.tenantSearchPhone?.includes(searchTerm) ||
-          contract.unit?.unitType.toLowerCase().includes(searchLower) ||
-          getBusinessType(contract).toLowerCase().includes(searchLower)
-        );
-      }
+    switch (sortBy) {
+      case "startDate":
+        aValue = new Date(a.startDate);
+        bValue = new Date(b.startDate);
+        break;
+      case "endDate":
+        aValue = new Date(a.endDate);
+        bValue = new Date(b.endDate);
+        break;
+      case "contractNumber":
+        aValue = a.contractNumber;
+        bValue = b.contractNumber;
+        break;
+      default:
+        return 0;
+    }
 
-      return true;
-    })
-    .sort((a, b) => {
-      let aValue: any, bValue: any;
-
-      switch (sortBy) {
-        case "startDate":
-          aValue = new Date(a.startDate);
-          bValue = new Date(b.startDate);
-          break;
-        case "endDate":
-          aValue = new Date(a.endDate);
-          bValue = new Date(b.endDate);
-          break;
-        case "contractNumber":
-          aValue = a.contractNumber;
-          bValue = b.contractNumber;
-          break;
-        default:
-          return 0;
-      }
-
-      if (sortOrder === "asc") {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
-    });
+    if (sortOrder === "asc") {
+      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+    } else {
+      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+    }
+  });
 
   const handleSort = (field: "startDate" | "endDate" | "contractNumber") => {
     if (sortBy === field) {
@@ -181,17 +260,17 @@ export const ContractList: React.FC<ContractListProps> = ({
   };
 
   const getStats = () => {
-    const total = contracts.length;
-    const active = contracts.filter(
+    const total = allContracts.length; // Show stats for ALL contracts, not filtered
+    const active = allContracts.filter(
       (c) => c.contractStatus === "ACTIVE"
     ).length;
-    const expiring = contracts.filter(
+    const expiring = allContracts.filter(
       (c) => c.contractStatus === "EXPIRING"
     ).length;
-    const terminated = contracts.filter(
+    const terminated = allContracts.filter(
       (c) => c.contractStatus === "TERMINATED"
     ).length;
-    const expired = contracts.filter(
+    const expired = allContracts.filter(
       (c) => c.contractStatus === "EXPIRED"
     ).length;
 
@@ -213,7 +292,7 @@ export const ContractList: React.FC<ContractListProps> = ({
     return (
       <div className="text-center py-12">
         <div className="text-red-600 mb-4">{error}</div>
-        <Button onClick={loadContracts} variant="primary">
+        <Button onClick={reloadContracts} variant="primary">
           Try Again
         </Button>
       </div>
@@ -227,21 +306,59 @@ export const ContractList: React.FC<ContractListProps> = ({
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             Leases Management
+            {buildingId && (
+              <span className="text-lg font-normal text-gray-600 ml-2">
+                ({buildingName})
+              </span>
+            )}
           </h1>
           <p className="text-gray-600 mt-1">
-            Manage all rental lease agreements
+            {buildingId 
+              ? `Managing leases for ${buildingName} building only`
+              : "Manage all rental lease agreements"}
+            {user?.role === "ROLE_MANAGER" && buildingId && (
+              <span className="block text-sm text-blue-600 mt-1">
+                🔒 You can only view and manage leases in your assigned building
+              </span>
+            )}
           </p>
         </div>
-        <Button onClick={onCreateContract} variant="primary">
+        <Button 
+          onClick={onCreateContract} 
+          variant="primary-blue"
+          className="whitespace-nowrap"
+        >
           Create New Lease
         </Button>
       </div>
+
+      {/* Building Info Banner for Manager */}
+      {user?.role === "ROLE_MANAGER" && buildingId && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <span className="text-blue-800 font-medium">
+                You are managing leases for: <strong>{buildingName}</strong>
+              </span>
+              <p className="text-sm text-blue-600 mt-1">
+                Only leases from your assigned building are visible. You cannot access leases from other buildings.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div className="bg-white p-4 rounded-lg border border-gray-200 text-center">
           <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
           <div className="text-sm text-gray-600">Total</div>
+          {buildingId && (
+            <div className="text-xs text-gray-500 mt-1">In this building</div>
+          )}
         </div>
         <div className="bg-white p-4 rounded-lg border border-green-200 text-center">
           <div className="text-2xl font-bold text-green-600">
@@ -272,15 +389,36 @@ export const ContractList: React.FC<ContractListProps> = ({
       {/* Filters and Search */}
       <div className="bg-white p-4 rounded-lg border border-gray-200">
         <div className="flex flex-col lg:flex-row gap-4">
-          {/* Search */}
+          {/* Search Input with Character Limit and Auto Uppercase */}
           <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Search Leases by number, tenant, unit, business type, unit type..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search Leases by number, tenant, unit, building, business type..."
+                value={searchTerm}
+                onChange={(e) => {
+                  // Limit input to 100 characters and convert to uppercase
+                  const value = e.target.value.toUpperCase();
+                  if (value.length <= 100) {
+                    setSearchTerm(value);
+                  }
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch(); // Search on Enter key
+                  }
+                }}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase placeholder:normal-case"
+              />
+              <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-400">
+                {searchTerm.length}/100
+              </div>
+            </div>
+            {searchTerm.length >= 100 && (
+              <div className="text-xs text-red-500 mt-1">
+                Maximum 100 characters allowed
+              </div>
+            )}
           </div>
 
           {/* Status Filter */}
@@ -300,9 +438,22 @@ export const ContractList: React.FC<ContractListProps> = ({
             </select>
           </div>
 
-          {/* Refresh Button */}
-          <Button onClick={loadContracts} variant="secondary">
-            Refresh
+          {/* Search Button */}
+          <Button 
+            onClick={handleSearch} 
+            variant="secondary"
+            disabled={searchTerm.length > 100}
+          >
+            Search
+          </Button>
+
+          {/* Clear Button */}
+          <Button 
+            onClick={handleClear} 
+            variant="secondary"
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
+          >
+            Clear
           </Button>
         </div>
       </div>
@@ -314,7 +465,7 @@ export const ContractList: React.FC<ContractListProps> = ({
             <thead className="bg-gray-50">
               <tr>
                 <th
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort("contractNumber")}
                 >
                   <div className="flex items-center space-x-1">
@@ -324,49 +475,51 @@ export const ContractList: React.FC<ContractListProps> = ({
                     </span>
                   </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {!buildingId && (
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Building
+                  </th>
+                )}
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tenant
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Unit
                 </th>
-                {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Business Type
-                </th> */}
                 <th
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort("startDate")}
                 >
                   <div className="flex items-center space-x-1">
-                    <span>Start Date</span>
+                    <span>Start</span>
                     <span className="text-xs">{getSortIcon("startDate")}</span>
                   </div>
                 </th>
                 <th
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort("endDate")}
                 >
                   <div className="flex items-center space-x-1">
-                    <span>End Date</span>
+                    <span>End</span>
                     <span className="text-xs">{getSortIcon("endDate")}</span>
                   </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Rent
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredAndSortedContracts.length === 0 ? (
+              {sortedContracts.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={10}
+                    colSpan={buildingId ? 8 : 9}
                     className="px-6 py-8 text-center text-gray-500"
                   >
                     <svg
@@ -386,13 +539,19 @@ export const ContractList: React.FC<ContractListProps> = ({
                       No Leases found
                     </h3>
                     <p className="mt-1 text-sm text-gray-500">
-                      {contracts.length === 0
-                        ? "Get started by creating a new Lease."
+                      {allContracts.length === 0
+                        ? buildingId
+                          ? `No leases in ${buildingName} building yet. Create your first lease.`
+                          : "Get started by creating a new Lease."
                         : "Try adjusting your search or filter criteria."}
                     </p>
-                    {contracts.length === 0 && (
+                    {allContracts.length === 0 && (
                       <div className="mt-4">
-                        <Button onClick={onCreateContract} variant="primary">
+                        <Button 
+                          onClick={onCreateContract} 
+                          variant="primary-blue"
+                          className="whitespace-nowrap"
+                        >
                           Create New Lease
                         </Button>
                       </div>
@@ -400,93 +559,74 @@ export const ContractList: React.FC<ContractListProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredAndSortedContracts.map((contract) => {
+                sortedContracts.map((contract) => {
                   const daysRemaining = getDaysRemaining(contract.endDate);
                   const isExpiringSoon =
                     daysRemaining <= 30 && daysRemaining > 0;
-                  const businessType = getBusinessType(contract);
 
                   return (
                     <tr key={contract.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {contract.contractNumber}
-                          </div>
-                          {contract.fileUrl && (
-                            <div className="text-xs text-blue-600 flex items-center mt-1">
-                              <svg
-                                className="w-3 h-3 mr-1"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                />
-                              </svg>
-                              Document
-                            </div>
-                          )}
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {contract.contractNumber}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      {!buildingId && (
+                        <td className="px-3 py-3 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            {contract.buildingName || "-"}
+                          </div>
+                        </td>
+                      )}
+                      <td className="px-3 py-3 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">
                             {contract.tenant?.tenantName ||
                               contract.tenantSearchName ||
                               "-"}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-xs text-gray-500">
                             {contract.tenant?.email ||
                               contract.tenantSearchEmail ||
                               "-"}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
                           {contract.unit?.unitNumber || "-"}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-xs text-gray-500">
                           {contract.unit?.unitType || "-"}
                         </div>
                       </td>
-                      {/* <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {businessType}
-                        </div>
-                      </td> */}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
                         {formatDate(contract.startDate)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
                           {formatDate(contract.endDate)}
                         </div>
                         {isExpiringSoon &&
                           contract.contractStatus === "ACTIVE" && (
                             <div className="text-xs text-orange-600">
-                              {daysRemaining} days left
+                              {daysRemaining}d
                             </div>
                           )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-3 py-3 whitespace-nowrap text-sm text-gray-900">
                         {formatCurrency(contract.rentalFee)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         {getStatusBadge(
                           contract.contractStatus as ContractStatus
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center space-x-2">
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <div className="flex flex-wrap gap-1">
                           <button
                             onClick={() => onViewContract(contract)}
-                            className="text-blue-600 hover:text-blue-900 font-medium"
+                            className="text-blue-600 hover:text-blue-900 text-xs px-2 py-1"
                           >
                             View
                           </button>
@@ -495,7 +635,7 @@ export const ContractList: React.FC<ContractListProps> = ({
                             contract.contractStatus !== "EXPIRED" && (
                               <button
                                 onClick={() => onEditContract(contract)}
-                                className="text-green-600 hover:text-green-900 font-medium"
+                                className="text-green-600 hover:text-green-900 text-xs px-2 py-1"
                               >
                                 Edit
                               </button>
@@ -506,7 +646,7 @@ export const ContractList: React.FC<ContractListProps> = ({
                             daysRemaining <= 60 && (
                               <button
                                 onClick={() => onRenewContract(contract)}
-                                className="text-purple-600 hover:text-purple-900 font-medium"
+                                className="text-purple-600 hover:text-purple-900 text-xs px-2 py-1"
                               >
                                 Renew
                               </button>
@@ -515,7 +655,7 @@ export const ContractList: React.FC<ContractListProps> = ({
                           {contract.contractStatus === "ACTIVE" && (
                             <button
                               onClick={() => onTerminateContract(contract)}
-                              className="text-red-600 hover:text-red-900 font-medium"
+                              className="text-red-600 hover:text-red-900 text-xs px-2 py-1"
                             >
                               Terminate
                             </button>
@@ -531,11 +671,16 @@ export const ContractList: React.FC<ContractListProps> = ({
         </div>
 
         {/* Results Count */}
-        {filteredAndSortedContracts.length > 0 && (
+        {sortedContracts.length > 0 && (
           <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
             <p className="text-sm text-gray-600">
-              Showing {filteredAndSortedContracts.length} of {contracts.length}{" "}
+              Showing {sortedContracts.length} of {allContracts.length}{" "}
               Leases
+              {buildingId && (
+                <span className="text-blue-600 ml-2">
+                  • Only from {buildingName} building
+                </span>
+              )}
             </p>
           </div>
         )}
