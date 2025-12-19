@@ -73,8 +73,13 @@ const UsageEntryPage: React.FC = () => {
   const [dueDate, setDueDate] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
 
+  // Accountant restrictions
+  const [assignedBuilding, setAssignedBuilding] = useState<Building | null>(null);
+  const [isAccountant, setIsAccountant] = useState(false);
+
   useEffect(() => {
     loadData();
+    checkUserRoleAndBuilding();
 
     // Set default dates
     const today = new Date();
@@ -87,6 +92,40 @@ const UsageEntryPage: React.FC = () => {
     setDueDate(due.toISOString().split("T")[0]);
   }, []);
 
+  const checkUserRoleAndBuilding = async () => {
+    try {
+      // Get user role from localStorage or context (adjust based on your auth system)
+      const userRole = localStorage.getItem('userRole'); // or use your auth context
+      
+      if (userRole === 'ACCOUNTANT' || userRole === 'accountant') {
+        setIsAccountant(true);
+        
+        // Get accountant's assigned building
+        const buildingResponse = await buildingApi.getMyAssignedBuilding();
+        if (buildingResponse.data) {
+          const building = buildingResponse.data;
+          setAssignedBuilding(building);
+          setSelectedBuildingId(building.id);
+          
+          // Load units for this building
+          await loadBuildingUnits(building.id);
+          
+          // Filter buildings to only show assigned building
+          setBuildings([building]);
+        }
+      } else {
+        // For non-accountants, load all available buildings
+        const availableBuildings = await buildingApi.getAvailableBuildings();
+        setBuildings(availableBuildings.data || []);
+      }
+    } catch (error) {
+      console.error('Error checking user role:', error);
+      // Fallback to loading all buildings
+      const allBuildings = await buildingApi.getAll();
+      setBuildings(allBuildings.data || []);
+    }
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -97,7 +136,12 @@ const UsageEntryPage: React.FC = () => {
       ]);
       setReadings(readingsData);
       setUnits(unitsData);
-      setBuildings(buildingsData);
+      
+      // Only update buildings if not an accountant (accountant's buildings are set in checkUserRoleAndBuilding)
+      if (!isAccountant) {
+        setBuildings(buildingsData);
+      }
+      
       setError("");
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to load data");
@@ -107,6 +151,13 @@ const UsageEntryPage: React.FC = () => {
   };
 
   const loadBuildingUnits = async (buildingId: number) => {
+    // If user is accountant and trying to access different building, prevent it
+    if (isAccountant && assignedBuilding && assignedBuilding.id !== buildingId) {
+      setError("You can only manage your assigned building");
+      setBuildingUnits([]);
+      return [];
+    }
+
     try {
       setLoading(true);
 
@@ -184,22 +235,21 @@ const UsageEntryPage: React.FC = () => {
         throw new Error("Total leasable area is not set for this building");
       }
 
-      // Calculate CAM per unit based on total leasable area
+      // Calculate CAM per unit based on unit space proportion
       const camDistribution = occupiedUnits.map((unit) => {
         const unitSpace = unit.unitSpace || 0;
-        const percentage = (unitSpace / totalLeasableArea) * 100;
+        const percentage = totalLeasableArea > 0 ? (unitSpace / totalLeasableArea) * 100 : 0;
 
-        // Calculate CAM share based on total leasable area
-        const generatorShare = (unitSpace / totalLeasableArea) * generatorFee;
-        const transformerShare =
-          (unitSpace / totalLeasableArea) * transformerFee;
-        const otherCAMShare = (unitSpace / totalLeasableArea) * otherCAMCosts;
+        // Calculate CAM share based on unit space proportion
+        const generatorShare = totalLeasableArea > 0 ? (unitSpace / totalLeasableArea) * generatorFee : 0;
+        const transformerShare = totalLeasableArea > 0 ? (unitSpace / totalLeasableArea) * transformerFee : 0;
+        const otherCAMShare = totalLeasableArea > 0 ? (unitSpace / totalLeasableArea) * otherCAMCosts : 0;
 
-        const camFee = generatorShare + transformerShare + otherCAMShare;
+        const totalCAMFee = generatorShare + transformerShare + otherCAMShare;
 
         return {
           unitId: unit.id,
-          camFee: parseFloat(camFee.toFixed(2)),
+          camFee: parseFloat(totalCAMFee.toFixed(2)),
           generatorFee: parseFloat(generatorShare.toFixed(2)),
           transformerFee: parseFloat(transformerShare.toFixed(2)),
           otherCAMFee: parseFloat(otherCAMShare.toFixed(2)),
@@ -218,6 +268,12 @@ const UsageEntryPage: React.FC = () => {
   const calculateAllUtilityFees = async () => {
     if (!selectedBuildingId) {
       setError("Please select a building");
+      return;
+    }
+
+    // Accountant restriction check
+    if (isAccountant && assignedBuilding && assignedBuilding.id !== selectedBuildingId) {
+      setError("You can only calculate bills for your assigned building");
       return;
     }
 
@@ -250,7 +306,7 @@ const UsageEntryPage: React.FC = () => {
         return;
       }
 
-      // Calculate CAM distribution (including Generator and Transformer separately)
+      // Calculate CAM distribution (Generator + Transformer + Other CAM)
       const camDistribution = await calculateCAMDistribution(
         selectedBuildingId,
         occupiedUnits
@@ -261,7 +317,7 @@ const UsageEntryPage: React.FC = () => {
 
       for (const unit of occupiedUnits) {
         try {
-          // Get utility billing (excluding CAM)
+          // Get metered utilities ONLY (electricity, water, etc.)
           const utilityBilling = await utilityApi.calculateUtilityBill(
             unit.id,
             periodStart,
@@ -271,68 +327,69 @@ const UsageEntryPage: React.FC = () => {
           // Find CAM distribution for this unit
           const unitCam = camDistribution.find((cam) => cam.unitId === unit.id);
 
-          if (unitCam) {
-            const generatorFee = selectedBuilding.generatorFee || 0;
-            const transformerFee = selectedBuilding.transformerFee || 0;
-            const totalLeasableArea = selectedBuilding.totalLeasableArea || 1;
+          // Filter out any CAM fees that might be in the utilityBilling
+          const meteredUtilities = utilityBilling.utilityFees.filter(fee => 
+            !fee.utilityName.toLowerCase().includes('cam') &&
+            !fee.utilityName.toLowerCase().includes('generator') &&
+            !fee.utilityName.toLowerCase().includes('transformer') &&
+            !fee.utilityName.toLowerCase().includes('maintenance') &&
+            !fee.utilityName.toLowerCase().includes('internet') &&
+            !fee.utilityName.toLowerCase().includes('fixed')
+          );
 
-            // Remove any existing CAM entries from utilityFees
-            utilityBilling.utilityFees = utilityBilling.utilityFees.filter(
-              (fee) => !fee.utilityName.toLowerCase().includes("cam")
-            );
+          // Create a combined billing that includes:
+          // 1. Metered utilities (from utilityBilling)
+          // 2. CAM fees (Generator, Transformer, Other CAM)
+          const combinedUtilityFees = [
+            // Metered utilities
+            ...meteredUtilities,
+            // CAM fees (added separately)
+            ...(unitCam?.generatorFee && unitCam.generatorFee > 0 ? [{
+              utilityName: "Generator Fee (CAM)",
+              calculationMethod: "FIXED" as const,
+              calculationFormula: `(Generator ${selectedBuilding.generatorFee || 0} ÷ ${selectedBuilding.totalLeasableArea || 1}) × ${unit.unitSpace || 0}`,
+              amount: unitCam.generatorFee,
+              ratePerUnit: null,
+              quantity: 1,
+              unit: undefined,
+              isCAM: true,
+            }] : []),
+            ...(unitCam?.transformerFee && unitCam.transformerFee > 0 ? [{
+              utilityName: "Transformer Fee (CAM)",
+              calculationMethod: "FIXED" as const,
+              calculationFormula: `(Transformer ${selectedBuilding.transformerFee || 0} ÷ ${selectedBuilding.totalLeasableArea || 1}) × ${unit.unitSpace || 0}`,
+              amount: unitCam.transformerFee,
+              ratePerUnit: null,
+              quantity: 1,
+              unit: undefined,
+              isCAM: true,
+            }] : []),
+            ...(unitCam?.otherCAMFee && unitCam.otherCAMFee > 0 ? [{
+              utilityName: "Other CAM Costs",
+              calculationMethod: "FIXED" as const,
+              calculationFormula: `(Other CAM ${otherCAMCosts} ÷ ${selectedBuilding.totalLeasableArea || 1}) × ${unit.unitSpace || 0}`,
+              amount: unitCam.otherCAMFee,
+              ratePerUnit: null,
+              quantity: 1,
+              unit: undefined,
+              isCAM: true,
+            }] : [])
+          ];
 
-            // Add Generator Fee
-            if (unitCam.generatorFee > 0) {
-              utilityBilling.utilityFees.push({
-                utilityName: "Generator Fee",
-                calculationMethod: "FIXED",
-                calculationFormula: `Generator Fee (${generatorFee.toLocaleString()} ÷ ${totalLeasableArea} × ${
-                  unit.unitSpace
-                })`,
-                amount: unitCam.generatorFee,
-                ratePerUnit: null,
-                quantity: 1,
-                unit: undefined,
-              });
-            }
+          // Calculate totals
+          const totalMeteredUtilities = meteredUtilities.reduce(
+            (sum, fee) => sum + (fee.amount || 0), 0
+          );
+          const totalCAM = (unitCam?.camFee || 0);
+          const totalAmount = totalMeteredUtilities + totalCAM;
 
-            // Add Transformer Fee
-            if (unitCam.transformerFee > 0) {
-              utilityBilling.utilityFees.push({
-                utilityName: "Transformer Fee",
-                calculationMethod: "FIXED",
-                calculationFormula: `Transformer Fee (${transformerFee.toLocaleString()} ÷ ${totalLeasableArea} × ${
-                  unit.unitSpace
-                })`,
-                amount: unitCam.transformerFee,
-                ratePerUnit: null,
-                quantity: 1,
-                unit: undefined,
-              });
-            }
-
-            // Add Other CAM Costs
-            if (unitCam.otherCAMFee > 0) {
-              utilityBilling.utilityFees.push({
-                utilityName: "Other CAM Costs",
-                calculationMethod: "FIXED",
-                calculationFormula: `Other CAM (${otherCAMCosts.toLocaleString()} ÷ ${totalLeasableArea} × ${
-                  unit.unitSpace
-                })`,
-                amount: unitCam.otherCAMFee,
-                ratePerUnit: null,
-                quantity: 1,
-                unit: undefined,
-              });
-            }
-
-            // Recalculate total
-            utilityBilling.totalAmount = utilityBilling.utilityFees.reduce(
-              (sum, fee) => sum + (fee.amount || 0),
-              0
-            );
-            utilityBilling.grandTotal = utilityBilling.totalAmount;
-          }
+          const displayUtilityBilling: UtilityBillingDTO = {
+            ...utilityBilling,
+            utilityFees: combinedUtilityFees,
+            totalAmount: totalAmount,
+            grandTotal: totalAmount,
+            taxAmount: utilityBilling.taxAmount || 0,
+          };
 
           calculations.push({
             unitId: unit.id,
@@ -340,12 +397,12 @@ const UsageEntryPage: React.FC = () => {
             unitSpace: unit.unitSpace || 0,
             tenantName: unit.tenantName,
             isOccupied: true,
-            utilityBilling,
+            utilityBilling: displayUtilityBilling,
             camFee: unitCam?.camFee || 0,
             generatorFee: unitCam?.generatorFee || 0,
             transformerFee: unitCam?.transformerFee || 0,
             otherCAMFee: unitCam?.otherCAMFee || 0,
-            totalAmount: utilityBilling.totalAmount,
+            totalAmount: totalAmount,
           });
         } catch (error) {
           console.error(
@@ -364,11 +421,13 @@ const UsageEntryPage: React.FC = () => {
       setUnitCalculations(calculations);
       setShowBilling(true);
       setSuccess(
-        `Calculated utility fees for ${calculations.length} occupied units including CAM`
+        `Calculated bills for ${calculations.length} occupied units. Each unit pays: 
+        1. Metered utilities (electricity/water) + 
+        2. CAM fees (Generator, Transformer, Other CAM) based on unit space.`
       );
     } catch (err: any) {
       setError(
-        err.response?.data?.message || "Failed to calculate utility fees"
+        err.response?.data?.message || "Failed to calculate utility bills"
       );
     } finally {
       setCalculating(false);
@@ -376,6 +435,12 @@ const UsageEntryPage: React.FC = () => {
   };
 
   const generateAllInvoices = async () => {
+    // Accountant restriction check
+    if (isAccountant && assignedBuilding && assignedBuilding.id !== selectedBuildingId) {
+      setError("You can only generate invoices for your assigned building");
+      return;
+    }
+
     if (!selectedBuildingId) {
       setError("Please select a building");
       return;
@@ -390,26 +455,32 @@ const UsageEntryPage: React.FC = () => {
       setGeneratingBill(true);
       setError("");
 
-      // Only include units with calculated utilityBilling
+      // Create requests - ensure we're sending clean utility data
       const requests: UtilityBillRequest[] = unitCalculations
-        .filter((uc) => uc.utilityBilling) // skip units without calculations
-        .map((uc) => ({
-          unitId: uc.unitId,
-          periodStart,
-          periodEnd,
-          dueDate,
-          notes:
-            notes ||
-            `Monthly utility bill for ${periodStart} to ${periodEnd} including CAM`,
-          utilityFees: uc.utilityBilling?.utilityFees || [],
-          taxAmount: uc.utilityBilling?.taxAmount || 0,
-          grandTotal: uc.utilityBilling?.grandTotal || 0,
-        }));
+        .filter((uc) => uc.utilityBilling)
+        .map((uc) => {
+          // Filter out CAM fees from utilityFees for backend
+          const cleanUtilityFees = uc.utilityBilling?.utilityFees.filter(fee => 
+            !fee.utilityName.includes('Generator Fee') &&
+            !fee.utilityName.includes('Transformer Fee') &&
+            !fee.utilityName.includes('Other CAM Costs')
+          ) || [];
+
+          return {
+            unitId: uc.unitId,
+            periodStart,
+            periodEnd,
+            dueDate,
+            notes: notes || `Monthly utility bill for ${periodStart} to ${periodEnd}`,
+            utilityFees: cleanUtilityFees,
+            // The backend should handle CAM fees separately
+            taxAmount: uc.utilityBilling?.taxAmount || 0,
+            grandTotal: uc.totalAmount,
+          };
+        });
 
       if (requests.length === 0) {
-        setError(
-          "No calculated utility fees available for invoice generation."
-        );
+        setError("No calculated utility fees available for invoice generation.");
         return;
       }
 
@@ -497,11 +568,21 @@ const UsageEntryPage: React.FC = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
             Building Utility Billing Management
+            {isAccountant && assignedBuilding && (
+              <span className="text-lg font-normal text-blue-600 ml-2">
+                (Assigned to: {assignedBuilding.buildingName})
+              </span>
+            )}
           </h1>
           <p className="text-gray-600 mt-2">
             Manage meter readings and generate utility bills for entire
             buildings
           </p>
+          {isAccountant && (
+            <div className="mt-2 p-2 bg-blue-50 text-blue-700 rounded inline-block">
+              <span className="font-medium">Accountant Mode:</span> You can only manage your assigned building
+            </div>
+          )}
         </div>
 
         {/* Alerts */}
@@ -561,12 +642,16 @@ const UsageEntryPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select Building *
+                  Select Building {isAccountant && "(Your assigned building)"}
                 </label>
                 <select
                   value={selectedBuildingId || ""}
                   onChange={(e) => {
                     const buildingId = Number(e.target.value);
+                    if (isAccountant && assignedBuilding && assignedBuilding.id !== buildingId) {
+                      setError("You can only manage your assigned building");
+                      return;
+                    }
                     setSelectedBuildingId(buildingId);
                     setBuildingUnits([]);
                     setUnitCalculations([]);
@@ -574,14 +659,21 @@ const UsageEntryPage: React.FC = () => {
                   }}
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   required
+                  disabled={isAccountant && assignedBuilding !== null}
                 >
                   <option value="">Select building...</option>
                   {buildings.map((building) => (
                     <option key={building.id} value={building.id}>
                       {building.buildingName} ({building.branchName})
+                      {isAccountant && " (Your assigned building)"}
                     </option>
                   ))}
                 </select>
+                {isAccountant && assignedBuilding && (
+                  <p className="text-sm text-blue-600 mt-1">
+                    You are assigned to: {assignedBuilding.buildingName}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -733,7 +825,7 @@ const UsageEntryPage: React.FC = () => {
               >
                 {calculating
                   ? "Calculating..."
-                  : "Calculate All Utility Fees (Including CAM)"}
+                  : "Calculate All Utility Bills (Including CAM)"}
               </button>
             </div>
           </div>
@@ -745,6 +837,11 @@ const UsageEntryPage: React.FC = () => {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-900">
                 Building Utility Bill Calculation
+                {isAccountant && assignedBuilding && (
+                  <span className="text-sm font-normal text-blue-600 ml-2">
+                    (Your assigned building)
+                  </span>
+                )}
               </h2>
               <div className="flex space-x-2">
                 <button
@@ -834,7 +931,7 @@ const UsageEntryPage: React.FC = () => {
                       Metered Utilities
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      CAM Fees
+                      CAM Fees (Shared)
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                       Total Amount
@@ -843,14 +940,9 @@ const UsageEntryPage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {unitCalculations.map((calculation) => {
-                    // Filter out CAM-related fees from metered utilities
-                    const meteredUtilities =
-                      calculation.utilityBilling?.utilityFees.filter(
-                        (fee) =>
-                          fee.utilityName !== "Generator Fee" &&
-                          fee.utilityName !== "Transformer Fee" &&
-                          fee.utilityName !== "Other CAM Costs"
-                      ) || [];
+                    // Filter CAM vs Metered utilities
+                    const meteredUtilities = calculation.utilityBilling?.utilityFees.filter(fee => !fee.isCAM) || [];
+                    const camFees = calculation.utilityBilling?.utilityFees.filter(fee => fee.isCAM) || [];
 
                     return (
                       <tr key={calculation.unitId} className="hover:bg-gray-50">
@@ -866,70 +958,83 @@ const UsageEntryPage: React.FC = () => {
                           {calculation.unitSpace > 0 && (
                             <div className="text-xs text-gray-400">
                               {calculation.unitSpace.toLocaleString()} sq.ft
+                              {selectedBuilding?.totalLeasableArea && selectedBuilding.totalLeasableArea > 0 && (
+                                <span className="ml-2 text-green-600">
+                                  ({((calculation.unitSpace / selectedBuilding.totalLeasableArea) * 100).toFixed(1)}% of building)
+                                </span>
+                              )}
                             </div>
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          {meteredUtilities.map((fee, idx) => (
-                            <div key={idx} className="text-sm">
-                              {fee.utilityName}:{" "}
-                              {fee.amount.toLocaleString("en-US")} MMK
-                            </div>
-                          ))}
-                          {meteredUtilities.length === 0 && (
-                            <div className="text-sm text-gray-500">
-                              No metered utilities
-                            </div>
-                          )}
+                          {/* Metered Utilities */}
+                          <div className="mb-2">
+                            <div className="text-xs text-gray-500 font-medium mb-1">Metered Utilities:</div>
+                            {meteredUtilities.map((fee, idx) => (
+                              <div key={idx} className="text-sm">
+                                {fee.utilityName}: {fee.amount.toLocaleString("en-US")} MMK
+                              </div>
+                            ))}
+                            {meteredUtilities.length === 0 && (
+                              <div className="text-sm text-gray-400 italic">No metered utilities</div>
+                            )}
+                            {meteredUtilities.length > 0 && (
+                              <div className="mt-1 pt-1 border-t border-gray-100 text-xs font-medium">
+                                Subtotal: {meteredUtilities.reduce((sum, fee) => sum + (fee.amount || 0), 0).toLocaleString("en-US")} MMK
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="text-sm space-y-1">
-                            {calculation.generatorFee > 0 && (
-                              <div className="flex justify-between">
-                                <span>Generator Fee:</span>
-                                <span className="font-medium">
-                                  {calculation.generatorFee.toLocaleString(
-                                    "en-US"
-                                  )}{" "}
-                                  MMK
-                                </span>
-                              </div>
-                            )}
-                            {calculation.transformerFee > 0 && (
-                              <div className="flex justify-between">
-                                <span>Transformer Fee:</span>
-                                <span className="font-medium">
-                                  {calculation.transformerFee.toLocaleString(
-                                    "en-US"
-                                  )}{" "}
-                                  MMK
-                                </span>
-                              </div>
-                            )}
-                            {calculation.otherCAMFee > 0 && (
-                              <div className="flex justify-between">
-                                <span>Other CAM Costs:</span>
-                                <span className="font-medium">
-                                  {calculation.otherCAMFee.toLocaleString(
-                                    "en-US"
-                                  )}{" "}
-                                  MMK
-                                </span>
-                              </div>
-                            )}
-                            <div className="mt-2 pt-2 border-t border-gray-200">
-                              <div className="flex justify-between font-bold text-green-600">
-                                <span>Total CAM:</span>
-                                <span>
-                                  {calculation.camFee.toLocaleString("en-US")}{" "}
-                                  MMK
-                                </span>
+                          {/* CAM Fees */}
+                          <div>
+                            <div className="text-xs text-gray-500 font-medium mb-1">CAM Fees (Shared):</div>
+                            <div className="text-sm space-y-1">
+                              {calculation.generatorFee > 0 && (
+                                <div className="flex justify-between">
+                                  <span>Generator:</span>
+                                  <span className="font-medium">
+                                    {calculation.generatorFee.toLocaleString("en-US")} MMK
+                                  </span>
+                                </div>
+                              )}
+                              {calculation.transformerFee > 0 && (
+                                <div className="flex justify-between">
+                                  <span>Transformer:</span>
+                                  <span className="font-medium">
+                                    {calculation.transformerFee.toLocaleString("en-US")} MMK
+                                  </span>
+                                </div>
+                              )}
+                              {calculation.otherCAMFee > 0 && (
+                                <div className="flex justify-between">
+                                  <span>Other CAM:</span>
+                                  <span className="font-medium">
+                                    {calculation.otherCAMFee.toLocaleString("en-US")} MMK
+                                  </span>
+                                </div>
+                              )}
+                              <div className="mt-2 pt-2 border-t border-gray-200">
+                                <div className="flex justify-between font-bold text-green-600">
+                                  <span>Total CAM:</span>
+                                  <span>
+                                    {calculation.camFee.toLocaleString("en-US")} MMK
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3 font-bold text-gray-900">
-                          {calculation.totalAmount.toLocaleString("en-US")} MMK
+                          <div className="text-lg">
+                            {calculation.totalAmount.toLocaleString("en-US")} MMK
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Metered: {(calculation.totalAmount - calculation.camFee).toLocaleString("en-US")} MMK
+                          </div>
+                          <div className="text-xs text-green-600">
+                            CAM: {calculation.camFee.toLocaleString("en-US")} MMK
+                          </div>
                         </td>
                       </tr>
                     );
@@ -941,6 +1046,24 @@ const UsageEntryPage: React.FC = () => {
             {/* Totals */}
             <div className="border-t pt-6">
               <div className="max-w-md ml-auto space-y-2">
+                <div className="flex justify-between">
+                  <span>Total Metered Utilities:</span>
+                  <span>
+                    {unitCalculations
+                      .reduce((sum, uc) => sum + (uc.totalAmount - uc.camFee), 0)
+                      .toLocaleString("en-US")}{" "}
+                    MMK
+                  </span>
+                </div>
+                <div className="flex justify-between border-t pt-2">
+                  <span className="font-medium">Total CAM Fees:</span>
+                  <span className="font-medium">
+                    {unitCalculations
+                      .reduce((sum, uc) => sum + uc.camFee, 0)
+                      .toLocaleString("en-US")}{" "}
+                    MMK
+                  </span>
+                </div>
                 <div className="flex justify-between">
                   <span>Total Generator Fees:</span>
                   <span>
@@ -964,30 +1087,6 @@ const UsageEntryPage: React.FC = () => {
                   <span>
                     {unitCalculations
                       .reduce((sum, uc) => sum + uc.otherCAMFee, 0)
-                      .toLocaleString("en-US")}{" "}
-                    MMK
-                  </span>
-                </div>
-                <div className="flex justify-between border-t pt-2">
-                  <span>Total CAM Fees:</span>
-                  <span className="font-medium">
-                    {unitCalculations
-                      .reduce((sum, uc) => sum + uc.camFee, 0)
-                      .toLocaleString("en-US")}{" "}
-                    MMK
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Total Utility Fees:</span>
-                  <span>
-                    {unitCalculations
-                      .reduce(
-                        (sum, uc) =>
-                          sum +
-                          (uc.utilityBilling?.totalAmount || 0) -
-                          uc.camFee,
-                        0
-                      )
                       .toLocaleString("en-US")}{" "}
                     MMK
                   </span>
