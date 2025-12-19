@@ -64,9 +64,6 @@ const TenantList: React.FC<TenantListProps> = ({
                 Category
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Contracts
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Created
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -100,41 +97,6 @@ const TenantList: React.FC<TenantListProps> = ({
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">{tenant.tenantCategoryName ?? '-'}</div>
                     <div className="text-sm text-gray-500">{tenant.businessType ?? '-'}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    {tenant.contracts && tenant.contracts.length > 0 ? (
-                      <div className="space-y-2">
-                        {tenant.contracts.map((contract, index) => (
-                          <div key={index} className="text-sm">
-                            <div className="flex items-center space-x-2">
-                              <span className="font-medium text-gray-900">
-                                {contract.contractNumber}
-                              </span>
-                              <span
-                                className={`px-2 py-1 text-xs rounded-full ${
-                                  contract.contractStatus === 'ACTIVE'
-                                    ? 'bg-green-100 text-green-800'
-                                    : contract.contractStatus === 'EXPIRED'
-                                    ? 'bg-red-100 text-red-800'
-                                    : contract.contractStatus === 'PENDING'
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : 'bg-gray-100 text-gray-800'
-                                }`}
-                              >
-                                {contract.contractStatus}
-                              </span>
-                            </div>
-                            {contract.roomName && (
-                              <div className="text-xs text-gray-500 mt-1">
-                                Room: {contract.roomName}
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-sm text-gray-500">No contracts</span>
-                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">

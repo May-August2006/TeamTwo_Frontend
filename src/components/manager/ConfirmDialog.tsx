@@ -26,9 +26,9 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       case 'error': 
         return 'bg-red-600 hover:bg-red-700 focus:ring-red-500';
       case 'warning': 
-        return 'bg-orange-600 hover:bg-orange-700 focus:ring-orange-500';
+        return 'bg-[#1E40AF] hover:bg-[#1E3A8A] focus:ring-[#1E40AF]';
       default: 
-        return 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500';
+        return 'bg-[#1E40AF] hover:bg-[#1E3A8A] focus:ring-[#1E40AF]';
     }
   };
 

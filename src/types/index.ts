@@ -22,6 +22,7 @@ export interface BranchRequest {
 }
 
 export interface Building {
+  branch?: Branch;
   buildingType: string;
   totalUnits: string;
   id: number;

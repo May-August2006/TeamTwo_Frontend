@@ -17,7 +17,7 @@ const TenantCategoryList: React.FC<TenantCategoryListProps> = ({
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D9DEF1]"></div>
       </div>
     );
   }
@@ -82,13 +82,13 @@ const TenantCategoryList: React.FC<TenantCategoryListProps> = ({
                   <div className="flex justify-end space-x-2">
                     <button
                       onClick={() => onEdit(category)}
-                      className="text-red-600 hover:text-red-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                      className="text-gray-700 hover:text-gray-900 bg-[#D9DEF1] hover:bg-[#C8CFE8] px-3 py-1 rounded-md text-sm font-medium transition-colors"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => category.id && onDelete(category.id)}
-                      className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                      className="text-gray-700 hover:text-gray-900 bg-[#D9DEF1] hover:bg-[#C8CFE8] px-3 py-1 rounded-md text-sm font-medium transition-colors"
                     >
                       Delete
                     </button>

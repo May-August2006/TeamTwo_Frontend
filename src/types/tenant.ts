@@ -1,4 +1,6 @@
 export interface ContractInfo {
+  unitNumber: any;
+  buildingId: number;
   contractNumber: string;
   contractStatus: string;
   roomName: string;

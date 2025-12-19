@@ -117,7 +117,8 @@ export const ReportsPage: React.FC = () => {
             <p className="text-stone-600 mb-4">This report will show monthly billing information</p>
             <button 
               onClick={handleBackToReports}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition duration-150"
+              className="text-white px-4 py-2 rounded-lg transition duration-150"
+              style={{ backgroundColor: '#1E40AF' }}
             >
               Back to Reports
             </button>
@@ -151,7 +152,7 @@ export const ReportsPage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <select className="px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm bg-white">
+            <select className="px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E40AF] text-sm bg-white">
               <option value="monthly">Monthly</option>
               <option value="quarterly">Quarterly</option>
               <option value="yearly">Yearly</option>
@@ -177,7 +178,7 @@ export const ReportsPage: React.FC = () => {
               <div className="flex items-start justify-between mb-4">
                 <div className="text-3xl">{report.icon}</div>
                 <svg 
-                  className="w-5 h-5 text-stone-400 group-hover:text-red-600 transition-colors" 
+                  className="w-5 h-5 text-stone-400 group-hover:text-[#1E40AF] transition-colors" 
                   fill="none" 
                   stroke="currentColor" 
                   viewBox="0 0 24 24"
@@ -186,7 +187,7 @@ export const ReportsPage: React.FC = () => {
                 </svg>
               </div>
               
-              <h3 className="text-lg font-semibold text-stone-900 mb-2 group-hover:text-red-600 transition-colors">
+              <h3 className="text-lg font-semibold text-stone-900 mb-2 group-hover:text-[#1E40AF] transition-colors">
                 {report.title}
               </h3>
               <p className="text-sm text-stone-600 mb-4 line-clamp-2">
@@ -195,7 +196,8 @@ export const ReportsPage: React.FC = () => {
 
               <div className="flex flex-wrap gap-2">
                 <button 
-                  className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition-colors flex items-center gap-2"
+                  className="text-white px-4 py-2 rounded text-sm transition-colors flex items-center gap-2"
+                  style={{ backgroundColor: '#1E40AF' }}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleGenerateReport(report.id);
@@ -229,8 +231,8 @@ export const ReportsPage: React.FC = () => {
         <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-white p-6 rounded-xl border border-stone-200">
             <div className="flex items-center">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-2 bg-[#1E40AF]/10 rounded-lg">
+                <svg className="w-6 h-6 text-[#1E40AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>

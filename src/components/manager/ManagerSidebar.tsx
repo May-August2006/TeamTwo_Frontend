@@ -7,14 +7,10 @@ import {
   Calendar,
   Megaphone,
   FileText,
-  DollarSign,
-  CreditCard,
   Wrench,
   BarChart3,
-  Receipt,
   X,
   ChevronRight,
-  ChevronDown,
   Building2,
 } from "lucide-react";
 
@@ -27,33 +23,6 @@ interface ManagerSidebarProps {
   onToggleCollapse: () => void;
 }
 
-const menuItems = [
-  { value: "overview", label: "Overview", path: "/manager/overview" },
-  { value: "tenants", label: "Tenant Management", path: "/manager/tenants" },
-  {
-    value: "appointments",
-    label: "Appointments",
-    path: "/manager/appointments",
-  },
-  {
-    value: "announcements",
-    label: "Announcements",
-    path: "/manager/announcements",
-  },
-  { value: "leases", label: "Lease Management", path: "/manager/leases" },
-  { value: "billing", label: "Billing & Utilities", path: "/manager/billing" },
-  { value: "payments", label: "Payments", path: "/manager/payments" },
-  { value: "maintenance", label: "Maintenance", path: "/manager/maintenance" },
-  { value: "reports", label: "Reports", path: "/manager/reports" },
-  { value: "invoices", label: "Invoices", path: "/manager/invoices" },
-  { value: "lateFee", label: "LateFee", path: "/manager/lateFee" },
-  {
-    value: "overdueOrOustanding",
-    label: "OverdueOrOustanding",
-    path: "/manager/overdueOrOustanding",
-  },
-];
-
 export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
   isOpen,
   onClose,
@@ -62,10 +31,6 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
-  const [openSections, setOpenSections] = React.useState<Set<string>>(
-    new Set()
-  );
-
   const menuItems = [
     {
       name: "Overview",
@@ -93,47 +58,6 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
       path: "/manager/leases",
     },
     {
-      name: "Billing & Utilities",
-      icon: <DollarSign className="w-5 h-5" />,
-      children: [
-        {
-          name: "Billing",
-          path: "/manager/billing",
-          icon: <DollarSign className="w-4 h-4" />,
-        },
-        {
-          name: "Billing2",
-          path: "/manager/billing/bulk-readings",
-          icon: <DollarSign className="w-4 h-4" />,
-        },
-
-          {
-          name: "Billing3",
-          path: "/manager/billing/building-invoices",
-          icon: <DollarSign className="w-4 h-4" />,
-        },
-
-        
-        
-        {
-          name: "Payments",
-          path: "/manager/payments",
-          icon: <CreditCard className="w-4 h-4" />,
-        },
-        {
-          name: "Invoices",
-          path: "/manager/invoices",
-          icon: <Receipt className="w-4 h-4" />,
-        },
-
-        {
-          name: "LateFee",
-          path: "/manager/lateFee",
-          icon: <Receipt className="w-4 h-4" />,
-        },
-      ],
-    },
-    {
       name: "Maintenance",
       icon: <Wrench className="w-5 h-5" />,
       path: "/manager/maintenance",
@@ -151,21 +75,6 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
 
   const handleNavigation = (path: string) => {
     onNavigate(path);
-    if (isCollapsed) {
-      const newOpenSections = new Set(openSections);
-      newOpenSections.delete("Billing & Utilities");
-      setOpenSections(newOpenSections);
-    }
-  };
-
-  const toggleSection = (sectionName: string) => {
-    const newOpenSections = new Set(openSections);
-    if (newOpenSections.has(sectionName)) {
-      newOpenSections.delete(sectionName);
-    } else {
-      newOpenSections.add(sectionName);
-    }
-    setOpenSections(newOpenSections);
   };
 
   return (
@@ -180,10 +89,10 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
         `}
       >
         {/* Logo Section */}
-        <div className={`flex items-center justify-between p-4 border-b border-stone-200 bg-stone-50 ${isCollapsed ? 'px-3' : 'px-6'}`}>
+        <div className={`flex items-center justify-between p-4 border-b border-stone-200 bg-gradient-to-r from-blue-50 to-white ${isCollapsed ? 'px-3' : 'px-6'}`}>
           {!isCollapsed && (
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-br from-red-600 to-red-700 rounded-lg shadow-md">
+              <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md">
                 <Building2 className="w-6 h-6 text-white font-bold" />
               </div>
               <div>
@@ -194,7 +103,7 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
             </div>
           )}
           {isCollapsed && (
-            <div className="p-2 bg-gradient-to-br from-red-600 to-red-700 rounded-lg shadow-md mx-auto">
+            <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md mx-auto">
               <Building2 className="w-6 h-6 text-white font-bold" />
             </div>
           )}
@@ -218,128 +127,39 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
         <div className="flex flex-col h-full">
           <nav className={`flex-1 p-4 space-y-1 overflow-y-auto ${isCollapsed ? 'px-2' : ''}`}>
             {menuItems.map((item, index) => (
-              <div key={index}>
-                {item.children ? (
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => toggleSection(item.name)}
-                      className={`flex items-center justify-between w-full p-3 text-left rounded-lg text-stone-700 hover:bg-red-50 hover:text-red-700 transition-colors duration-150 group ${
-                        isCollapsed ? 'justify-center relative' : ''
-                      }`}
-                      title={isCollapsed ? item.name : ''}
-                    >
-                      <div className={`flex items-center space-x-3 ${isCollapsed ? 'justify-center' : ''}`}>
-                        <div className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 ${
-                          isActivePath(item.path!) ? 'from-red-100 to-red-50' : ''
-                        }`}>
-                          {React.cloneElement(item.icon, { 
-                            className: `w-4 h-4 ${isActivePath(item.path!) ? 'text-red-600 font-bold' : 'text-stone-600'}`
-                          })}
-                        </div>
-                        {!isCollapsed && <span className="font-semibold">{item.name}</span>}
-                      </div>
-                      {!isCollapsed && (
-                        openSections.has(item.name) ? (
-                          <ChevronDown className="w-4 h-4" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4" />
-                        )
-                      )}
-                    </button>
-
-                    {/* Dropdown for collapsed sidebar */}
-                    {isCollapsed && openSections.has(item.name) && (
-                      <div className="absolute left-20 ml-2 z-40 bg-white rounded-lg shadow-xl border border-stone-200 py-2 min-w-48">
-                        {item.children.map((child, childIndex) => (
-                          <button
-                            key={childIndex}
-                            onClick={() => handleNavigation(child.path)}
-                            className={`
-                              flex items-center space-x-3 w-full px-4 py-3 text-left transition-colors duration-150
-                              ${
-                                isActivePath(child.path)
-                                  ? "bg-red-50 text-red-700 border-l-2 border-red-600 font-medium"
-                                  : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
-                              }
-                            `}
-                          >
-                            <div className={`p-1.5 rounded-md ${
-                              isActivePath(child.path) ? 'bg-red-100' : 'bg-stone-100'
-                            }`}>
-                              {React.cloneElement(child.icon, { 
-                                className: `w-4 h-4 ${isActivePath(child.path) ? 'text-red-600 font-bold' : 'text-stone-600'}`
-                              })}
-                            </div>
-                            <span className="text-sm font-medium">{child.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Regular expanded sidebar children */}
-                    {!isCollapsed && openSections.has(item.name) && (
-                      <div className="ml-4 space-y-1">
-                        {item.children.map((child, childIndex) => (
-                          <button
-                            key={childIndex}
-                            onClick={() => handleNavigation(child.path)}
-                            className={`
-                              flex items-center space-x-3 w-full p-3 text-left rounded-lg transition-colors duration-150 group
-                              ${
-                                isActivePath(child.path)
-                                  ? "bg-red-50 text-red-700 border-l-2 border-red-600 font-medium"
-                                  : "text-stone-600 hover:bg-stone-100 hover:text-stone-900"
-                              }
-                            `}
-                          >
-                            <div className={`p-1.5 rounded-md group-hover:bg-white transition-colors duration-150 ${
-                              isActivePath(child.path) ? 'bg-white' : 'bg-stone-100'
-                            }`}>
-                              {React.cloneElement(child.icon, { 
-                                className: `w-4 h-4 ${isActivePath(child.path) ? 'text-red-600 font-bold' : 'text-stone-600'}`
-                              })}
-                            </div>
-                            <span className="text-sm font-medium">{child.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => handleNavigation(item.path!)}
-                    className={`
-                      flex items-center space-x-3 w-full p-3 text-left rounded-lg transition-colors duration-150 group
-                      ${
-                        isActivePath(item.path!)
-                          ? "bg-red-50 text-red-700 border-l-2 border-red-600 font-medium"
-                          : "text-stone-700 hover:bg-stone-100 hover:text-stone-900"
-                      }
-                      ${isCollapsed ? 'justify-center relative' : ''}
-                    `}
-                    title={isCollapsed ? item.name : ''}
-                  >
-                    <div className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 ${
-                      isActivePath(item.path!) ? 'from-red-100 to-red-50' : ''
-                    } ${isCollapsed ? '' : 'mr-2'}`}>
-                      {React.cloneElement(item.icon, { 
-                        className: `w-4 h-4 ${isActivePath(item.path!) ? 'text-red-600 font-bold' : 'text-stone-600'}`
-                      })}
-                    </div>
-                    {!isCollapsed && <span className="font-semibold">{item.name}</span>}
-                  </button>
-                )}
-              </div>
+              <button
+                key={index}
+                onClick={() => handleNavigation(item.path!)}
+                className={`
+                  flex items-center space-x-3 w-full p-3 text-left rounded-lg transition-colors duration-150 group
+                  ${
+                    isActivePath(item.path!)
+                      ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-l-2 border-blue-600 font-medium"
+                      : "text-stone-700 hover:bg-gradient-to-r from-blue-50/50 to-blue-50 hover:text-stone-900"
+                  }
+                  ${isCollapsed ? 'justify-center relative' : ''}
+                `}
+                title={isCollapsed ? item.name : ''}
+              >
+                <div className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-200 ${
+                  isActivePath(item.path!) ? 'from-blue-100 to-blue-50' : ''
+                } ${isCollapsed ? '' : 'mr-2'}`}>
+                  {React.cloneElement(item.icon, { 
+                    className: `w-4 h-4 ${isActivePath(item.path!) ? 'text-blue-600 font-bold' : 'text-stone-600'}`
+                  })}
+                </div>
+                {!isCollapsed && <span className="font-semibold">{item.name}</span>}
+              </button>
             ))}
           </nav>
 
           {/* User Info Section */}
-          <div className="border-t border-stone-200 bg-stone-50">
+          <div className="border-t border-stone-200 bg-gradient-to-r from-blue-50 to-white">
             {!isCollapsed && (
               <div className="p-4">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-gradient-to-br from-stone-200 to-stone-300 rounded-lg shadow-sm">
-                    <Users className="w-4 h-4 text-stone-700 font-bold" />
+                  <div className="p-2 bg-gradient-to-br from-blue-100 to-white rounded-lg shadow-sm">
+                    <Users className="w-4 h-4 text-blue-600 font-bold" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-stone-900 truncate">
@@ -352,8 +172,8 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
             )}
             {isCollapsed && (
               <div className="p-4 flex justify-center">
-                <div className="p-2 bg-gradient-to-br from-stone-200 to-stone-300 rounded-lg shadow-sm">
-                  <Users className="w-4 h-4 text-stone-700 font-bold" />
+                <div className="p-2 bg-gradient-to-br from-blue-100 to-white rounded-lg shadow-sm">
+                  <Users className="w-4 h-4 text-blue-600 font-bold" />
                 </div>
               </div>
             )}

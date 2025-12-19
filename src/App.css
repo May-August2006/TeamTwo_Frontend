@@ -392,3 +392,41 @@ h6 {
 .animate-slideDown {
   animation: slideDown 0.2s ease-out;
 }
+/* Responsive table actions */
+@media (max-width: 768px) {
+  .action-buttons-mobile {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: space-between;
+  }
+  
+  .action-button-mobile {
+    flex: 1;
+    text-align: center;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    font-weight: 500;
+  }
+}
+
+/* Prevent horizontal scrolling on mobile */
+@media (max-width: 768px) {
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  table {
+    min-width: 100%;
+  }
+}
+
+/* Better spacing for mobile cards */
+.mobile-lease-card {
+  transition: all 0.2s ease;
+}
+
+.mobile-lease-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
