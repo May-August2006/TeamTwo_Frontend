@@ -1697,6 +1697,23 @@ const handleRenewalNoticeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   const allLoading = tenantsLoading || unitsLoading || utilitiesLoading || levelsLoading || buildingLoading;
 
+  // Auto-focus contract number field when modal opens and loading is complete
+  useEffect(() => {
+    if (isOpen && !allLoading && contractNumberInputRef.current) {
+      const timer = setTimeout(() => {
+        if (contractNumberInputRef.current) {
+          contractNumberInputRef.current.focus();
+          contractNumberInputRef.current.setSelectionRange(
+            `SGH-${currentYear}-`.length,
+            `SGH-${currentYear}-`.length
+          );
+        }
+      }, 150); // Slightly longer delay to ensure form is rendered
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, allLoading, currentYear]);
+
   if (!isOpen) return null;
 
   const getFormTitle = () => {
@@ -1896,8 +1913,6 @@ const handleRenewalNoticeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                         }`}
                         placeholder={`SGH-${currentYear}-0000`}
                         maxLength={VALIDATION_RULES.contractNumberMaxLength}
-                        // pattern="^SGH-\d{4}-\d{4}$"
-                        // title="Format: SGH-YYYY-NNNN (e.g., SGH-2025-9999)"
                       />
                       {/* ERROR MESSAGE - RED TEXT UNDER INPUT */}
                       {errors.contractNumber && (
@@ -3100,7 +3115,7 @@ const handleRenewalNoticeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 01-2-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                           />
                         </svg>
                         <p className="text-gray-600">No utilities available</p>

@@ -7,6 +7,7 @@ import { AlertsDropdown } from "../AlertsDropdown";
 import { LogOut, User, Menu, Settings, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Logo from "../../assets/SeinGayHarLogo.png";
+import ChangePasswordButton from "../ChangePasswordButton";
 
 interface ManagerHeaderProps {
   onMenuToggle: () => void;
@@ -152,6 +153,15 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
                     <span>Settings</span>
                   </button>
 
+                  {/* Fixed ChangePasswordButton integration */}
+                  <ChangePasswordButton
+                    buttonStyle="dropdown"
+                    buttonSize="md"
+                    buttonText="Change Password"
+                    onCloseDropdown={() => setUserMenuOpen(false)}
+                    className="w-full justify-start px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors duration-150 group"
+                  />
+
                   <div className="h-px bg-stone-100 my-2"></div>
 
                   <button
@@ -172,15 +182,6 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
               </div>
             )}
           </div>
-
-          {/* Desktop Logout Button (optional - can keep or remove) */}
-          {/* <button
-            onClick={onLogout}
-            className="hidden md:flex items-center space-x-2 px-3 py-2 text-sm text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>{t("header.logout")}</span>
-          </button> */}
         </div>
       </div>
 

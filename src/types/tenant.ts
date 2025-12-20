@@ -24,6 +24,10 @@ export interface Tenant {
   active: boolean;
   username: string;
   fullName?: string;
+
+  buildingId?: number;
+  buildingName?: string;
+  hasActiveContract?: boolean;
   
   // For backward compatibility
   contractNumber?: string;
@@ -72,4 +76,6 @@ export interface TenantSearchParams {
   categoryId?: number;
   email?: string;
   phone?: string;
+  buildingId?: number; // New: filter by building
+  hasContract?: boolean; // New: filter by contract status
 }

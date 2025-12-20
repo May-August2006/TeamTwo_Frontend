@@ -2,12 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import { maintenanceApi } from "../../api/maintenanceApi";
+import { buildingApi } from "../../api/BuildingAPI";
 import type { MaintenanceRequest, MaintenanceStats } from "../../types/maintenance";
 
 interface User {
   id: number;
   fullName: string;
   email: string;
+}
+
+interface Building {
+  id: number;
+  buildingName: string;
+  buildingCode?: string;
 }
 
 const ManagerMaintenancePage: React.FC = () => {
@@ -18,6 +25,7 @@ const ManagerMaintenancePage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
   const [users, setUsers] = useState<User[]>([]);
+  const [assignedBuilding, setAssignedBuilding] = useState<Building | null>(null);
   const [stats, setStats] = useState<MaintenanceStats>({
     pending: 0,
     inProgress: 0,
@@ -28,26 +36,63 @@ const ManagerMaintenancePage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchRequests();
-    fetchUsers();
-    fetchStats();
+    // Fetch assigned building first, then fetch requests
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // 1. Get the manager's assigned building
+        const buildingResponse = await buildingApi.getMyAssignedBuilding();
+        if (buildingResponse.data) {
+          setAssignedBuilding(buildingResponse.data);
+          
+          // 2. If manager has a building, fetch stats for that building
+          await fetchStatsForBuilding(buildingResponse.data.id);
+        } else {
+          // 3. If no building assigned, show empty state
+          setRequests([]);
+          setFilteredRequests([]);
+        }
+        
+        // 4. Fetch users for assignment dropdown
+        await fetchUsers();
+      } catch (err: any) {
+        console.error("Error fetching data:", err);
+        setError(err.response?.data?.message || "Failed to load data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   useEffect(() => {
     filterRequests();
   }, [requests, statusFilter, priorityFilter]);
 
-  const fetchRequests = async () => {
+  const fetchStatsForBuilding = async (buildingId: number) => {
     try {
-      setIsLoading(true);
-      setError(null);
-      const response = await maintenanceApi.getAllRequests();
+      // First fetch all requests for the building
+      const response = await maintenanceApi.getRequestsByBuilding(buildingId);
       setRequests(response.data);
+      
+      // Calculate stats locally
+      const pending = response.data.filter(req => req.status === "PENDING").length;
+      const inProgress = response.data.filter(req => req.status === "IN_PROGRESS").length;
+      const completed = response.data.filter(req => req.status === "COMPLETED").length;
+      const cancelled = response.data.filter(req => req.status === "CANCELLED").length;
+      
+      setStats({
+        pending,
+        inProgress,
+        completed,
+        cancelled
+      });
     } catch (err: any) {
-      console.error("Error fetching maintenance requests:", err);
-      setError(err.response?.data?.message || "Failed to load maintenance requests");
-    } finally {
-      setIsLoading(false);
+      console.error("Error fetching requests for building:", err);
+      throw err;
     }
   };
 
@@ -60,15 +105,6 @@ const ManagerMaintenancePage: React.FC = () => {
       }
     } catch (err) {
       console.error("Error fetching users:", err);
-    }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const response = await maintenanceApi.getRequestStats();
-      setStats(response.data);
-    } catch (err: any) {
-      console.error("Error fetching stats:", err);
     }
   };
 
@@ -92,8 +128,11 @@ const ManagerMaintenancePage: React.FC = () => {
       await maintenanceApi.updateRequestStatus(requestId, {
         status: newStatus as any,
       });
-      fetchRequests();
-      fetchStats();
+      
+      // Refresh the data
+      if (assignedBuilding) {
+        await fetchStatsForBuilding(assignedBuilding.id);
+      }
     } catch (err: any) {
       console.error("Error updating status:", err);
       setError(err.response?.data?.message || "Failed to update request status");
@@ -104,7 +143,11 @@ const ManagerMaintenancePage: React.FC = () => {
     try {
       setError(null);
       await maintenanceApi.assignRequest(requestId, { assignedTo: userId });
-      fetchRequests();
+      
+      // Refresh the data
+      if (assignedBuilding) {
+        await fetchStatsForBuilding(assignedBuilding.id);
+      }
     } catch (err: any) {
       console.error("Error assigning request:", err);
       setError(err.response?.data?.message || "Failed to assign request");
@@ -141,7 +184,7 @@ const ManagerMaintenancePage: React.FC = () => {
     }
   };
 
-  if (isLoading && requests.length === 0) {
+  if (isLoading) {
     return (
       <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
         <div className="text-xl font-medium text-stone-700 animate-pulse">Loading maintenance requests...</div>
@@ -149,12 +192,40 @@ const ManagerMaintenancePage: React.FC = () => {
     );
   }
 
+  // If manager has no building assigned
+  if (!assignedBuilding) {
+    return (
+      <div className="p-6 min-h-screen bg-stone-50">
+        <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-12 text-center">
+          <div className="text-5xl mb-4">🏢</div>
+          <h2 className="text-2xl font-bold text-stone-900 mb-2">No Building Assigned</h2>
+          <p className="text-stone-600 mb-6">
+            You haven't been assigned to any building yet. Please contact your administrator.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 sm:p-8 min-h-screen bg-stone-50">
-      {/* Header */}
+      {/* Header with Building Info */}
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">Maintenance Requests</h1>
-        <p className="text-stone-600 mt-1 text-sm sm:text-base">Manage and track maintenance requests from tenants</p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">Maintenance Requests</h1>
+            <p className="text-stone-600 mt-1 text-sm sm:text-base">
+              Manage maintenance requests for <span className="font-semibold text-red-600">{assignedBuilding.buildingName}</span>
+            </p>
+          </div>
+          <div className="bg-white px-4 py-3 rounded-xl border border-stone-200 shadow-sm">
+            <div className="text-sm font-medium text-stone-700">Assigned Building</div>
+            <div className="text-lg font-bold text-red-600">{assignedBuilding.buildingName}</div>
+            {assignedBuilding.buildingCode && (
+              <div className="text-sm text-stone-500">Code: {assignedBuilding.buildingCode}</div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Error Message */}
@@ -226,8 +297,12 @@ const ManagerMaintenancePage: React.FC = () => {
         {filteredRequests.length === 0 ? (
           <div className="p-12 text-center text-stone-500 bg-stone-50">
             <div className="text-5xl mb-3">🔧</div>
-            <div className="text-xl font-semibold text-stone-700">No Maintenance Requests Found</div>
-            <p className="text-sm mt-1">No requests match your current filters.</p>
+            <div className="text-xl font-semibold text-stone-700">No Maintenance Requests</div>
+            <p className="text-sm mt-1">
+              {requests.length === 0 
+                ? "No maintenance requests found for your building"
+                : "No requests match your current filters"}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -293,7 +368,20 @@ const ManagerMaintenancePage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
-                      {request.assignedToName || "Unassigned"}
+                      {request.assignedToName || (
+                        <select
+                          onChange={(e) => handleAssign(request.id, parseInt(e.target.value))}
+                          className="border border-stone-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 transition duration-150"
+                          defaultValue=""
+                        >
+                          <option value="" disabled>Assign to...</option>
+                          {users.map((user) => (
+                            <option key={user.id} value={user.id}>
+                              {user.fullName}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
                       {new Date(request.createdAt).toLocaleDateString()}
@@ -305,7 +393,7 @@ const ManagerMaintenancePage: React.FC = () => {
                             setSelectedRequest(request);
                             setIsModalOpen(true);
                           }}
-                          className="text-red-600 hover:text-red-700 transition duration-150"
+                          className="text-red-600 hover:text-red-700 transition duration-150 px-3 py-1 border border-red-200 rounded-lg hover:bg-red-50"
                         >
                           View
                         </button>

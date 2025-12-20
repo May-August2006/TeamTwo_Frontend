@@ -11,7 +11,8 @@ const BASE_URL = '/api/tenants';
 const CATEGORY_BASE_URL = '/api/tenant-categories';
 
 export const tenantApi = {
-  // Tenant endpoints
+  // ============ EXISTING: Tenant endpoints (unchanged) ============
+  // This returns ALL tenants (active + inactive) - used by admin and contract form
   getAll: (): Promise<Tenant[]> => 
     API.get<Tenant[]>(BASE_URL).then(response => response.data),
 
@@ -27,10 +28,25 @@ export const tenantApi = {
   delete: (id: number): Promise<void> => 
     API.delete<void>(`${BASE_URL}/${id}`).then(response => response.data),
 
+  // Admin search (all tenants)
   search: (params: TenantSearchParams): Promise<Tenant[]> => 
     API.get<Tenant[]>(`${BASE_URL}/search`, { params }).then(response => response.data),
 
-  // Inactive tenants endpoints
+  // ============ NEW: For Manager Tenant Management Page ============
+  // Get tenants for manager view (their building tenants + tenants without leases)
+  getForManagerView: (): Promise<Tenant[]> => 
+    API.get<Tenant[]>(`${BASE_URL}/manager-view`).then(response => response.data),
+
+  // Search tenants for manager view
+  searchForManagerView: (params: TenantSearchParams): Promise<Tenant[]> => 
+    API.get<Tenant[]>(`${BASE_URL}/manager-view/search`, { params }).then(response => response.data),
+
+  // ============ NEW: For Contract Creation ============
+  // Get ALL active tenants for contract creation
+  getActiveForContract: (): Promise<Tenant[]> => 
+    API.get<Tenant[]>(`${BASE_URL}/active-for-contract`).then(response => response.data),
+
+  // ============ Inactive tenants endpoints (admin only) ============
   getInactive: (): Promise<Tenant[]> => 
     API.get<Tenant[]>(`${BASE_URL}/inactive`).then(response => response.data),
 
@@ -40,10 +56,7 @@ export const tenantApi = {
   reactivate: (id: number): Promise<void> => 
     API.put<void>(`${BASE_URL}/${id}/reactivate`).then(response => response.data),
 
-  getAllIncludingInactive: (): Promise<Tenant[]> => 
-    API.get<Tenant[]>(`${BASE_URL}/all`).then(response => response.data),
-
-  // Category endpoints
+  // ============ Category endpoints (unchanged) ============
   category: {
     getAll: (): Promise<TenantCategory[]> => 
       API.get<TenantCategory[]>(CATEGORY_BASE_URL).then(response => response.data),

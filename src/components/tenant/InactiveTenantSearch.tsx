@@ -20,25 +20,43 @@ const InactiveTenantSearch: React.FC<InactiveTenantSearchProps> = ({
     onSearch();
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Limit to 30 characters
+    if (value.length <= 30) {
+      onSearchNameChange(value);
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Search Inactive Tenants</h3>
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
+          <div className="flex justify-between items-center mb-1">
+            <label htmlFor="inactive-search" className="block text-sm font-medium text-gray-700">
+              Tenant Name
+            </label>
+            <span className="text-xs text-gray-500">
+              {searchName.length}/30
+            </span>
+          </div>
           <input
             type="text"
+            id="inactive-search"
             value={searchName}
-            onChange={(e) => onSearchNameChange(e.target.value)}
+            onChange={handleChange}
+            maxLength={30}
             placeholder="Search by tenant name..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF]"
             disabled={loading}
           />
         </div>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 self-end">
           <button
             type="submit"
             disabled={loading}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 bg-[#1E40AF] text-white rounded-md hover:bg-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? (
               <div className="flex items-center">

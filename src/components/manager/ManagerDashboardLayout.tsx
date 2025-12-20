@@ -81,7 +81,7 @@ export const ManagerDashboardLayout: React.FC<{
             ${isMobile ? '' : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}
           `}>
             {/* Adjusted top spacing - increased from pt-20 to pt-24 */}
-            <div className="pt-24 pb-8 px-4 sm:px-6 lg:px-8 max-w-full overflow-x-hidden">
+            <div className="pt-24 pb-8 px-4 sm:px-6 lg:px-8 w-full">
               {children}
             </div>
           </main>

@@ -12,6 +12,10 @@ import type {
 export const maintenanceApi = {
   // Get all maintenance requests
   getAllRequests: () => API.get<MaintenanceRequest[]>('/api/maintenance-requests'),
+
+   // Get requests by building
+  getRequestsByBuilding: (buildingId: number) => 
+    API.get<MaintenanceRequest[]>(`/api/maintenance-requests/building/${buildingId}`),
   
   // Get requests by tenant
   getRequestsByTenant: (tenantId: number) => 
@@ -48,4 +52,5 @@ export const maintenanceApi = {
   // Get maintenance statistics
   getRequestStats: () => 
     API.get<MaintenanceStats>('/api/maintenance-requests/stats/count'),
+
 };
