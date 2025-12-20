@@ -21,6 +21,7 @@ export interface CreateContractRequest {
 }
 
 export interface Contract {
+  buildingName: string;
   unitNumber: ReactI18NextChildren | Iterable<ReactI18NextChildren>;
   unitNumber: any;
   agreedToTerms: any;

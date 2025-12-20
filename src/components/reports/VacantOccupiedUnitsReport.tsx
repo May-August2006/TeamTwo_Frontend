@@ -610,7 +610,7 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
             <Button variant="primary" onClick={exportToExcel} className="flex items-center gap-2">
               Export Excel
             </Button>
-            <Button variant="danger" onClick={exportToPDF} className="flex items-center gap-2">
+            <Button variant="primary" onClick={exportToPDF} className="flex items-center gap-2">
               Export PDF
             </Button>
             <Button variant="secondary" onClick={loadData}>

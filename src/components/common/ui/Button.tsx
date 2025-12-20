@@ -5,7 +5,7 @@ interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
   type?: 'button' | 'submit' | 'reset';
-  variant?: 'primary' | 'primary-blue' | 'secondary' | 'danger';
+  variant?: 'primary' | 'primary-blue' | 'secondary' | 'export'| 'danger';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   disabled?: boolean;
@@ -33,11 +33,13 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantClasses = {
     primary:
-      'bg-[#D32F2F] hover:bg-[#B71C1C] text-white focus:ring-[#D32F2F] shadow-sm',
+      'bg-[#1E40AF] hover:bg-[#1E3A8A] text-white focus:ring-[#1E40AF] shadow-sm',
     'primary-blue':
       'bg-[#1E40AF] hover:bg-blue-800 text-white focus:ring-[#1E40AF] shadow-sm',
     secondary:
       'bg-white border border-[#0D1B2A] text-[#0D1B2A] hover:bg-[#0D1B2A] hover:text-white focus:ring-[#0D1B2A]',
+      export:
+    'bg-[#334155] hover:bg-[#1E293B] text-white focus:ring-[#334155] shadow-sm',
     danger:
       'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500'
   };
