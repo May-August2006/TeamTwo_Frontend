@@ -1,6 +1,6 @@
 /** @format */
 
-// UsageEntryPage.tsx - Updated Version with Building Selection and CAM Fees
+// UsageEntryPage.tsx - Fixed with building restriction for accountants
 import React, { useState, useEffect } from "react";
 import { Building2, FileText, Zap, Battery } from "lucide-react";
 import type { MeterReading } from "../../types/meterReading";
@@ -17,6 +17,7 @@ import { buildingApi } from "../../api/BuildingAPI";
 import { contractApi } from "../../api/ContractAPI";
 import MeterReadingTable from "../../components/meter/MeterReadingTable";
 import MeterReadingForm from "../../components/meter/MeterReadingForm";
+import { jwtDecode } from "jwt-decode";
 
 import "jspdf-autotable";
 
@@ -39,6 +40,7 @@ interface UnitCalculation {
   otherCAMFee: number;
   totalAmount: number;
 }
+
 
 const UsageEntryPage: React.FC = () => {
   // State for meter readings
@@ -73,13 +75,162 @@ const UsageEntryPage: React.FC = () => {
   const [dueDate, setDueDate] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
 
-  // Accountant restrictions
+  // User role and building restrictions - FIXED
   const [assignedBuilding, setAssignedBuilding] = useState<Building | null>(null);
-  const [isAccountant, setIsAccountant] = useState(false);
+  const [userRole, setUserRole] = useState<string>("ROLE_GUEST");
+  const [filteredReadings, setFilteredReadings] = useState<MeterReading[]>([]);
+
+  
+  // Get user role from JWT token
+  const getUserRole = (): string => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token);
+        return decoded.role || 'ROLE_GUEST';
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        return 'ROLE_GUEST';
+      }
+    }
+    return 'ROLE_GUEST';
+  };
+
+  
+  // Check if user can access a specific building
+  const canAccessBuilding = (buildingId: number): boolean => {
+    // Admin can access all buildings
+    if (userRole === 'ROLE_ADMIN') {
+      return true;
+    }
+    
+    // Non-admin users can only access their assigned building
+    if (assignedBuilding && buildingId === assignedBuilding.id) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Load assigned building for non-admin users
+  const loadAssignedBuilding = async () => {
+    const role = getUserRole();
+    setUserRole(role);
+    
+    // For non-admin users (accountants, etc.), get assigned building
+    if (role !== 'ROLE_ADMIN') {
+      try {
+        const buildingResponse = await buildingApi.getMyAssignedBuilding();
+        if (buildingResponse.data) {
+          const building = buildingResponse.data;
+          setAssignedBuilding(building);
+          setSelectedBuildingId(building.id);
+          
+          // Add assigned building to buildings list for display
+          setBuildings([building]);
+          
+          // Auto-load units for assigned building
+          await loadBuildingUnits(building.id);
+          
+          return building;
+        } else {
+          setError("No building assigned to your account. Please contact administrator.");
+        }
+      } catch (error) {
+        console.error('Error loading assigned building:', error);
+        setError("Failed to load your assigned building. Please contact administrator.");
+      }
+    } else {
+      // For admin users, load all available buildings
+      try {
+        const allBuildings = await buildingApi.getAll();
+        setBuildings(allBuildings.data || []);
+      } catch (error) {
+        console.error('Error loading buildings:', error);
+        setError("Failed to load buildings.");
+      }
+    }
+    
+    return null;
+  };
+
+  // Filter meter readings based on user role
+  const filterReadingsByBuilding = (allReadings: MeterReading[]) => {
+    if (userRole === 'ROLE_ADMIN') {
+      return allReadings;
+    }
+    
+    // For non-admin users, only show readings for their assigned building
+    if (assignedBuilding) {
+      return allReadings.filter(reading => 
+        reading.unit?.buildingId === assignedBuilding.id
+      );
+    }
+    
+    return [];
+  };
+
+ // Add this function in the loadData function of UsageEntryPage.tsx:
+
+const loadData = async () => {
+  try {
+    setLoading(true);
+    setError("");
+
+    // Load user role and assigned building first
+    await loadAssignedBuilding();
+
+    // Load all meter readings
+    const readingsData = await meterReadingApi.getAllMeterReadings();
+    
+    // Filter readings based on user role and assigned building
+    let filteredReadings = readingsData;
+    
+    if (userRole !== 'ROLE_ADMIN' && assignedBuilding) {
+      // For non-admin users, we need to filter readings by building
+      // First, get all units in the assigned building
+      try {
+        const buildingUnitsResponse = await buildingApi.getOccupiedUnitsByBuilding(assignedBuilding.id);
+        const buildingUnits = buildingUnitsResponse.data || [];
+        const buildingUnitIds = buildingUnits.map((unit: Unit) => unit.id);
+        
+        // Filter readings by unit IDs in the assigned building
+        filteredReadings = readingsData.filter((reading: MeterReading) => 
+          buildingUnitIds.includes(reading.unitId)
+        );
+      } catch (error) {
+        console.error('Error filtering readings by building:', error);
+      }
+    }
+    
+    setFilteredReadings(filteredReadings);
+    setReadings(filteredReadings);
+    
+    // Load units (filtered by building if needed)
+    if (userRole !== 'ROLE_ADMIN' && assignedBuilding) {
+      try {
+        const buildingUnitsResponse = await buildingApi.getOccupiedUnitsByBuilding(assignedBuilding.id);
+        setUnits(buildingUnitsResponse.data || []);
+      } catch (error) {
+        console.error('Error loading building units:', error);
+        setUnits([]);
+      }
+    } else {
+      const unitsData = await unitService.getAllUnits();
+      setUnits(unitsData);
+    }
+    
+    setError("");
+  } catch (err: any) {
+    setError(err.response?.data?.message || "Failed to load data");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
     loadData();
-    checkUserRoleAndBuilding();
 
     // Set default dates
     const today = new Date();
@@ -92,72 +243,12 @@ const UsageEntryPage: React.FC = () => {
     setDueDate(due.toISOString().split("T")[0]);
   }, []);
 
-  const checkUserRoleAndBuilding = async () => {
-    try {
-      // Get user role from localStorage or context (adjust based on your auth system)
-      const userRole = localStorage.getItem('userRole'); // or use your auth context
-      
-      if (userRole === 'ACCOUNTANT' || userRole === 'accountant') {
-        setIsAccountant(true);
-        
-        // Get accountant's assigned building
-        const buildingResponse = await buildingApi.getMyAssignedBuilding();
-        if (buildingResponse.data) {
-          const building = buildingResponse.data;
-          setAssignedBuilding(building);
-          setSelectedBuildingId(building.id);
-          
-          // Load units for this building
-          await loadBuildingUnits(building.id);
-          
-          // Filter buildings to only show assigned building
-          setBuildings([building]);
-        }
-      } else {
-        // For non-accountants, load all available buildings
-        const availableBuildings = await buildingApi.getAvailableBuildings();
-        setBuildings(availableBuildings.data || []);
-      }
-    } catch (error) {
-      console.error('Error checking user role:', error);
-      // Fallback to loading all buildings
-      const allBuildings = await buildingApi.getAll();
-      setBuildings(allBuildings.data || []);
-    }
-  };
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [readingsData, unitsData, buildingsData] = await Promise.all([
-        meterReadingApi.getAllMeterReadings(),
-        unitService.getAllUnits(),
-        buildingApi.getAll().then((res) => res.data || []),
-      ]);
-      setReadings(readingsData);
-      setUnits(unitsData);
-      
-      // Only update buildings if not an accountant (accountant's buildings are set in checkUserRoleAndBuilding)
-      if (!isAccountant) {
-        setBuildings(buildingsData);
-      }
-      
-      setError("");
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to load data");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadBuildingUnits = async (buildingId: number) => {
-    // If user is accountant and trying to access different building, prevent it
-    if (isAccountant && assignedBuilding && assignedBuilding.id !== buildingId) {
-      setError("You can only manage your assigned building");
-      setBuildingUnits([]);
+    // Check if user has permission for this building
+    if (!canAccessBuilding(buildingId)) {
       return [];
     }
-
+    
     try {
       setLoading(true);
 
@@ -271,9 +362,9 @@ const UsageEntryPage: React.FC = () => {
       return;
     }
 
-    // Accountant restriction check
-    if (isAccountant && assignedBuilding && assignedBuilding.id !== selectedBuildingId) {
-      setError("You can only calculate bills for your assigned building");
+    // Check if user has permission for this building
+    if (!canAccessBuilding(selectedBuildingId)) {
+      setError("You can only calculate utility fees for your assigned building");
       return;
     }
 
@@ -435,14 +526,14 @@ const UsageEntryPage: React.FC = () => {
   };
 
   const generateAllInvoices = async () => {
-    // Accountant restriction check
-    if (isAccountant && assignedBuilding && assignedBuilding.id !== selectedBuildingId) {
-      setError("You can only generate invoices for your assigned building");
+    if (!selectedBuildingId) {
+      setError("Please select a building");
       return;
     }
 
-    if (!selectedBuildingId) {
-      setError("Please select a building");
+    // Check if user has permission for this building
+    if (!canAccessBuilding(selectedBuildingId)) {
+      setError("You can only generate invoices for your assigned building");
       return;
     }
 
@@ -538,16 +629,17 @@ const UsageEntryPage: React.FC = () => {
 
   // Statistics
   const getStatistics = () => {
-    const electricity = readings.filter((r) =>
+    // Use filtered readings for statistics
+    const electricity = filteredReadings.filter((r) =>
       r.utilityName?.toLowerCase().includes("electric")
     ).length;
 
-    const water = readings.filter((r) =>
+    const water = filteredReadings.filter((r) =>
       r.utilityName?.toLowerCase().includes("water")
     ).length;
 
     const now = new Date();
-    const thisMonth = readings.filter((r) => {
+    const thisMonth = filteredReadings.filter((r) => {
       const date = new Date(r.readingDate);
       return (
         date.getMonth() === now.getMonth() &&
@@ -555,7 +647,7 @@ const UsageEntryPage: React.FC = () => {
       );
     }).length;
 
-    return { total: readings.length, electricity, water, thisMonth };
+    return { total: filteredReadings.length, electricity, water, thisMonth };
   };
 
   const stats = getStatistics();
@@ -568,21 +660,29 @@ const UsageEntryPage: React.FC = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
             Building Utility Billing Management
-            {isAccountant && assignedBuilding && (
-              <span className="text-lg font-normal text-blue-600 ml-2">
-                (Assigned to: {assignedBuilding.buildingName})
+            {userRole !== 'ROLE_ADMIN' && (
+              <span className="text-sm font-normal text-blue-600 ml-2">
+                (Restricted Mode - Your assigned building only)
               </span>
             )}
           </h1>
           <p className="text-gray-600 mt-2">
-            Manage meter readings and generate utility bills for entire
-            buildings
+            Manage meter readings and generate utility bills for entire buildings
           </p>
-          {isAccountant && (
-            <div className="mt-2 p-2 bg-blue-50 text-blue-700 rounded inline-block">
-              <span className="font-medium">Accountant Mode:</span> You can only manage your assigned building
-            </div>
-          )}
+          
+          {/* User info and building assignment */}
+          <div className="mt-4 space-y-2">
+            {userRole !== 'ROLE_ADMIN' && assignedBuilding && (
+              <div className="p-3 bg-blue-50 text-blue-700 rounded border border-blue-200">
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-5 h-5" />
+                  <span className="font-medium">Assigned Building:</span>
+                  <span>{assignedBuilding.buildingName}</span>
+                </div>
+                <p className="text-sm mt-1">You can only access your assigned building.</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Alerts */}
@@ -631,27 +731,25 @@ const UsageEntryPage: React.FC = () => {
               <h2 className="text-xl font-bold text-gray-900 mb-4 md:mb-0">
                 Generate Building Utility Bills
               </h2>
-              <button
-                onClick={() => setShowForm(true)}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Add Meter Reading
-              </button>
+              
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select Building {isAccountant && "(Your assigned building)"}
+                  Select Building {userRole !== 'ROLE_ADMIN' && "(Your assigned building)"}
                 </label>
                 <select
                   value={selectedBuildingId || ""}
                   onChange={(e) => {
                     const buildingId = Number(e.target.value);
-                    if (isAccountant && assignedBuilding && assignedBuilding.id !== buildingId) {
-                      setError("You can only manage your assigned building");
+                    
+                    // Check if user has permission for this building
+                    if (!canAccessBuilding(buildingId)) {
+                      alert('You can only access your assigned building');
                       return;
                     }
+                    
                     setSelectedBuildingId(buildingId);
                     setBuildingUnits([]);
                     setUnitCalculations([]);
@@ -659,17 +757,17 @@ const UsageEntryPage: React.FC = () => {
                   }}
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   required
-                  disabled={isAccountant && assignedBuilding !== null}
+                  disabled={userRole !== 'ROLE_ADMIN' && assignedBuilding !== null}
                 >
                   <option value="">Select building...</option>
                   {buildings.map((building) => (
                     <option key={building.id} value={building.id}>
                       {building.buildingName} ({building.branchName})
-                      {isAccountant && " (Your assigned building)"}
+                      {userRole !== 'ROLE_ADMIN' && " (Your assigned building)"}
                     </option>
                   ))}
                 </select>
-                {isAccountant && assignedBuilding && (
+                {userRole !== 'ROLE_ADMIN' && assignedBuilding && (
                   <p className="text-sm text-blue-600 mt-1">
                     You are assigned to: {assignedBuilding.buildingName}
                   </p>
@@ -716,34 +814,7 @@ const UsageEntryPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Other CAM Costs Configuration */}
-            {selectedBuildingId && (
-              <div className="mb-6 p-4 bg-blue-50 rounded border border-blue-200">
-                <label className="block text-sm font-medium text-blue-700 mb-2">
-                  Other Monthly CAM Costs (MMK)
-                  <span className="text-blue-500 text-xs ml-2">
-                    (Common area maintenance, security, cleaning, etc.)
-                  </span>
-                </label>
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <input
-                      type="number"
-                      value={otherCAMCosts}
-                      onChange={(e) =>
-                        setOtherCAMCosts(parseFloat(e.target.value) || 0)
-                      }
-                      className="w-full border border-blue-300 rounded px-3 py-2 bg-white"
-                      min="0"
-                      step="10000"
-                    />
-                  </div>
-                  <div className="text-sm font-medium text-blue-800">
-                    Total: {otherCAMCosts.toLocaleString("en-US")} MMK
-                  </div>
-                </div>
-              </div>
-            )}
+            
 
             {/* Building Information */}
             {selectedBuilding && (
@@ -837,7 +908,7 @@ const UsageEntryPage: React.FC = () => {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-gray-900">
                 Building Utility Bill Calculation
-                {isAccountant && assignedBuilding && (
+                {userRole !== 'ROLE_ADMIN' && assignedBuilding && (
                   <span className="text-sm font-normal text-blue-600 ml-2">
                     (Your assigned building)
                   </span>
@@ -1131,10 +1202,15 @@ const UsageEntryPage: React.FC = () => {
             <div className="p-6 border-b">
               <h2 className="text-xl font-bold text-gray-900">
                 Meter Readings
+                {userRole !== 'ROLE_ADMIN' && assignedBuilding && (
+                  <span className="text-sm font-normal text-blue-600 ml-2">
+                    (Only for {assignedBuilding.buildingName})
+                  </span>
+                )}
               </h2>
             </div>
             <MeterReadingTable
-              readings={readings}
+              readings={filteredReadings}
               onEdit={(reading) => {
                 setSelectedReading(reading);
                 setShowForm(true);
