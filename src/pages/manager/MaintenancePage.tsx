@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { maintenanceApi } from "../../api/maintenanceApi";
 import { buildingApi } from "../../api/BuildingAPI";
 import type { MaintenanceRequest, MaintenanceStats } from "../../types/maintenance";
+import { useTranslation } from "react-i18next";
 
 interface User {
   id: number;
@@ -35,6 +36,8 @@ const ManagerMaintenancePage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { t } = useTranslation();
+
   useEffect(() => {
     // Fetch assigned building first, then fetch requests
     const fetchData = async () => {
@@ -59,7 +62,7 @@ const ManagerMaintenancePage: React.FC = () => {
         await fetchUsers();
       } catch (err: any) {
         console.error("Error fetching data:", err);
-        setError(err.response?.data?.message || "Failed to load data");
+        setError(err.response?.data?.message || t('maintenance.loadFailed', "Failed to load data"));
       } finally {
         setIsLoading(false);
       }
@@ -135,7 +138,7 @@ const ManagerMaintenancePage: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Error updating status:", err);
-      setError(err.response?.data?.message || "Failed to update request status");
+      setError(err.response?.data?.message || t('maintenance.updateFailed', "Failed to update request status"));
     }
   };
 
@@ -150,7 +153,7 @@ const ManagerMaintenancePage: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Error assigning request:", err);
-      setError(err.response?.data?.message || "Failed to assign request");
+      setError(err.response?.data?.message || t('maintenance.assignFailed', "Failed to assign request"));
     }
   };
 
@@ -187,7 +190,9 @@ const ManagerMaintenancePage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
-        <div className="text-xl font-medium text-stone-700 animate-pulse">Loading maintenance requests...</div>
+        <div className="text-xl font-medium text-stone-700 animate-pulse">
+          {t('maintenance.loading', "Loading maintenance requests...")}
+        </div>
       </div>
     );
   }
@@ -198,9 +203,11 @@ const ManagerMaintenancePage: React.FC = () => {
       <div className="p-6 min-h-screen bg-stone-50">
         <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-12 text-center">
           <div className="text-5xl mb-4">🏢</div>
-          <h2 className="text-2xl font-bold text-stone-900 mb-2">No Building Assigned</h2>
+          <h2 className="text-2xl font-bold text-stone-900 mb-2">
+            {t('maintenance.noBuilding', "No Building Assigned")}
+          </h2>
           <p className="text-stone-600 mb-6">
-            You haven't been assigned to any building yet. Please contact your administrator.
+            {t('maintenance.noBuildingDesc', "You haven't been assigned to any building yet. Please contact your administrator.")}
           </p>
         </div>
       </div>
@@ -213,16 +220,22 @@ const ManagerMaintenancePage: React.FC = () => {
       <div className="mb-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">Maintenance Requests</h1>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
+              {t('maintenance.title', "Maintenance Requests")}
+            </h1>
             <p className="text-stone-600 mt-1 text-sm sm:text-base">
-              Manage maintenance requests for <span className="font-semibold text-red-600">{assignedBuilding.buildingName}</span>
+              {t('maintenance.subtitle', "Manage maintenance requests for")} <span className="font-semibold text-red-600">{assignedBuilding.buildingName}</span>
             </p>
           </div>
           <div className="bg-white px-4 py-3 rounded-xl border border-stone-200 shadow-sm">
-            <div className="text-sm font-medium text-stone-700">Assigned Building</div>
+            <div className="text-sm font-medium text-stone-700">
+              {t('maintenance.assignedBuilding', "Assigned Building")}
+            </div>
             <div className="text-lg font-bold text-red-600">{assignedBuilding.buildingName}</div>
             {assignedBuilding.buildingCode && (
-              <div className="text-sm text-stone-500">Code: {assignedBuilding.buildingCode}</div>
+              <div className="text-sm text-stone-500">
+                {t('maintenance.code', "Code")}: {assignedBuilding.buildingCode}
+              </div>
             )}
           </div>
         </div>
@@ -241,19 +254,27 @@ const ManagerMaintenancePage: React.FC = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
-          <div className="text-sm font-medium text-stone-600">Pending</div>
+          <div className="text-sm font-medium text-stone-600">
+            {t('maintenance.pending', "Pending")}
+          </div>
           <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
         </div>
         <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
-          <div className="text-sm font-medium text-stone-600">In Progress</div>
+          <div className="text-sm font-medium text-stone-600">
+            {t('maintenance.inProgress', "In Progress")}
+          </div>
           <div className="text-2xl font-bold text-red-600">{stats.inProgress}</div>
         </div>
         <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
-          <div className="text-sm font-medium text-stone-600">Completed</div>
+          <div className="text-sm font-medium text-stone-600">
+            {t('maintenance.completed', "Completed")}
+          </div>
           <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
         </div>
         <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm">
-          <div className="text-sm font-medium text-stone-600">Cancelled</div>
+          <div className="text-sm font-medium text-stone-600">
+            {t('maintenance.cancelled', "Cancelled")}
+          </div>
           <div className="text-2xl font-bold text-red-600">{stats.cancelled}</div>
         </div>
       </div>
@@ -262,31 +283,35 @@ const ManagerMaintenancePage: React.FC = () => {
       <div className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm mb-6">
         <div className="flex flex-wrap gap-4">
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1">
+              {t('maintenance.status', "Status")}
+            </label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="border border-stone-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-150 bg-white"
             >
-              <option value="ALL">All Status</option>
-              <option value="PENDING">Pending</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="CANCELLED">Cancelled</option>
+              <option value="ALL">{t('maintenance.allStatus', "All Status")}</option>
+              <option value="PENDING">{t('maintenance.pending', "Pending")}</option>
+              <option value="IN_PROGRESS">{t('maintenance.inProgress', "In Progress")}</option>
+              <option value="COMPLETED">{t('maintenance.completed', "Completed")}</option>
+              <option value="CANCELLED">{t('maintenance.cancelled', "Cancelled")}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">Priority</label>
+            <label className="block text-sm font-medium text-stone-700 mb-1">
+              {t('maintenance.priority', "Priority")}
+            </label>
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
               className="border border-stone-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-150 bg-white"
             >
-              <option value="ALL">All Priority</option>
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="URGENT">Urgent</option>
+              <option value="ALL">{t('maintenance.allPriority', "All Priority")}</option>
+              <option value="LOW">{t('maintenance.low', "Low")}</option>
+              <option value="MEDIUM">{t('maintenance.medium', "Medium")}</option>
+              <option value="HIGH">{t('maintenance.high', "High")}</option>
+              <option value="URGENT">{t('maintenance.urgent', "Urgent")}</option>
             </select>
           </div>
         </div>
@@ -297,11 +322,13 @@ const ManagerMaintenancePage: React.FC = () => {
         {filteredRequests.length === 0 ? (
           <div className="p-12 text-center text-stone-500 bg-stone-50">
             <div className="text-5xl mb-3">🔧</div>
-            <div className="text-xl font-semibold text-stone-700">No Maintenance Requests</div>
+            <div className="text-xl font-semibold text-stone-700">
+              {t('maintenance.noRequests', "No Maintenance Requests")}
+            </div>
             <p className="text-sm mt-1">
               {requests.length === 0 
-                ? "No maintenance requests found for your building"
-                : "No requests match your current filters"}
+                ? t('maintenance.noRequestsForBuilding', "No maintenance requests found for your building")
+                : t('maintenance.noMatchingRequests', "No requests match your current filters")}
             </p>
           </div>
         ) : (
@@ -310,25 +337,25 @@ const ManagerMaintenancePage: React.FC = () => {
               <thead className="bg-stone-100">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    Request
+                    {t('maintenance.request', "Request")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    Tenant & Room
+                    {t('maintenance.tenantRoom', "Tenant & Room")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    Priority
+                    {t('maintenance.priority', "Priority")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    Status
+                    {t('maintenance.status', "Status")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    Assigned To
+                    {t('maintenance.assignedTo', "Assigned To")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    Created
+                    {t('maintenance.created', "Created")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    Actions
+                    {t('maintenance.actions', "Actions")}
                   </th>
                 </tr>
               </thead>
@@ -347,7 +374,9 @@ const ManagerMaintenancePage: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-stone-900">{request.tenantName}</div>
-                      <div className="text-sm text-stone-500">Room {request.roomNumber}</div>
+                      <div className="text-sm text-stone-500">
+                        {t('maintenance.room', "Room")} {request.roomNumber}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span
@@ -374,7 +403,9 @@ const ManagerMaintenancePage: React.FC = () => {
                           className="border border-stone-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 transition duration-150"
                           defaultValue=""
                         >
-                          <option value="" disabled>Assign to...</option>
+                          <option value="" disabled>
+                            {t('maintenance.assignTo', "Assign to...")}
+                          </option>
                           {users.map((user) => (
                             <option key={user.id} value={user.id}>
                               {user.fullName}
@@ -395,7 +426,7 @@ const ManagerMaintenancePage: React.FC = () => {
                           }}
                           className="text-red-600 hover:text-red-700 transition duration-150 px-3 py-1 border border-red-200 rounded-lg hover:bg-red-50"
                         >
-                          View
+                          {t('maintenance.view', "View")}
                         </button>
                        
                         {request.status !== "COMPLETED" && request.status !== "CANCELLED" && (
@@ -404,10 +435,10 @@ const ManagerMaintenancePage: React.FC = () => {
                             value={request.status}
                             className="border border-stone-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 transition duration-150"
                           >
-                            <option value="PENDING">Pending</option>
-                            <option value="IN_PROGRESS">In Progress</option>
-                            <option value="COMPLETED">Complete</option>
-                            <option value="CANCELLED">Cancel</option>
+                            <option value="PENDING">{t('maintenance.pending', "Pending")}</option>
+                            <option value="IN_PROGRESS">{t('maintenance.inProgress', "In Progress")}</option>
+                            <option value="COMPLETED">{t('maintenance.complete', "Complete")}</option>
+                            <option value="CANCELLED">{t('maintenance.cancel', "Cancel")}</option>
                           </select>
                         )}
                       </div>
@@ -439,15 +470,21 @@ const ManagerMaintenancePage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-stone-700">Tenant</label>
+                  <label className="block text-sm font-medium text-stone-700">
+                    {t('maintenance.tenant', "Tenant")}
+                  </label>
                   <p className="mt-1 text-sm text-stone-900">{selectedRequest.tenantName}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-stone-700">Room</label>
+                  <label className="block text-sm font-medium text-stone-700">
+                    {t('maintenance.room', "Room")}
+                  </label>
                   <p className="mt-1 text-sm text-stone-900">{selectedRequest.roomNumber}</p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-stone-700">Priority</label>
+                  <label className="block text-sm font-medium text-stone-700">
+                    {t('maintenance.priority', "Priority")}
+                  </label>
                   <span
                     className={`mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getPriorityColor(
                       selectedRequest.priority
@@ -457,7 +494,9 @@ const ManagerMaintenancePage: React.FC = () => {
                   </span>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-stone-700">Status</label>
+                  <label className="block text-sm font-medium text-stone-700">
+                    {t('maintenance.status', "Status")}
+                  </label>
                   <span
                     className={`mt-1 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
                       selectedRequest.status
@@ -469,7 +508,9 @@ const ManagerMaintenancePage: React.FC = () => {
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-stone-700">Description</label>
+                <label className="block text-sm font-medium text-stone-700">
+                  {t('maintenance.description', "Description")}
+                </label>
                 <p className="mt-1 text-sm text-stone-900 bg-stone-50 p-3 rounded-lg">
                   {selectedRequest.requestDescription}
                 </p>
@@ -477,7 +518,9 @@ const ManagerMaintenancePage: React.FC = () => {
 
               {selectedRequest.tenantFeedback && (
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-stone-700">Tenant Feedback</label>
+                  <label className="block text-sm font-medium text-stone-700">
+                    {t('maintenance.tenantFeedback', "Tenant Feedback")}
+                  </label>
                   <p className="mt-1 text-sm text-stone-900 bg-stone-50 p-3 rounded-lg">
                     {selectedRequest.tenantFeedback}
                   </p>
@@ -489,7 +532,7 @@ const ManagerMaintenancePage: React.FC = () => {
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 text-sm font-medium text-stone-700 bg-stone-100 rounded-lg hover:bg-stone-200 transition duration-150"
                 >
-                  Close
+                  {t('common.close', "Close")}
                 </button>
               </div>
             </div>

@@ -6,6 +6,7 @@ import type {
   UpdateTenantRequest,
   TenantSearchParams 
 } from '../types/tenant';
+import type { Unit } from '../types/unit';
 
 const BASE_URL = '/api/tenants';
 const CATEGORY_BASE_URL = '/api/tenant-categories';
@@ -40,6 +41,13 @@ export const tenantApi = {
   // Search tenants for manager view
   searchForManagerView: (params: TenantSearchParams): Promise<Tenant[]> => 
     API.get<Tenant[]>(`${BASE_URL}/manager-view/search`, { params }).then(response => response.data),
+
+  // ============ NEW: For Maintenance Requests ============
+  getAvailableUnits: (tenantId: number): Promise<Unit[]> => 
+    API.get<Unit[]>(`${BASE_URL}/${tenantId}/available-units`).then(response => response.data),
+
+  getActiveContracts: (tenantId: number): Promise<any[]> => 
+    API.get<any[]>(`${BASE_URL}/${tenantId}/active-contracts`).then(response => response.data),
 
   // ============ NEW: For Contract Creation ============
   // Get ALL active tenants for contract creation

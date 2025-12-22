@@ -123,7 +123,7 @@ const PaymentHistory: React.FC = () => {
         <div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">My Payment History</h2>
           <p className="text-stone-600 mt-1">
-            Track all your payment transactions and receipts
+            {t('tenant.paymentDetails')}
           </p>
         </div>
       </div>

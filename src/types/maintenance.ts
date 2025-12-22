@@ -41,3 +41,13 @@ export interface MaintenanceStats {
   completed: number;
   cancelled: number;
 }
+export interface Unit {
+  id: number;
+  unitNumber: string;
+  unitType?: string;
+  buildingName?: string;
+  buildingId?: number;
+  rentalFee?: number;
+  unitSpace?: number;
+  isAvailable?: boolean;
+}

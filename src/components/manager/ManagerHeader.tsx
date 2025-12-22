@@ -8,6 +8,7 @@ import { LogOut, User, Menu, Settings, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Logo from "../../assets/SeinGayHarLogo.png";
 import ChangePasswordButton from "../ChangePasswordButton";
+import { LanguageSwitcher } from "../LanguageSwitcher";
 
 interface ManagerHeaderProps {
   onMenuToggle: () => void;
@@ -33,13 +34,11 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
 
   const handleProfile = () => {
     setUserMenuOpen(false);
-    // Add profile navigation logic here
     console.log("Navigate to profile");
   };
 
   const handleSettings = () => {
     setUserMenuOpen(false);
-    // Add settings navigation logic here
     console.log("Navigate to settings");
   };
 
@@ -66,8 +65,11 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
           {/* Optional: Add title or breadcrumbs here */}
         </div>
 
-        {/* Right: Alerts + User Menu */}
+        {/* Right: Language + Alerts + User Menu */}
         <div className="flex items-center space-x-3">
+          {/* Language Switcher */}
+          <LanguageSwitcher />
+
           {/* Alerts */}
           <div className="hidden sm:block">
             <AlertsDropdown />
@@ -77,10 +79,10 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
           <div className="hidden md:flex items-center space-x-1">
             <div className="text-right">
               <p className="text-sm font-medium text-stone-800 truncate max-w-[150px]">
-                {username || "Manager"}
+                {username || t('common.manager', 'Manager')}
               </p>
               <p className="text-xs text-stone-500 truncate max-w-[150px]">
-                {roles[0] || "Manager"}
+                {roles[0] || t('common.manager', 'Manager')}
               </p>
             </div>
           </div>
@@ -95,9 +97,9 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
               {/* Mobile username badge */}
               <div className="md:hidden flex flex-col items-end">
                 <span className="text-xs font-medium text-stone-700">
-                  {username?.split(" ")[0] || "Manager"}
+                  {username?.split(" ")[0] || t('common.manager', 'Manager')}
                 </span>
-                <span className="text-[10px] text-stone-500">Manager</span>
+                <span className="text-[10px] text-stone-500">{t('common.manager', 'Manager')}</span>
               </div>
 
               {/* User Avatar/Icon */}
@@ -123,10 +125,10 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-stone-900 truncate">
-                        {username || "Manager User"}
+                        {username || t('common.managerUser', 'Manager User')}
                       </p>
                       <p className="text-xs text-stone-500 truncate">
-                        {roles[0] || "Manager"}
+                        {roles[0] || t('common.manager', 'Manager')}
                       </p>
                       <p className="text-xs text-blue-600 font-medium mt-1">
                         Sein Gay Har
@@ -142,7 +144,7 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
                     className="flex items-center w-full px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors duration-150 group"
                   >
                     <User className="w-4 h-4 mr-3 text-stone-400 group-hover:text-blue-600" />
-                    <span>My Profile</span>
+                    <span>{t('common.myProfile', 'My Profile')}</span>
                   </button>
 
                   <button
@@ -150,14 +152,14 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
                     className="flex items-center w-full px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors duration-150 group"
                   >
                     <Settings className="w-4 h-4 mr-3 text-stone-400 group-hover:text-blue-600" />
-                    <span>Settings</span>
+                    <span>{t('common.settings', 'Settings')}</span>
                   </button>
 
                   {/* Fixed ChangePasswordButton integration */}
                   <ChangePasswordButton
                     buttonStyle="dropdown"
                     buttonSize="md"
-                    buttonText="Change Password"
+                    buttonText={t('common.changePassword', 'Change Password')}
                     onCloseDropdown={() => setUserMenuOpen(false)}
                     className="w-full justify-start px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 transition-colors duration-150 group"
                   />
@@ -169,7 +171,7 @@ export const ManagerHeader: React.FC<ManagerHeaderProps> = ({
                     className="flex items-center w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors duration-150 group"
                   >
                     <LogOut className="w-4 h-4 mr-3" />
-                    <span>Logout</span>
+                    <span>{t('common.logout', 'Logout')}</span>
                   </button>
                 </div>
 

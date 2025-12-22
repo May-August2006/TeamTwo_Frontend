@@ -92,7 +92,10 @@ calculateCAMDistribution: (buildingId: number) =>
     API.get<Building[]>('/api/buildings/available-for-accountants'),
 
   // Add these methods to buildingApi object:
-getMyAssignedBuilding: () => API.get<Building>('/api/buildings/my-assigned-building'),
+
+  // getMyAssignedBuilding: () => 
+  //   API.get<{success: boolean, data: Building, message?: string}>('/api/buildings/my-assigned-building'),
+ getMyAssignedBuilding: () => API.get<Building>('/api/buildings/my-assigned-building'),
 getOccupiedUnitsByBuilding: (buildingId: number) => 
     API.get<Unit[]>(`/api/units/occupied/by-building/${buildingId}`),
 

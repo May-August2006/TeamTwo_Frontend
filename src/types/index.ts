@@ -22,6 +22,8 @@ export interface BranchRequest {
 }
 
 export interface Building {
+  buildingId: number;
+  success: any;
   branch?: Branch;
   buildingType: string;
   totalUnits: string;
@@ -259,6 +261,13 @@ export interface AppointmentRequest {
 }
 
 export interface AppointmentDTO {
+  unitNumber: number;
+  levelId: any;
+  branchId: any;
+  buildingId: any;
+  levelName: string;
+  buildingName: string;
+  branchName: string;
   id: number;
   guestName: string;
   guestEmail: string;
@@ -272,6 +281,9 @@ export interface AppointmentDTO {
 }
 
 export type Announcement = {
+  success: any;
+  buildingId: any;
+  buildingName: any;
   id: number;
   title: string;
   message: string;
@@ -284,6 +296,7 @@ export type AnnouncementRequest = {
   title: string;
   message: string;
   scheduledAt?: string;
+  buildingId?: number;
 };
 
 export interface ContractAlert {
