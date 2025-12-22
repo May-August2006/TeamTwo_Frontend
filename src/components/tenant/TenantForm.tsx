@@ -169,14 +169,14 @@ const TenantForm: React.FC<TenantFormProps> = ({
 
   // Field length limits (matching backend DTO validation)
   const FIELD_LIMITS = {
-    tenantName: { max: 200, min: 2 },
-    contactPerson: { max: 100, min: 2 },
-    email: { max: 100 },
+    tenantName: { max: 30, min: 2 },
+    contactPerson: { max: 30, min: 2 },
+    email: { max: 30 },
     nrc_no: { max: 30 },
-    phone: { max: 20, min: 9 },
-    address: { max: 1000 },
-    username: { max: 50, min: 3 },
-    fullName: { max: 100 },
+    phone: { max: 11, min: 6 },
+    address: { max: 500 },
+    username: { max: 20, min: 3 },
+    fullName: { max: 30 },
   };
 
   // Validation patterns
@@ -303,10 +303,10 @@ const TenantForm: React.FC<TenantFormProps> = ({
       } else if (!/^\d{1,2}\/[A-Za-z]+\([A-Za-z]+\)\d{6}$/.test(formData.nrc_no)) {
         newErrors.nrc_no = 'Invalid NRC format. Expected: State/Township(Type)Number (e.g., 12/YGN(N)123456)';
       } else {
-        // Validate state code (1-15)
+        // Validate state code (1-14)
         const stateCode = parseInt(formData.nrc_no.split('/')[0]);
-        if (isNaN(stateCode) || stateCode < 1 || stateCode > 15) {
-          newErrors.nrc_no = 'NRC state code must be between 1 and 15';
+        if (isNaN(stateCode) || stateCode < 1 || stateCode > 14) {
+          newErrors.nrc_no = 'NRC state code must be between 1 and 14';
         }
       }
     }
@@ -315,8 +315,8 @@ const TenantForm: React.FC<TenantFormProps> = ({
     const nrcErrors = validateNRC(nrcState, nrcTownship, nrcType, nrcNumber);
     if (nrcErrors.length > 0) {
       if (!nrcState) newErrors.nrcState = 'State is required';
-      else if (parseInt(nrcState) < 1 || parseInt(nrcState) > 15) {
-        newErrors.nrcState = 'State must be between 1 and 15';
+      else if (parseInt(nrcState) < 1 || parseInt(nrcState) > 14) {
+        newErrors.nrcState = 'State must be between 1 and 14';
       }
       
       if (!nrcTownship) newErrors.nrcTownship = 'Township is required';
@@ -690,32 +690,32 @@ const TenantForm: React.FC<TenantFormProps> = ({
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onCancel}
-              disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <span className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {isEditing ? 'Updating...' : 'Creating...'}
-                </span>
-              ) : (
-                isEditing ? 'Update' : 'Create'
-              )}
-            </button>
-          </div>
+  <button
+    type="button"
+    onClick={onCancel}
+    disabled={isLoading}
+    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1E40AF] disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    Cancel
+  </button>
+  <button
+    type="submit"
+    disabled={isLoading}
+    className="px-4 py-2 text-sm font-medium text-white bg-[#1E40AF] border border-transparent rounded-md shadow-sm hover:bg-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1E40AF] disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    {isLoading ? (
+      <span className="flex items-center">
+        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        {isEditing ? 'Updating...' : 'Creating...'}
+      </span>
+    ) : (
+      isEditing ? 'Update' : 'Create'
+    )}
+  </button>
+</div>
         </form>
       </div>
     </div>

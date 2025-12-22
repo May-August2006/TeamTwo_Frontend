@@ -14,13 +14,17 @@ export interface MallOwnerExpense {
   description: string;
   dateRecorded: string;
   status: 'PENDING' | 'PAID' | 'CANCELLED' | 'APPROVED';
-  totalVacantArea: number;
-  totalUnallocatedArea: number;
-  totalLeasableArea: number;
-  totalCAMCosts: number;
-  occupiedArea: number;
-  occupiedUnitsCount: number;
-  vacantUnitsCount: number;
+  totalVacantArea?: number;
+  totalUnallocatedArea?: number;
+  totalLeasableArea?: number;
+  totalCAMCosts?: number;
+  occupiedArea?: number;
+  occupiedUnitsCount?: number;
+  vacantUnitsCount?: number;
+}
+
+export interface UpdateExpenseStatusRequest {
+  status: string;
 }
 
 export interface CreateExpenseRequest {

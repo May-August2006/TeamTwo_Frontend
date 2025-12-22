@@ -9,6 +9,7 @@ import { RentalRevenueByBusinessTypeReport } from '../../components/reports/Rent
 import { OutstandingBalancesReport } from '../../components/reports/OutstandingBalancesReport';
 import { UtilityConsumptionReport } from '../../components/reports/UtilityConsumptionReport';
 import { MonthlyCollectionReport } from '../../components/reports/MonthlyCollectionReport';
+import { useTranslation } from 'react-i18next';
 
 type ReportType = 
   | 'TENANT_CONTRACT_SUMMARY' 
@@ -24,60 +25,61 @@ type ReportType =
 
 export const ReportsPage: React.FC = () => {
   const [activeReport, setActiveReport] = useState<ReportType>(null);
+  const { t } = useTranslation();
 
   const reportTypes = [
     {
       id: 'TENANT_CONTRACT_SUMMARY' as ReportType,
-      title: "Tenant Contract Summary",
-      description: "Summary of all tenant contracts with current status",
+      title: t('reports.tenantContractSummary', "Tenant Contract Summary"),
+      description: t('reports.tenantContractSummaryDesc', "Summary of all tenant contracts with current status"),
       icon: "📊"
     },
     {
       id: 'EXPIRING_CONTRACTS' as ReportType,
-      title: "Expiring Contracts",
-      description: "List of contracts due to expire within 30 days",
+      title: t('reports.expiringContracts', "Expiring Contracts"),
+      description: t('reports.expiringContractsDesc', "List of contracts due to expire within 30 days"),
       icon: "⏰"
     },
     {
       id: 'VACANT_OCCUPIED_UNITS' as ReportType,
-      title: "Vacant vs Occupied Units",
-      description: "Occupancy statistics for the mall",
+      title: t('reports.vacantOccupiedUnits', "Vacant vs Occupied Units"),
+      description: t('reports.vacantOccupiedUnitsDesc', "Occupancy statistics for the mall"),
       icon: "🏢"
     },
     {
       id: 'CONTRACT_HISTORY' as ReportType,
-      title: "Contract History Report",
-      description: "Complete history of contract changes, renewals, and terminations",
+      title: t('reports.contractHistory', "Contract History Report"),
+      description: t('reports.contractHistoryDesc', "Complete history of contract changes, renewals, and terminations"),
       icon: "📋"
     },
     {
       id: 'MONTHLY_BILLING_SUMMARY' as ReportType,
-      title: "Monthly Billing Summary",
-      description: "Summary of all charges for a billing month",
+      title: t('reports.monthlyBillingSummary', "Monthly Billing Summary"),
+      description: t('reports.monthlyBillingSummaryDesc', "Summary of all charges for a billing month"),
       icon: "💰"
     },
     {
       id: 'UTILITY_CONSUMPTION' as ReportType,
-      title: "Utility Consumption",
-      description: "Detailed breakdown of utility usage and costs",
+      title: t('reports.utilityConsumption', "Utility Consumption"),
+      description: t('reports.utilityConsumptionDesc', "Detailed breakdown of utility usage and costs"),
       icon: "⚡"
     },
     {
     id: 'OUTSTANDING_BALANCES' as ReportType,
-    title: "Outstanding Balances",
-    description: "List of all tenants with unpaid invoices",
+    title: t('reports.outstandingBalances', "Outstanding Balances"),
+    description: t('reports.outstandingBalancesDesc', "List of all tenants with unpaid invoices"),
     icon: "📝"
   },
     {
       id: 'REVENUE_BY_CATEGORY' as ReportType,
-      title: "Revenue by Category",
-      description: "Income grouped by tenant type (Retail, Food, etc.)",
+      title: t('reports.revenueByCategory', "Revenue by Category"),
+      description: t('reports.revenueByCategoryDesc', "Income grouped by tenant type (Retail, Food, etc.)"),
       icon: "📈"
     },
     {
       id: 'EXPENSE_VS_REVENUE' as ReportType,
-      title: "Expense vs Revenue",
-      description: "Comparison of total income vs mall expenses",
+      title: t('reports.expenseVsRevenue', "Expense vs Revenue"),
+      description: t('reports.expenseVsRevenueDesc', "Comparison of total income vs mall expenses"),
       icon: "⚖️"
     }
   ];
@@ -113,13 +115,18 @@ export const ReportsPage: React.FC = () => {
         return (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">💰</div>
-            <h2 className="text-2xl font-bold text-stone-900 mb-2">Monthly Billing Summary Report</h2>
-            <p className="text-stone-600 mb-4">This report will show monthly billing information</p>
+            <h2 className="text-2xl font-bold text-stone-900 mb-2">
+              {t('reports.monthlyBillingSummary', "Monthly Billing Summary Report")}
+            </h2>
+            <p className="text-stone-600 mb-4">
+              {t('reports.monthlyBillingSummaryDesc', "This report will show monthly billing information")}
+            </p>
             <button 
               onClick={handleBackToReports}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition duration-150"
+              className="text-white px-4 py-2 rounded-lg transition duration-150"
+              style={{ backgroundColor: '#1E40AF' }}
             >
-              Back to Reports
+              {t('common.backToReports', "Back to Reports")}
             </button>
           </div>
         );
@@ -144,24 +151,26 @@ export const ReportsPage: React.FC = () => {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-stone-900">Reports & Analytics</h1>
+            <h1 className="text-3xl font-bold text-stone-900">
+              {t('reports.title', "Reports & Analytics")}
+            </h1>
             <p className="text-stone-600 mt-2">
-              Generate detailed reports and analytics for your mall management
+              {t('reports.subtitle', "Generate detailed reports and analytics for your mall management")}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <select className="px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm bg-white">
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-              <option value="yearly">Yearly</option>
+            <select className="px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E40AF] text-sm bg-white">
+              <option value="monthly">{t('reports.monthly', "Monthly")}</option>
+              <option value="quarterly">{t('reports.quarterly', "Quarterly")}</option>
+              <option value="yearly">{t('reports.yearly', "Yearly")}</option>
             </select>
 
             <button className="border border-stone-300 text-stone-700 px-4 py-2 rounded-lg hover:bg-stone-50 flex items-center gap-2 text-sm transition duration-150">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              Export All
+              {t('reports.exportAll', "Export All")}
             </button>
           </div>
         </div>
@@ -177,7 +186,7 @@ export const ReportsPage: React.FC = () => {
               <div className="flex items-start justify-between mb-4">
                 <div className="text-3xl">{report.icon}</div>
                 <svg 
-                  className="w-5 h-5 text-stone-400 group-hover:text-red-600 transition-colors" 
+                  className="w-5 h-5 text-stone-400 group-hover:text-[#1E40AF] transition-colors" 
                   fill="none" 
                   stroke="currentColor" 
                   viewBox="0 0 24 24"
@@ -186,7 +195,7 @@ export const ReportsPage: React.FC = () => {
                 </svg>
               </div>
               
-              <h3 className="text-lg font-semibold text-stone-900 mb-2 group-hover:text-red-600 transition-colors">
+              <h3 className="text-lg font-semibold text-stone-900 mb-2 group-hover:text-[#1E40AF] transition-colors">
                 {report.title}
               </h3>
               <p className="text-sm text-stone-600 mb-4 line-clamp-2">
@@ -195,7 +204,8 @@ export const ReportsPage: React.FC = () => {
 
               <div className="flex flex-wrap gap-2">
                 <button 
-                  className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition-colors flex items-center gap-2"
+                  className="text-white px-4 py-2 rounded text-sm transition-colors flex items-center gap-2"
+                  style={{ backgroundColor: '#1E40AF' }}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleGenerateReport(report.id);
@@ -204,7 +214,7 @@ export const ReportsPage: React.FC = () => {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  Generate
+                  {t('reports.generate', "Generate")}
                 </button>
                 
                 <button className="border border-stone-300 text-stone-700 px-3 py-2 rounded text-sm hover:bg-stone-50 transition-colors flex items-center gap-1">
@@ -229,13 +239,15 @@ export const ReportsPage: React.FC = () => {
         <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-white p-6 rounded-xl border border-stone-200">
             <div className="flex items-center">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-2 bg-[#1E40AF]/10 rounded-lg">
+                <svg className="w-6 h-6 text-[#1E40AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-stone-600">Total Tenants</p>
+                <p className="text-sm font-medium text-stone-600">
+                  {t('reports.totalTenants', "Total Tenants")}
+                </p>
                 <p className="text-2xl font-bold text-stone-900">156</p>
               </div>
             </div>
@@ -249,7 +261,9 @@ export const ReportsPage: React.FC = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-stone-600">Occupied Units</p>
+                <p className="text-sm font-medium text-stone-600">
+                  {t('reports.occupiedUnits', "Occupied Units")}
+                </p>
                 <p className="text-2xl font-bold text-stone-900">142</p>
               </div>
             </div>
@@ -263,7 +277,9 @@ export const ReportsPage: React.FC = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-stone-600">Expiring Soon</p>
+                <p className="text-sm font-medium text-stone-600">
+                  {t('reports.expiringSoon', "Expiring Soon")}
+                </p>
                 <p className="text-2xl font-bold text-stone-900">8</p>
               </div>
             </div>
@@ -277,7 +293,9 @@ export const ReportsPage: React.FC = () => {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-stone-600">Monthly Revenue</p>
+                <p className="text-sm font-medium text-stone-600">
+                  {t('reports.monthlyRevenue', "Monthly Revenue")}
+                </p>
                 <p className="text-2xl font-bold text-stone-900">45.2M</p>
               </div>
             </div>

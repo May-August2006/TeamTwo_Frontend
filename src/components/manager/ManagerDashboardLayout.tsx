@@ -6,6 +6,8 @@ import { ManagerHeader } from "./ManagerHeader";
 import { ManagerSidebar } from "./ManagerSidebar";
 import { ToastProvider } from "../../context/ToastContext";
 import { useAuth } from "../../context/AuthContext";
+import { I18nextProvider } from 'react-i18next';
+import i18n from "../../i18n/i18n";
 
 export const ManagerDashboardLayout: React.FC<{
   children: React.ReactNode;
@@ -19,7 +21,11 @@ export const ManagerDashboardLayout: React.FC<{
   const { logout } = useAuth();
 
   const handleResize = useCallback(() => {
-    setIsMobile(window.innerWidth < 1024);
+    const mobile = window.innerWidth < 1024;
+    setIsMobile(mobile);
+    if (mobile) {
+      setIsCollapsed(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -30,14 +36,15 @@ export const ManagerDashboardLayout: React.FC<{
   useEffect(() => {
     if (isMobile) {
       setIsCollapsed(false);
-    } else {
-      setMobileOpen(false);
     }
   }, [isMobile]);
 
   const handleDrawerToggle = () => {
-    if (isMobile) setMobileOpen(!mobileOpen);
-    else setIsCollapsed(!isCollapsed);
+    if (isMobile) {
+      setMobileOpen(!mobileOpen);
+    } else {
+      setIsCollapsed(!isCollapsed);
+    }
   };
 
   const handleLogout = () => {
@@ -46,29 +53,10 @@ export const ManagerDashboardLayout: React.FC<{
   };
 
   return (
-    <ToastProvider>
-      <div className="min-h-screen bg-stone-50 flex">
-        {/* Sidebar */}
-        <ManagerSidebar
-          isOpen={mobileOpen}
-          isCollapsed={isCollapsed}
-          onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
-          currentPath={location.pathname}
-          onNavigate={(path) => {
-            navigate(path);
-            if (isMobile) setMobileOpen(false);
-          }}
-          onClose={function (): void {
-            throw new Error("Function not implemented.");
-          }}
-        />
-
-        {/* Main Area */}
-        <div
-          className={`flex-1 flex flex-col transition-all duration-300
-          ${isMobile ? "" : isCollapsed ? "lg:ml-20" : "lg:ml-64"}
-        `}
-        >
+    <I18nextProvider i18n={i18n}>
+      <ToastProvider>
+        <div className="min-h-screen bg-gray-50">
+          {/* Header */}
           <ManagerHeader
             onMenuToggle={handleDrawerToggle}
             sidebarCollapsed={isCollapsed}
@@ -76,19 +64,33 @@ export const ManagerDashboardLayout: React.FC<{
             onLogout={handleLogout}
           />
 
-          {/* Page Content */}
-          <main className="flex-1 p-4 sm:p-6 mt-16 overflow-auto">
-            {children}
-          </main>
-        </div>
+          <div className="flex">
+            {/* Sidebar */}
+            <ManagerSidebar
+              isOpen={mobileOpen}
+              onClose={() => setMobileOpen(false)}
+              currentPath={location.pathname}
+              onNavigate={(path) => {
+                navigate(path);
+                if (isMobile) setMobileOpen(false);
+              }}
+              isCollapsed={isCollapsed}
+              onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+            />
 
-        {isMobile && mobileOpen && (
-          <div
-            className="fixed inset-0 bg-stone-900 bg-opacity-70 z-30 lg:hidden"
-            onClick={() => setMobileOpen(false)}
-          ></div>
-        )}
-      </div>
-    </ToastProvider>
+            {/* Main Content - IMPROVED SPACING */}
+            <main className={`
+              flex-1 min-h-screen transition-all duration-300 
+              ${isMobile ? '' : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}
+            `}>
+              {/* Adjusted top spacing - increased from pt-20 to pt-24 */}
+              <div className="pt-24 pb-8 px-4 sm:px-6 lg:px-8 w-full">
+                {children}
+              </div>
+            </main>
+          </div>
+        </div>
+      </ToastProvider>
+    </I18nextProvider>
   );
 };

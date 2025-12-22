@@ -1,64 +1,56 @@
 // src/components/homepage/FeaturesSection.tsx
 import React from 'react';
 
-interface FeatureCardProps {
-  icon: string;
-  title: string;
-  description: string;
-}
-
-const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => (
-  <div className="text-center p-8 bg-white rounded-lg shadow-sm border border-[#E5E8EB] hover:shadow-lg hover:border-[#D32F2F]/20 transition-all duration-300 group">
-    <div className="text-5xl mb-6 group-hover:scale-110 transition-transform duration-300">
-      {icon}
-    </div>
-    <h3 className="text-xl font-semibold text-[#0D1B2A] mb-4 group-hover:text-[#D32F2F] transition-colors duration-200">
-      {title}
-    </h3>
-    <p className="text-[#0D1B2A] opacity-80 leading-relaxed">
-      {description}
-    </p>
-  </div>
-);
-
 export const FeaturesSection: React.FC = () => {
   const features = [
     {
       icon: "📍",
       title: "Prime Location",
-      description: "High-traffic areas with excellent visibility and accessibility for maximum customer reach."
+      description: "High-traffic areas with excellent visibility"
     },
     {
       icon: "🛡️",
       title: "Secure Environment",
-      description: "24/7 security surveillance and professional management for your peace of mind."
+      description: "24/7 security and professional management"
     },
     {
       icon: "⚡",
       title: "Modern Facilities",
-      description: "State-of-the-art infrastructure including high-speed internet and modern utilities."
+      description: "State-of-the-art infrastructure and utilities"
     }
   ];
 
   return (
-    <section className="py-16 bg-[#E5E8EB]">
+    <section className="py-12 bg-white">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-[#0D1B2A] mb-4">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-[#0F172A] mb-3">
             Why Choose Our Mall?
           </h2>
-          <p className="text-lg text-[#0D1B2A] opacity-80 max-w-2xl mx-auto">
-            Premium features designed for your business success and growth
+          <p className="text-gray-600 max-w-xl mx-auto">
+            Premium features designed for your business success
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {features.map((feature, index) => (
-            <FeatureCard
-              key={index}
-              icon={feature.icon}
-              title={feature.title}
-              description={feature.description}
-            />
+            <div 
+              key={index} 
+              className="bg-white rounded-lg border border-gray-200 p-5 hover:border-[#1E40AF] hover:shadow-md transition-all duration-300"
+            >
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-[#1E40AF] to-[#3B82F6] flex items-center justify-center mb-4">
+                <div className="text-xl text-white">
+                  {feature.icon}
+                </div>
+              </div>
+              
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {feature.title}
+              </h3>
+              <p className="text-gray-600 text-sm">
+                {feature.description}
+              </p>
+            </div>
           ))}
         </div>
       </div>

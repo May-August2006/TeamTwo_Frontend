@@ -1,6 +1,7 @@
 /** @format */
 
-import React from "react";
+import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Home,
   FileText,
@@ -32,42 +33,42 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
 }) => {
   const menuItems = [
     {
-      name: "Dashboard",
+      name: t('tenant.dashboard', 'Dashboard'),
       icon: <Home className="w-5 h-5" />,
       path: "/tenant",
     },
     {
-      name: "My Invoices",
+      name: t('tenant.invoices', 'My Invoices'),
       icon: <FileText className="w-5 h-5" />,
       path: "/tenant/invoices",
     },
     {
-      name: "Payment History",
+      name: t('tenant.paymentHistory', 'Payment History'),
       icon: <CreditCard className="w-5 h-5" />,
       path: "/tenant/payment-history",
     },
     {
-      name: "My Contract",
+      name: t('tenant.contract', 'My Contract'),
       icon: <FileCheck className="w-5 h-5" />,
       path: "/tenant/contract",
     },
     {
-      name: "Maintenance",
+      name: t('tenant.maintenance', 'Maintenance'),
       icon: <Wrench className="w-5 h-5" />,
       path: "/tenant/maintenance",
     },
     {
-      name: "Announcements",
+      name: t('tenant.announcementsTitle', 'Announcements'),
       icon: <Bell className="w-5 h-5" />,
       path: "/tenant/announcements",
     },
     {
-      name: "Reminders",
+      name: t('tenant.remindersTitle', 'Reminders'),
       icon: <Bell className="w-5 h-5" />,
       path: "/tenant/reminders",
     },
     {
-      name: "Late Fee",
+      name: t('tenant.lateFeesTitle', 'Late Fees'),
       icon: <FileCheck className="w-5 h-5" />,
       path: "/tenant/lateFees",
     },
@@ -87,6 +88,9 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
 
   const handleNavigation = (path: string) => {
     onNavigate(path);
+    if (window.innerWidth < 1024) { // Close on mobile after navigation
+      onClose();
+    }
   };
 
   return (
@@ -113,7 +117,7 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
               </div>
               <div>
                 <span className="text-lg font-bold text-stone-900">
-                  Tenant Portal
+                  {t('tenant.dashboard', 'Tenant Portal')}
                 </span>
               </div>
             </div>
@@ -153,11 +157,11 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
             {menuItems.map((item, index) => (
               <button
                 key={index}
-                onClick={() => handleNavigation(item.path!)}
+                onClick={() => handleNavigation(item.path)}
                 className={`
                   flex items-center space-x-3 w-full p-3 text-left rounded-lg transition-colors duration-150 group
                   ${
-                    isActivePath(item.path!)
+                    isActivePath(item.path)
                       ? "bg-red-50 text-red-700 border-l-2 border-red-600 font-medium"
                       : "text-stone-700 hover:bg-stone-100 hover:text-stone-900"
                   }

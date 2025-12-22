@@ -8,10 +8,15 @@ import type {
     AssignMaintenanceRequest,
     MaintenanceStats,
 } from "../types/maintenance";
+import type { Unit } from "recharts/types/cartesian/CartesianAxis";
 
 export const maintenanceApi = {
   // Get all maintenance requests
   getAllRequests: () => API.get<MaintenanceRequest[]>('/api/maintenance-requests'),
+
+   // Get requests by building
+  getRequestsByBuilding: (buildingId: number) => 
+    API.get<MaintenanceRequest[]>(`/api/maintenance-requests/building/${buildingId}`),
   
   // Get requests by tenant
   getRequestsByTenant: (tenantId: number) => 
@@ -48,4 +53,9 @@ export const maintenanceApi = {
   // Get maintenance statistics
   getRequestStats: () => 
     API.get<MaintenanceStats>('/api/maintenance-requests/stats/count'),
+
+  // Get available units for current tenant
+  getAvailableUnits: () => API.get<Unit[]>('/api/maintenance-requests/available-units'),
+
+
 };

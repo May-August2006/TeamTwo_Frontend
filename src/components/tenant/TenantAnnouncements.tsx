@@ -1,11 +1,13 @@
 /** @format */
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { announcementApi } from "../../api/announcementApi";
 import { useAnnouncementsWebSocket } from "../../hooks/useAnnouncementsWebSocket";
 import type { Announcement } from "../../types";
 import { toast } from "react-hot-toast";
 
 export function TenantAnnouncements() {
+  const { t } = useTranslation();
   const jwtToken = localStorage.getItem("accessToken") || "";
   const { announcements: wsAnnouncements, connected } =
     useAnnouncementsWebSocket(jwtToken);
@@ -43,9 +45,9 @@ export function TenantAnnouncements() {
   return (
     <div className="p-4 sm:p-6 space-y-6 min-h-screen bg-stone-50">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">Announcements</h2>
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">{t('tenant.announcementsTitle')}</h2>
         <p className={`px-3 py-1 rounded-full text-sm font-semibold ${connected ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-          {connected ? "🟢 Live" : "🔴 Offline"}
+          {connected ? `🟢 ${t('tenant.live')}` : `🔴 ${t('tenant.offline')}`}
         </p>
       </div>
 
@@ -53,8 +55,8 @@ export function TenantAnnouncements() {
         {localAnnouncements.length === 0 ? (
           <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-8 text-center">
             <div className="text-5xl mb-3">📢</div>
-            <div className="text-xl font-semibold text-stone-700">No Announcements</div>
-            <p className="text-sm text-stone-500 mt-1">Check back later for updates from management</p>
+            <div className="text-xl font-semibold text-stone-700">{t('tenant.noAnnouncements')}</div>
+            <p className="text-sm text-stone-500 mt-1">{t('tenant.checkBackLater')}</p>
           </div>
         ) : (
           localAnnouncements.map((ann) => (

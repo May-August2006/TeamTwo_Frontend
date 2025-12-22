@@ -1,16 +1,18 @@
 /** @format */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { appointmentApi } from "../../api/appointmentApi";
 import { useAppointmentsWebSocket } from "../../hooks/useAppointmentsWebSocket";
 import type { AppointmentDTO } from "../../types";
 import { AppointmentNotifications } from "../../components/notifications/AppointmentNotifications";
+import { useTranslation } from "react-i18next";
 
 export default function AppointmentManagementPage() {
   const managerId = Number(localStorage.getItem("userId"));
   const jwtToken = localStorage.getItem("accessToken") || "";
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const {
     appointments,
@@ -21,12 +23,27 @@ export default function AppointmentManagementPage() {
   } = useAppointmentsWebSocket(jwtToken, managerId);
 
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const statusOptions: AppointmentDTO["status"][] = [
     "CONFIRMED",
     "COMPLETED",
     "CANCELLED",
   ];
+
+  const formatTime = (timeString: string) => {
+    if (!timeString) return t('appointments.notSpecified', "Not specified");
+    try {
+      return new Date(`1970-01-01T${timeString}`).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (e) {
+      return timeString;
+    }
+  };
 
   const loadAppointments = async () => {
     try {
@@ -42,6 +59,20 @@ export default function AppointmentManagementPage() {
   useEffect(() => {
     loadAppointments();
   }, []);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(appointments.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  
+  // Get exactly 10 appointments for current page
+  const currentAppointments = appointments.slice(startIndex, endIndex);
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   const updateStatus = async (id: number, status: string) => {
     try {
@@ -90,7 +121,7 @@ export default function AppointmentManagementPage() {
       <div className="p-6 flex justify-center items-center min-h-screen bg-gradient-to-br from-stone-50 to-stone-100">
         <div className="text-xl font-medium text-stone-700 animate-pulse flex items-center gap-3">
           <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin"></div>
-          Loading appointments...
+          {t('appointments.loading', "Loading appointments...")}
         </div>
       </div>
     );
@@ -103,9 +134,11 @@ export default function AppointmentManagementPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 mb-2">
-              Appointment Management
+              {t('appointments.title', "Appointment Management")}
             </h2>
-            <p className="text-stone-600">Manage and track all your appointments</p>
+            <p className="text-stone-600">
+              {t('appointments.subtitle', "Manage and track all your appointments")}
+            </p>
           </div>
           <AppointmentNotifications newAppointment={newAppointment} />
         </div>
@@ -114,30 +147,51 @@ export default function AppointmentManagementPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-200">
             <div className="text-2xl font-bold text-stone-900">{appointments.length}</div>
-            <div className="text-sm text-stone-600">Total Appointments</div>
+            <div className="text-sm text-stone-600">
+              {t('appointments.totalAppointments', "Total Appointments")}
+            </div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-200">
             <div className="text-2xl font-bold text-green-600">
               {appointments.filter(a => a.status === "CONFIRMED").length}
             </div>
-            <div className="text-sm text-stone-600">Confirmed</div>
+            <div className="text-sm text-stone-600">
+              {t('appointments.confirmed', "Confirmed")}
+            </div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm border border-stone-200">
             <div className="text-2xl font-bold text-blue-600">
               {appointments.filter(a => a.status === "COMPLETED").length}
             </div>
-            <div className="text-sm text-stone-600">Completed</div>
+            <div className="text-sm text-stone-600">
+              {t('appointments.completed', "Completed")}
+            </div>
           </div>
         </div>
 
+        {/* Page Info */}
+        {appointments.length > 0 && (
+          <div className="mb-4 text-sm text-stone-600 flex justify-between items-center">
+            <div>
+              {t('appointments.showing', "Showing")} <span className="font-semibold">{startIndex + 1}</span> {t('appointments.to', "to")}{" "}
+              <span className="font-semibold">{Math.min(endIndex, appointments.length)}</span> {t('appointments.of', "of")}{" "}
+              <span className="font-semibold">{appointments.length}</span> {t('appointments.appointments', "appointments")}
+            </div>
+            <div className="text-sm text-stone-600">
+              {t('appointments.page', "Page")} <span className="font-semibold">{currentPage}</span> {t('appointments.of', "of")}{" "}
+              <span className="font-semibold">{totalPages}</span>
+            </div>
+          </div>
+        )}
+
         {/* Appointments List */}
-        <div className="bg-white shadow-lg rounded-2xl border border-stone-200 overflow-hidden">
-          {appointments.map((a, index) => (
+        <div className="bg-white shadow-lg rounded-2xl border border-stone-200 overflow-hidden mb-6">
+          {currentAppointments.map((a, index) => (
             <div
               key={a.id}
               onClick={() => navigate(`/manager/appointments/${a.id}`)}
               className={`flex flex-col lg:flex-row lg:items-center justify-between p-6 transition-all duration-200 hover:bg-stone-50 cursor-pointer ${
-                index !== appointments.length - 1 ? "border-b border-stone-100" : ""
+                index !== currentAppointments.length - 1 ? "border-b border-stone-100" : ""
               }`}
             >
               <div className="flex-1 min-w-0">
@@ -161,7 +215,7 @@ export default function AppointmentManagementPage() {
                   </div>
                   <div className="flex items-center gap-2 text-stone-600">
                     <span className="text-stone-400">⏰</span>
-                    <span>{a.appointmentTime}</span>
+                    <span>{formatTime(a.appointmentTime)}</span>
                   </div>
                 </div>
                 
@@ -183,7 +237,7 @@ export default function AppointmentManagementPage() {
                     }}
                     className={`px-3 py-1.5 rounded-lg text-white text-xs font-medium transition-all duration-200 focus:ring-2 focus:ring-offset-2 ${getStatusButtonColor(status)} shadow-sm hover:shadow-md`}
                   >
-                    Mark as {status}
+                    {t('appointments.markAs', "Mark as {status}", { status })}
                   </button>
                 ))}
               </div>
@@ -193,19 +247,118 @@ export default function AppointmentManagementPage() {
           {appointments.length === 0 && (
             <div className="p-12 text-center text-stone-500 bg-stone-50">
               <div className="text-6xl mb-4">📅</div>
-              <div className="text-xl font-semibold text-stone-700 mb-2">No Appointments Yet</div>
+              <div className="text-xl font-semibold text-stone-700 mb-2">
+                {t('appointments.noAppointments', "No Appointments Yet")}
+              </div>
               <p className="text-stone-600 max-w-md mx-auto">
-                When new appointments are scheduled, they will appear here automatically.
+                {t('appointments.noAppointmentsDesc', "When new appointments are scheduled, they will appear here automatically.")}
               </p>
             </div>
           )}
         </div>
 
+        {/* Pagination Controls */}
+        {appointments.length > itemsPerPage && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 bg-white rounded-xl p-4 shadow-sm border border-stone-200">
+            <div className="text-sm text-stone-600">
+              {t('appointments.showingPerPage', "Showing {count} appointments per page", {
+                count: currentAppointments.length
+              })}
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => goToPage(1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                  currentPage === 1
+                    ? "text-stone-400 cursor-not-allowed"
+                    : "text-stone-700 hover:bg-stone-100 border border-stone-200"
+                }`}
+              >
+                {t('appointments.first', "First")}
+              </button>
+
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                  currentPage === 1
+                    ? "text-stone-400 cursor-not-allowed"
+                    : "text-stone-700 hover:bg-stone-100 border border-stone-200"
+                }`}
+              >
+                {t('appointments.previous', "Previous")}
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  if (pageNum > totalPages) return null;
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => goToPage(pageNum)}
+                      className={`w-10 h-10 rounded-lg text-sm font-medium transition ${
+                        currentPage === pageNum
+                          ? "bg-stone-800 text-white"
+                          : "text-stone-700 hover:bg-stone-100 border border-stone-200"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                  currentPage === totalPages
+                    ? "text-stone-400 cursor-not-allowed"
+                    : "text-stone-700 hover:bg-stone-100 border border-stone-200"
+                }`}
+              >
+                {t('appointments.next', "Next")}
+              </button>
+
+              <button
+                onClick={() => goToPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                  currentPage === totalPages
+                    ? "text-stone-400 cursor-not-allowed"
+                    : "text-stone-700 hover:bg-stone-100 border border-stone-200"
+                }`}
+              >
+                {t('appointments.last', "Last")}
+              </button>
+            </div>
+            
+            <div className="text-sm text-stone-600">
+              {t('appointments.page', "Page")} <span className="font-semibold">{currentPage}</span> {t('appointments.of', "of")}{" "}
+              <span className="font-semibold">{totalPages}</span>
+            </div>
+          </div>
+        )}
+
         {/* Connection Status */}
         <div className="mt-6 flex items-center justify-center gap-2 text-sm">
           <div className={`w-2 h-2 rounded-full ${connected ? "bg-green-500 animate-pulse" : "bg-red-500"}`}></div>
           <span className="text-stone-500">
-            {connected ? "Live updates connected" : "Connection offline"}
+            {connected ? t('appointments.connected', "Live updates connected") : t('appointments.disconnected', "Connection offline")}
           </span>
         </div>
       </div>

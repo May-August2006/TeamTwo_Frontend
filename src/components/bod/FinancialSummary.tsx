@@ -468,70 +468,8 @@ const FinancialSummary: React.FC = () => {
         </div>
       </div>
 
-      {/* Yearly Trends */}
-      {yearlyData.length > 0 && (
-        <div className="bg-white rounded-xl shadow-lg border border-blue-100 p-6 hover:shadow-xl transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Yearly Financial Trends</h3>
-              <p className="text-sm text-gray-600 mt-1">Three-year performance comparison</p>
-            </div>
-            <div className="p-2 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-              <Calendar className="w-5 h-5 text-blue-700" />
-            </div>
-          </div>
-          <div className="space-y-4">
-            {yearlyData.map((year, index) => (
-              <div key={index} className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-slate-50 rounded-xl border border-blue-200 hover:shadow-sm transition-all duration-300">
-                <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg border border-blue-300">
-                    <span className="text-xl font-bold text-blue-900">{year.year}</span>
-                  </div>
-                  <div>
-                    <p className="font-bold text-gray-900">{year.totalRevenue}</p>
-                    <div className="flex items-center space-x-4 mt-1">
-                      <div className="flex items-center">
-                        <div className="w-2 h-2 bg-red-500 rounded-full mr-1"></div>
-                        <span className="text-sm text-gray-600">Expenses: {year.totalExpenses}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-green-100 to-green-200 text-green-800 border border-green-300">
-                    {year.profitMargin} margin
-                  </span>
-                  <p className="text-lg font-bold text-green-700 mt-1">{year.netProfit}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Refresh Button */}
-      <div className="flex justify-center">
-        <button
-          onClick={fetchFinancialMetrics}
-          disabled={loading}
-          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Refreshing...
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Refresh Data
-            </>
-          )}
-        </button>
+      
       </div>
-    </div>
   );
 };
 

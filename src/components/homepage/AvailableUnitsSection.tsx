@@ -1,5 +1,4 @@
-/** @format */
-
+// src/components/homepage/AvailableUnitsSection.tsx
 import React, { useState, useEffect } from "react";
 import type { Unit, UnitSearchParams } from "../../types/unit";
 import { UnitCard } from "./UnitCard";
@@ -15,21 +14,22 @@ import { userApi } from "../../api/UserAPI";
 interface AvailableUnitsSectionProps {
   onUnitDetail?: (unit: Unit) => void;
   onAppointment?: (unit: Unit) => void;
+  onViewSpaces?: () => void;
 }
 
 export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   onUnitDetail,
   onAppointment,
+  onViewSpaces,
 }) => {
   const [availableUnits, setAvailableUnits] = useState<Unit[]>([]);
-  const [activeSearchParams, setActiveSearchParams] =
-    useState<UnitSearchParams>({});
-  const [pendingSearchParams, setPendingSearchParams] =
-    useState<UnitSearchParams>({});
+  const [activeSearchParams, setActiveSearchParams] = useState<UnitSearchParams>({});
+  const [pendingSearchParams, setPendingSearchParams] = useState<UnitSearchParams>({});
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [showFilters, setShowFilters] = useState(false); // NEW: Control filter visibility
 
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
@@ -48,24 +48,22 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     loadAvailableUnits();
   }, []);
 
-  // Helper function to make public API calls (no authentication)
   const publicFetch = async (url: string, options?: RequestInit) => {
     try {
+      console.log("🌐 Making request to:", url);
+      
       const response = await fetch(url, {
         ...options,
         headers: {
           "Content-Type": "application/json",
-          // DON'T include Authorization header for public endpoints
           ...options?.headers,
         },
       });
 
-      // Handle 401/403 gracefully for public endpoints
       if (response.status === 401 || response.status === 403) {
         console.warn(
           `Public endpoint ${url} returned auth error, but we'll continue`
         );
-        // Return empty array instead of throwing
         return { data: [] };
       }
 
@@ -74,6 +72,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       }
 
       const data = await response.json();
+      console.log("📥 Response data:", data);
       return { data };
     } catch (err) {
       console.error("Public fetch error:", err);
@@ -81,7 +80,6 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     }
   };
 
-  // Fetch available units (initial load or when applying/searching)
   const loadAvailableUnits = async (params?: UnitSearchParams) => {
     try {
       if (params && Object.keys(params).length > 0) {
@@ -91,78 +89,82 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       }
 
       setError(null);
-      console.log("🔄 Loading units...", params ? "with filters" : "all units");
 
-      let response;
+      console.log("📋 Original params:", params);
+      
+      const baseParams: UnitSearchParams = {
+        isAvailable: true,
+        ...params
+      };
 
-      if (params && Object.keys(params).length > 0) {
-        // Remove empty/null parameters
-        const cleanParams: UnitSearchParams = {};
-        Object.entries(params).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== "") {
-            cleanParams[key as keyof UnitSearchParams] = value;
-          }
-        });
+      console.log("📋 Base params with availability:", baseParams);
 
-        if (Object.keys(cleanParams).length > 0) {
-          console.log("🔍 Searching with params:", cleanParams);
-
-          // Build query string for search
-          const queryParams = new URLSearchParams();
-          Object.entries(cleanParams).forEach(([key, value]) => {
-            queryParams.append(key, value.toString());
-          });
-
-          // Use public fetch for search endpoint
-          response = await publicFetch(
-            `http://localhost:8080/api/units/search?${queryParams}`
-          );
-        } else {
-          console.log("📋 Loading all available units");
-          // Use public fetch for available endpoint
-          response = await publicFetch(
-            "http://localhost:8080/api/units/available"
-          );
+      const cleanParams: UnitSearchParams = {};
+      Object.entries(baseParams).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "" && value !== 0) {
+          cleanParams[key as keyof UnitSearchParams] = value;
         }
+      });
+
+      console.log("🧹 Cleaned params:", cleanParams);
+
+      let url = "http://localhost:8080/api/units";
+      
+      if (Object.keys(cleanParams).length > 0) {
+        const queryParams = new URLSearchParams();
+        Object.entries(cleanParams).forEach(([key, value]) => {
+          queryParams.append(key, value.toString());
+        });
+        url = `http://localhost:8080/api/units/search?${queryParams}`;
       } else {
-        console.log("📋 Loading all available units");
-        // Use public fetch for available endpoint
-        response = await publicFetch(
-          "http://localhost:8080/api/units/available"
-        );
+        url = "http://localhost:8080/api/units/available";
       }
 
-      console.log("📦 API response:", response);
+      console.log("🔍 Fetching URL:", url);
 
+      const response = await publicFetch(url);
       let data = response.data;
 
-      // Handle pagination if needed
+      console.log("📦 Raw response data:", data);
+
       if (data && Array.isArray(data.content)) {
         data = data.content;
-      }
-
-      if (!Array.isArray(data)) {
+        console.log("📄 Extracted content array:", data);
+      } else if (data && Array.isArray(data.data)) {
+        data = data.data;
+        console.log("📄 Extracted data array:", data);
+      } else if (data && Array.isArray(data)) {
+        console.log("📄 Already an array:", data);
+      } else {
         console.error("❌ Invalid data format:", data);
         throw new Error("Invalid data format");
       }
 
-      // Transform the data
-      const transformedData = data.map((unit: any) => ({
+      const availableUnitsOnly = data.filter((unit: any) => {
+        const isAvailable = unit.isAvailable === true || unit.isAvailable === "true";
+        console.log(`🏢 Unit ${unit.unitNumber} - isAvailable: ${unit.isAvailable} -> ${isAvailable}`);
+        return isAvailable;
+      });
+
+      console.log("✅ Available units after filtering:", availableUnitsOnly.length);
+
+      const transformedData = availableUnitsOnly.map((unit: any) => ({
         ...unit,
         utilities: unit.utilities || [],
         imageUrls: unit.imageUrls || [],
+        isAvailable: true,
       }));
+      
+      console.log("✨ Transformed data:", transformedData);
       setAvailableUnits(transformedData);
 
       if (params && Object.keys(params).length > 0) {
         setActiveSearchParams(params);
-        console.log(`✅ Found ${transformedData.length} units with filters`);
       } else {
         setActiveSearchParams({});
-        console.log(`✅ Loaded ${transformedData.length} units`);
       }
     } catch (err: any) {
-      console.error("Error loading units:", err);
+      console.error("❌ Error loading units:", err);
       setError(err.message || "Failed to load units");
       setAvailableUnits([]);
     } finally {
@@ -172,52 +174,64 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     }
   };
 
-  // Handle search when user clicks Apply Filters
   const handleApplySearch = async () => {
-    console.log("🔍 Apply Filters clicked with params:", pendingSearchParams);
+    console.log("🚀 Applying search with params:", pendingSearchParams);
     await loadAvailableUnits(pendingSearchParams);
+    setShowFilters(false); // Hide filters after search
   };
 
-  // Handle reset search
   const handleResetSearch = () => {
-    console.log("🔄 Resetting filters");
+    console.log("🔄 Resetting search");
     setPendingSearchParams({});
-    loadAvailableUnits(); // Load all units without filters
+    setShowFilters(false);
+    loadAvailableUnits();
   };
 
-  // Handle pending filter changes (without applying search)
   const handlePendingFilterChange = (params: UnitSearchParams) => {
-    console.log("📝 Filter changed (pending):", params);
+    console.log("📝 Pending filters updated:", params);
     setPendingSearchParams(params);
   };
 
-  // View unit details
   const handleUnitDetail = async (unit: Unit) => {
+    console.log("👁️ Viewing unit details:", unit.unitNumber);
+    
     if (!isAuthenticated) {
+      console.log("🔒 User not authenticated, showing login prompt");
       setPendingAction({ type: "view", unit });
       setIsLoginPromptOpen(true);
       return;
     }
 
     try {
+      setIsCheckingApproval(true);
       const res = await userApi.getById(userId!);
       if (res.data.approvalStatus !== "APPROVED") {
         alert("Your account is pending approval. Redirecting to home page.");
+        window.location.href = "/";
         return;
+      }
+      
+      if (onUnitDetail) {
+        onUnitDetail(unit);
+      } else {
+        console.log("ℹ️ No onUnitDetail handler provided");
+        alert(`Unit ${unit.unitNumber} details:\nSpace: ${unit.unitSpace} sqm\nType: ${unit.roomType?.typeName || 'N/A'}`);
       }
     } catch (err) {
       console.error("Failed to verify approval:", err);
       alert("Failed to verify your account. Redirecting to home page.");
       window.location.href = "/";
       return;
+    } finally {
+      setIsCheckingApproval(false);
     }
-
-    if (onUnitDetail) onUnitDetail(unit);
   };
 
-  // Open appointment modal
   const handleAppointment = (unit: Unit) => {
+    console.log("📅 Opening appointment for unit:", unit.unitNumber);
+    
     if (!isAuthenticated) {
+      console.log("🔒 User not authenticated, showing login prompt");
       setPendingAction({ type: "appointment", unit });
       setIsLoginPromptOpen(true);
       return;
@@ -228,13 +242,12 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       return;
     }
 
-    console.log("📅 Booking appointment for:", unit.unitNumber);
     setSelectedUnit(unit);
     setIsAppointmentOpen(true);
   };
 
-  /** Login confirm modal */
   const handleLoginConfirm = async () => {
+    console.log("✅ Login confirmed");
     setIsLoginPromptOpen(false);
 
     if (pendingAction) {
@@ -245,16 +258,17 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   };
 
   const handleLoginCancel = () => {
+    console.log("❌ Login cancelled");
     setIsLoginPromptOpen(false);
     setPendingAction(null);
   };
 
   const closeAppointmentModal = () => {
+    console.log("🗑️ Closing appointment modal");
     setSelectedUnit(null);
     setIsAppointmentOpen(false);
   };
 
-  // Submit appointment to backend (this still requires authentication)
   const submitAppointment = async (data: {
     roomId: number;
     appointmentDate: string;
@@ -263,181 +277,239 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     notes: string;
     guestPhone: string;
   }) => {
-    if (!userId) return;
+    if (!userId) {
+      alert("Please login to book an appointment");
+      return;
+    }
 
     try {
       setIsBooking(true);
+      console.log("📤 Submitting appointment:", data);
       const response = await appointmentApi.book(userId || 0, data);
-      console.log("✅ Appointment booked:", response.data);
+      console.log("✅ Appointment booked:", response);
       alert("Appointment booked successfully!");
       closeAppointmentModal();
     } catch (err: any) {
-      console.error("Failed to book appointment:", err);
+      console.error("❌ Failed to book appointment:", err);
       alert("Failed to book appointment. Please try again.");
     } finally {
       setIsBooking(false);
     }
   };
 
-  // Count active filters (currently applied)
   const countActiveFilters = () => {
-    return Object.values(activeSearchParams).filter(
-      (val) => val !== undefined && val !== "" && val !== null
+    const count = Object.values(activeSearchParams).filter(
+      (val) => val !== undefined && val !== "" && val !== null && val !== 0
     ).length;
+    return count;
   };
 
-  // Count pending filters (not yet applied)
   const countPendingFilters = () => {
-    return Object.values(pendingSearchParams).filter(
-      (val) => val !== undefined && val !== "" && val !== null
+    const count = Object.values(pendingSearchParams).filter(
+      (val) => val !== undefined && val !== "" && val !== null && val !== 0
     ).length;
+    return count;
   };
+
+  const activeFiltersCount = countActiveFilters();
+  const pendingFiltersCount = countPendingFilters();
 
   return (
-    <section id="available-units" className="py-16 bg-[#E5E8EB]">
+    <section id="available-units" className="py-8 bg-[#F8FAFC]">
       <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-[#0D1B2A] mb-4">
+        {/* Compact Header */}
+        <div className="text-center mb-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-[#0F172A] mb-2">
             Available Retail Spaces
           </h2>
-          <p className="text-lg text-[#0D1B2A] opacity-80 max-w-2xl mx-auto">
-            Browse our selection of retail spaces designed to help your business
-            thrive.
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Browse our premium retail spaces - all shown are currently available
           </p>
         </div>
 
-        {/* Search Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-[#0D1B2A]/10 p-6 mb-8">
-          <SearchFilters
-            onSearch={handlePendingFilterChange} // Just update pending params
-            onReset={handleResetSearch}
-            onApplySearch={handleApplySearch} // Called when Apply button is clicked
-            pendingFilters={pendingSearchParams}
-            activeFilters={activeSearchParams}
-          />
+        {/* NEW: Collapsible Search Filters Button */}
+        <div className="mb-6">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center justify-between w-full bg-white rounded-lg border border-[#E2E8F0] p-4 mb-3 hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <div className="flex items-center space-x-3">
+              <svg 
+                className={`w-5 h-5 text-[#1E40AF] transition-transform ${showFilters ? 'rotate-180' : ''}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+              <span className="font-medium text-[#0F172A]">Search & Filter Spaces</span>
+              {activeFiltersCount > 0 && (
+                <span className="bg-[#1E40AF] text-white text-xs px-2 py-1 rounded-full">
+                  {activeFiltersCount} active
+                </span>
+              )}
+            </div>
+            <span className="text-gray-500 text-sm">
+              {showFilters ? 'Hide filters' : 'Show filters'}
+            </span>
+          </button>
+          
+          {/* Filters Panel (Collapsible) - Only show when toggled */}
+          {showFilters && (
+            <div className="bg-white rounded-lg border border-[#E2E8F0] p-6 shadow-sm">
+              <SearchFilters
+                onSearch={handlePendingFilterChange}
+                onReset={handleResetSearch}
+                onApplySearch={handleApplySearch}
+                pendingFilters={pendingSearchParams}
+                activeFilters={activeSearchParams}
+              />
+            </div>
+          )}
         </div>
 
-        {/* Loading State */}
-        {(loading || searching) && (
-          <div className="flex justify-center items-center py-12 bg-white rounded-lg border border-[#0D1B2A]/10">
-            <LoadingSpinner size="lg" />
-            <span className="ml-3 text-[#0D1B2A]">
-              {loading && isInitialLoad
-                ? "Loading available spaces..."
-                : searching
-                ? "Searching spaces..."
-                : "Loading..."}
-            </span>
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && !loading && !searching && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <h3 className="text-lg font-semibold text-[#B71C1C] mb-2">
-              {countActiveFilters() > 0
-                ? "Unable to Search Spaces"
-                : "Unable to Load Spaces"}
-            </h3>
-            <p className="text-[#D32F2F] mb-4">{error}</p>
-            <Button
-              onClick={() => loadAvailableUnits(activeSearchParams)}
-              variant="secondary"
-              className="border-[#0D1B2A] hover:bg-[#0D1B2A] hover:text-white"
-            >
-              Try Again
-            </Button>
-          </div>
-        )}
-
-        {/* Unit List */}
-        {!loading && !searching && !error && (
-          <>
-            <div className="flex justify-between items-center mb-6">
+        {/* Units Grid Section - This is where "View Available Spaces" scrolls to */}
+        <div id="units-grid-section" className="bg-white rounded-lg border border-[#E2E8F0]">
+          {/* Results Header */}
+          <div className="border-b border-[#E2E8F0] p-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <p className="text-[#0D1B2A] opacity-80">
-                  {countActiveFilters() > 0
-                    ? `Found ${availableUnits.length} matching spaces`
-                    : `Showing all ${availableUnits.length} available spaces`}
-                </p>
-
-                {/* Show pending filters indicator */}
-                {countPendingFilters() > 0 &&
-                  countPendingFilters() !== countActiveFilters() && (
-                    <div className="flex items-center mt-1">
-                      <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-                        ⚡ {countPendingFilters()} filter
-                        {countPendingFilters() !== 1 ? "s" : ""} pending - Click
-                        "Apply Filters" to search
-                      </span>
-                    </div>
+                <h3 className="text-xl font-bold text-[#0F172A]">Available Spaces</h3>
+                <div className="flex items-center space-x-2 mt-1">
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#1E40AF]/10 text-[#1E40AF] text-sm">
+                    {availableUnits.length} Available Spaces
+                  </span>
+                  {activeFiltersCount > 0 && (
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#F59E0B]/10 text-[#D97706] text-sm">
+                      {activeFiltersCount} Filter{activeFiltersCount !== 1 ? 's' : ''} Applied
+                    </span>
                   )}
-
-                {/* Show active filters count */}
-                {countActiveFilters() > 0 && (
-                  <p className="text-sm text-[#0D1B2A] opacity-60 mt-1">
-                    {countActiveFilters()} active filter
-                    {countActiveFilters() !== 1 ? "s" : ""}
-                  </p>
-                )}
+                </div>
               </div>
-
+              
               <div className="flex gap-2">
-                {countActiveFilters() > 0 && (
+                {activeFiltersCount > 0 && (
                   <Button
                     onClick={handleResetSearch}
                     variant="secondary"
                     size="sm"
-                    className="border-[#0D1B2A] hover:bg-[#0D1B2A] hover:text-white"
+                    className="border-[#1E40AF] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
                   >
-                    Clear All Filters
+                    Clear Filters
                   </Button>
                 )}
                 <Button
-                  onClick={() => loadAvailableUnits(activeSearchParams)}
+                  onClick={() => setShowFilters(!showFilters)}
                   variant="secondary"
                   size="sm"
-                  className="border-[#0D1B2A] hover:bg-[#0D1B2A] hover:text-white"
+                  className="border-gray-400 text-gray-600 hover:bg-gray-600 hover:text-white"
                 >
-                  Refresh Results
+                  {showFilters ? 'Hide Filters' : 'Show Filters'}
                 </Button>
               </div>
             </div>
-
-            {availableUnits.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg border border-[#0D1B2A]/10">
-                <h3 className="text-xl font-semibold text-[#0D1B2A] mb-2">
-                  {countActiveFilters() > 0
-                    ? "No spaces match your search criteria"
-                    : "No available spaces found"}
-                </h3>
-                <p className="text-[#0D1B2A] opacity-80 mb-4">
-                  {countActiveFilters() > 0
-                    ? "Try adjusting your filters or clear them to see all available spaces."
-                    : "Check back later for new available spaces."}
-                </p>
-                {countActiveFilters() > 0 && (
-                  <div className="flex gap-3 justify-center">
-                    <Button
-                      onClick={handleResetSearch}
-                      variant="secondary"
-                      className="border-[#0D1B2A] hover:bg-[#0D1B2A] hover:text-white"
-                    >
-                      Clear All Filters
-                    </Button>
-                    <Button
-                      onClick={() => loadAvailableUnits()}
-                      variant="primary"
-                      className="bg-[#D32F2F] hover:bg-[#B71C1C] text-white"
-                    >
-                      Show All Spaces
-                    </Button>
+            
+            {/* Pending Filters Alert */}
+            {pendingFiltersCount > 0 &&
+              pendingFiltersCount !== activeFiltersCount && (
+                <div className="mt-4 p-3 bg-gradient-to-r from-[#1E40AF]/5 to-[#3B82F6]/5 border border-[#1E40AF]/20 rounded-lg">
+                  <div className="flex items-center">
+                    <svg className="w-4 h-4 text-[#1E40AF] mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-[#1E40AF] text-sm">
+                      You have {pendingFiltersCount} filter{pendingFiltersCount !== 1 ? 's' : ''} set but not applied. 
+                      Click <strong>"Apply Filters"</strong> to see results.
+                    </p>
                   </div>
-                )}
+                </div>
+              )}
+          </div>
+
+          {/* Loading State */}
+          {(loading || searching) && (
+            <div className="py-12 flex flex-col items-center justify-center">
+              <LoadingSpinner size="md" className="mb-3" />
+              <p className="text-gray-500">
+                {loading && isInitialLoad
+                  ? "Loading available spaces..."
+                  : searching
+                  ? "Searching spaces..."
+                  : "Loading..."}
+              </p>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !loading && !searching && (
+            <div className="py-12 px-6 text-center">
+              <div className="w-12 h-12 mx-auto rounded-full bg-red-100 flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <h3 className="text-lg font-semibold text-[#0F172A] mb-2">
+                {activeFiltersCount > 0
+                  ? "Unable to Search Spaces"
+                  : "Unable to Load Spaces"}
+              </h3>
+              <p className="text-gray-500 mb-4 max-w-md mx-auto">{error}</p>
+              <Button
+                onClick={() => loadAvailableUnits(activeSearchParams)}
+                variant="secondary"
+                size="sm"
+                className="border-[#1E40AF] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
+              >
+                Try Again
+              </Button>
+            </div>
+          )}
+
+          {/* No Results State */}
+          {!loading && !searching && !error && availableUnits.length === 0 && (
+            <div className="py-12 px-6 text-center">
+              <div className="w-16 h-16 mx-auto rounded-full bg-[#F8FAFC] flex items-center justify-center mb-4">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-[#0F172A] mb-2">
+                {activeFiltersCount > 0
+                  ? "No available spaces match your search"
+                  : "No available spaces at the moment"}
+              </h3>
+              <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                {activeFiltersCount > 0
+                  ? "Try adjusting your filters or browse all available spaces."
+                  : "Check back soon for new retail space opportunities."}
+              </p>
+              {activeFiltersCount > 0 && (
+                <div className="flex gap-3 justify-center">
+                  <Button
+                    onClick={handleResetSearch}
+                    variant="secondary"
+                    size="sm"
+                    className="border-[#1E40AF] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
+                  >
+                    Clear Filters
+                  </Button>
+                  <Button
+                    onClick={() => loadAvailableUnits()}
+                    variant="primary"
+                    size="sm"
+                    className="bg-gradient-to-r from-[#1E40AF] to-[#3B82F6] hover:from-[#1E3A8A] hover:to-[#2563EB] text-white"
+                  >
+                    Show All Available Spaces
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Results Grid */}
+          {!loading && !searching && !error && availableUnits.length > 0 && (
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {availableUnits.map((unit) => (
                   <UnitCard
                     key={unit.id}
@@ -447,22 +519,67 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                   />
                 ))}
               </div>
-            )}
-
-            {/* Show "Apply Filters" reminder if there are pending filters */}
-            {countPendingFilters() > 0 &&
-              countPendingFilters() !== countActiveFilters() && (
-                <div className="mt-8 p-4 bg-amber-50 border border-amber-200 rounded-lg text-center">
-                  <p className="text-amber-800">
-                    ⚡ You have {countPendingFilters()} filter
-                    {countPendingFilters() !== 1 ? "s" : ""} set but not
-                    applied. Click <strong>"Apply Filters"</strong> in the
-                    search section to see results.
-                  </p>
+              
+              {/* Results Summary */}
+              {/* <div className="mt-8 pt-6 border-t border-[#E2E8F0]">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                  <div>
+                    <p className="text-gray-500 text-sm">
+                      Showing <span className="font-semibold text-[#0F172A]">{availableUnits.length}</span> available spaces
+                      {activeFiltersCount > 0 && (
+                        <span className="ml-2 text-[#64748B]">
+                          (filtered from total)
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="text-sm text-[#64748B] hover:text-[#1E40AF] transition-colors duration-300 flex items-center"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    Need Help?
+                  </button>
                 </div>
-              )}
-          </>
-        )}
+              </div> */}
+            </div>
+          )}
+        </div>
+
+        {/* CTA Section */}
+        {/* <div className="mt-8 text-center">
+          <div className="bg-gradient-to-r from-[#1E40AF]/5 to-[#3B82F6]/5 border border-[#1E40AF]/20 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-[#0F172A] mb-3">
+              Need help finding the perfect space?
+            </h3>
+            <p className="text-gray-500 mb-6 max-w-md mx-auto text-sm">
+              All spaces shown are currently available for lease.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
+                variant="secondary"
+                size="sm"
+                className="border-[#1E40AF] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
+              >
+                Contact Our Team
+              </Button>
+              <Button
+                onClick={() => window.open('tel:+959123456789')}
+                variant="primary"
+                size="sm"
+                className="bg-gradient-to-r from-[#1E40AF] to-[#3B82F6] hover:from-[#1E3A8A] hover:to-[#2563EB] text-white"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                Call Now
+              </Button>
+            </div>
+          </div>
+        </div> */}
 
         {/* Appointment Modal */}
         {selectedUnit && (

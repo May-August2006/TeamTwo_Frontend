@@ -19,14 +19,17 @@ const TenantSearch: React.FC<TenantSearchProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
+    // Apply max length validation based on field
+    let processedValue = value;
+    
     // Convert categoryId to number, keep others as string
-    const processedValue = name === 'categoryId' 
+    const finalValue = name === 'categoryId' 
       ? (value ? parseInt(value, 10) : undefined)
       : (value || undefined);
     
     onSearchChange({
       ...searchParams,
-      [name]: processedValue,
+      [name]: finalValue,
     });
   };
 
@@ -47,48 +50,67 @@ const TenantSearch: React.FC<TenantSearchProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Name Search */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Tenant Name
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                Tenant Name
+              </label>
+              <span className="text-xs text-gray-500">
+                {searchParams.name?.length || 0}/30
+              </span>
+            </div>
             <input
               type="text"
               id="name"
               name="name"
               value={searchParams.name || ''}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              maxLength={30}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF]"
               placeholder="Search by name"
             />
           </div>
 
           {/* Email Search */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <span className="text-xs text-gray-500">
+                {searchParams.email?.length || 0}/30
+              </span>
+            </div>
             <input
               type="email"
               id="email"
               name="email"
               value={searchParams.email || ''}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              maxLength={30}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF]"
               placeholder="Search by email"
             />
           </div>
 
           {/* Phone Search */}
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-              Phone
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                Phone
+              </label>
+              <span className="text-xs text-gray-500">
+                {searchParams.phone?.length || 0}/11
+              </span>
+            </div>
             <input
               type="tel"
               id="phone"
               name="phone"
               value={searchParams.phone || ''}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              maxLength={11}
+              pattern="[0-9]*"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF]"
               placeholder="Search by phone"
             />
           </div>
@@ -103,7 +125,7 @@ const TenantSearch: React.FC<TenantSearchProps> = ({
               name="categoryId"
               value={searchParams.categoryId || ''}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF]"
             >
               <option value="">All Categories</option>
               {categories.map((category) => (
@@ -120,13 +142,13 @@ const TenantSearch: React.FC<TenantSearchProps> = ({
           <button
             type="button"
             onClick={handleReset}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1E40AF]"
           >
             Reset
           </button>
           <button
             type="submit"
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            className="px-4 py-2 text-sm font-medium text-white bg-[#1E40AF] border border-transparent rounded-md shadow-sm hover:bg-[#1E3FAF] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1E40AF]"
           >
             Search
           </button>

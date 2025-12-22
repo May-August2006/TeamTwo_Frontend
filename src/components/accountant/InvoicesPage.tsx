@@ -3,24 +3,68 @@
 import { useEffect, useState, useRef } from "react";
 import { useInvoicesWebSocket } from "../../hooks/useInvoicesWebSocket";
 import toast, { Toaster } from "react-hot-toast";
-
 import { invoiceApi, type InvoiceSummaryDTO } from "../../api/InvoiceAPI";
+import { buildingApi } from "../../api/BuildingAPI";
+import { Building } from "lucide-react";
 
 export default function InvoicesPage() {
   const jwtToken = localStorage.getItem("accessToken") || "";
   const { invoices, setInvoices, connected } = useInvoicesWebSocket(jwtToken);
   const [loading, setLoading] = useState(true);
 
+  // Accountant restrictions
+  const [assignedBuilding, setAssignedBuilding] = useState<any>(null);
+  const [isAccountant, setIsAccountant] = useState(false);
+  const [filteredInvoices, setFilteredInvoices] = useState<InvoiceSummaryDTO[]>([]);
+
   // Track which invoices have already shown a toast
   const seenInvoiceIds = useRef<Set<number>>(new Set());
+
+  // Check user role and assigned building
+  useEffect(() => {
+    const checkUserRoleAndBuilding = async () => {
+      try {
+        const userRole = localStorage.getItem('userRole') || '';
+        
+        if (userRole === 'ACCOUNTANT' || userRole === 'accountant') {
+          setIsAccountant(true);
+          
+          // Get accountant's assigned building
+          try {
+            const buildingResponse = await buildingApi.getMyAssignedBuilding();
+            if (buildingResponse.data) {
+              setAssignedBuilding(buildingResponse.data);
+            }
+          } catch (error) {
+            console.error('Error loading assigned building:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking user role:', error);
+      }
+    };
+    
+    checkUserRoleAndBuilding();
+  }, []);
 
   /** Fetch all invoices from API */
   const fetchInvoices = async () => {
     try {
       const res = await invoiceApi.getAll();
-      setInvoices(res.data);
+      let invoicesData = res.data || [];
+      
+      // Filter invoices by assigned building if accountant
+      if (isAccountant && assignedBuilding) {
+        invoicesData = invoicesData.filter((invoice: InvoiceSummaryDTO) => {
+          return invoice.buildingId === assignedBuilding.id;
+        });
+      }
+      
+      setInvoices(invoicesData);
+      setFilteredInvoices(invoicesData);
+      
       // Mark all existing invoices as seen (no toast for old ones)
-      res.data.forEach((inv) => seenInvoiceIds.current.add(inv.id));
+      invoicesData.forEach((inv: InvoiceSummaryDTO) => seenInvoiceIds.current.add(inv.id));
     } catch (err) {
       console.error("Failed to load invoices:", err);
       toast.error("Failed to load invoices");
@@ -49,6 +93,11 @@ export default function InvoicesPage() {
   const viewPdf = async (invoice: InvoiceSummaryDTO) => {
     if (!invoice.id) return toast.error("PDF not available");
 
+    // Check if invoice belongs to accountant's building
+    if (isAccountant && assignedBuilding && invoice.buildingId !== assignedBuilding.id) {
+      return toast.error("You can only view invoices from your assigned building");
+    }
+
     const apiUrl = `/api/invoices/download/${invoice.id}`;
 
     try {
@@ -71,6 +120,11 @@ export default function InvoicesPage() {
   /** Download PDF using API */
   const downloadPdf = async (invoice: InvoiceSummaryDTO) => {
     if (!invoice.id) return toast.error("PDF not available");
+
+    // Check if invoice belongs to accountant's building
+    if (isAccountant && assignedBuilding && invoice.buildingId !== assignedBuilding.id) {
+      return toast.error("You can only download invoices from your assigned building");
+    }
 
     const apiUrl = `/api/invoices/download/${invoice.id}`;
 
@@ -108,16 +162,48 @@ export default function InvoicesPage() {
     <div className="p-4 sm:p-8 min-h-screen bg-stone-50">
       <Toaster position="top-right" />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
-          Invoices
-        </h2>
-        <p className="text-sm text-stone-500">
-          WebSocket: {connected ? "🟢 Connected" : "🔴 Disconnected"}
-        </p>
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
+            Invoices
+          </h2>
+          {isAccountant && assignedBuilding && (
+            <div className="flex items-center gap-2 mt-2">
+              <Building className="w-4 h-4 text-blue-600" />
+              <span className="text-sm text-blue-700 font-medium">
+                {assignedBuilding.buildingName}
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col items-end">
+          <p className="text-sm text-stone-500">
+            WebSocket: {connected ? "🟢 Connected" : "🔴 Disconnected"}
+          </p>
+          {isAccountant && assignedBuilding && (
+            <p className="text-xs text-blue-600 mt-1">
+              Filtered by assigned building
+            </p>
+          )}
+        </div>
       </div>
 
+      {/* Accountant Info */}
+      {isAccountant && assignedBuilding && (
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-2">
+            <Building className="w-5 h-5 text-blue-600" />
+            <div>
+              <h3 className="font-medium text-blue-800">Accountant View</h3>
+              <p className="text-sm text-blue-600">
+                Showing invoices only from your assigned building: <strong>{assignedBuilding.buildingName}</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white shadow-xl rounded-xl border border-stone-200 divide-y divide-stone-200">
-        {invoices.map((inv) => (
+        {filteredInvoices.map((inv) => (
           <div
             key={inv.id}
             className="flex items-center justify-between px-6 py-4 hover:bg-red-50/50 cursor-pointer transition duration-150"
@@ -128,6 +214,9 @@ export default function InvoicesPage() {
               </p>
               <p className="text-sm text-stone-500">
                 Tenant: {inv.tenantName} — Room: {inv.roomNumber}
+                {!isAccountant && inv.buildingName && (
+                  <span className="ml-2">— Building: {inv.buildingName}</span>
+                )}
               </p>
               <p className="text-sm text-stone-500">
                 Issue Date: {inv.issueDate} — Due Date: {inv.dueDate}
@@ -153,14 +242,19 @@ export default function InvoicesPage() {
             </div>
           </div>
         ))}
-        {invoices.length === 0 && (
+        {filteredInvoices.length === 0 && (
           <div className="p-12 text-center text-stone-500 bg-stone-50 rounded-b-xl">
             <div className="text-5xl mb-3">📄</div>
             <div className="text-xl font-semibold text-stone-700">
-              No Invoices Found
+              {isAccountant && assignedBuilding ? (
+                `No Invoices Found for ${assignedBuilding.buildingName}`
+              ) : (
+                "No Invoices Found"
+              )}
             </div>
             <p className="text-sm mt-1">
               Generated invoices will appear here automatically.
+              {isAccountant && assignedBuilding && " (Filtered by your assigned building)"}
             </p>
           </div>
         )}

@@ -9,8 +9,11 @@ import {
   TrendingDown,
   CheckCircle,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const TenantHome: React.FC = () => {
+  const { t } = useTranslation();
+  
   // Current lease information
   const leaseInfo = {
     property: "Main Mall - Unit A-102",
@@ -25,30 +28,30 @@ const TenantHome: React.FC = () => {
   // Quick stats
   const quickStats = [
     {
-      title: "Current Balance",
+      title: "currentBalance",
       value: "$2,500",
-      status: "Due",
+      status: t('tenant.due'),
       color: "text-red-600",
       icon: <CreditCard className="w-6 h-6" />,
     },
     {
-      title: "Last Payment",
+      title: "lastPayment",
       value: "$2,500",
-      status: "Paid Dec 15",
+      status: t('tenant.paid') + " Dec 15",
       color: "text-green-600",
       icon: <CheckCircle className="w-6 h-6" />,
     },
     {
-      title: "Open Invoices",
+      title: "openInvoices",
       value: "1",
-      status: "Unpaid",
+      status: t('tenant.unpaid'),
       color: "text-orange-600",
       icon: <FileText className="w-6 h-6" />,
     },
     {
-      title: "Maintenance",
+      title: "maintenance",
       value: "0",
-      status: "No open requests",
+      status: t('tenant.noOpenRequests'),
       color: "text-stone-600",
       icon: <Wrench className="w-6 h-6" />,
     },
@@ -83,16 +86,16 @@ const TenantHome: React.FC = () => {
 
   // Upcoming dates
   const upcomingDates = [
-    { event: "Rent Due", date: "Jan 15, 2024", important: true },
-    { event: "Lease Renewal", date: "Nov 30, 2024", important: false },
-    { event: "Annual Inspection", date: "Mar 15, 2024", important: false },
+    { event: t('tenant.rentDue'), date: "Jan 15, 2024", important: true },
+    { event: t('tenant.leaseRenewal'), date: "Nov 30, 2024", important: false },
+    { event: t('tenant.annualInspection'), date: "Mar 15, 2024", important: false },
   ];
 
   return (
     <div className="p-4 sm:p-6 space-y-6 min-h-screen bg-stone-50">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-xl shadow-lg p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">Welcome back, John!</h2>
+        <h2 className="text-2xl font-bold mb-2">{t('tenant.welcome')}, John!</h2>
         <p className="text-red-100">
           Here's your current rental account overview and important updates.
         </p>
@@ -108,7 +111,7 @@ const TenantHome: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-sm font-medium text-stone-600">
-                  {stat.title}
+                  {t(`tenant.${stat.title}`)}
                 </p>
                 <p className={`text-2xl font-bold mt-1 ${stat.color}`}>
                   {stat.value}
@@ -125,42 +128,41 @@ const TenantHome: React.FC = () => {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Lease Information */}
+        {/* Current Lease Card */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Current Lease Card */}
           <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
             <h3 className="text-lg font-semibold text-stone-900 mb-4 border-b border-stone-200 pb-2">
-              Current Lease Information
+              {t('tenant.currentLeaseInformation')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-stone-600">Property</p>
+                <p className="text-sm text-stone-600">{t('tenant.property')}</p>
                 <p className="font-semibold text-stone-900">
                   {leaseInfo.property}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-stone-600">Monthly Rent</p>
+                <p className="text-sm text-stone-600">{t('tenant.monthlyRent')}</p>
                 <p className="font-semibold text-stone-900">{leaseInfo.rent}</p>
               </div>
               <div>
-                <p className="text-sm text-stone-600">Next Payment Due</p>
+                <p className="text-sm text-stone-600">{t('tenant.nextPaymentDue')}</p>
                 <p className="font-semibold text-stone-900">
                   {leaseInfo.nextPayment}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-stone-600">Lease End Date</p>
+                <p className="text-sm text-stone-600">{t('tenant.leaseEndDate')}</p>
                 <p className="font-semibold text-stone-900">
                   {leaseInfo.leaseEnd}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-stone-600">Space</p>
+                <p className="text-sm text-stone-600">{t('tenant.space')}</p>
                 <p className="font-semibold text-stone-900">{leaseInfo.space}</p>
               </div>
               <div>
-                <p className="text-sm text-stone-600">Business Type</p>
+                <p className="text-sm text-stone-600">{t('tenant.businessType')}</p>
                 <p className="font-semibold text-stone-900">
                   {leaseInfo.businessType}
                 </p>
@@ -171,7 +173,7 @@ const TenantHome: React.FC = () => {
           {/* Recent Activity */}
           <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
             <h3 className="text-lg font-semibold text-stone-900 mb-4 border-b border-stone-200 pb-2">
-              Recent Activity
+              {t('tenant.recentActivity')}
             </h3>
             <div className="space-y-4">
               {recentActivity.map((activity) => (
@@ -226,7 +228,7 @@ const TenantHome: React.FC = () => {
           {/* Upcoming Dates */}
           <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
             <h3 className="text-lg font-semibold text-stone-900 mb-4 border-b border-stone-200 pb-2">
-              Upcoming Dates
+              {t('tenant.upcomingDates')}
             </h3>
             <div className="space-y-3">
               {upcomingDates.map((date, index) => (
@@ -267,20 +269,20 @@ const TenantHome: React.FC = () => {
           {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
             <h3 className="text-lg font-semibold text-stone-900 mb-4 border-b border-stone-200 pb-2">
-              Quick Actions
+              {t('tenant.quickActions')}
             </h3>
             <div className="space-y-3">
               <button className="w-full flex items-center space-x-3 p-3 text-left bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors duration-150">
                 <FileText className="w-5 h-5" />
-                <span>View Current Invoice</span>
+                <span>{t('tenant.viewCurrentInvoice')}</span>
               </button>
               <button className="w-full flex items-center space-x-3 p-3 text-left bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors duration-150">
                 <CreditCard className="w-5 h-5" />
-                <span>Make a Payment</span>
+                <span>{t('tenant.makePayment')}</span>
               </button>
               <button className="w-full flex items-center space-x-3 p-3 text-left bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors duration-150">
                 <Wrench className="w-5 h-5" />
-                <span>Submit Maintenance Request</span>
+                <span>{t('tenant.submitMaintenanceRequest')}</span>
               </button>
             </div>
           </div>

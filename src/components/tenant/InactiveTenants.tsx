@@ -12,9 +12,30 @@ const InactiveTenants: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage] = useState<number>(10);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [allInactiveTenants, setAllInactiveTenants] = useState<Tenant[]>([]);
+  const [displayInactiveTenants, setDisplayInactiveTenants] = useState<Tenant[]>([]);
+
   useEffect(() => {
     loadInactiveTenants();
   }, []);
+
+  // Update display tenants based on pagination
+  const updateDisplayTenants = (tenants: Tenant[], page: number) => {
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const pageTenants = tenants.slice(startIndex, endIndex);
+    setDisplayInactiveTenants(pageTenants);
+    setInactiveTenants(pageTenants);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    updateDisplayTenants(allInactiveTenants, page);
+  };
 
   const loadInactiveTenants = async (name?: string) => {
     try {
@@ -23,7 +44,10 @@ const InactiveTenants: React.FC = () => {
       const data = name 
         ? await tenantApi.searchInactive(name)
         : await tenantApi.getInactive();
-      setInactiveTenants(data);
+      
+      setAllInactiveTenants(data);
+      setTotalPages(Math.ceil(data.length / itemsPerPage));
+      updateDisplayTenants(data, currentPage);
     } catch (err: any) {
       setError('Failed to load inactive tenants. Please try again.');
       console.error('Error loading inactive tenants:', err);
@@ -33,11 +57,13 @@ const InactiveTenants: React.FC = () => {
   };
 
   const handleSearch = () => {
+    setCurrentPage(1);
     loadInactiveTenants(searchName);
   };
 
   const handleReset = () => {
     setSearchName('');
+    setCurrentPage(1);
     loadInactiveTenants();
   };
 
@@ -47,8 +73,20 @@ const InactiveTenants: React.FC = () => {
       setError('');
       await tenantApi.reactivate(id);
       
-      // Remove from list after reactivation
-      setInactiveTenants(prev => prev.filter(tenant => tenant.id !== id));
+      // Remove from all inactive tenants
+      const updatedInactiveTenants = allInactiveTenants.filter(tenant => tenant.id !== id);
+      setAllInactiveTenants(updatedInactiveTenants);
+      const newTotalPages = Math.ceil(updatedInactiveTenants.length / itemsPerPage);
+      setTotalPages(newTotalPages);
+      
+      // Adjust current page if needed
+      if (currentPage > newTotalPages && currentPage > 1) {
+        const newPage = currentPage - 1;
+        setCurrentPage(newPage);
+        updateDisplayTenants(updatedInactiveTenants, newPage);
+      } else {
+        updateDisplayTenants(updatedInactiveTenants, currentPage);
+      }
       
       setSuccess('Tenant reactivated successfully!');
       setTimeout(() => setSuccess(''), 3000);
@@ -71,7 +109,7 @@ const InactiveTenants: React.FC = () => {
             </p>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold text-gray-900">{inactiveTenants.length}</div>
+            <div className="text-3xl font-bold text-gray-900">{allInactiveTenants.length}</div>
             <div className="text-sm text-gray-500">Inactive Tenants</div>
           </div>
         </div>
@@ -117,16 +155,23 @@ const InactiveTenants: React.FC = () => {
         loading={loading}
       />
 
-      {/* Inactive Tenants List */}
+      {/* Inactive Tenants List with Pagination */}
       <InactiveTenantList
-        tenants={inactiveTenants}
+        tenants={displayInactiveTenants}
         onReactivate={handleReactivate}
         loading={loading}
         reactivatingId={reactivatingId}
+        
+        // Pagination props
+        currentPage={currentPage}
+        itemsPerPage={itemsPerPage}
+        totalItems={allInactiveTenants.length}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
       />
 
       {/* Info Card */}
-      {inactiveTenants.length > 0 && (
+      {allInactiveTenants.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-start">
             <div className="flex-shrink-0">

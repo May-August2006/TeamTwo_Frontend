@@ -1,8 +1,9 @@
 /** @format */
 
 import API from "./api";
-import type { Building, BuildingRequest } from "../types";
+import type { Building, BuildingRequest, Level, Tenant } from "../types";
 import type { Unit } from "../types/unit";
+import type { Contract } from "../types/contract";
 
 // Define BuildingUtilityConfig interface locally
 export interface BuildingUtilityConfig {
@@ -117,4 +118,49 @@ export const buildingApi = {
 
   getOccupiedUnitsByBuilding: (buildingId: number) =>
     API.get<Unit[]>(`/api/units/occupied/by-building/${buildingId}`),
+
+  // getMyAssignedBuilding: () => 
+  //   API.get<{success: boolean, data: Building, message?: string}>('/api/buildings/my-assigned-building'),
+ getMyAssignedBuilding: () => API.get<Building>('/api/buildings/my-assigned-building'),
+getOccupiedUnitsByBuilding: (buildingId: number) => 
+    API.get<Unit[]>(`/api/units/occupied/by-building/${buildingId}`),
+
+// Add these new methods
+  getTenantsByBuilding: (buildingId: number) => 
+    API.get<Tenant[]>(`/api/buildings/${buildingId}/tenants`),
+    
+  getContractsByBuilding: (buildingId: number) => 
+    API.get<Contract[]>(`/api/buildings/${buildingId}/contracts`),
+    
+  getAvailableUnitsByBuilding: (buildingId: number) => 
+    API.get<Unit[]>(`/api/buildings/${buildingId}/available-units`),
+    
+  getLevelsByBuilding: (buildingId: number) => 
+    API.get<Level[]>(`/api/buildings/${buildingId}/levels`),
+    
+  // Get building ID for current manager
+  getMyBuildingId: () => 
+    API.get<{ buildingId: number }>('/api/buildings/my-building-id'),
+  
+    
+  getBuildingInfo: (buildingId: number) => 
+    API.get<{ id: number; buildingName: string; branchName: string }>(`/api/buildings/${buildingId}/info`),
+
+  // Get all data for manager's dashboard
+  getManagerDashboardData: (buildingId: number) => 
+    API.get<{
+      building: Building;
+      tenants: Tenant[];
+      contracts: Contract[];
+      availableUnits: Unit[];
+      levels: Level[];
+      stats: {
+        totalTenants: number;
+        activeContracts: number;
+        expiringContracts: number;
+        vacantUnits: number;
+        occupiedUnits: number;
+      };
+    }>(`/api/buildings/${buildingId}/manager-dashboard`),
+
 };

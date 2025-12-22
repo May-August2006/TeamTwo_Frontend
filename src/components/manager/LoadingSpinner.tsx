@@ -9,7 +9,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 }) => {
   return (
     <div className="flex flex-col items-center justify-center p-6 space-y-4">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E40AF]"></div>
       <p className="text-sm text-gray-600">
         {message}
       </p>

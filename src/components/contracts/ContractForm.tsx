@@ -6,6 +6,7 @@ import { tenantApi } from "../../api/TenantAPI";
 import { unitApi } from "../../api/UnitAPI";
 import { utilityApi } from "../../api/UtilityAPI";
 import { contractApi } from "../../api/ContractAPI";
+import { buildingApi } from "../../api/BuildingAPI";
 import { Button } from "../common/ui/Button";
 import { LoadingSpinner } from "../common/ui/LoadingSpinner";
 import { useNotification } from "../../context/NotificationContext";
@@ -17,6 +18,8 @@ import type {
   ContractDurationType,
   Contract,
 } from "../../types/contract";
+import type { Building } from "../../types";
+import type { Level } from "../../types";
 
 interface ContractFormProps {
   isOpen: boolean;
@@ -28,7 +31,7 @@ interface ContractFormProps {
   isEdit?: boolean;
 }
 
-//  Lease duration options with their month values
+// Lease duration options with their month values
 const contractDurationOptions = [
   { value: "THREE_MONTHS", label: "3 Months", months: 3 },
   { value: "SIX_MONTHS", label: "6 Months", months: 6 },
@@ -45,23 +48,21 @@ const VALIDATION_RULES = {
   minSecurityDeposit: 0,
   maxSecurityDeposit: 999999999,
   minGracePeriodDays: 3,
-  maxGracePeriodDays: 30,
+  maxGracePeriodDays: 7,
   minNoticePeriodDays: 30,
-  maxNoticePeriodDays: 365,
-  minRenewalNoticeDays: 60,
-  maxRenewalNoticeDays: 365,
-  // REMOVED: minUtilitiesCount: 3, // Minimum 3 utilities required
+  maxNoticePeriodDays: 30,
+  minRenewalNoticeDays: 30,
+  maxRenewalNoticeDays: 60,
   maxContractTermsLength: 5000,
-  // Character limits for ALL fields
   maxContractNumberLength: 20,
   maxTerminationReasonLength: 500,
-  maxTenantNameLength: 100,
-  maxEmailLength: 100,
+  maxTenantNameLength: 50,
+  maxEmailLength: 50,
   maxPhoneLength: 20,
   maxContactPersonLength: 100,
   maxAddressLength: 500,
   maxNrcLength: 20,
-  maxUnitNumberLength: 50,
+  maxUnitNumberLength: 6,
   maxBuildingNameLength: 100,
   maxLevelNameLength: 50,
   maxUtilityNameLength: 100,
@@ -87,6 +88,7 @@ export const ContractForm: React.FC<ContractFormProps> = ({
     contractNumber: string;
     tenantId: number;
     unitId: number;
+    levelId: number;
     startDate: string;
     endDate: string;
     rentalFee: number;
@@ -105,17 +107,15 @@ export const ContractForm: React.FC<ContractFormProps> = ({
     contractNumber: initialData?.contractNumber || `SGH-${currentYear}-`,
     tenantId: initialData?.tenant?.id || 0,
     unitId: initialData?.unit?.id || 0,
-    startDate: initialData?.startDate || "", // Empty by default
-    endDate: initialData?.endDate || "", // Empty by default
+    levelId: initialData?.unit?.level?.id || 0,
+    startDate: initialData?.startDate || "",
+    endDate: initialData?.endDate || "",
     rentalFee: initialData?.rentalFee || 0,
     securityDeposit: initialData?.securityDeposit || 0,
-    contractDurationType: initialData?.contractDurationType || "", // Empty by default
-    gracePeriodDays:
-      initialData?.gracePeriodDays || VALIDATION_RULES.minGracePeriodDays,
-    noticePeriodDays:
-      initialData?.noticePeriodDays || VALIDATION_RULES.minNoticePeriodDays,
-    renewalNoticeDays:
-      initialData?.renewalNoticeDays || VALIDATION_RULES.minRenewalNoticeDays,
+    contractDurationType: initialData?.contractDurationType || "",
+    gracePeriodDays: initialData?.gracePeriodDays || 3,
+    noticePeriodDays: initialData?.noticePeriodDays || 30,
+    renewalNoticeDays: initialData?.renewalNoticeDays || 30,
     contractTerms: initialData?.contractTerms || "",
     utilityTypeIds: initialData?.includedUtilities?.map((u) => u.id) || [],
     agreedToTerms: isEdit || isRenewal ? true : false,
@@ -123,8 +123,11 @@ export const ContractForm: React.FC<ContractFormProps> = ({
   });
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [units, setUnits] = useState<Unit[]>([]);
+  const [allUnits, setAllUnits] = useState<Unit[]>([]);
+  const [filteredUnits, setFilteredUnits] = useState<Unit[]>([]);
   const [utilities, setUtilities] = useState<UtilityType[]>([]);
+  const [levels, setLevels] = useState<Level[]>([]);
+  const [assignedBuilding, setAssignedBuilding] = useState<Building | null>(null);
 
   const [searchTerm, setSearchTerm] = useState({
     tenant: initialData?.tenant?.tenantName || "",
@@ -132,13 +135,15 @@ export const ContractForm: React.FC<ContractFormProps> = ({
   });
 
   const [filteredTenants, setFilteredTenants] = useState<Tenant[]>([]);
-  const [filteredUnits, setFilteredUnits] = useState<Unit[]>([]);
 
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(
     initialData?.tenant || null
   );
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(
     initialData?.unit || null
+  );
+  const [selectedLevel, setSelectedLevel] = useState<Level | null>(
+    initialData?.unit?.level || null
   );
   const [selectedUtilityIds, setSelectedUtilityIds] = useState<number[]>(
     initialData?.includedUtilities?.map((u) => u.id) || []
@@ -148,6 +153,8 @@ export const ContractForm: React.FC<ContractFormProps> = ({
   const [tenantsLoading, setTenantsLoading] = useState(false);
   const [unitsLoading, setUnitsLoading] = useState(false);
   const [utilitiesLoading, setUtilitiesLoading] = useState(false);
+  const [levelsLoading, setLevelsLoading] = useState(false);
+  const [buildingLoading, setBuildingLoading] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showDropdown, setShowDropdown] = useState({
@@ -165,7 +172,6 @@ export const ContractForm: React.FC<ContractFormProps> = ({
   const [calculatedRentalFee, setCalculatedRentalFee] = useState(
     initialData?.rentalFee || 0
   );
-  const [rentalFeeEditable, setRentalFeeEditable] = useState(false);
   const [utilitiesError, setUtilitiesError] = useState("");
 
   const tenantInputRef = useRef<HTMLInputElement>(null);
@@ -173,6 +179,8 @@ export const ContractForm: React.FC<ContractFormProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const contractNumberInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const gracePeriodRef = useRef<HTMLInputElement>(null);
+  const renewalNoticeRef = useRef<HTMLInputElement>(null);
 
   const termsContent = `
 TERMS AND CONDITIONS FOR COMMERCIAL LEASE AGREEMENT
@@ -209,6 +217,22 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
 
 By agreeing to these terms, you acknowledge that you have read, understood, and agree to be bound by all terms and conditions stated above.
   `.trim();
+
+  // Calculate deposit months based on duration
+  const getDepositMonths = (durationType: ContractDurationType | ""): number => {
+    switch (durationType) {
+      case "THREE_MONTHS":
+        return 0.5; // 50% of 1 month = 0.5 months
+      case "SIX_MONTHS":
+        return 1; // 1 month
+      case "ONE_YEAR":
+        return 1.5; // 1.5 months
+      case "TWO_YEARS":
+        return 2; // 2 months
+      default:
+        return 0;
+    }
+  };
 
   // Calculate end date when start date or duration changes
   const calculateEndDate = (
@@ -257,17 +281,15 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
       contractNumber: initialData?.contractNumber || `SGH-${currentYear}-`,
       tenantId: initialData?.tenant?.id || 0,
       unitId: initialData?.unit?.id || 0,
-      startDate: initialData?.startDate || "", // Empty by default
-      endDate: initialData?.endDate || "", // Empty by default
+      levelId: initialData?.unit?.level?.id || 0,
+      startDate: initialData?.startDate || "",
+      endDate: initialData?.endDate || "",
       rentalFee: initialData?.rentalFee || 0,
       securityDeposit: initialData?.securityDeposit || 0,
-      contractDurationType: initialData?.contractDurationType || "", // Empty by default
-      gracePeriodDays:
-        initialData?.gracePeriodDays || VALIDATION_RULES.minGracePeriodDays,
-      noticePeriodDays:
-        initialData?.noticePeriodDays || VALIDATION_RULES.minNoticePeriodDays,
-      renewalNoticeDays:
-        initialData?.renewalNoticeDays || VALIDATION_RULES.minRenewalNoticeDays,
+      contractDurationType: initialData?.contractDurationType || "",
+      gracePeriodDays: initialData?.gracePeriodDays || 3,
+      noticePeriodDays: initialData?.noticePeriodDays || 30,
+      renewalNoticeDays: initialData?.renewalNoticeDays || 30,
       contractTerms: initialData?.contractTerms || "",
       utilityTypeIds: initialData?.includedUtilities?.map((u) => u.id) || [],
       agreedToTerms: isEdit || isRenewal ? true : false,
@@ -275,13 +297,13 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
     });
     setSelectedTenant(initialData?.tenant || null);
     setSelectedUnit(initialData?.unit || null);
+    setSelectedLevel(initialData?.unit?.level || null);
     setSelectedUtilityIds(
       initialData?.includedUtilities?.map((u) => u.id) || []
     );
     setSelectedFile(null);
     setAgreedToTerms(isEdit || isRenewal ? true : false);
     setManualEndDate(false);
-    setRentalFeeEditable(false);
     setErrors({});
     setFileError("");
     setUtilitiesError("");
@@ -306,82 +328,141 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
   };
 
   const loadInitialData = async () => {
-  try {
-    setTenantsLoading(true);
-    setUnitsLoading(true);
-    setUtilitiesLoading(true);
-
-    // Load tenants
-    const tenantsResponse = await tenantApi.getAll();
-    const tenantsData = extractArrayData<Tenant>(tenantsResponse);
-    setTenants(tenantsData);
-
-    // Load units
-    let unitsResponse;
-    if (isEdit || isRenewal) {
-      unitsResponse = await unitApi.getAll();
-    } else {
-      unitsResponse = await unitApi.getAvailable();
-    }
-    const unitsData = extractArrayData<Unit>(unitsResponse);
-    setUnits(unitsData);
-
-    // Load utilities
     try {
-      const utilitiesResponse = await utilityApi.getAll();
-      const utilitiesData = extractArrayData<UtilityType>(utilitiesResponse);
-      
-      // Filter out Generator and Transformer utilities (these are building-level fees)
-      const filteredUtilities = utilitiesData.filter(utility => 
-        !utility.utilityName.toLowerCase().includes('generator') && 
-        !utility.utilityName.toLowerCase().includes('transformer')
-      );
-      
-      setUtilities(filteredUtilities);
+      setTenantsLoading(true);
+      setUnitsLoading(true);
+      setUtilitiesLoading(true);
+      setLevelsLoading(true);
+      setBuildingLoading(true);
 
-      // IMPORTANT: If editing/renewing a SPACE type unit, remove Electricity and Water
-      if ((isEdit || isRenewal) && initialData?.unit?.unitType === "SPACE") {
-        const electricityUtility = filteredUtilities.find(u => 
-          u.utilityName.toLowerCase().includes('electricity')
-        );
-        const waterUtility = filteredUtilities.find(u => 
-          u.utilityName.toLowerCase().includes('water')
-        );
-        
-        let newUtilityIds = [...selectedUtilityIds];
-        let changed = false;
-        
-        if (electricityUtility && newUtilityIds.includes(electricityUtility.id)) {
-          newUtilityIds = newUtilityIds.filter(id => id !== electricityUtility.id);
-          changed = true;
+      // Load assigned building for manager
+      try {
+        const buildingResponse = await buildingApi.getMyAssignedBuilding();
+        if (buildingResponse && buildingResponse.data) {
+          setAssignedBuilding(buildingResponse.data);
+          
+          // Load levels for assigned building
+          const levelsResponse = await buildingApi.getLevelsByBuilding(buildingResponse.data.id);
+          const levelsData = extractArrayData<Level>(levelsResponse);
+          setLevels(levelsData);
         }
-        
-        if (waterUtility && newUtilityIds.includes(waterUtility.id)) {
-          newUtilityIds = newUtilityIds.filter(id => id !== waterUtility.id);
-          changed = true;
-        }
-        
-        if (changed) {
-          setSelectedUtilityIds(newUtilityIds);
-          setFormData((prev) => ({
-            ...prev,
-            utilityTypeIds: newUtilityIds,
-          }));
+      } catch (buildingError) {
+        console.error("Failed to load assigned building:", buildingError);
+        showError("Failed to load your assigned building. Please try again.");
+      }
+
+      // Load tenants
+      const tenantsResponse = await tenantApi.getAll();
+      const tenantsData = extractArrayData<Tenant>(tenantsResponse);
+      setTenants(tenantsData);
+
+      // Load units based on edit/renewal
+      let unitsResponse;
+      if (isEdit || isRenewal) {
+        unitsResponse = await unitApi.getAll();
+      } else {
+        // Get available units for manager's building
+        if (assignedBuilding) {
+          unitsResponse = await buildingApi.getAvailableUnitsByBuilding(assignedBuilding.id);
+        } else {
+          unitsResponse = await unitApi.getAvailable();
         }
       }
-    } catch (utilityError) {
-      console.warn("Failed to load utilities:", utilityError);
-      setUtilities([]);
+      const unitsData = extractArrayData<Unit>(unitsResponse);
+      setAllUnits(unitsData);
+
+      // Load utilities
+      try {
+        const utilitiesResponse = await utilityApi.getAll();
+        const utilitiesData = extractArrayData<UtilityType>(utilitiesResponse);
+        
+        // Filter out Generator and Transformer utilities (these are building-level fees)
+        const filteredUtilities = utilitiesData.filter(utility => 
+          !utility.utilityName.toLowerCase().includes('generator') && 
+          !utility.utilityName.toLowerCase().includes('transformer')
+        );
+        
+        setUtilities(filteredUtilities);
+
+        // IMPORTANT: If editing/renewing a SPACE type unit, remove Electricity and Water
+        if ((isEdit || isRenewal) && initialData?.unit?.unitType === "SPACE") {
+          const electricityUtility = filteredUtilities.find(u => 
+            u.utilityName.toLowerCase().includes('electricity')
+          );
+          const waterUtility = filteredUtilities.find(u => 
+            u.utilityName.toLowerCase().includes('water')
+          );
+          
+          let newUtilityIds = [...selectedUtilityIds];
+          let changed = false;
+          
+          if (electricityUtility && newUtilityIds.includes(electricityUtility.id)) {
+            newUtilityIds = newUtilityIds.filter(id => id !== electricityUtility.id);
+            changed = true;
+          }
+          
+          if (waterUtility && newUtilityIds.includes(waterUtility.id)) {
+            newUtilityIds = newUtilityIds.filter(id => id !== waterUtility.id);
+            changed = true;
+          }
+          
+          if (changed) {
+            setSelectedUtilityIds(newUtilityIds);
+            setFormData((prev) => ({
+              ...prev,
+              utilityTypeIds: newUtilityIds,
+            }));
+          }
+        }
+      } catch (utilityError) {
+        console.warn("Failed to load utilities:", utilityError);
+        setUtilities([]);
+      }
+
+    } catch (error) {
+      console.error("Error loading initial data:", error);
+      showError("Failed to load form data. Please try again.");
+    } finally {
+      setTenantsLoading(false);
+      setUnitsLoading(false);
+      setUtilitiesLoading(false);
+      setLevelsLoading(false);
+      setBuildingLoading(false);
     }
-  } catch (error) {
-    console.error("Error loading initial data:", error);
-    showError("Failed to load form data. Please try again.");
-  } finally {
-    setTenantsLoading(false);
-    setUnitsLoading(false);
-    setUtilitiesLoading(false);
-  }
-};
+  };
+
+  // Load levels when building is set
+  useEffect(() => {
+    const loadLevelsForBuilding = async () => {
+      if (assignedBuilding) {
+        try {
+          setLevelsLoading(true);
+          const levelsResponse = await buildingApi.getLevelsByBuilding(assignedBuilding.id);
+          const levelsData = extractArrayData<Level>(levelsResponse);
+          setLevels(levelsData);
+        } catch (error) {
+          console.error("Failed to load levels:", error);
+          setLevels([]);
+        } finally {
+          setLevelsLoading(false);
+        }
+      }
+    };
+
+    loadLevelsForBuilding();
+  }, [assignedBuilding]);
+
+  // Filter units when level changes
+  useEffect(() => {
+    if (selectedLevel) {
+      const filtered = allUnits.filter(unit => 
+        unit.level?.id === selectedLevel.id
+      );
+      setFilteredUnits(filtered);
+    } else {
+      setFilteredUnits(allUnits);
+    }
+  }, [selectedLevel, allUnits]);
 
   // Calculate end date when start date or duration changes
   useEffect(() => {
@@ -396,7 +477,7 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
 
   // Calculate rental fee when unit or duration changes
   useEffect(() => {
-    if (selectedUnit && formData.contractDurationType && !rentalFeeEditable) {
+    if (selectedUnit && formData.contractDurationType) {
       const unitRentalFee = selectedUnit.rentalFee || 0;
       const calculatedFee = calculateRentalFee(
         unitRentalFee,
@@ -405,7 +486,21 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
       setCalculatedRentalFee(calculatedFee);
       setFormData((prev) => ({ ...prev, rentalFee: calculatedFee }));
     }
-  }, [selectedUnit, formData.contractDurationType, rentalFeeEditable]);
+  }, [selectedUnit, formData.contractDurationType]);
+
+  // Calculate security deposit when unit or duration changes
+  useEffect(() => {
+    if (selectedUnit && formData.contractDurationType) {
+      const unitRentalFee = selectedUnit.rentalFee || 0;
+      const depositMonths = getDepositMonths(formData.contractDurationType);
+      const calculatedDeposit = Math.round(unitRentalFee * depositMonths);
+      
+      setFormData((prev) => ({ 
+        ...prev, 
+        securityDeposit: calculatedDeposit 
+      }));
+    }
+  }, [selectedUnit, formData.contractDurationType]);
 
   // Set next day as start date for renewal
   useEffect(() => {
@@ -439,84 +534,13 @@ By agreeing to these terms, you acknowledge that you have read, understood, and 
     }
   }, [searchTerm.tenant, tenants]);
 
-  useEffect(() => {
-    if (searchTerm.unit.trim()) {
-      const filtered = units.filter(
-        (unit) =>
-          (unit.unitNumber
-            ?.toLowerCase()
-            .includes(searchTerm.unit.toLowerCase()) ||
-            "") &&
-          unit.unitNumber?.length <= VALIDATION_RULES.maxUnitNumberLength
-      );
-      setFilteredUnits(filtered);
-    } else {
-      setFilteredUnits([]);
-    }
-  }, [searchTerm.unit, units]);
-
   // Auto-select Electricity and Water when ROOM type unit is selected
-// Hide Electricity and Water when SPACE type unit is selected
-useEffect(() => {
-  if (selectedUnit) {
-    let newUtilityIds = [...selectedUtilityIds];
-    let changed = false;
-    
-    // Find Electricity and Water utility IDs
-    const electricityUtility = utilities.find(u => 
-      u.utilityName.toLowerCase().includes('electricity')
-    );
-    const waterUtility = utilities.find(u => 
-      u.utilityName.toLowerCase().includes('water')
-    );
-    
-    if (selectedUnit.unitType === "ROOM") {
-      // Auto-select Electricity and Water for ROOM type
-      if (electricityUtility && !newUtilityIds.includes(electricityUtility.id)) {
-        newUtilityIds.push(electricityUtility.id);
-        changed = true;
-      }
+  // Hide Electricity and Water when SPACE type unit is selected
+  useEffect(() => {
+    if (selectedUnit) {
+      let newUtilityIds = [...selectedUtilityIds];
+      let changed = false;
       
-      if (waterUtility && !newUtilityIds.includes(waterUtility.id)) {
-        newUtilityIds.push(waterUtility.id);
-        changed = true;
-      }
-      
-      if (changed) {
-        showSuccess("Electricity and Water utilities auto-selected for ROOM type unit");
-      }
-    } else if (selectedUnit.unitType === "SPACE") {
-      // Auto-remove Electricity and Water for SPACE type
-      if (electricityUtility && newUtilityIds.includes(electricityUtility.id)) {
-        newUtilityIds = newUtilityIds.filter(id => id !== electricityUtility.id);
-        changed = true;
-      }
-      
-      if (waterUtility && newUtilityIds.includes(waterUtility.id)) {
-        newUtilityIds = newUtilityIds.filter(id => id !== waterUtility.id);
-        changed = true;
-      }
-      
-      if (changed) {
-        showSuccess("Electricity and Water utilities removed for SPACE type unit");
-      }
-    }
-    
-    if (changed) {
-      setSelectedUtilityIds(newUtilityIds);
-      setFormData((prev) => ({
-        ...prev,
-        utilityTypeIds: newUtilityIds,
-      }));
-    }
-  }
-}, [selectedUnit, utilities, selectedUtilityIds, showSuccess, isEdit, isRenewal]);
-
-
-// Handle initial loading for edit/renewal cases
-useEffect(() => {
-  if ((isEdit || isRenewal) && initialData && selectedUnit && utilities.length > 0) {
-    if (selectedUnit.unitType === "SPACE") {
       // Find Electricity and Water utility IDs
       const electricityUtility = utilities.find(u => 
         u.utilityName.toLowerCase().includes('electricity')
@@ -525,17 +549,36 @@ useEffect(() => {
         u.utilityName.toLowerCase().includes('water')
       );
       
-      let newUtilityIds = [...selectedUtilityIds];
-      let changed = false;
-      
-      if (electricityUtility && newUtilityIds.includes(electricityUtility.id)) {
-        newUtilityIds = newUtilityIds.filter(id => id !== electricityUtility.id);
-        changed = true;
-      }
-      
-      if (waterUtility && newUtilityIds.includes(waterUtility.id)) {
-        newUtilityIds = newUtilityIds.filter(id => id !== waterUtility.id);
-        changed = true;
+      if (selectedUnit.unitType === "ROOM") {
+        // Auto-select Electricity and Water for ROOM type
+        if (electricityUtility && !newUtilityIds.includes(electricityUtility.id)) {
+          newUtilityIds.push(electricityUtility.id);
+          changed = true;
+        }
+        
+        if (waterUtility && !newUtilityIds.includes(waterUtility.id)) {
+          newUtilityIds.push(waterUtility.id);
+          changed = true;
+        }
+        
+        if (changed) {
+          showSuccess("Electricity and Water utilities auto-selected for ROOM type unit");
+        }
+      } else if (selectedUnit.unitType === "SPACE") {
+        // Auto-remove Electricity and Water for SPACE type
+        if (electricityUtility && newUtilityIds.includes(electricityUtility.id)) {
+          newUtilityIds = newUtilityIds.filter(id => id !== electricityUtility.id);
+          changed = true;
+        }
+        
+        if (waterUtility && newUtilityIds.includes(waterUtility.id)) {
+          newUtilityIds = newUtilityIds.filter(id => id !== waterUtility.id);
+          changed = true;
+        }
+        
+        if (changed) {
+          showSuccess("Electricity and Water utilities removed for SPACE type unit");
+        }
       }
       
       if (changed) {
@@ -546,8 +589,43 @@ useEffect(() => {
         }));
       }
     }
-  }
-}, [isEdit, isRenewal, initialData, selectedUnit, utilities, selectedUtilityIds]);
+  }, [selectedUnit, utilities, selectedUtilityIds, showSuccess, isEdit, isRenewal]);
+
+  // Handle initial loading for edit/renewal cases
+  useEffect(() => {
+    if ((isEdit || isRenewal) && initialData && selectedUnit && utilities.length > 0) {
+      if (selectedUnit.unitType === "SPACE") {
+        // Find Electricity and Water utility IDs
+        const electricityUtility = utilities.find(u => 
+          u.utilityName.toLowerCase().includes('electricity')
+        );
+        const waterUtility = utilities.find(u => 
+          u.utilityName.toLowerCase().includes('water')
+        );
+        
+        let newUtilityIds = [...selectedUtilityIds];
+        let changed = false;
+        
+        if (electricityUtility && newUtilityIds.includes(electricityUtility.id)) {
+          newUtilityIds = newUtilityIds.filter(id => id !== electricityUtility.id);
+          changed = true;
+        }
+        
+        if (waterUtility && newUtilityIds.includes(waterUtility.id)) {
+          newUtilityIds = newUtilityIds.filter(id => id !== waterUtility.id);
+          changed = true;
+        }
+        
+        if (changed) {
+          setSelectedUtilityIds(newUtilityIds);
+          setFormData((prev) => ({
+            ...prev,
+            utilityTypeIds: newUtilityIds,
+          }));
+        }
+      }
+    }
+  }, [isEdit, isRenewal, initialData, selectedUnit, utilities, selectedUtilityIds]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -690,32 +768,40 @@ useEffect(() => {
 
   const selectUnit = (unit: Unit) => {
     setSelectedUnit(unit);
+    setSelectedLevel(unit.level || null);
     const unitRentalFee = unit.rentalFee || 0;
 
-    // Only calculate fee if duration is selected
+    // Calculate rental fee if duration is selected
     if (formData.contractDurationType) {
       const calculatedFee = calculateRentalFee(
         unitRentalFee,
         formData.contractDurationType
       );
       setCalculatedRentalFee(calculatedFee);
+      
+      // Calculate security deposit
+      const depositMonths = getDepositMonths(formData.contractDurationType);
+      const calculatedDeposit = Math.round(unitRentalFee * depositMonths);
+      
       setFormData((prev) => ({
         ...prev,
         unitId: unit.id,
+        levelId: unit.level?.id || 0,
         rentalFee: calculatedFee,
+        securityDeposit: calculatedDeposit,
       }));
     } else {
       setFormData((prev) => ({
         ...prev,
         unitId: unit.id,
+        levelId: unit.level?.id || 0,
         rentalFee: unitRentalFee, // Just use monthly fee
+        securityDeposit: 0, // Reset deposit if no duration selected
       }));
     }
 
-    setRentalFeeEditable(false);
     setSearchTerm((prev) => ({ ...prev, unit: unit.unitNumber || "" }));
     setShowDropdown((prev) => ({ ...prev, unit: false }));
-    setFilteredUnits([]);
 
     // Clear unit error
     if (errors.unitId) {
@@ -727,40 +813,52 @@ useEffect(() => {
     }
   };
 
+  const handleLevelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const levelId = parseInt(e.target.value);
+    const selected = levels.find(l => l.id === levelId) || null;
+    setSelectedLevel(selected);
+    setFormData((prev) => ({ ...prev, levelId }));
+    
+    // Clear unit selection when level changes
+    if (selectedUnit && selectedUnit.level?.id !== levelId) {
+      clearUnitSelection();
+    }
+  };
+
   const handleUtilityToggle = (utilityId: number) => {
-  // Check if this utility is Electricity or Water for a SPACE type unit
-  const utility = utilities.find(u => u.id === utilityId);
-  const isElectricityOrWater = utility && 
-    (utility.utilityName.toLowerCase().includes('electricity') || 
-     utility.utilityName.toLowerCase().includes('water'));
-  
-  // Don't allow toggling Electricity/Water for SPACE type units
-  if (selectedUnit?.unitType === "SPACE" && isElectricityOrWater) {
-    showError("Electricity and Water are not applicable for SPACE type units");
-    return;
-  }
+    // Check if this utility is Electricity or Water for a SPACE type unit
+    const utility = utilities.find(u => u.id === utilityId);
+    const isElectricityOrWater = utility && 
+      (utility.utilityName.toLowerCase().includes('electricity') || 
+       utility.utilityName.toLowerCase().includes('water'));
+    
+    // Don't allow toggling Electricity/Water for SPACE type units
+    if (selectedUnit?.unitType === "SPACE" && isElectricityOrWater) {
+      showError("Electricity and Water are not applicable for SPACE type units");
+      return;
+    }
 
-  const newUtilityIds = selectedUtilityIds.includes(utilityId)
-    ? selectedUtilityIds.filter((id) => id !== utilityId)
-    : [...selectedUtilityIds, utilityId];
+    const newUtilityIds = selectedUtilityIds.includes(utilityId)
+      ? selectedUtilityIds.filter((id) => id !== utilityId)
+      : [...selectedUtilityIds, utilityId];
 
-  setSelectedUtilityIds(newUtilityIds);
-  setFormData((prev) => ({
-    ...prev,
-    utilityTypeIds: newUtilityIds,
-  }));
+    setSelectedUtilityIds(newUtilityIds);
+    setFormData((prev) => ({
+      ...prev,
+      utilityTypeIds: newUtilityIds,
+    }));
 
-  // Clear utilities error when user selects/deselects
-  if (utilitiesError) {
-    setUtilitiesError("");
-  }
-};
+    // Clear utilities error when user selects/deselects
+    if (utilitiesError) {
+      setUtilitiesError("");
+    }
+  };
 
   // STRICT VALIDATION FUNCTION
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // 1.  Lease Number validation (STRICT)
+    // 1. Lease Number validation (STRICT)
     if (!formData.contractNumber.trim()) {
       newErrors.contractNumber = "Contract number is required";
     } else if (
@@ -784,12 +882,17 @@ useEffect(() => {
       newErrors.unitId = "Please select a unit";
     }
 
-    // 4.  Lease Duration validation (STRICT)
+    // 4. Level validation (STRICT)
+    if (!formData.levelId || formData.levelId === 0) {
+      newErrors.levelId = "Please select a level";
+    }
+
+    // 5. Lease Duration validation (STRICT)
     if (!formData.contractDurationType) {
       newErrors.contractDurationType = "Contract duration is required";
     }
 
-    // 5. Start Date validation (STRICT)
+    // 6. Start Date validation (STRICT)
     if (!formData.startDate) {
       newErrors.startDate = "Start date is required";
     } else {
@@ -802,7 +905,7 @@ useEffect(() => {
       }
     }
 
-    // 6. End Date validation (STRICT)
+    // 7. End Date validation (STRICT) - Now uneditable but still required
     if (!formData.endDate) {
       newErrors.endDate = "End date is required";
     } else if (
@@ -813,7 +916,7 @@ useEffect(() => {
       newErrors.endDate = "End date must be after start date";
     }
 
-    // 7. Rental Fee validation (STRICT)
+    // 8. Rental Fee validation (STRICT) - Now uneditable
     if (
       !formData.rentalFee ||
       formData.rentalFee < VALIDATION_RULES.minRentalFee
@@ -823,7 +926,7 @@ useEffect(() => {
       newErrors.rentalFee = `Rental fee cannot exceed ${VALIDATION_RULES.maxRentalFee.toLocaleString()} MMK`;
     }
 
-    // 8. Security Deposit validation
+    // 9. Security Deposit validation
     if (
       formData.securityDeposit &&
       formData.securityDeposit < VALIDATION_RULES.minSecurityDeposit
@@ -836,23 +939,18 @@ useEffect(() => {
       newErrors.securityDeposit = `Security deposit cannot exceed ${VALIDATION_RULES.maxSecurityDeposit.toLocaleString()} MMK`;
     }
 
-    // 9. Grace Period validation - REQUIRED
-    if (
-      formData.gracePeriodDays < VALIDATION_RULES.minGracePeriodDays ||
-      formData.gracePeriodDays > VALIDATION_RULES.maxGracePeriodDays
-    ) {
+    // 10. Grace Period validation - 3 to 7 days only
+    if (formData.gracePeriodDays < VALIDATION_RULES.minGracePeriodDays ||
+        formData.gracePeriodDays > VALIDATION_RULES.maxGracePeriodDays) {
       newErrors.gracePeriodDays = `Grace period must be between ${VALIDATION_RULES.minGracePeriodDays} and ${VALIDATION_RULES.maxGracePeriodDays} days`;
     }
 
-    // 10. Notice Period validation - REQUIRED
-    if (
-      formData.noticePeriodDays < VALIDATION_RULES.minNoticePeriodDays ||
-      formData.noticePeriodDays > VALIDATION_RULES.maxNoticePeriodDays
-    ) {
-      newErrors.noticePeriodDays = `Notice period must be between ${VALIDATION_RULES.minNoticePeriodDays} and ${VALIDATION_RULES.maxNoticePeriodDays} days`;
+    // 11. Notice Period validation - Fixed at 30 days
+    if (formData.noticePeriodDays !== 30) {
+      newErrors.noticePeriodDays = "Notice period is fixed at 30 days";
     }
 
-    // 11. Renewal Notice validation - REQUIRED
+    // 12. Renewal Notice validation - 30 to 60 days only
     if (
       formData.renewalNoticeDays < VALIDATION_RULES.minRenewalNoticeDays ||
       formData.renewalNoticeDays > VALIDATION_RULES.maxRenewalNoticeDays
@@ -860,16 +958,13 @@ useEffect(() => {
       newErrors.renewalNoticeDays = `Renewal notice must be between ${VALIDATION_RULES.minRenewalNoticeDays} and ${VALIDATION_RULES.maxRenewalNoticeDays} days`;
     }
 
-    // 12.  Lease Terms validation with character limit (STRICT)
+    // 13. Lease Terms validation with character limit (STRICT)
     if (
       formData.contractTerms &&
       formData.contractTerms.length > VALIDATION_RULES.maxContractTermsLength
     ) {
       newErrors.contractTerms = `Contract terms cannot exceed ${VALIDATION_RULES.maxContractTermsLength} characters`;
     }
-
-    // 13. REMOVED: Utilities validation - AT LEAST 3 REQUIRED
-    // No minimum utilities requirement
 
     // 14. Terms agreement validation (STRICT - MOST IMPORTANT FIX)
     if (!agreedToTerms && !isEdit) {
@@ -995,14 +1090,14 @@ useEffect(() => {
     } catch (error: any) {
       console.error("Submission error:", error);
 
-      // SPECIFIC HANDLING FOR DUPLICATE  Lease NUMBER
+      // SPECIFIC HANDLING FOR DUPLICATE Lease NUMBER
       if (
         error.response?.data?.error?.includes("already exists") ||
         error.response?.data?.contractNumber?.includes("already exists") ||
         error.message?.includes("already exists")
       ) {
         showError(
-          "Contract number already exists. Please use a different  Lease number."
+          "Contract number already exists. Please use a different Lease number."
         );
         setErrors((prev) => ({
           ...prev,
@@ -1010,7 +1105,7 @@ useEffect(() => {
             "Contract number already exists. Please use a different number.",
         }));
 
-        // Focus on  Lease number field
+        // Focus on Lease number field
         setTimeout(() => {
           contractNumberInputRef.current?.focus();
           contractNumberInputRef.current?.scrollIntoView({
@@ -1105,16 +1200,27 @@ useEffect(() => {
 
     // Handle different input types
     if (type === "number") {
-      const numericValue = value.replace(/^0+/, "") || "0";
-      const numValue = parseFloat(numericValue) || 0;
+      // For empty value, set to default
+      if (value === "") {
+        if (name === "gracePeriodDays") {
+          setFormData((prev) => ({ ...prev, [name]: 3 }));
+        } else if (name === "renewalNoticeDays") {
+          setFormData((prev) => ({ ...prev, [name]: 30 }));
+        } else if (name === "noticePeriodDays") {
+          setFormData((prev) => ({ ...prev, [name]: 30 }));
+        } else {
+          setFormData((prev) => ({ ...prev, [name]: 0 }));
+        }
+      } else {
+        const numValue = parseFloat(value) || 0;
+        setFormData((prev) => ({
+          ...prev,
+          [name]: numValue,
+        }));
 
-      setFormData((prev) => ({
-        ...prev,
-        [name]: numValue,
-      }));
-
-      if (name === "rentalFee") {
-        setCalculatedRentalFee(numValue);
+        if (name === "rentalFee") {
+          setCalculatedRentalFee(numValue);
+        }
       }
     } else {
       setFormData((prev) => ({
@@ -1128,105 +1234,182 @@ useEffect(() => {
     }
   };
 
-  // STRICT:  Lease number change handler
+  // STRICT: Lease number change handler
   const handleContractNumberChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    let value = e.target.value.toUpperCase();
-
-    if (!value.startsWith("SGH-")) {
-      value = `SGH-${currentYear}-`;
-    }
-
-    if (value.startsWith("SGH-") && value.length <= 8) {
-      const prefix = `SGH-${currentYear}-`;
-      if (!value.includes(currentYear.toString())) {
-        value = `SGH-${currentYear}-`;
-      }
-    }
-
-    const match = value.match(/^(SGH-\d{4}-)(\d*)$/);
-    if (match) {
-      const prefix = match[1];
-      let numbers = match[2].replace(/\D/g, "");
-
-      numbers = numbers.slice(0, 4);
-
-      value = prefix + numbers;
-    }
-
-    // STRICT: Enforce character limit
-    if (value.length > VALIDATION_RULES.contractNumberMaxLength) {
-      setErrors((prev) => ({
-        ...prev,
-        contractNumber: `Maximum ${VALIDATION_RULES.contractNumberMaxLength} characters allowed`,
-      }));
-      showWarning(
-        `Contract number cannot exceed ${VALIDATION_RULES.contractNumberMaxLength} characters`
-      );
-      return;
-    }
-
+  e: React.ChangeEvent<HTMLInputElement>
+) => {
+  const value = e.target.value.toUpperCase();
+  const fullPrefix = `SGH-${currentYear}-`;
+  
+  // If value is empty or doesn't start with prefix, restore prefix
+  if (value === '' || !value.startsWith(fullPrefix)) {
+    // Always restore the full prefix
     setFormData((prev) => ({
       ...prev,
-      contractNumber: value,
+      contractNumber: fullPrefix,
     }));
+    return;
+  }
+  
+  // User can only edit the numbers part
+  const numbersPart = value.slice(fullPrefix.length);
+  const numbersOnly = numbersPart.replace(/\D/g, '').slice(0, 4);
+  
+  setFormData((prev) => ({
+    ...prev,
+    contractNumber: fullPrefix + numbersOnly,
+  }));
 
-    // Clear  Lease number error when user types
-    if (errors.contractNumber) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors.contractNumber;
-        return newErrors;
-      });
-    }
-  };
+  // Clear error
+  if (errors.contractNumber) {
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors.contractNumber;
+      return newErrors;
+    });
+  }
+};
 
-  const handleContractNumberFocus = () => {
-    if (contractNumberInputRef.current) {
-      const value = contractNumberInputRef.current.value;
-      const prefixLength = `SGH-${currentYear}-`.length;
-      if (value.length > prefixLength) {
+const handleContractNumberFocus = () => {
+  if (contractNumberInputRef.current) {
+    const value = contractNumberInputRef.current.value;
+    const prefixLength = `SGH-${currentYear}-`.length;
+    
+    // Always move cursor to numbers area
+    setTimeout(() => {
+      if (contractNumberInputRef.current) {
         contractNumberInputRef.current.setSelectionRange(
           prefixLength,
           value.length
         );
       }
-    }
-  };
+    }, 0);
+  }
+};
 
-  const handleRentalFeeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/^0+/, "") || "0";
-    const numValue = parseFloat(value) || 0;
-
-    // STRICT: Enforce rental fee limits
-    if (numValue > VALIDATION_RULES.maxRentalFee) {
-      setErrors((prev) => ({
-        ...prev,
-        rentalFee: `Maximum ${VALIDATION_RULES.maxRentalFee.toLocaleString()} MMK allowed`,
-      }));
-      showWarning(
-        `Rental fee cannot exceed ${VALIDATION_RULES.maxRentalFee.toLocaleString()} MMK`
-      );
+const handleContractNumberKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const fullPrefix = `SGH-${currentYear}-`;
+  const selectionStart = e.currentTarget.selectionStart || 0;
+  
+  // Prevent any key presses in the prefix area
+  if (selectionStart < fullPrefix.length) {
+    // Allow arrow keys for navigation
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       return;
     }
+    
+    // Prevent everything else in prefix area
+    e.preventDefault();
+    
+    // Move cursor to numbers area
+    setTimeout(() => {
+      if (contractNumberInputRef.current) {
+        contractNumberInputRef.current.setSelectionRange(
+          fullPrefix.length,
+          fullPrefix.length
+        );
+      }
+    }, 0);
+  }
+};
 
-    setFormData((prev) => ({
-      ...prev,
-      rentalFee: numValue,
-    }));
-    setCalculatedRentalFee(numValue);
-    setRentalFeeEditable(true);
+const handleContractNumberMouseDown = (e: React.MouseEvent<HTMLInputElement>) => {
+  const fullPrefix = `SGH-${currentYear}-`;
+  const selectionStart = (e.target as HTMLInputElement).selectionStart || 0;
+  
+  // Prevent mouse selection in prefix area
+  if (selectionStart < fullPrefix.length) {
+    e.preventDefault();
+    
+    // Move cursor to numbers area
+    setTimeout(() => {
+      if (contractNumberInputRef.current) {
+        contractNumberInputRef.current.setSelectionRange(
+          fullPrefix.length,
+          fullPrefix.length
+        );
+      }
+    }, 0);
+  }
+};
 
-    // Clear rental fee error
-    if (errors.rentalFee) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors.rentalFee;
-        return newErrors;
-      });
-    }
+  const handleRentalFeeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Rental fee is now uneditable
+    showError("Rental fee cannot be changed. It is calculated automatically.");
+    return;
   };
+
+  const handleGracePeriodChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const value = e.target.value;
+  
+  // Allow empty input (user can delete)
+  if (value === "") {
+    setFormData(prev => ({ ...prev, gracePeriodDays: 0 }));
+    return;
+  }
+  
+  // Remove any non-digit characters
+  const numericValue = value.replace(/\D/g, '');
+  
+  if (numericValue === '') {
+    setFormData(prev => ({ ...prev, gracePeriodDays: 0 }));
+    return;
+  }
+  
+  // Take only the first character for single digit
+  const singleDigit = numericValue.charAt(0);
+  const numValue = parseInt(singleDigit);
+  
+  // Allow any single digit 0-9
+  if (!isNaN(numValue) && numValue >= 0 && numValue <= 9) {
+    setFormData(prev => ({ ...prev, gracePeriodDays: numValue }));
+  }
+  
+  // Clear grace period error
+  if (errors.gracePeriodDays) {
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors.gracePeriodDays;
+      return newErrors;
+    });
+  }
+};
+
+const handleRenewalNoticeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const value = e.target.value;
+  
+  // Allow empty input (user can delete)
+  if (value === "") {
+    setFormData(prev => ({ ...prev, renewalNoticeDays: 0 }));
+    return;
+  }
+  
+  // Remove any non-digit characters
+  const numericValue = value.replace(/\D/g, '');
+  
+  if (numericValue === '') {
+    setFormData(prev => ({ ...prev, renewalNoticeDays: 0 }));
+    return;
+  }
+  
+  // Take only first 2 characters
+  const twoDigits = numericValue.slice(0, 2);
+  const numValue = parseInt(twoDigits);
+  
+  // Allow any number 0-99 while typing
+  if (!isNaN(numValue) && numValue >= 0 && numValue <= 99) {
+    setFormData(prev => ({ ...prev, renewalNoticeDays: numValue }));
+  }
+  
+  // Clear renewal notice error
+  if (errors.renewalNoticeDays) {
+    setErrors((prev) => {
+      const newErrors = { ...prev };
+      delete newErrors.renewalNoticeDays;
+      return newErrors;
+    });
+  }
+};
 
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -1265,6 +1448,12 @@ useEffect(() => {
   };
 
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // End date is now uneditable when calculated
+    if (!manualEndDate) {
+      showError("End date cannot be changed. It is calculated automatically based on the lease duration.");
+      return;
+    }
+    
     const { value } = e.target;
     const selectedDate = new Date(value);
     const startDate = new Date(formData.startDate);
@@ -1279,7 +1468,6 @@ useEffect(() => {
     }
 
     setFormData((prev) => ({ ...prev, endDate: value }));
-    setManualEndDate(true);
 
     // Clear end date error
     if (errors.endDate) {
@@ -1295,8 +1483,6 @@ useEffect(() => {
     e: React.ChangeEvent<HTMLSelectElement>
   ) => {
     const { value } = e.target;
-
-    // Type assertion to ContractDurationType or empty string
     const durationType = value === "" ? "" : (value as ContractDurationType);
 
     setFormData((prev) => ({
@@ -1323,13 +1509,25 @@ useEffect(() => {
     }
 
     // Calculate rental fee if unit is selected
-    if (selectedUnit && !rentalFeeEditable) {
+    if (selectedUnit) {
       const unitRentalFee = selectedUnit.rentalFee || 0;
       const calculatedFee = calculateRentalFee(unitRentalFee, durationType);
       setCalculatedRentalFee(calculatedFee);
       setFormData((prev) => ({
         ...prev,
         rentalFee: calculatedFee,
+      }));
+    }
+
+    // Calculate security deposit if unit is selected
+    if (selectedUnit && durationType) {
+      const unitRentalFee = selectedUnit.rentalFee || 0;
+      const depositMonths = getDepositMonths(durationType);
+      const calculatedDeposit = Math.round(unitRentalFee * depositMonths);
+      
+      setFormData((prev) => ({ 
+        ...prev, 
+        securityDeposit: calculatedDeposit 
       }));
     }
   };
@@ -1352,9 +1550,14 @@ useEffect(() => {
 
   const clearUnitSelection = () => {
     setSelectedUnit(null);
-    setFormData((prev) => ({ ...prev, unitId: 0 }));
+    setSelectedLevel(null);
+    setFormData((prev) => ({ 
+      ...prev, 
+      unitId: 0,
+      levelId: 0 
+    }));
     setSearchTerm((prev) => ({ ...prev, unit: "" }));
-    setFilteredUnits([]);
+    setFilteredUnits(allUnits);
 
     // Clear unit error
     if (errors.unitId) {
@@ -1492,7 +1695,24 @@ useEffect(() => {
     </div>
   );
 
-  const allLoading = tenantsLoading || unitsLoading || utilitiesLoading;
+  const allLoading = tenantsLoading || unitsLoading || utilitiesLoading || levelsLoading || buildingLoading;
+
+  // Auto-focus contract number field when modal opens and loading is complete
+  useEffect(() => {
+    if (isOpen && !allLoading && contractNumberInputRef.current) {
+      const timer = setTimeout(() => {
+        if (contractNumberInputRef.current) {
+          contractNumberInputRef.current.focus();
+          contractNumberInputRef.current.setSelectionRange(
+            `SGH-${currentYear}-`.length,
+            `SGH-${currentYear}-`.length
+          );
+        }
+      }, 150); // Slightly longer delay to ensure form is rendered
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, allLoading, currentYear]);
 
   if (!isOpen) return null;
 
@@ -1554,48 +1774,70 @@ useEffect(() => {
             </div>
 
             {/* Global Error Message - Only show when there are errors */}
-            {hasErrors && (
-              <div
-                id="form-error"
-                className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4"
-              >
-                <div className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-red-500 mr-2"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="text-red-800 font-medium">
-                    Please fix the following errors:
-                  </span>
-                </div>
+  {hasErrors && (
+    <div
+      id="form-error"
+      className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
+          <svg
+            className="w-5 h-5 text-red-500 mr-2"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span className="text-red-800 font-medium">
+            Please fix the following errors:
+          </span>
+        </div>
+        <button
+          onClick={() => setErrors({})}
+          className="text-red-400 hover:text-red-600 transition-colors"
+          type="button"
+          aria-label="Close error message"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
 
-                {errors.submit && (
-                  <div className="mt-2 p-2 bg-red-100 border border-red-300 rounded">
-                    <p className="text-red-800 font-medium">{errors.submit}</p>
-                  </div>
-                )}
+      {errors.submit && (
+        <div className="mt-2 p-2 bg-red-100 border border-red-300 rounded">
+          <p className="text-red-800 font-medium">{errors.submit}</p>
+        </div>
+      )}
 
-                {Object.keys(errors).filter((key) => key !== "submit").length >
-                  0 && (
-                  <ul className="mt-2 ml-7 list-disc text-red-700">
-                    {Object.entries(errors)
-                      .filter(([key]) => key !== "submit")
-                      .map(([key, value]) => (
-                        <li key={key} className="text-sm">
-                          {value}
-                        </li>
-                      ))}
-                  </ul>
-                )}
-              </div>
-            )}
+      {Object.keys(errors).filter((key) => key !== "submit").length >
+        0 && (
+        <ul className="mt-2 ml-7 list-disc text-red-700">
+          {Object.entries(errors)
+            .filter(([key]) => key !== "submit")
+            .map(([key, value]) => (
+              <li key={key} className="text-sm">
+                {value}
+              </li>
+            ))}
+        </ul>
+      )}
+    </div>
+  )}
           </div>
 
           {/* Modal Content */}
@@ -1640,14 +1882,14 @@ useEffect(() => {
                   </div>
                 )}
 
-                {/*  Lease Information Section */}
+                {/* Lease Information Section */}
                 <div className="bg-white p-6 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     Lease Information
                   </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/*  Lease Number */}
+                    {/* Lease Number */}
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Lease Number *
@@ -1662,7 +1904,8 @@ useEffect(() => {
                         value={formData.contractNumber}
                         onChange={handleContractNumberChange}
                         onFocus={handleContractNumberFocus}
-                        required
+                        onKeyDown={handleContractNumberKeyDown}
+                        onMouseDown={handleContractNumberMouseDown}
                         className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors.contractNumber
                             ? "border-red-500"
@@ -1670,8 +1913,6 @@ useEffect(() => {
                         }`}
                         placeholder={`SGH-${currentYear}-0000`}
                         maxLength={VALIDATION_RULES.contractNumberMaxLength}
-                        pattern="^SGH-\d{4}-\d{4}$"
-                        title="Format: SGH-YYYY-NNNN (e.g., SGH-2025-9999)"
                       />
                       {/* ERROR MESSAGE - RED TEXT UNDER INPUT */}
                       {errors.contractNumber && (
@@ -1714,6 +1955,7 @@ useEffect(() => {
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
                             >
                               <path
                                 strokeLinecap="round"
@@ -1788,7 +2030,7 @@ useEffect(() => {
                                 />
                               </svg>
                               <span className="font-medium">
-                                ChooseLeaseFile
+                                Choose Lease File
                               </span>
                               <span className="text-sm mt-1">
                                 or drag and drop
@@ -1875,16 +2117,15 @@ useEffect(() => {
                       </div>
                     </div>
 
-                    {/*  Lease Duration */}
+                    {/* Lease Duration */}
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                         Lease Duration *
+                        Lease Duration *
                       </label>
                       <select
                         name="contractDurationType"
                         value={formData.contractDurationType}
                         onChange={handleContractDurationChange}
-                        required
                         className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors.contractDurationType
                             ? "border-red-500"
@@ -1930,7 +2171,6 @@ useEffect(() => {
                         name="startDate"
                         value={formData.startDate}
                         onChange={handleStartDateChange}
-                        required
                         min={getMinStartDate()}
                         className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors.startDate
@@ -1958,7 +2198,7 @@ useEffect(() => {
                       )}
                       {!formData.contractDurationType && (
                         <p className="text-xs text-yellow-600 mt-1">
-                          Please select  Lease duration first
+                          Please select Lease duration first
                         </p>
                       )}
                     </div>
@@ -1987,7 +2227,6 @@ useEffect(() => {
                         name="endDate"
                         value={formData.endDate}
                         onChange={handleEndDateChange}
-                        required
                         min={getMinEndDate()}
                         className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors.endDate ? "border-red-500" : "border-gray-300"
@@ -1995,6 +2234,7 @@ useEffect(() => {
                         disabled={
                           !formData.startDate || !formData.contractDurationType
                         }
+                        readOnly={!manualEndDate}
                       />
                       {/* ERROR MESSAGE - RED TEXT UNDER INPUT */}
                       {errors.endDate && (
@@ -2171,7 +2411,96 @@ useEffect(() => {
                       )}
                     </div>
 
-                    {/* Unit Selection */}
+                    
+                  </div>
+                </div>
+
+                {/* Building Information Section - MOVED DOWN */}
+                <div className="bg-white p-6 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Building Information
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Branch Name */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Branch Name
+                      </label>
+                      <div className="p-3 bg-gray-50 border border-gray-300 rounded-md">
+                        <p className="font-medium text-gray-900">
+                          {assignedBuilding?.branchName || "Not assigned"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Building Name */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Building Name
+                      </label>
+                      <div className="p-3 bg-gray-50 border border-gray-300 rounded-md">
+                        <p className="font-medium text-gray-900">
+                          {assignedBuilding?.buildingName || "Not assigned"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Level Selection */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Select Level *
+                        <span className="text-xs text-gray-500 ml-2">
+                          (From your assigned building)
+                        </span>
+                      </label>
+                      <select
+                        name="levelId"
+                        value={formData.levelId}
+                        onChange={handleLevelChange}
+                        className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.levelId
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        }`}
+                        disabled={levelsLoading || !assignedBuilding}
+                      >
+                        <option value="">Select a level...</option>
+                        {levels.map((level) => (
+                          <option key={level.id} value={level.id}>
+                            {level.levelName}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.levelId && (
+                        <p className="text-red-500 text-sm mt-1 flex items-center">
+                          <svg
+                            className="w-4 h-4 mr-1"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          {errors.levelId}
+                        </p>
+                      )}
+                      {levelsLoading && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Loading levels...
+                        </p>
+                      )}
+                      {!assignedBuilding && (
+                        <p className="text-xs text-red-500 mt-1">
+                          You are not assigned to any building. Please contact administrator.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Unit Selection - Will be disabled until level is selected */}
                     <div data-field="unitId">
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Unit *
@@ -2238,12 +2567,18 @@ useEffect(() => {
                               }`}
                               placeholder="Search unit by number..."
                               maxLength={VALIDATION_RULES.maxUnitNumberLength}
+                              disabled={!selectedLevel}
                             />
+                            {!selectedLevel && (
+                              <p className="text-xs text-yellow-600 mt-1">
+                                Please select a level first
+                              </p>
+                            )}
                             {showDropdown.unit && filteredUnits.length > 0 && (
                               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
                                 <div className="flex justify-between items-center p-2 border-b border-gray-200 bg-gray-50">
                                   <span className="text-sm text-gray-600">
-                                    {filteredUnits.length} units found
+                                    {filteredUnits.length} units found in {selectedLevel?.levelName}
                                   </span>
                                   <button
                                     type="button"
@@ -2269,7 +2604,7 @@ useEffect(() => {
                                           {unit.unitNumber &&
                                             unit.unitNumber.length >
                                               VALIDATION_RULES.maxUnitNumberLength &&
-                                            "..."}
+                                              "..."}
                                         </p>
                                         <p className="text-sm text-gray-600">
                                           {unit.level?.levelName?.substring(
@@ -2324,12 +2659,12 @@ useEffect(() => {
                   </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Rental Fee */}
+                    {/* Rental Fee - Uneditable */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Total Rental Fee (MMK) *
                         <span className="text-xs text-gray-500 ml-2">
-                          Unit fee × Duration (editable)
+                          Calculated automatically (Unit fee × Duration)
                         </span>
                       </label>
                       <div className="relative">
@@ -2338,14 +2673,15 @@ useEffect(() => {
                           name="rentalFee"
                           value={formData.rentalFee || ""}
                           onChange={handleRentalFeeChange}
-                          className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 ${
                             errors.rentalFee
                               ? "border-red-500"
                               : "border-gray-300"
                           }`}
                           min={VALIDATION_RULES.minRentalFee}
-                          // max={VALIDATION_RULES.maxRentalFee}
-                          disabled={!formData.contractDurationType}
+                          max={VALIDATION_RULES.maxRentalFee}
+                          disabled={true}
+                          readOnly
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                           <span className="text-gray-500">MMK</span>
@@ -2368,32 +2704,30 @@ useEffect(() => {
                           {errors.rentalFee}
                         </p>
                       )}
-                      {selectedUnit &&
-                        !rentalFeeEditable &&
-                        formData.contractDurationType && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            Based on: {selectedUnit.rentalFee?.toLocaleString()}{" "}
-                            MMK/month ×{" "}
-                            {contractDurationOptions.find(
-                              (opt) =>
-                                opt.value === formData.contractDurationType
-                            )?.months || 0}{" "}
-                            months
-                          </p>
-                        )}
+                      {selectedUnit && formData.contractDurationType && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Calculated: {selectedUnit.rentalFee?.toLocaleString()}{" "}
+                          MMK/month ×{" "}
+                          {contractDurationOptions.find(
+                            (opt) =>
+                              opt.value === formData.contractDurationType
+                          )?.months || 0}{" "}
+                          months
+                        </p>
+                      )}
                       {!formData.contractDurationType && (
                         <p className="text-xs text-yellow-600 mt-1">
-                          Please select  Lease duration first
+                          Please select lease duration first
                         </p>
                       )}
                     </div>
 
-                    {/* Security Deposit */}
+                    {/* Security Deposit - Auto Calculated */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Security Deposit (MMK)
+                        Security Deposit (MMK) *
                         <span className="text-xs text-gray-500 ml-2">
-                          Optional, max 999,999,999 MMK
+                          Calculated automatically (Based on unit fee × Duration)
                         </span>
                       </label>
                       <div className="relative">
@@ -2401,15 +2735,17 @@ useEffect(() => {
                           type="number"
                           name="securityDeposit"
                           value={formData.securityDeposit || ""}
-                          onChange={handleInputChange}
-                          className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          onChange={(e) => {
+                            // Make it read-only - show error if user tries to change
+                            showError("Security deposit cannot be changed. It is calculated automatically based on unit fee and duration.");
+                            return;
+                          }}
+                          className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 ${
                             errors.securityDeposit
                               ? "border-red-500"
                               : "border-gray-300"
                           }`}
-                          min={VALIDATION_RULES.minSecurityDeposit}
-                          // step="1000"
-                          placeholder="0"
+                          readOnly
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                           <span className="text-gray-500">MMK</span>
@@ -2432,29 +2768,51 @@ useEffect(() => {
                           {errors.securityDeposit}
                         </p>
                       )}
+                      {/* Show calculation breakdown */}
+                      {selectedUnit && formData.contractDurationType && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Calculated: {selectedUnit.rentalFee?.toLocaleString()} MMK/month ×{" "}
+                          {getDepositMonths(formData.contractDurationType)} month(s) deposit
+                        </p>
+                      )}
+                      {!formData.contractDurationType && (
+                        <p className="text-xs text-yellow-600 mt-1">
+                          Please select lease duration first
+                        </p>
+                      )}
                     </div>
 
-                    {/* Grace Period */}
+                    {/* Grace Period - 3-7 days (Editable) */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Grace Period (Days) *
                         <span className="text-xs text-gray-500 ml-2">
-                          {VALIDATION_RULES.minGracePeriodDays}-
-                          {VALIDATION_RULES.maxGracePeriodDays} days (required)
+                          3-7 days only
                         </span>
                       </label>
                       <input
-                        type="number"
+                        type="text"  // Change from "number" to "text" to have more control
                         name="gracePeriodDays"
-                        value={formData.gracePeriodDays || ""}
-                        onChange={handleInputChange}
+                        value={formData.gracePeriodDays === 0 ? "" : formData.gracePeriodDays}
+                        onChange={handleGracePeriodChange}
                         className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors.gracePeriodDays
                             ? "border-red-500"
                             : "border-gray-300"
                         }`}
-                        // min={VALIDATION_RULES.minGracePeriodDays}
-                        // max={VALIDATION_RULES.maxGracePeriodDays}
+                        placeholder="3"
+                        onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                          // Allow only digits
+                          if (!/\d/.test(e.key)) {
+                            e.preventDefault();
+                          }
+                          
+                          // Check if adding this key would make more than 1 digit
+                          const currentValue = e.currentTarget.value;
+                          if (currentValue.length >= 1 && e.key !== 'Backspace' && e.key !== 'Delete') {
+                            e.preventDefault();
+                          }
+                        }}
                       />
                       {/* ERROR MESSAGE - RED TEXT UNDER INPUT */}
                       {errors.gracePeriodDays && (
@@ -2477,34 +2835,36 @@ useEffect(() => {
                   </div>
                 </div>
 
-                {/*  Lease Terms Section */}
+                
+
+                {/* Lease Terms Section */}
                 <div className="bg-white p-6 rounded-lg border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                     Lease Terms
+                    Lease Terms
                   </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Notice Period */}
+                    {/* Notice Period - Fixed at 30 days */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Notice Period (Days) *
                         <span className="text-xs text-gray-500 ml-2">
-                          {VALIDATION_RULES.minNoticePeriodDays}-
-                          {VALIDATION_RULES.maxNoticePeriodDays} days (required)
+                          Fixed at 30 days
                         </span>
                       </label>
                       <input
                         type="number"
                         name="noticePeriodDays"
-                        value={formData.noticePeriodDays || ""}
+                        value={formData.noticePeriodDays}
                         onChange={handleInputChange}
-                        className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 ${
                           errors.noticePeriodDays
                             ? "border-red-500"
                             : "border-gray-300"
                         }`}
-                        //min={VALIDATION_RULES.minNoticePeriodDays}
-                        // max={VALIDATION_RULES.maxNoticePeriodDays}
+                        min="30"
+                        max="30"
+                        readOnly
                       />
                       {/* ERROR MESSAGE - RED TEXT UNDER INPUT */}
                       {errors.noticePeriodDays && (
@@ -2525,28 +2885,37 @@ useEffect(() => {
                       )}
                     </div>
 
-                    {/* Renewal Notice */}
+                    {/* Renewal Notice - 30-60 days (Editable) */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Renewal Notice (Days) *
                         <span className="text-xs text-gray-500 ml-2">
-                          {VALIDATION_RULES.minRenewalNoticeDays}-
-                          {VALIDATION_RULES.maxRenewalNoticeDays} days
-                          (required)
+                          30-60 days only
                         </span>
                       </label>
                       <input
-                        type="number"
+                        type="text"  // Change from "number" to "text" to have more control
                         name="renewalNoticeDays"
-                        value={formData.renewalNoticeDays || ""}
-                        onChange={handleInputChange}
+                        value={formData.renewalNoticeDays === 0 ? "" : formData.renewalNoticeDays}
+                        onChange={handleRenewalNoticeChange}
                         className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors.renewalNoticeDays
                             ? "border-red-500"
                             : "border-gray-300"
                         }`}
-                        //min={VALIDATION_RULES.minRenewalNoticeDays}
-                        // max={VALIDATION_RULES.maxRenewalNoticeDays}
+                        placeholder="30"
+                        onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                          // Allow only digits
+                          if (!/\d/.test(e.key)) {
+                            e.preventDefault();
+                          }
+                          
+                          // Check if adding this key would make more than 2 digits
+                          const currentValue = e.currentTarget.value;
+                          if (currentValue.length >= 2 && e.key !== 'Backspace' && e.key !== 'Delete') {
+                            e.preventDefault();
+                          }
+                        }}
                       />
                       {/* ERROR MESSAGE - RED TEXT UNDER INPUT */}
                       {errors.renewalNoticeDays && (
@@ -2568,11 +2937,11 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  {/*  Lease Terms Textarea */}
+                  {/* Lease Terms Textarea */}
                   <div className="mt-4">
                     <div className="flex justify-between items-center mb-1">
                       <label className="block text-sm font-medium text-gray-700">
-                        Additional  Lease Terms
+                        Additional Lease Terms
                         <span className="text-xs text-gray-500 ml-2">
                           Optional
                         </span>
@@ -2618,18 +2987,18 @@ useEffect(() => {
                   <div className="mt-6">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-medium text-gray-700">
-  Included Utilities
-  {selectedUnit?.unitType === "ROOM" && (
-    <span className="text-xs text-green-600 ml-2">
-      (Electricity and Water auto-selected for ROOM type)
-    </span>
-  )}
-  {selectedUnit?.unitType === "SPACE" && (
-    <span className="text-xs text-gray-600 ml-2">
-      (Electricity and Water not applicable for SPACE type)
-    </span>
-  )}
-</h4>
+                        Included Utilities
+                        {selectedUnit?.unitType === "ROOM" && (
+                          <span className="text-xs text-green-600 ml-2">
+                            (Electricity and Water auto-selected for ROOM type)
+                          </span>
+                        )}
+                        {selectedUnit?.unitType === "SPACE" && (
+                          <span className="text-xs text-gray-600 ml-2">
+                            (Electricity and Water not applicable for SPACE type)
+                          </span>
+                        )}
+                      </h4>
                       <div className="flex items-center">
                         <span
                           className={`text-xs font-medium px-2 py-1 rounded ${
@@ -2666,75 +3035,75 @@ useEffect(() => {
                     )}
 
                     {utilitiesLoading ? (
-  <div className="flex items-center">
-    <LoadingSpinner size="sm" />
-    <span className="ml-2 text-gray-600">
-      Loading utilities...
-    </span>
-  </div>
-) : utilities.length > 0 ? (
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-    {utilities
-      .filter(utility => {
-        // Hide Electricity and Water for SPACE type units
-        if (selectedUnit?.unitType === "SPACE") {
-          const isElectricity = utility.utilityName.toLowerCase().includes('electricity');
-          const isWater = utility.utilityName.toLowerCase().includes('water');
-          return !isElectricity && !isWater;
-        }
-        return true;
-      })
-      .map((utility) => (
-        <div key={utility.id} className="flex items-start">
-          <input
-            type="checkbox"
-            id={`utility-${utility.id}`}
-            checked={selectedUtilityIds.includes(utility.id)}
-            onChange={() => handleUtilityToggle(utility.id)}
-            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
-            // Disable Electricity and Water for SPACE type
-            disabled={selectedUnit?.unitType === "SPACE" && 
-              (utility.utilityName.toLowerCase().includes('electricity') || 
-               utility.utilityName.toLowerCase().includes('water'))}
-          />
-          <label
-            htmlFor={`utility-${utility.id}`}
-            className={`ml-2 text-sm cursor-pointer flex-1 ${
-              selectedUnit?.unitType === "SPACE" && 
-              (utility.utilityName.toLowerCase().includes('electricity') || 
-               utility.utilityName.toLowerCase().includes('water'))
-                ? "text-gray-400" 
-                : "text-gray-900"
-            }`}
-          >
-            <div className="font-medium">
-              {utility.utilityName?.substring(
-                0,
-                VALIDATION_RULES.maxUtilityNameLength
-              ) || "Utility"}
-              {utility.utilityName &&
-                utility.utilityName.length >
-                  VALIDATION_RULES.maxUtilityNameLength &&
-                "..."}
-            </div>
-            {utility.ratePerUnit && (
-              <p className="text-xs text-gray-500 mt-1">
-                {utility.ratePerUnit}{" "}
-                {utility.calculationMethod !== "FIXED" && "Per Unit"}
-              </p>
-            )}
-            {selectedUnit?.unitType === "SPACE" && 
-             (utility.utilityName.toLowerCase().includes('electricity') || 
-              utility.utilityName.toLowerCase().includes('water')) && (
-              <p className="text-xs text-red-500 mt-1">
-                Not applicable for SPACE type units
-              </p>
-            )}
-          </label>
-        </div>
-      ))}
-  </div>
-) : (
+                      <div className="flex items-center">
+                        <LoadingSpinner size="sm" />
+                        <span className="ml-2 text-gray-600">
+                          Loading utilities...
+                        </span>
+                      </div>
+                    ) : utilities.length > 0 ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {utilities
+                          .filter(utility => {
+                            // Hide Electricity and Water for SPACE type units
+                            if (selectedUnit?.unitType === "SPACE") {
+                              const isElectricity = utility.utilityName.toLowerCase().includes('electricity');
+                              const isWater = utility.utilityName.toLowerCase().includes('water');
+                              return !isElectricity && !isWater;
+                            }
+                            return true;
+                          })
+                          .map((utility) => (
+                            <div key={utility.id} className="flex items-start">
+                              <input
+                                type="checkbox"
+                                id={`utility-${utility.id}`}
+                                checked={selectedUtilityIds.includes(utility.id)}
+                                onChange={() => handleUtilityToggle(utility.id)}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
+                                // Disable Electricity and Water for SPACE type
+                                disabled={selectedUnit?.unitType === "SPACE" && 
+                                  (utility.utilityName.toLowerCase().includes('electricity') || 
+                                   utility.utilityName.toLowerCase().includes('water'))}
+                              />
+                              <label
+                                htmlFor={`utility-${utility.id}`}
+                                className={`ml-2 text-sm cursor-pointer flex-1 ${
+                                  selectedUnit?.unitType === "SPACE" && 
+                                  (utility.utilityName.toLowerCase().includes('electricity') || 
+                                   utility.utilityName.toLowerCase().includes('water'))
+                                    ? "text-gray-400" 
+                                    : "text-gray-900"
+                                }`}
+                              >
+                                <div className="font-medium">
+                                  {utility.utilityName?.substring(
+                                    0,
+                                    VALIDATION_RULES.maxUtilityNameLength
+                                  ) || "Utility"}
+                                  {utility.utilityName &&
+                                    utility.utilityName.length >
+                                      VALIDATION_RULES.maxUtilityNameLength &&
+                                    "..."}
+                                </div>
+                                {utility.ratePerUnit && (
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {utility.ratePerUnit}{" "}
+                                    {utility.calculationMethod !== "FIXED" && "Per Unit"}
+                                  </p>
+                                )}
+                                {selectedUnit?.unitType === "SPACE" && 
+                                 (utility.utilityName.toLowerCase().includes('electricity') || 
+                                  utility.utilityName.toLowerCase().includes('water')) && (
+                                  <p className="text-xs text-red-500 mt-1">
+                                    Not applicable for SPACE type units
+                                  </p>
+                                )}
+                              </label>
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
                       <div className="text-center py-4 bg-gray-50 rounded-lg border border-gray-200">
                         <svg
                           className="w-8 h-8 text-gray-400 mx-auto mb-2"
@@ -2746,7 +3115,7 @@ useEffect(() => {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 01-2-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                           />
                         </svg>
                         <p className="text-gray-600">No utilities available</p>
@@ -2783,10 +3152,10 @@ useEffect(() => {
                           )}
 
                           {selectedUnit?.unitType === "SPACE" && (
-  <p className="text-xs text-gray-600 mt-1">
-    Note: Electricity and Water are not applicable for SPACE type units
-  </p>
-)}
+                            <p className="text-xs text-gray-600 mt-1">
+                              Note: Electricity and Water are not applicable for SPACE type units
+                            </p>
+                          )}
                           {selectedUtilityIds.length > 0 && (
                             <p className="text-xs text-blue-600 mt-1">
                               Selected:{" "}
@@ -2883,6 +3252,7 @@ useEffect(() => {
                   <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                     <Button
                       type="submit"
+                      variant="primary-blue"
                       disabled={
                         loading ||
                         isLoading ||

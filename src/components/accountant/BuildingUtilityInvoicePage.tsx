@@ -1,9 +1,8 @@
-// BuildingUtilityInvoicePage.tsx - Fixed calculation version
+// BuildingUtilityInvoicePage.tsx - Updated to use backend API
 import React, { useState, useEffect } from 'react';
 import { 
   FileText, 
   Calculator, 
-  Home,
   PieChart,
   CheckCircle,
   AlertCircle,
@@ -13,12 +12,15 @@ import {
   Save,
   Trash2,
   Download,
+  Building2,
+  Eye,
+  Edit,
 } from 'lucide-react';
 import { buildingApi } from '../../api/BuildingAPI';
 import { contractApi } from '../../api/ContractAPI';
 import type { Building } from '../../types';
-import type { UtilityBillingDTO } from '../../types/utility';
-import { expenseApi, type CreateExpenseRequest } from '../../api/ExpenseAPI';
+import { expenseApi, type CreateExpenseRequest, type MallOwnerExpense } from '../../api/ExpenseAPI';
+import { jwtDecode } from 'jwt-decode';
 
 interface UnitInfo {
   id: number;
@@ -56,27 +58,12 @@ interface CAMSummary {
   unitBreakdown: UnitCAMCalculation[];
   occupiedUnitsCount: number;
   vacantUnitsCount: number;
-  unallocatedArea: number; // NEW: Area not assigned to any unit
-  unallocatedPercentage: number; // NEW: Percentage of unallocated area
+  unallocatedArea: number;
+  unallocatedPercentage: number;
 }
 
-interface MallOwnerExpense {
-  id: string;
-  buildingId: number;
-  buildingName: string;
-  periodStart: string;
-  periodEnd: string;
-  ownerCAM: number;
-  generatorShare: number;
-  transformerShare: number;
-  otherCAMShare: number;
-  description: string;
-  dateRecorded: string;
-  status: 'PENDING' | 'PAID' | 'CANCELLED';
-}
-
-// Local storage key for expenses
-const EXPENSES_STORAGE_KEY = 'mall_owner_expenses';
+// Local storage key for expenses (fallback)
+const EXPENSES_STORAGE_KEY = 'mall_owner_expenses_fallback';
 
 const BuildingUtilityInvoicePage: React.FC = () => {
   const [buildings, setBuildings] = useState<Building[]>([]);
@@ -84,7 +71,6 @@ const BuildingUtilityInvoicePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [periodStart, setPeriodStart] = useState<string>('');
   const [periodEnd, setPeriodEnd] = useState<string>('');
-  const [calculations, setCalculations] = useState<Map<number, UtilityBillingDTO>>(new Map());
   const [camSummary, setCamSummary] = useState<CAMSummary | null>(null);
   const [error, setError] = useState<string>('');
   const [success, setSuccess] = useState<string>('');
@@ -94,39 +80,60 @@ const BuildingUtilityInvoicePage: React.FC = () => {
   const [showExpenseHistory, setShowExpenseHistory] = useState(false);
   const [expenseDescription, setExpenseDescription] = useState<string>('Mall Owner CAM Expense for Vacant Units');
   const [exportFormat, setExportFormat] = useState<'JSON' | 'CSV'>('JSON');
+  const [assignedBuildingId, setAssignedBuildingId] = useState<number | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAccountant, setIsAccountant] = useState(false);
+  const [isManager, setIsManager] = useState(false);
 
   // CAM Configuration
-  const [otherCAMCosts, setOtherCAMCosts] = useState<number>(150000); // Default other CAM costs in MMK
+  const [otherCAMCosts, setOtherCAMCosts] = useState<number>(150000);
 
-  // Load expenses from localStorage on component mount
-  useEffect(() => {
-    loadBuildings();
-    loadExpensesFromBackend();
-    
-    // Set default dates for current month
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    
-    setPeriodStart(firstDay.toISOString().split('T')[0]);
-    setPeriodEnd(lastDay.toISOString().split('T')[0]);
-  }, []);
+  // Get user role from JWT token
+  const getUserRole = (): string => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded: any = jwtDecode(token);
+        return decoded.role || 'ROLE_GUEST';
+      } catch (error) {
+        console.error('Error decoding token:', error);
+        return 'ROLE_GUEST';
+      }
+    }
+    return 'ROLE_GUEST';
+  };
 
-  const loadBuildings = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const response = await buildingApi.getAll();
-      setBuildings(response.data || []);
-    } catch (error: any) {
-      setError('Failed to load buildings: ' + (error.message || 'Unknown error'));
-      console.error('Error loading buildings:', error);
-    } finally {
-      setLoading(false);
+  // Load assigned building for non-admin users
+  const loadAssignedBuilding = async () => {
+    const userRole = getUserRole();
+    setIsAdmin(userRole === 'ROLE_ADMIN');
+    setIsAccountant(userRole === 'ROLE_ACCOUNTANT');
+    setIsManager(userRole === 'ROLE_MANAGER');
+    
+    if (!isAdmin) {
+      try {
+        const assignedBuildingResponse = await buildingApi.getMyAssignedBuilding();
+        if (assignedBuildingResponse.data) {
+          setAssignedBuildingId(assignedBuildingResponse.data.id);
+          setSelectedBuildingId(assignedBuildingResponse.data.id);
+          
+          // Add assigned building to buildings list for display
+          setBuildings([assignedBuildingResponse.data]);
+          
+          // Auto-calculate for assigned building
+          setTimeout(() => {
+            if (periodStart && periodEnd) {
+              calculateCAMDistsribution();
+            }
+          }, 500);
+        }
+      } catch (error) {
+        console.log('No assigned building for user');
+      }
     }
   };
 
-  // Load expenses from localStorage
+  // Load expenses from localStorage on component mount (fallback)
   const loadExpensesFromStorage = () => {
     try {
       const storedExpenses = localStorage.getItem(EXPENSES_STORAGE_KEY);
@@ -139,7 +146,7 @@ const BuildingUtilityInvoicePage: React.FC = () => {
     }
   };
 
-  // Save expenses to localStorage
+  // Save expenses to localStorage (fallback)
   const saveExpensesToStorage = (expenses: MallOwnerExpense[]) => {
     try {
       localStorage.setItem(EXPENSES_STORAGE_KEY, JSON.stringify(expenses));
@@ -148,7 +155,56 @@ const BuildingUtilityInvoicePage: React.FC = () => {
     }
   };
 
+  // Load data on component mount
+  useEffect(() => {
+    loadData();
+    
+    // Set default dates for current month
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    setPeriodStart(firstDay.toISOString().split('T')[0]);
+    setPeriodEnd(lastDay.toISOString().split('T')[0]);
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      const userRole = getUserRole();
+      setIsAdmin(userRole === 'ROLE_ADMIN');
+      setIsAccountant(userRole === 'ROLE_ACCOUNTANT');
+      setIsManager(userRole === 'ROLE_MANAGER');
+      
+      // For non-admin users, get assigned building only
+      if (!isAdmin) {
+        await loadAssignedBuilding();
+      } else {
+        // For admin users, load all buildings
+        const response = await buildingApi.getAll();
+        setBuildings(response.data || []);
+      }
+      
+      // Load expenses from backend
+      await loadExpensesFromBackend();
+      
+    } catch (error: any) {
+      setError('Failed to load data: ' + (error.message || 'Unknown error'));
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadBuildingUnits = async (buildingId: number) => {
+    // Check if user has permission for this building
+    if (assignedBuildingId && buildingId !== assignedBuildingId && !isAdmin) {
+      alert('You can only access CAM calculations for your assigned building');
+      return [];
+    }
+    
     try {
       setLoading(true);
       
@@ -210,18 +266,52 @@ const BuildingUtilityInvoicePage: React.FC = () => {
     }
   };
 
+  // Load expenses from backend
+  const loadExpensesFromBackend = async () => {
+    try {
+      const response = await expenseApi.getAllExpenses();
+      if (response.data) {
+        setMallOwnerExpenses(response.data);
+        // Also save to localStorage as backup
+        saveExpensesToStorage(response.data);
+      } else {
+        setMallOwnerExpenses([]);
+        // Fallback to localStorage
+        loadExpensesFromStorage();
+      }
+    } catch (error) {
+      console.error('Error loading expenses from backend:', error);
+      setError('Failed to load expenses from server. Using local storage as fallback.');
+      // Fallback to localStorage
+      loadExpensesFromStorage();
+    }
+  };
+
   // Check for existing expenses for the same period and building
-  const checkDuplicateExpense = (buildingId: number, periodStart: string, periodEnd: string): boolean => {
-    return mallOwnerExpenses.some(expense => 
-      expense.buildingId === buildingId && 
-      expense.periodStart === periodStart && 
-      expense.periodEnd === periodEnd
-    );
+  const checkDuplicateExpense = async (buildingId: number, periodStart: string, periodEnd: string): Promise<boolean> => {
+    try {
+      const response = await expenseApi.checkDuplicate(buildingId, periodStart, periodEnd);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking duplicate expense via API:', error);
+      // Fallback to local check
+      return mallOwnerExpenses.some(expense => 
+        expense.buildingId === buildingId && 
+        expense.periodStart === periodStart && 
+        expense.periodEnd === periodEnd
+      );
+    }
   };
 
   const calculateCAMDistsribution = async () => {
     if (!selectedBuildingId) {
       setError('Please select a building');
+      return;
+    }
+    
+    // Check if user has permission for this building
+    if (assignedBuildingId && selectedBuildingId !== assignedBuildingId && !isAdmin) {
+      alert('You can only calculate CAM for your assigned building');
       return;
     }
     
@@ -253,6 +343,13 @@ const BuildingUtilityInvoicePage: React.FC = () => {
         return;
       }
       
+      // Check if expense already exists for this period
+      const isDuplicate = await checkDuplicateExpense(selectedBuildingId, periodStart, periodEnd);
+      if (isDuplicate) {
+        setError(`An expense record already exists for ${selectedBuilding.buildingName} for period ${periodStart} to ${periodEnd}. Please select a different period.`);
+        return;
+      }
+      
       // Load units with actual occupancy data
       const unitsWithOccupancy = await loadBuildingUnits(selectedBuildingId);
       
@@ -260,14 +357,6 @@ const BuildingUtilityInvoicePage: React.FC = () => {
         setError('No units found in this building');
         return;
       }
-      
-      // Check if expense already exists for this period
-      if (checkDuplicateExpense(selectedBuildingId, periodStart, periodEnd)) {
-        setError(`An expense record already exists for ${selectedBuilding.buildingName} for period ${periodStart} to ${periodEnd}. Please select a different period.`);
-        return;
-      }
-      
-      console.log('Units with occupancy:', unitsWithOccupancy); // Debug log
       
       // Extract building fees
       const generatorFee = selectedBuilding.generatorFee || 0;
@@ -337,39 +426,14 @@ const BuildingUtilityInvoicePage: React.FC = () => {
       // This includes: vacant units + unallocated area
       const totalMallOwnerArea = totalVacantArea + unallocatedArea;
       
-      // CORRECT CALCULATION:
-      // 1. Calculate cost per square foot
+      // Calculate cost per square foot
       const costPerSqFt = totalCAMCosts / totalLeasableArea;
       
-      // 2. Tenants pay only for occupied area
+      // Tenants pay only for occupied area
       const tenantsCAM = totalOccupiedArea * costPerSqFt;
       
-      // 3. Mall owner pays for everything else (vacant units + unallocated area)
+      // Mall owner pays for everything else (vacant units + unallocated area)
       const ownerCAM = totalCAMCosts - tenantsCAM;
-      
-      // Alternative calculation: ownerCAM = totalMallOwnerArea * costPerSqFt
-      
-      // Verify calculations
-      console.log('Occupancy Summary:', {
-        totalLeasableArea,
-        totalOccupiedArea,
-        totalVacantArea,
-        unallocatedArea,
-        totalDefinedArea,
-        totalMallOwnerArea,
-        costPerSqFt,
-        tenantsCAM,
-        ownerCAM,
-        totalCAMCosts
-      });
-      
-      // Verify that calculations add up
-      const calculatedTotal = tenantsCAM + ownerCAM;
-      const discrepancy = Math.abs(calculatedTotal - totalCAMCosts);
-      
-      if (discrepancy > 0.01) {
-        console.warn(`Calculation discrepancy: ${discrepancy}`);
-      }
       
       const occupiedPercentage = (totalOccupiedArea / totalLeasableArea) * 100;
       const vacantPercentage = (totalVacantArea / totalLeasableArea) * 100;
@@ -455,7 +519,7 @@ const BuildingUtilityInvoicePage: React.FC = () => {
       setExpenseDescription('Mall Owner CAM Expense for Vacant Units');
       
       // Refresh expenses list
-      loadExpensesFromBackend();
+      await loadExpensesFromBackend();
       
       // Clear calculation after saving
       setTimeout(() => {
@@ -469,44 +533,34 @@ const BuildingUtilityInvoicePage: React.FC = () => {
     }
   };
 
-  const loadExpensesFromBackend = async () => {
+  // Update expense status in backend
+  const updateExpenseStatus = async (expenseId: number, newStatus: string) => {
     try {
-      const response = await expenseApi.getAllExpenses();
-      setMallOwnerExpenses(response.data || []);
-    } catch (error) {
-      console.error('Error loading expenses from backend:', error);
-      // Fallback to localStorage if backend fails
-      loadExpensesFromStorage();
+      await expenseApi.updateExpenseStatus(expenseId, newStatus);
+      await loadExpensesFromBackend();
+      setSuccess(`Expense status updated to ${newStatus}`);
+    } catch (error: any) {
+      setError('Failed to update expense status: ' + (error.message || 'Unknown error'));
     }
   };
 
-  // Update expense status
-  const updateExpenseStatus = (expenseId: string, newStatus: 'PENDING' | 'PAID' | 'CANCELLED') => {
-    const updatedExpenses = mallOwnerExpenses.map(expense => 
-      expense.id === expenseId ? { ...expense, status: newStatus } : expense
-    );
-    
-    setMallOwnerExpenses(updatedExpenses);
-    saveExpensesToStorage(updatedExpenses);
-    
-    setSuccess(`Expense status updated to ${newStatus}`);
-  };
-
-  // Delete expense
-  const deleteExpense = (expenseId: string) => {
+  // Delete expense from backend
+  const deleteExpense = async (expenseId: number) => {
     if (!window.confirm('Are you sure you want to delete this expense record?')) {
       return;
     }
     
-    const updatedExpenses = mallOwnerExpenses.filter(expense => expense.id !== expenseId);
-    setMallOwnerExpenses(updatedExpenses);
-    saveExpensesToStorage(updatedExpenses);
-    
-    setSuccess('Expense record deleted successfully');
+    try {
+      await expenseApi.deleteExpense(expenseId);
+      await loadExpensesFromBackend();
+      setSuccess('Expense record deleted successfully');
+    } catch (error: any) {
+      setError('Failed to delete expense: ' + (error.message || 'Unknown error'));
+    }
   };
 
   // Export expenses
-  const exportExpenses = () => {
+  const exportExpenses = async () => {
     if (mallOwnerExpenses.length === 0) {
       setError('No expenses to export');
       return;
@@ -523,46 +577,48 @@ const BuildingUtilityInvoicePage: React.FC = () => {
       linkElement.setAttribute('download', exportFileDefaultName);
       linkElement.click();
     } else {
-      // CSV export
-      const headers = ['Building', 'Period Start', 'Period End', 'Amount (MMK)', 'Status', 'Date Recorded', 'Description'];
-      const csvRows = mallOwnerExpenses.map(expense => [
-        expense.buildingName,
-        expense.periodStart,
-        expense.periodEnd,
-        expense.ownerCAM.toLocaleString(),
-        expense.status,
-        expense.dateRecorded,
-        expense.description
-      ]);
-      
-      const csvContent = [
-        headers.join(','),
-        ...csvRows.map(row => row.join(','))
-      ].join('\n');
-      
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `mall_owner_expenses_${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      try {
+        // Try backend CSV export first
+        const response = await expenseApi.exportToCSV();
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `mall_owner_expenses_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        // Fallback to local CSV generation
+        const headers = ['Building', 'Period Start', 'Period End', 'Amount (MMK)', 'Status', 'Date Recorded', 'Description'];
+        const csvRows = mallOwnerExpenses.map(expense => [
+          expense.buildingName,
+          expense.periodStart,
+          expense.periodEnd,
+          expense.totalAmount.toLocaleString(),
+          expense.status,
+          expense.dateRecorded,
+          expense.description
+        ]);
+        
+        const csvContent = [
+          headers.join(','),
+          ...csvRows.map(row => row.join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mall_owner_expenses_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }
     }
     
     setSuccess(`Expenses exported as ${exportFormat} successfully!`);
-  };
-
-  // Clear all expenses (with confirmation)
-  const clearAllExpenses = () => {
-    if (!window.confirm('Are you sure you want to delete ALL expense records? This action cannot be undone.')) {
-      return;
-    }
-    
-    localStorage.removeItem(EXPENSES_STORAGE_KEY);
-    setMallOwnerExpenses([]);
-    setSuccess('All expense records cleared successfully');
   };
 
   const formatCurrency = (amount: number) => {
@@ -580,24 +636,10 @@ const BuildingUtilityInvoicePage: React.FC = () => {
 
   const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
 
-  // Calculate statistics
-  const calculateExpenseStats = () => {
-    const totalExpenses = mallOwnerExpenses.length;
-    const totalAmount = mallOwnerExpenses.reduce((sum, exp) => sum + exp.ownerCAM, 0);
-    const pendingExpenses = mallOwnerExpenses.filter(exp => exp.status === 'PENDING');
-    const paidExpenses = mallOwnerExpenses.filter(exp => exp.status === 'PAID');
-    
-    return {
-      totalExpenses,
-      totalAmount,
-      pendingCount: pendingExpenses.length,
-      paidCount: paidExpenses.length,
-      pendingAmount: pendingExpenses.reduce((sum, exp) => sum + exp.ownerCAM, 0),
-      paidAmount: paidExpenses.reduce((sum, exp) => sum + exp.ownerCAM, 0)
-    };
-  };
-
-  const stats = calculateExpenseStats();
+  // Filter expenses based on user role
+  const filteredExpenses = isAdmin 
+    ? mallOwnerExpenses 
+    : mallOwnerExpenses.filter(expense => expense.buildingId === assignedBuildingId);
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8">
@@ -611,6 +653,12 @@ const BuildingUtilityInvoicePage: React.FC = () => {
           <p className="text-gray-600">
             Calculate and track mall owner's utility expenses for vacant and unallocated areas
           </p>
+          {!isAdmin && assignedBuildingId && (
+            <p className="text-sm text-blue-600 mt-1 flex items-center gap-1">
+              <Building2 className="w-4 h-4" />
+              You are assigned to: {buildings.find(b => b.id === assignedBuildingId)?.buildingName || 'My Assigned Building'}
+            </p>
+          )}
         </div>
 
         {/* Alerts */}
@@ -628,24 +676,30 @@ const BuildingUtilityInvoicePage: React.FC = () => {
           </div>
         )}
 
-        {/* Statistics */}
-        {mallOwnerExpenses.length > 0 && (
+        {/* Statistics - Show only if user has expenses */}
+        {filteredExpenses.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white p-4 rounded-lg shadow">
               <div className="text-sm text-gray-500">Total Expenses</div>
-              <div className="text-2xl font-bold">{stats.totalExpenses}</div>
+              <div className="text-2xl font-bold">{filteredExpenses.length}</div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow">
               <div className="text-sm text-gray-500">Total Amount</div>
-              <div className="text-2xl font-bold text-blue-600">{formatCurrency(stats.totalAmount)}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {formatCurrency(filteredExpenses.reduce((sum, exp) => sum + exp.totalAmount, 0))}
+              </div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow">
               <div className="text-sm text-gray-500">Pending</div>
-              <div className="text-2xl font-bold text-yellow-600">{stats.pendingCount} ({formatCurrency(stats.pendingAmount)})</div>
+              <div className="text-2xl font-bold text-yellow-600">
+                {filteredExpenses.filter(exp => exp.status === 'PENDING').length}
+              </div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow">
               <div className="text-sm text-gray-500">Paid</div>
-              <div className="text-2xl font-bold text-green-600">{stats.paidCount} ({formatCurrency(stats.paidAmount)})</div>
+              <div className="text-2xl font-bold text-green-600">
+                {filteredExpenses.filter(exp => exp.status === 'PAID' || exp.status === 'APPROVED').length}
+              </div>
             </div>
           </div>
         )}
@@ -660,8 +714,13 @@ const BuildingUtilityInvoicePage: React.FC = () => {
               <select
                 value={selectedBuildingId || ''}
                 onChange={(e) => {
-                  setSelectedBuildingId(Number(e.target.value));
-                  setCalculations(new Map());
+                  const newBuildingId = Number(e.target.value);
+                  // Check if user has permission for this building
+                  if (assignedBuildingId && newBuildingId !== assignedBuildingId && !isAdmin) {
+                    alert('You can only access CAM calculations for your assigned building');
+                    return;
+                  }
+                  setSelectedBuildingId(newBuildingId);
                   setCamSummary(null);
                   setShowCAMPreview(false);
                   setUnits([]);
@@ -669,14 +728,22 @@ const BuildingUtilityInvoicePage: React.FC = () => {
                   setSuccess('');
                 }}
                 className="w-full border border-gray-300 rounded px-3 py-2"
-                disabled={loading}
+                disabled={loading || (!isAdmin && assignedBuildingId !== null)}
               >
                 <option value="">Select building...</option>
-                {buildings.map((building) => (
-                  <option key={building.id} value={building.id}>
-                    {building.buildingName} ({building.branchName})
+                {isAdmin ? (
+                  buildings.map((building) => (
+                    <option key={building.id} value={building.id}>
+                      {building.buildingName} ({building.branchName})
+                    </option>
+                  ))
+                ) : assignedBuildingId ? (
+                  <option value={assignedBuildingId}>
+                    {buildings.find(b => b.id === assignedBuildingId)?.buildingName || 'My Assigned Building'}
                   </option>
-                ))}
+                ) : (
+                  <option value="">No building assigned</option>
+                )}
               </select>
             </div>
 
@@ -717,28 +784,7 @@ const BuildingUtilityInvoicePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Other CAM Costs Configuration */}
-          <div className="mb-6 p-4 bg-blue-50 rounded border border-blue-200">
-            <label className="block text-sm font-medium text-blue-700 mb-2">
-              Other Monthly CAM Costs (MMK)
-              <span className="text-blue-500 text-xs ml-2">(Common area maintenance, security, cleaning, etc.)</span>
-            </label>
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <input
-                  type="number"
-                  value={otherCAMCosts}
-                  onChange={(e) => setOtherCAMCosts(parseFloat(e.target.value) || 0)}
-                  className="w-full border border-blue-300 rounded px-3 py-2 bg-white"
-                  min="0"
-                  step="10000"
-                />
-              </div>
-              <div className="text-sm font-medium text-blue-800">
-                Total: {formatCurrency(otherCAMCosts)}
-              </div>
-            </div>
-          </div>
+          
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
@@ -759,17 +805,149 @@ const BuildingUtilityInvoicePage: React.FC = () => {
               )}
             </button>
             
-            {mallOwnerExpenses.length > 0 && (
-              <button
-                onClick={exportExpenses}
-                className="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 flex items-center justify-center gap-2"
-              >
-                <Download className="w-5 h-5" />
-                Export Expenses
-              </button>
-            )}
+            
           </div>
         </div>
+
+        {/* CAM Distribution Preview */}
+        {showCAMPreview && camSummary && (
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <PieChart className="w-5 h-5" />
+                  Mall Owner Expense Calculation for {selectedBuilding?.buildingName}
+                </h2>
+                <p className="text-gray-600">
+                  Period: {formatDate(periodStart)} to {formatDate(periodEnd)}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowCAMPreview(false)}
+                  className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                >
+                  Hide Preview
+                </button>
+              </div>
+            </div>
+
+            {/* Building Area Breakdown */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <h3 className="font-semibold text-blue-700 mb-2">Building Area</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Leasable Area:</span>
+                    <span className="font-bold">{camSummary.totalLeasableArea.toLocaleString()} sq.ft</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-green-600">Occupied Area:</span>
+                    <span className="font-bold">{camSummary.totalOccupiedArea.toLocaleString()} sq.ft ({camSummary.occupiedPercentage}%)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-yellow-600">Vacant Area:</span>
+                    <span className="font-bold">{camSummary.totalVacantArea.toLocaleString()} sq.ft ({camSummary.vacantPercentage}%)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-red-600">Unallocated Area:</span>
+                    <span className="font-bold">{camSummary.unallocatedArea.toLocaleString()} sq.ft ({camSummary.unallocatedPercentage}%)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-green-50 rounded-lg">
+                <h3 className="font-semibold text-green-700 mb-2">CAM Cost Breakdown</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Generator Fee:</span>
+                    <span className="font-bold">{formatCurrency(selectedBuilding?.generatorFee || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Transformer Fee:</span>
+                    <span className="font-bold">{formatCurrency(selectedBuilding?.transformerFee || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Other CAM Costs:</span>
+                    <span className="font-bold">{formatCurrency(otherCAMCosts)}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-green-200">
+                    <span className="font-bold text-green-700">Total CAM Costs:</span>
+                    <span className="font-bold text-green-700">{formatCurrency(camSummary.totalCAMCosts)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-purple-50 rounded-lg">
+                <h3 className="font-semibold text-purple-700 mb-2">Distribution</h3>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-green-600">Tenants Pay:</span>
+                      <span className="font-bold text-green-700">{formatCurrency(camSummary.tenantsCAM)}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-green-500 h-2 rounded-full" 
+                        style={{ width: `${(camSummary.tenantsCAM / camSummary.totalCAMCosts) * 100}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      For {camSummary.occupiedUnitsCount} occupied units ({camSummary.occupiedPercentage}% of area)
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-red-600">Mall Owner Pays:</span>
+                      <span className="font-bold text-red-700">{formatCurrency(camSummary.ownerCAM)}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-red-500 h-2 rounded-full" 
+                        style={{ width: `${(camSummary.ownerCAM / camSummary.totalCAMCosts) * 100}%` }}
+                      ></div>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      For {camSummary.vacantUnitsCount} vacant units + unallocated area ({100 - camSummary.occupiedPercentage}% of area)
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Save Expense Section */}
+            <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+              <h3 className="font-semibold text-yellow-700 mb-3">Save Expense Record</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-yellow-700 mb-1">
+                    Expense Description
+                  </label>
+                  <textarea
+                    value={expenseDescription}
+                    onChange={(e) => setExpenseDescription(e.target.value)}
+                    className="w-full border border-yellow-300 rounded px-3 py-2"
+                    rows={2}
+                    placeholder="Enter description for this expense..."
+                  />
+                </div>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="text-sm text-yellow-700">Mall Owner's Share:</div>
+                    <div className="text-2xl font-bold text-red-600">{formatCurrency(camSummary.ownerCAM)}</div>
+                  </div>
+                  <button
+                    onClick={saveMallOwnerExpense}
+                    className="px-6 py-3 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-2"
+                  >
+                    <Save className="w-5 h-5" />
+                    Save Expense Record
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Expense History Panel */}
         {showExpenseHistory && (
@@ -777,44 +955,18 @@ const BuildingUtilityInvoicePage: React.FC = () => {
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <History className="w-5 h-5" />
-                Mall Owner Expense History
+                {isAdmin ? 'All Mall Owner Expenses' : 'Your Expense History'}
                 <span className="text-sm font-normal text-gray-500 ml-2">
-                  ({mallOwnerExpenses.length} records)
+                  ({filteredExpenses.length} records)
                 </span>
               </h3>
               <div className="flex gap-2">
-                {mallOwnerExpenses.length > 0 && (
-                  <>
-                    <div className="flex items-center gap-2 mr-4">
-                      <span className="text-sm text-gray-600">Export as:</span>
-                      <select
-                        value={exportFormat}
-                        onChange={(e) => setExportFormat(e.target.value as 'JSON' | 'CSV')}
-                        className="border border-gray-300 rounded px-2 py-1 text-sm"
-                      >
-                        <option value="JSON">JSON</option>
-                        <option value="CSV">CSV</option>
-                      </select>
-                    </div>
-                    <button
-                      onClick={clearAllExpenses}
-                      className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 flex items-center gap-2"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Clear All
-                    </button>
-                  </>
-                )}
-                <button
-                  onClick={() => setShowExpenseHistory(false)}
-                  className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-                >
-                  Close
-                </button>
+                
+                
               </div>
             </div>
 
-            {mallOwnerExpenses.length > 0 ? (
+            {filteredExpenses.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead>
@@ -837,7 +989,7 @@ const BuildingUtilityInvoicePage: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {mallOwnerExpenses.map((expense) => (
+                    {filteredExpenses.map((expense) => (
                       <tr key={expense.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3">
                           <div className="font-medium">{expense.buildingName}</div>
@@ -848,22 +1000,22 @@ const BuildingUtilityInvoicePage: React.FC = () => {
                         </td>
                         <td className="px-4 py-3">
                           <div className="font-bold text-red-600">
-                            {formatCurrency(expense.ownerCAM)}
+                            {formatCurrency(expense.totalAmount)}
                           </div>
                           <div className="text-xs text-gray-500">
-                            Generator: {formatCurrency(expense.generatorShare)}
+                            Generator: {formatCurrency(expense.generatorShare || 0)}
                           </div>
                           <div className="text-xs text-gray-500">
-                            Transformer: {formatCurrency(expense.transformerShare)}
+                            Transformer: {formatCurrency(expense.transformerShare || 0)}
                           </div>
                           <div className="text-xs text-gray-500">
-                            Other CAM: {formatCurrency(expense.otherCAMShare)}
+                            Other CAM: {formatCurrency(expense.otherCAMShare || 0)}
                           </div>
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex flex-col gap-2">
                             <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              expense.status === 'PAID' 
+                              expense.status === 'PAID' || expense.status === 'APPROVED'
                                 ? 'bg-green-100 text-green-800'
                                 : expense.status === 'PENDING'
                                 ? 'bg-yellow-100 text-yellow-800'
@@ -871,29 +1023,31 @@ const BuildingUtilityInvoicePage: React.FC = () => {
                             }`}>
                               {expense.status}
                             </span>
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => updateExpenseStatus(expense.id, 'PENDING')}
-                                className={`px-2 py-1 text-xs rounded ${expense.status === 'PENDING' ? 'bg-yellow-500 text-white' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'}`}
-                                title="Mark as Pending"
-                              >
-                                Pending
-                              </button>
-                              <button
-                                onClick={() => updateExpenseStatus(expense.id, 'PAID')}
-                                className={`px-2 py-1 text-xs rounded ${expense.status === 'PAID' ? 'bg-green-500 text-white' : 'bg-green-100 text-green-800 hover:bg-green-200'}`}
-                                title="Mark as Paid"
-                              >
-                                Paid
-                              </button>
-                              <button
-                                onClick={() => updateExpenseStatus(expense.id, 'CANCELLED')}
-                                className={`px-2 py-1 text-xs rounded ${expense.status === 'CANCELLED' ? 'bg-red-500 text-white' : 'bg-red-100 text-red-800 hover:bg-red-200'}`}
-                                title="Mark as Cancelled"
-                              >
-                                Cancel
-                              </button>
-                            </div>
+                            {(isAdmin || isAccountant) && (
+                              <div className="flex gap-1">
+                                <button
+                                  onClick={() => updateExpenseStatus(expense.id, 'PENDING')}
+                                  className={`px-2 py-1 text-xs rounded ${expense.status === 'PENDING' ? 'bg-yellow-500 text-white' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'}`}
+                                  title="Mark as Pending"
+                                >
+                                  Pending
+                                </button>
+                                <button
+                                  onClick={() => updateExpenseStatus(expense.id, 'PAID')}
+                                  className={`px-2 py-1 text-xs rounded ${expense.status === 'PAID' ? 'bg-green-500 text-white' : 'bg-green-100 text-green-800 hover:bg-green-200'}`}
+                                  title="Mark as Paid"
+                                >
+                                  Paid
+                                </button>
+                                <button
+                                  onClick={() => updateExpenseStatus(expense.id, 'CANCELLED')}
+                                  className={`px-2 py-1 text-xs rounded ${expense.status === 'CANCELLED' ? 'bg-red-500 text-white' : 'bg-red-100 text-red-800 hover:bg-red-200'}`}
+                                  title="Mark as Cancelled"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="px-4 py-3">
@@ -922,12 +1076,24 @@ const BuildingUtilityInvoicePage: React.FC = () => {
                               <Calculator className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => deleteExpense(expense.id)}
-                              className="p-1 text-red-600 hover:text-red-800"
-                              title="Delete"
+                              onClick={() => {
+                                // View details
+                                alert(`Expense Details:\nBuilding: ${expense.buildingName}\nPeriod: ${expense.periodStart} to ${expense.periodEnd}\nAmount: ${formatCurrency(expense.totalAmount)}\nStatus: ${expense.status}\nDescription: ${expense.description}`);
+                              }}
+                              className="p-1 text-green-600 hover:text-green-800"
+                              title="View Details"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Eye className="w-4 h-4" />
                             </button>
+                            {(isAdmin || isAccountant) && (
+                              <button
+                                onClick={() => deleteExpense(expense.id)}
+                                className="p-1 text-red-600 hover:text-red-800"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -937,10 +1103,20 @@ const BuildingUtilityInvoicePage: React.FC = () => {
                     <tr className="bg-gray-50 font-bold">
                       <td colSpan={5} className="px-4 py-3 text-right">
                         <div className="text-sm text-gray-600 inline-flex items-center gap-4">
-                          <span>Total Records: {mallOwnerExpenses.length}</span>
-                          <span className="text-green-600">Paid: {formatCurrency(stats.paidAmount)}</span>
-                          <span className="text-yellow-600">Pending: {formatCurrency(stats.pendingAmount)}</span>
-                          <span className="text-red-600">Total: {formatCurrency(stats.totalAmount)}</span>
+                          <span>Total Records: {filteredExpenses.length}</span>
+                          <span className="text-green-600">
+                            Paid: {formatCurrency(filteredExpenses
+                              .filter(e => e.status === 'PAID' || e.status === 'APPROVED')
+                              .reduce((sum, e) => sum + e.totalAmount, 0))}
+                          </span>
+                          <span className="text-yellow-600">
+                            Pending: {formatCurrency(filteredExpenses
+                              .filter(e => e.status === 'PENDING')
+                              .reduce((sum, e) => sum + e.totalAmount, 0))}
+                          </span>
+                          <span className="text-blue-600">
+                            Total: {formatCurrency(filteredExpenses.reduce((sum, e) => sum + e.totalAmount, 0))}
+                          </span>
                         </div>
                       </td>
                     </tr>
@@ -956,262 +1132,6 @@ const BuildingUtilityInvoicePage: React.FC = () => {
                 </p>
               </div>
             )}
-          </div>
-        )}
-
-        {/* CAM Distribution Preview - Mall Owner Focus */}
-        {showCAMPreview && camSummary && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <PieChart className="w-5 h-5" />
-                  Mall Owner Expense Calculation for {selectedBuilding?.buildingName}
-                </h2>
-                <p className="text-gray-600">
-                  Period: {formatDate(periodStart)} to {formatDate(periodEnd)}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowCAMPreview(false)}
-                  className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-                >
-                  Hide Preview
-                </button>
-              </div>
-            </div>
-
-            {/* Building Area Breakdown */}
-            <div className="mb-6">
-              <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-300 rounded-lg p-6 mb-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <Home className="w-10 h-10 text-blue-600" />
-                  <div>
-                    <h3 className="text-xl font-bold text-blue-800">Building Area Analysis</h3>
-                    <p className="text-blue-600">
-                      Breakdown of total leasable area and responsibility allocation
-                    </p>
-                  </div>
-                </div>
-                
-                {/* Area Distribution Chart */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-white p-4 rounded-lg border border-blue-200 shadow-sm">
-                    <div className="text-sm text-blue-600 font-medium">Total Leasable Area</div>
-                    <div className="text-2xl font-bold text-blue-700 mt-2">
-                      {camSummary.totalLeasableArea.toLocaleString()} sq.ft
-                    </div>
-                    <div className="text-sm text-blue-600 mt-1">100%</div>
-                  </div>
-                  
-                  <div className="bg-green-50 p-4 rounded-lg border border-green-200 shadow-sm">
-                    <div className="text-sm text-green-600 font-medium">Occupied by Tenants</div>
-                    <div className="text-2xl font-bold text-green-700 mt-2">
-                      {camSummary.totalOccupiedArea.toLocaleString()} sq.ft
-                    </div>
-                    <div className="text-sm text-green-600 mt-1">
-                      {camSummary.occupiedUnitsCount} units • {camSummary.occupiedPercentage}%
-                    </div>
-                  </div>
-                  
-                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 shadow-sm">
-                    <div className="text-sm text-yellow-600 font-medium">Vacant Units</div>
-                    <div className="text-2xl font-bold text-yellow-700 mt-2">
-                      {camSummary.totalVacantArea.toLocaleString()} sq.ft
-                    </div>
-                    <div className="text-sm text-yellow-600 mt-1">
-                      {camSummary.vacantUnitsCount} units • {camSummary.vacantPercentage}%
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gray-100 p-4 rounded-lg border border-gray-300 shadow-sm">
-                    <div className="text-sm text-gray-600 font-medium">Unallocated Area</div>
-                    <div className="text-2xl font-bold text-gray-700 mt-2">
-                      {camSummary.unallocatedArea.toLocaleString()} sq.ft
-                    </div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      Not assigned • {camSummary.unallocatedPercentage}%
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Cost Breakdown */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                  <div className="bg-white p-6 rounded-lg border border-blue-200 shadow-sm">
-                    <div className="text-sm text-blue-600 font-medium">Total Monthly CAM Costs</div>
-                    <div className="text-3xl font-bold text-blue-700 mt-2">
-                      {formatCurrency(camSummary.totalCAMCosts)}
-                    </div>
-                    <div className="space-y-1 mt-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Generator Fee:</span>
-                        <span>{formatCurrency(selectedBuilding?.generatorFee || 0)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Transformer Fee:</span>
-                        <span>{formatCurrency(selectedBuilding?.transformerFee || 0)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Other CAM Costs:</span>
-                        <span>{formatCurrency(otherCAMCosts)}</span>
-                      </div>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <div className="text-sm text-gray-600">Cost per sq.ft:</div>
-                      <div className="text-lg font-bold text-blue-600">
-                        {formatCurrency(camSummary.totalCAMCosts / camSummary.totalLeasableArea)} / sq.ft
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-green-50 p-6 rounded-lg border border-green-200 shadow-sm">
-                    <div className="text-sm text-green-600 font-medium">Tenants' Responsibility</div>
-                    <div className="text-3xl font-bold text-green-700 mt-2">
-                      {formatCurrency(camSummary.tenantsCAM)}
-                    </div>
-                    <div className="text-sm text-green-600 mt-2">
-                      Only for occupied area
-                    </div>
-                    <div className="space-y-1 mt-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Occupied Area:</span>
-                        <span>{camSummary.totalOccupiedArea.toLocaleString()} sq.ft</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Percentage:</span>
-                        <span>{camSummary.occupiedPercentage}%</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Cost per sq.ft:</span>
-                        <span>{formatCurrency(camSummary.totalCAMCosts / camSummary.totalLeasableArea)}</span>
-                      </div>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-green-200 text-sm">
-                      <div className="font-medium text-green-700">Formula:</div>
-                      <div className="text-green-600">
-                        {camSummary.totalOccupiedArea.toLocaleString()} sq.ft × {formatCurrency(camSummary.totalCAMCosts / camSummary.totalLeasableArea)} = {formatCurrency(camSummary.tenantsCAM)}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-6 rounded-lg shadow-lg">
-                    <div className="text-blue-100 text-sm font-medium">MALL OWNER'S RESPONSIBILITY</div>
-                    <div className="text-4xl font-bold text-white mt-2">
-                      {formatCurrency(camSummary.ownerCAM)}
-                    </div>
-                    <div className="text-blue-200 text-sm mt-3">
-                      For vacant + unallocated areas
-                    </div>
-                    <div className="space-y-1 mt-4">
-                      <div className="flex justify-between text-blue-100 text-sm">
-                        <span>Vacant Area:</span>
-                        <span>{camSummary.totalVacantArea.toLocaleString()} sq.ft</span>
-                      </div>
-                      <div className="flex justify-between text-blue-100 text-sm">
-                        <span>Unallocated Area:</span>
-                        <span>{camSummary.unallocatedArea.toLocaleString()} sq.ft</span>
-                      </div>
-                      <div className="flex justify-between text-blue-100 text-sm">
-                        <span>Total Mall Owner Area:</span>
-                        <span className="font-bold">{(camSummary.totalVacantArea + camSummary.unallocatedArea).toLocaleString()} sq.ft</span>
-                      </div>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-blue-400">
-                      <div className="text-blue-100 text-sm">Formula:</div>
-                      <div className="text-blue-200 text-xs">
-                        Total CAM ({formatCurrency(camSummary.totalCAMCosts)}) - Tenants CAM ({formatCurrency(camSummary.tenantsCAM)}) = {formatCurrency(camSummary.ownerCAM)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Expense Description */}
-                <div className="mt-6">
-                  <label className="block text-sm font-medium text-blue-700 mb-2">
-                    Expense Description
-                  </label>
-                  <textarea
-                    value={expenseDescription}
-                    onChange={(e) => setExpenseDescription(e.target.value)}
-                    className="w-full border border-blue-300 rounded-lg px-4 py-3"
-                    rows={2}
-                    placeholder="Enter description for this expense..."
-                  />
-                  <div className="text-xs text-gray-500 mt-1">
-                    This description will help you identify this expense in the history.
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Calculation Verification */}
-            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 mb-6">
-              <h4 className="font-bold text-gray-800 mb-4">Calculation Verification</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <div className="text-sm text-gray-600 mb-2">Tenants Pay:</div>
-                  <div className="text-lg font-bold text-green-700">
-                    {formatCurrency(camSummary.tenantsCAM)} for {camSummary.totalOccupiedArea.toLocaleString()} sq.ft
-                  </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    ({camSummary.totalOccupiedArea} ÷ {camSummary.totalLeasableArea}) × {formatCurrency(camSummary.totalCAMCosts)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-600 mb-2">Mall Owner Pays:</div>
-                  <div className="text-lg font-bold text-blue-700">
-                    {formatCurrency(camSummary.ownerCAM)} for {(camSummary.totalVacantArea + camSummary.unallocatedArea).toLocaleString()} sq.ft
-                  </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    {formatCurrency(camSummary.totalCAMCosts)} - {formatCurrency(camSummary.tenantsCAM)} = {formatCurrency(camSummary.ownerCAM)}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-300">
-                <div className="flex justify-between font-bold text-gray-800">
-                  <span>Total CAM Costs:</span>
-                  <span>{formatCurrency(camSummary.totalCAMCosts)}</span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-600 mt-1">
-                  <span>Verification:</span>
-                  <span>{formatCurrency(camSummary.tenantsCAM)} + {formatCurrency(camSummary.ownerCAM)} = {formatCurrency(camSummary.tenantsCAM + camSummary.ownerCAM)} ✓</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Save Expense Button */}
-            <div className="mt-8 pt-8 border-t border-gray-200">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <h4 className="font-bold text-gray-900 text-lg">Save to Expense History</h4>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Save this calculation to track mall owner expenses over time.
-                    <br />
-                    <span className="text-blue-600">Data is stored locally in your browser.</span>
-                  </p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <button
-                    onClick={saveMallOwnerExpense}
-                    disabled={loading}
-                    className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 flex items-center gap-2 shadow-md"
-                  >
-                    <Save className="w-5 h-5" />
-                    Save Expense
-                  </button>
-                  <button
-                    onClick={() => {
-                      setCamSummary(null);
-                      setShowCAMPreview(false);
-                    }}
-                    className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         )}
 
@@ -1261,7 +1181,9 @@ const BuildingUtilityInvoicePage: React.FC = () => {
           
           <div className="mt-4 p-4 bg-blue-50 rounded border border-blue-200">
             <div className="text-sm text-blue-700">
-              <strong>Note:</strong> Expenses are stored locally in your browser. Export them regularly to keep backups.
+              <strong>Note:</strong> All expense records are now stored in the database. 
+              {!isAdmin && " You can only view expenses for your assigned building."}
+              {isAdmin && " As an administrator, you can view all expenses."}
               The system prevents duplicate entries for the same building and period.
             </div>
           </div>

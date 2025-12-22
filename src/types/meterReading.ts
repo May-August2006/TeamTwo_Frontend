@@ -1,5 +1,6 @@
 // types/meterReading.ts
 export interface MeterReading {
+  utilityId: number;
   id: number;
   unitId: number; // ✅ Changed from roomId
   unitNumber: string; // ✅ Changed from roomNumber

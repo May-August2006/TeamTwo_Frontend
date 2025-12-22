@@ -50,11 +50,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       value: "payment",
     },
     {
-      name: "Invoices & Receipts",
-      icon: <Receipt className="w-5 h-5" />,
-      value: "invoices",
-    },
-    {
       name: "Reports",
       icon: <BarChart3 className="w-5 h-5" />,
       value: "reports",
@@ -82,11 +77,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           name: "Utility Expenses",
           value: "building-invoices",
           icon: <Building2 className="w-4 h-4" />,
-        },
-        {
-          name: "Payment Management",
-          value: "payments",
-          icon: <CreditCard className="w-4 h-4" />,
         },
         {
           name: "Invoice Management",
