@@ -348,9 +348,7 @@ const ManagerMaintenancePage: React.FC = () => {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
                     {t('maintenance.status', "Status")}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    {t('maintenance.assignedTo', "Assigned To")}
-                  </th>
+                  
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
                     {t('maintenance.created', "Created")}
                   </th>
@@ -396,24 +394,7 @@ const ManagerMaintenancePage: React.FC = () => {
                         {request.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
-                      {request.assignedToName || (
-                        <select
-                          onChange={(e) => handleAssign(request.id, parseInt(e.target.value))}
-                          className="border border-stone-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-red-500 transition duration-150"
-                          defaultValue=""
-                        >
-                          <option value="" disabled>
-                            {t('maintenance.assignTo', "Assign to...")}
-                          </option>
-                          {users.map((user) => (
-                            <option key={user.id} value={user.id}>
-                              {user.fullName}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                    </td>
+                    
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-500">
                       {new Date(request.createdAt).toLocaleDateString()}
                     </td>
