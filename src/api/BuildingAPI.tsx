@@ -1,3 +1,5 @@
+/** @format */
+
 import API from "./api";
 import type { Building, BuildingRequest } from "../types";
 import type { Unit } from "../types/unit";
@@ -36,63 +38,83 @@ export interface CAMDistribution {
 }
 
 export const buildingApi = {
-  getAll: () => API.get<Building[]>('/api/buildings'),
+  getAll: () => API.get<Building[]>("/api/buildings"),
   getById: (id: number) => API.get<Building>(`/api/buildings/${id}`),
-  getByBranchId: (branchId: number) => API.get<Building[]>(`/api/buildings/branch/${branchId}`),
-  create: (building: BuildingRequest) => API.post<Building>('/api/buildings', building),
-  update: (id: number, building: BuildingRequest) => API.put<Building>(`/api/buildings/${id}`, building),
+  getByBranchId: (branchId: number) =>
+    API.get<Building[]>(`/api/buildings/branch/${branchId}`),
+  create: (building: BuildingRequest) =>
+    API.post<Building>("/api/buildings", building),
+  update: (id: number, building: BuildingRequest) =>
+    API.put<Building>(`/api/buildings/${id}`, building),
   delete: (id: number) => API.delete<void>(`/api/buildings/${id}`),
-  search: (branchId: number, name: string) => API.get<Building[]>(`/api/buildings/search?branchId=${branchId}&name=${name}`),
-  getBuildingsByBranch: (branchId: number) => API.get<Building[]>(`/api/buildings/branch/${branchId}`),
-  
+  search: (branchId: number, name: string) =>
+    API.get<Building[]>(
+      `/api/buildings/search?branchId=${branchId}&name=${name}`
+    ),
+  getBuildingsByBranch: (branchId: number) =>
+    API.get<Building[]>(`/api/buildings/branch/${branchId}`),
+
   // New methods for assignment
-  getAvailableBuildings: () => API.get<Building[]>('/api/buildings/available'),
-  assignManager: (buildingId: number, managerId: number) => 
-    API.post<Building>(`/api/buildings/${buildingId}/assign-manager/${managerId}`, {}),
-  removeManager: (buildingId: number) => 
+  getAvailableBuildings: () => API.get<Building[]>("/api/buildings/available"),
+  assignManager: (buildingId: number, managerId: number) =>
+    API.post<Building>(
+      `/api/buildings/${buildingId}/assign-manager/${managerId}`,
+      {}
+    ),
+  removeManager: (buildingId: number) =>
     API.post<void>(`/api/buildings/${buildingId}/remove-manager`, {}),
 
-  getWithUtilities: (id: number) => 
+  getWithUtilities: (id: number) =>
     API.get<Building>(`/api/buildings/${id}/with-utilities`),
-    
+
   // Get buildings by manager
-  getByManager: (managerId: number) => 
+  getByManager: (managerId: number) =>
     API.get<Building[]>(`/api/buildings/manager/${managerId}`),
- 
-    
+
   // Get units by building
-  getUnitsByBuilding: (buildingId: number) => 
+  getUnitsByBuilding: (buildingId: number) =>
     API.get<any[]>(`/api/buildings/${buildingId}/units`),
-    
+
   // Get building statistics
-  getStatistics: (buildingId: number) => 
+  getStatistics: (buildingId: number) =>
     API.get<any>(`/api/buildings/${buildingId}/statistics`),
 
-  getCAMSettings: (buildingId: number) => 
-  API.get<BuildingUtilityConfig>(`/api/buildings/${buildingId}/cam-settings`),
-  
-updateCAMSettings: (buildingId: number, settings: BuildingUtilityConfig) => 
-  API.put<BuildingUtilityConfig>(`/api/buildings/${buildingId}/cam-settings`, settings),
-  
-calculateCAMDistribution: (buildingId: number) => 
-  API.get<CAMDistribution[]>(`/api/buildings/${buildingId}/cam-distribution`),
+  getCAMSettings: (buildingId: number) =>
+    API.get<BuildingUtilityConfig>(`/api/buildings/${buildingId}/cam-settings`),
 
-  checkExists: (buildingName: string, branchId: number) => 
-    API.get<boolean>(`/api/buildings/exists?buildingName=${encodeURIComponent(buildingName)}&branchId=${branchId}`),
+  updateCAMSettings: (buildingId: number, settings: BuildingUtilityConfig) =>
+    API.put<BuildingUtilityConfig>(
+      `/api/buildings/${buildingId}/cam-settings`,
+      settings
+    ),
 
-  assignAccountant: (buildingId: number, accountantId: number) => 
-    API.post<Building>(`/api/buildings/${buildingId}/assign-accountant/${accountantId}`, {}),
-    
-  removeAccountant: (buildingId: number) => 
+  calculateCAMDistribution: (buildingId: number) =>
+    API.get<CAMDistribution[]>(`/api/buildings/${buildingId}/cam-distribution`),
+
+  checkExists: (buildingName: string, branchId: number) =>
+    API.get<boolean>(
+      `/api/buildings/exists?buildingName=${encodeURIComponent(
+        buildingName
+      )}&branchId=${branchId}`
+    ),
+
+  assignAccountant: (buildingId: number, accountantId: number) =>
+    API.post<Building>(
+      `/api/buildings/${buildingId}/assign-accountant/${accountantId}`,
+      {}
+    ),
+
+  removeAccountant: (buildingId: number) =>
     API.post<void>(`/api/buildings/${buildingId}/remove-accountant`, {}),
-    
+
   // Update getAvailableBuildings to filter for accountants too
-  getAvailableBuildingsForAccountants: () => 
-    API.get<Building[]>('/api/buildings/available-for-accountants'),
+  getAvailableBuildingsForAccountants: () =>
+    API.get<Building[]>("/api/buildings/available-for-accountants"),
 
   // Add these methods to buildingApi object:
-getMyAssignedBuilding: () => API.get<Building>('/api/buildings/my-assigned-building'),
-getOccupiedUnitsByBuilding: (buildingId: number) => 
-    API.get<Unit[]>(`/api/units/occupied/by-building/${buildingId}`),
+  getMyAssignedBuilding: () =>
+    API.get<Building>("/api/buildings/my-assigned-building"),
 
+  getOccupiedUnitsByBuilding: (buildingId: number) =>
+    API.get<Unit[]>(`/api/units/occupied/by-building/${buildingId}`),
 };

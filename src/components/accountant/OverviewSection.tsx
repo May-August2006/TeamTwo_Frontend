@@ -246,9 +246,6 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
         <div className="p-6 sm:p-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
             <div className="text-white">
-              {/* <h1 className="text-2xl sm:text-3xl font-bold mb-2">
-                Welcome back, Accountant!
-              </h1> */}
               <p className="text-blue-100 mb-4">{formattedDate}</p>
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center gap-2">
@@ -286,15 +283,6 @@ const OverviewSection: React.FC<OverviewSectionProps> = ({
                 </div>
               </div>
             </div>
-            {/* <div className="flex-shrink-0">
-              <button
-                onClick={onRecordPayment}
-                className="flex items-center gap-2 px-6 py-3 bg-white text-blue-800 rounded-lg hover:bg-blue-50 transition duration-200 font-semibold shadow-lg"
-              >
-                <Plus className="w-5 h-5" />
-                Record Payment
-              </button>
-            </div> */}
           </div>
         </div>
       </div>
