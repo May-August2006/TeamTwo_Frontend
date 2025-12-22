@@ -104,4 +104,10 @@ export const paymentApi = {
     );
     return response.data;
   },
+
+  // Add this method to paymentApi.ts
+async getMyPayments(): Promise<Payment[]> {
+    const response = await API.get<Payment[]>("/api/payments/tenant/me");
+    return response.data;
+}
 };

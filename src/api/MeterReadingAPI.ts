@@ -47,6 +47,27 @@ checkMonthlyReading: (unitId: number, utilityTypeId: number, readingDate: string
 createBulkValidatedReadings: (requests: CreateMeterReadingRequest[]): Promise<MeterReading[]> =>
     API.post<MeterReading[]>('/api/meter-readings/bulk-validated', requests).then(response => response.data),
 
+checkBuildingMonthlyReadings: (buildingId: number, readingDate: string) => 
+    API.get<{ allUnitsRead: boolean }>(`/api/meter-readings/check-building-monthly/${buildingId}`, {
+        params: { readingDate }
+    }).then(response => response.data),
+    
+    getUnitsReadingStatus: (buildingId: number, readingDate: string, utilityTypeIds: number[]) =>
+    API.get<any[]>(`/api/meter-readings/units-reading-status/${buildingId}`, {
+        params: { 
+            readingDate,
+            utilityTypeIds
+        }
+    }).then(response => response.data),
+
+checkUnitMonthlyReadings: (unitId: number, utilityTypeIds: number[], readingDate: string) =>
+    API.get<{[key: string]: boolean}>(`/api/meter-readings/check-unit-readings/${unitId}`, {
+        params: {
+            utilityTypeIds,
+            readingDate
+        }
+    }).then(response => response.data),
+
 };
 
 export const utilityTypeApi = {
