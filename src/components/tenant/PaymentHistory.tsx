@@ -8,15 +8,18 @@ import {
   DollarSign,
   Download,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const PaymentHistory: React.FC = () => {
+  const { t } = useTranslation();
+  
   const payments = [
     {
       id: "PMT-001",
       invoiceId: "INV-2023-012",
       date: "Dec 14, 2023",
       amount: "$2,500.00",
-      method: "Bank Transfer",
+      method: t('tenant.bankTransfer'),
       status: "completed",
       reference: "TRX-789012",
     },
@@ -25,7 +28,7 @@ const PaymentHistory: React.FC = () => {
       invoiceId: "INV-2023-011",
       date: "Nov 12, 2023",
       amount: "$2,450.00",
-      method: "Credit Card",
+      method: t('tenant.creditDebitCard'),
       status: "completed",
       reference: "TRX-789011",
     },
@@ -34,7 +37,7 @@ const PaymentHistory: React.FC = () => {
       invoiceId: "INV-2023-010",
       date: "Oct 15, 2023",
       amount: "$2,450.00",
-      method: "Bank Transfer",
+      method: t('tenant.bankTransfer'),
       status: "completed",
       reference: "TRX-789010",
     },
@@ -43,7 +46,7 @@ const PaymentHistory: React.FC = () => {
       invoiceId: "INV-2023-009",
       date: "Sep 13, 2023",
       amount: "$2,450.00",
-      method: "Credit Card",
+      method: t('tenant.creditDebitCard'),
       status: "completed",
       reference: "TRX-789009",
     },
@@ -54,35 +57,35 @@ const PaymentHistory: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">Payment History</h2>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">{t('tenant.paymentHistory')}</h2>
           <p className="text-stone-600 mt-1">
-            Track all your payment transactions and receipts
+            {t('tenant.paymentDetails')}
           </p>
         </div>
         <button className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-150 mt-4 sm:mt-0 shadow-lg hover:shadow-xl transform active:scale-95">
           <Download className="w-4 h-4" />
-          <span>Export History</span>
+          <span>{t('tenant.exportHistory')}</span>
         </button>
       </div>
 
       {/* Payment Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 text-center hover:shadow-xl transition duration-150">
-          <p className="text-sm text-stone-600">Total Payments</p>
+          <p className="text-sm text-stone-600">{t('tenant.totalPayments')}</p>
           <p className="text-2xl font-bold text-stone-900 mt-1">4</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 text-center hover:shadow-xl transition duration-150">
-          <p className="text-sm text-stone-600">Total Amount</p>
+          <p className="text-sm text-stone-600">{t('tenant.totalAmount')}</p>
           <p className="text-2xl font-bold text-green-600 mt-1">$9,850.00</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 text-center hover:shadow-xl transition duration-150">
-          <p className="text-sm text-stone-600">On-time Payments</p>
+          <p className="text-sm text-stone-600">{t('tenant.onTimePayments')}</p>
           <p className="text-2xl font-bold text-blue-600 mt-1">100%</p>
         </div>
         <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 text-center hover:shadow-xl transition duration-150">
-          <p className="text-sm text-stone-600">Preferred Method</p>
+          <p className="text-sm text-stone-600">{t('tenant.preferredMethod')}</p>
           <p className="text-2xl font-bold text-purple-600 mt-1">
-            Bank Transfer
+            {t('tenant.bankTransfer')}
           </p>
         </div>
       </div>
@@ -94,22 +97,22 @@ const PaymentHistory: React.FC = () => {
             <thead className="bg-stone-100">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                  Payment Details
+                  {t('tenant.paymentDetails')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                  Date
+                  {t('tenant.date')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                  Amount
+                  {t('tenant.amount')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                  Method
+                  {t('tenant.method')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                  Status
+                  {t('tenant.status')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                  Actions
+                  {t('tenant.actions')}
                 </th>
               </tr>
             </thead>
@@ -122,7 +125,7 @@ const PaymentHistory: React.FC = () => {
                         {payment.id}
                       </p>
                       <p className="text-sm text-stone-500">
-                        For {payment.invoiceId}
+                        {t('tenant.for')} {payment.invoiceId}
                       </p>
                     </div>
                   </td>
@@ -147,12 +150,12 @@ const PaymentHistory: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
                       <CheckCircle className="w-3 h-3 mr-1" />
-                      Completed
+                      {t('tenant.completed')}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button className="text-red-600 hover:text-red-800 font-semibold transition duration-150">
-                      View Receipt
+                      {t('tenant.viewReceipt')}
                     </button>
                   </td>
                 </tr>
@@ -165,11 +168,11 @@ const PaymentHistory: React.FC = () => {
       {/* Payment Methods */}
       <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
         <h3 className="text-lg font-semibold text-stone-900 mb-4 border-b border-stone-200 pb-2">
-          Payment Methods
+          {t('tenant.paymentMethods')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="p-4 bg-stone-50 rounded-lg border border-stone-200">
-            <h4 className="font-semibold text-stone-900 mb-2">Bank Transfer</h4>
+            <h4 className="font-semibold text-stone-900 mb-2">{t('tenant.bankTransfer')}</h4>
             <p className="text-sm text-stone-600 mb-2">
               Sein Gay Har Management
             </p>
@@ -182,7 +185,7 @@ const PaymentHistory: React.FC = () => {
           </div>
           <div className="p-4 bg-stone-50 rounded-lg border border-stone-200">
             <h4 className="font-semibold text-stone-900 mb-2">
-              Credit/Debit Card
+              {t('tenant.creditDebitCard')}
             </h4>
             <p className="text-sm text-stone-600 mb-2">
               Visa, MasterCard, American Express

@@ -1,6 +1,7 @@
 /** @format */
 
-import React from "react";
+import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Home,
   FileText,
@@ -10,7 +11,6 @@ import {
   User,
   X,
   Bell,
-  ChevronDown,
   ChevronRight,
 } from "lucide-react";
 
@@ -31,52 +31,54 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
+  const { t } = useTranslation();
   const [openSections, setOpenSections] = React.useState<Set<string>>(
     new Set()
   );
 
-  const menuItems = [
+  // Use useMemo to prevent recreation on every render
+  const menuItems = useMemo(() => [
     {
-      name: "Dashboard",
+      name: t('tenant.dashboard', 'Dashboard'),
       icon: <Home className="w-5 h-5" />,
       path: "/tenant",
     },
     {
-      name: "My Invoices",
+      name: t('tenant.invoices', 'My Invoices'),
       icon: <FileText className="w-5 h-5" />,
       path: "/tenant/invoices",
     },
     {
-      name: "Payment History",
+      name: t('tenant.paymentHistory', 'Payment History'),
       icon: <CreditCard className="w-5 h-5" />,
       path: "/tenant/payment-history",
     },
     {
-      name: "My Contract",
+      name: t('tenant.contract', 'My Contract'),
       icon: <FileCheck className="w-5 h-5" />,
       path: "/tenant/contract",
     },
     {
-      name: "Maintenance",
+      name: t('tenant.maintenance', 'Maintenance'),
       icon: <Wrench className="w-5 h-5" />,
       path: "/tenant/maintenance",
     },
     {
-      name: "Announcements",
+      name: t('tenant.announcementsTitle', 'Announcements'),
       icon: <Bell className="w-5 h-5" />,
       path: "/tenant/announcements",
     },
     {
-      name: "Reminders",
+      name: t('tenant.remindersTitle', 'Reminders'),
       icon: <Bell className="w-5 h-5" />,
       path: "/tenant/reminders",
     },
     {
-      name: "Late Fee",
+      name: t('tenant.lateFeesTitle', 'Late Fees'),
       icon: <FileCheck className="w-5 h-5" />,
       path: "/tenant/lateFees",
     },
-  ];
+  ], [t]); // Add t as dependency
 
   const isActivePath = (path: string) => {
     if (path === "/tenant") {
@@ -87,6 +89,9 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
 
   const handleNavigation = (path: string) => {
     onNavigate(path);
+    if (window.innerWidth < 1024) { // Close on mobile after navigation
+      onClose();
+    }
   };
 
   return (
@@ -109,7 +114,7 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
               </div>
               <div>
                 <span className="text-lg font-bold text-stone-900">
-                  Tenant Portal
+                  {t('tenant.dashboard', 'Tenant Portal')}
                 </span>
               </div>
             </div>
@@ -141,11 +146,11 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
             {menuItems.map((item, index) => (
               <button
                 key={index}
-                onClick={() => handleNavigation(item.path!)}
+                onClick={() => handleNavigation(item.path)}
                 className={`
                   flex items-center space-x-3 w-full p-3 text-left rounded-lg transition-colors duration-150 group
                   ${
-                    isActivePath(item.path!)
+                    isActivePath(item.path)
                       ? "bg-red-50 text-red-700 border-l-2 border-red-600 font-medium"
                       : "text-stone-700 hover:bg-stone-100 hover:text-stone-900"
                   }
@@ -154,10 +159,10 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
                 title={isCollapsed ? item.name : ''}
               >
                 <div className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 ${
-                  isActivePath(item.path!) ? 'from-red-100 to-red-50' : ''
+                  isActivePath(item.path) ? 'from-red-100 to-red-50' : ''
                 } ${isCollapsed ? '' : 'mr-2'}`}>
                   {React.cloneElement(item.icon, { 
-                    className: `w-4 h-4 ${isActivePath(item.path!) ? 'text-red-600 font-bold' : 'text-stone-600'}`
+                    className: `w-4 h-4 ${isActivePath(item.path) ? 'text-red-600 font-bold' : 'text-stone-600'}`
                   })}
                 </div>
                 {!isCollapsed && <span className="font-semibold">{item.name}</span>}

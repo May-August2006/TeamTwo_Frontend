@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Building2,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface ManagerSidebarProps {
   isOpen: boolean;
@@ -31,39 +32,41 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
+  const { t } = useTranslation();
+
   const menuItems = [
     {
-      name: "Overview",
+      name: t('sidebar.overview', 'Overview'),
       icon: <Home className="w-5 h-5" />,
       path: "/manager/overview",
     },
     {
-      name: "Tenant Management",
+      name: t('sidebar.tenantManagement', 'Tenant Management'),
       icon: <Users className="w-5 h-5" />,
       path: "/manager/tenants",
     },
     {
-      name: "Appointments",
+      name: t('sidebar.appointments', 'Appointments'),
       icon: <Calendar className="w-5 h-5" />,
       path: "/manager/appointments",
     },
     {
-      name: "Announcements",
+      name: t('sidebar.announcements', 'Announcements'),
       icon: <Megaphone className="w-5 h-5" />,
       path: "/manager/announcements",
     },
     {
-      name: "Lease Management",
+      name: t('sidebar.leaseManagement', 'Lease Management'),
       icon: <FileText className="w-5 h-5" />,
       path: "/manager/leases",
     },
     {
-      name: "Maintenance",
+      name: t('sidebar.maintenance', 'Maintenance'),
       icon: <Wrench className="w-5 h-5" />,
       path: "/manager/maintenance",
     },
     {
-      name: "Reports",
+      name: t('sidebar.reports', 'Reports'),
       icon: <BarChart3 className="w-5 h-5" />,
       path: "/manager/reports",
     },
@@ -97,7 +100,7 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
               </div>
               <div>
                 <span className="text-lg font-bold text-stone-900">
-                  Manager Portal
+                  {t('sidebar.managerPortal', 'Manager Portal')}
                 </span>
               </div>
             </div>
@@ -163,9 +166,11 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-stone-900 truncate">
-                      Manager User
+                      {t('common.managerUser', 'Manager User')}
                     </p>
-                    <p className="text-xs text-stone-500 truncate">Manager</p>
+                    <p className="text-xs text-stone-500 truncate">
+                      {t('common.manager', 'Manager')}
+                    </p>
                   </div>
                 </div>
               </div>

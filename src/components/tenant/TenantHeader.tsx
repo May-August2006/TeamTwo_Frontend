@@ -54,13 +54,12 @@ const TenantHeader: React.FC<TenantHeaderProps> = ({
           </button>
         </div>
         <div className="flex items-center space-x-3">
-        <ChangePasswordButton 
+          <ChangePasswordButton 
             buttonStyle="primary"
             buttonSize="md"
             buttonText="Change Password"
-        />
-    </div>
-
+          />
+        </div>
       </div>
     </header>
   );

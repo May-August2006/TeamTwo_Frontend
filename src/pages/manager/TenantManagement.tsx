@@ -11,6 +11,7 @@ import TenantCategoryForm from '../../components/tenant/TenantCategoryForm';
 import DeleteConfirmationModal from '../../components/tenant/DeleteConfirmationModal';
 import TenantSearch from '../../components/tenant/TenantSearch';
 import TenantDetail from '../../components/tenant/TenantDetail';
+import { useTranslation } from 'react-i18next';
 
 const TenantManagement: React.FC = () => {
   // Tenant states
@@ -58,6 +59,8 @@ const TenantManagement: React.FC = () => {
   const [allTenants, setAllTenants] = useState<Tenant[]>([]);
   const [displayTenants, setDisplayTenants] = useState<Tenant[]>([]);
 
+  const { t } = useTranslation();
+
   useEffect(() => {
     console.log('Tenants state updated:', tenants.length, 'tenants');
   }, [tenants]);
@@ -104,7 +107,7 @@ const TenantManagement: React.FC = () => {
       
       setError('');
     } catch (err: any) {
-      setError('Failed to load tenants. Please try again.');
+      setError(t('tenants.loadFailed', 'Failed to load tenants. Please try again.'));
       console.error('Error loading tenants:', err);
     } finally {
       setLoading(false);
@@ -143,7 +146,7 @@ const TenantManagement: React.FC = () => {
       console.log('Created tenant:', newTenant);
       
       setShowForm(false);
-      setSuccess('Tenant created successfully!');
+      setSuccess(t('tenants.createdSuccess', 'Tenant created successfully!'));
       
       // Reload all tenants and reset to first page
       await loadTenants(searchParams);
@@ -154,7 +157,7 @@ const TenantManagement: React.FC = () => {
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to create tenant');
+      setError(err.message || t('tenants.createFailed', 'Failed to create tenant'));
       console.error('Create tenant error:', err);
     } finally {
       setFormLoading(false);
@@ -172,7 +175,7 @@ const TenantManagement: React.FC = () => {
       setShowForm(false);
       setEditingTenant(undefined);
       setIsEditing(false);
-      setSuccess('Tenant updated successfully!');
+      setSuccess(t('tenants.updatedSuccess', 'Tenant updated successfully!'));
       
       // Update all tenants list
       const updatedAllTenants = allTenants.map(tenant => 
@@ -183,7 +186,7 @@ const TenantManagement: React.FC = () => {
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to update tenant');
+      setError(err.message || t('tenants.updateFailed', 'Failed to update tenant'));
     } finally {
       setFormLoading(false);
     }
@@ -218,11 +221,11 @@ const TenantManagement: React.FC = () => {
       setInactiveTenantsCount(prev => prev + 1);
       
       setDeletingTenantId(null);
-      setSuccess('Tenant deleted successfully!');
+      setSuccess(t('tenants.deletedSuccess', 'Tenant deleted successfully!'));
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to delete tenant');
+      setError(err.message || t('tenants.deleteFailed', 'Failed to delete tenant'));
     } finally {
       setDeleteLoading(false);
     }
@@ -254,13 +257,13 @@ const TenantManagement: React.FC = () => {
       setError('');
       const newCategory = await tenantApi.category.create(categoryData);
       setShowCategoryForm(false);
-      setSuccess('Category created successfully!');
+      setSuccess(t('categories.createdSuccess', 'Category created successfully!'));
       
       setCategories(prev => [...prev, newCategory]);
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to create category');
+      setError(err.message || t('categories.createFailed', 'Failed to create category'));
     } finally {
       setCategoryFormLoading(false);
     }
@@ -276,7 +279,7 @@ const TenantManagement: React.FC = () => {
       setShowCategoryForm(false);
       setEditingCategory(undefined);
       setIsEditingCategory(false);
-      setSuccess('Category updated successfully!');
+      setSuccess(t('categories.updatedSuccess', 'Category updated successfully!'));
       
       setCategories(prev => 
         prev.map(category => 
@@ -286,7 +289,7 @@ const TenantManagement: React.FC = () => {
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to update category');
+      setError(err.message || t('categories.updateFailed', 'Failed to update category'));
     } finally {
       setCategoryFormLoading(false);
     }
@@ -304,11 +307,11 @@ const TenantManagement: React.FC = () => {
       setCategories(prev => prev.filter(category => category.id !== deletingCategoryId));
       
       setDeletingCategoryId(null);
-      setSuccess('Category deleted successfully!');
+      setSuccess(t('categories.deletedSuccess', 'Category deleted successfully!'));
       
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
-      setError(err.message || 'Failed to delete category');
+      setError(err.message || t('categories.deleteFailed', 'Failed to delete category'));
     } finally {
       setCategoryDeleteLoading(false);
     }
@@ -379,12 +382,12 @@ const TenantManagement: React.FC = () => {
 
   const getTenantToDeleteName = () => {
     const tenant = tenants.find(t => t.id === deletingTenantId);
-    return tenant?.tenantName || 'this tenant';
+    return tenant?.tenantName || t('common.thisTenant', 'this tenant');
   };
 
   const getCategoryToDeleteName = () => {
     const category = categories.find(cat => cat.id === deletingCategoryId);
-    return category?.categoryName || 'this category';
+    return category?.categoryName || t('common.thisCategory', 'this category');
   };
 
   return (
@@ -394,15 +397,19 @@ const TenantManagement: React.FC = () => {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold text-stone-900 truncate">Tenant Management</h1>
-              <p className="text-stone-600 mt-2">Manage your tenants, categories, and inactive accounts</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-stone-900 truncate">
+                {t('tenants.title', "Tenant Management")}
+              </h1>
+              <p className="text-stone-600 mt-2">
+                {t('tenants.subtitle', "Manage your tenants, categories, and inactive accounts")}
+              </p>
             </div>
             {activeTab === 'tenants' && (
               <button
                 onClick={() => setShowForm(true)}
                 className="bg-[#1E40AF] text-white px-4 py-2.5 rounded-lg hover:bg-[#1E3A8A] transition duration-150 font-semibold w-full sm:w-auto whitespace-nowrap shadow-sm"
               >
-                Add New Tenant
+                {t('tenants.addNewTenant', "Add New Tenant")}
               </button>
             )}
             {activeTab === 'categories' && (
@@ -410,7 +417,7 @@ const TenantManagement: React.FC = () => {
                 onClick={() => setShowCategoryForm(true)}
                 className="bg-[#1E40AF] text-white px-4 py-2.5 rounded-lg hover:bg-[#1E3A8A] transition duration-150 font-semibold w-full sm:w-auto whitespace-nowrap shadow-sm"
               >
-                Add New Category
+                {t('categories.addNewCategory', "Add New Category")}
               </button>
             )}
           </div>
@@ -428,7 +435,9 @@ const TenantManagement: React.FC = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-stone-600">Active Tenants</p>
+                <p className="text-sm font-medium text-stone-600">
+                  {t('tenants.activeTenants', "Active Tenants")}
+                </p>
                 <p className="text-xl sm:text-2xl font-semibold text-stone-900">{activeTenantsCount}</p>
               </div>
             </div>
@@ -444,7 +453,9 @@ const TenantManagement: React.FC = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-stone-600">Inactive Tenants</p>
+                <p className="text-sm font-medium text-stone-600">
+                  {t('tenants.inactiveTenants', "Inactive Tenants")}
+                </p>
                 <p className="text-xl sm:text-2xl font-semibold text-stone-900">{inactiveTenantsCount}</p>
               </div>
             </div>
@@ -460,7 +471,9 @@ const TenantManagement: React.FC = () => {
                 </div>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-stone-600">Categories</p>
+                <p className="text-sm font-medium text-stone-600">
+                  {t('categories.title', "Categories")}
+                </p>
                 <p className="text-xl sm:text-2xl font-semibold text-stone-900">{categories.length}</p>
               </div>
             </div>
@@ -479,7 +492,7 @@ const TenantManagement: React.FC = () => {
                     : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
                 } transition duration-150`}
               >
-                Active Tenants ({activeTenantsCount})
+                {t('tenants.activeTenants', "Active Tenants")} ({activeTenantsCount})
               </button>
               <button
                 onClick={() => setActiveTab('categories')}
@@ -489,7 +502,7 @@ const TenantManagement: React.FC = () => {
                     : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
                 } transition duration-150`}
               >
-                Categories ({categories.length})
+                {t('categories.title', "Categories")} ({categories.length})
               </button>
               <button
                 onClick={() => setActiveTab('inactive')}
@@ -499,7 +512,7 @@ const TenantManagement: React.FC = () => {
                     : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
                 } transition duration-150`}
               >
-                Inactive Tenants ({inactiveTenantsCount})
+                {t('tenants.inactiveTenants', "Inactive Tenants")} ({inactiveTenantsCount})
               </button>
             </nav>
           </div>
@@ -598,8 +611,10 @@ const TenantManagement: React.FC = () => {
           isOpen={showDeleteModal}
           onConfirm={handleDeleteTenant}
           onCancel={handleCancelDelete}
-          title="Delete Tenant"
-          message={`Are you sure you want to delete "${getTenantToDeleteName()}"? This action cannot be undone.`}
+          title={t('tenants.deleteTitle', "Delete Tenant")}
+          message={t('tenants.deleteMessage', 'Are you sure you want to delete "{name}"? This action cannot be undone.', {
+            name: getTenantToDeleteName()
+          })}
           isLoading={deleteLoading}
         />
 
@@ -607,8 +622,10 @@ const TenantManagement: React.FC = () => {
           isOpen={showCategoryDeleteModal}
           onConfirm={handleDeleteCategory}
           onCancel={handleCancelCategoryDelete}
-          title="Delete Category"
-          message={`Are you sure you want to delete "${getCategoryToDeleteName()}"? This action cannot be undone.`}
+          title={t('categories.deleteTitle', "Delete Category")}
+          message={t('categories.deleteMessage', 'Are you sure you want to delete "{name}"? This action cannot be undone.', {
+            name: getCategoryToDeleteName()
+          })}
           isLoading={categoryDeleteLoading}
         />
 

@@ -1,11 +1,13 @@
 /** @format */
 import { useEffect, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import type { LateFeeResponseDTO } from "../../types";
 import { tenantLateFeeApi } from "../../api/tenantLateFeeApi";
 import { useTenantLateFeesWebSocket } from "../../hooks/useTenantLateFeesWebSocket";
 
 export default function MyLateFees() {
+  const { t } = useTranslation();
   const jwtToken = localStorage.getItem("accessToken") || "";
 
   const { lateFees, setLateFees, connected } =
@@ -76,20 +78,24 @@ export default function MyLateFees() {
     }
   };
 
-  if (loading) return <p>Loading late fees...</p>;
+  if (loading) return (
+    <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
+      <div className="text-xl font-medium text-stone-700 animate-pulse">{t('tenant.loading')}</div>
+    </div>
+  );
 
   return (
     <div className="p-4 space-y-4">
       <Toaster position="top-right" />
 
       <div className="flex justify-between">
-        <h2 className="text-2xl font-semibold">My Late Fees</h2>
-        <span>{connected ? "🟢 Online" : "🔴 Offline"}</span>
+        <h2 className="text-2xl font-semibold">{t('tenant.lateFeesTitle')}</h2>
+        <span>{connected ? `🟢 ${t('tenant.online')}` : `🔴 ${t('tenant.offline')}`}</span>
       </div>
 
       <div className="bg-white shadow rounded divide-y">
         {lateFees.length === 0 && (
-          <p className="p-4 text-gray-500 text-center">No late fees</p>
+          <p className="p-4 text-gray-500 text-center">{t('tenant.noData')}</p>
         )}
 
         {lateFees.map((lf) => (
@@ -100,10 +106,10 @@ export default function MyLateFees() {
             <div>
               <p className="font-medium">Invoice ID: {lf.invoiceId}</p>
               <p className="text-sm text-gray-500">
-                Applied: {lf.appliedDate} • Days Late: {lf.lateDays}
+                {t('tenant.applied')}: {lf.appliedDate} • {t('tenant.daysLate')}: {lf.lateDays}
               </p>
               <p className="text-sm text-gray-600">
-                Amount: {lf.appliedAmount} MMK
+                {t('tenant.amount')}: {lf.appliedAmount} MMK
               </p>
             </div>
 
@@ -112,14 +118,14 @@ export default function MyLateFees() {
                 onClick={() => viewPdf(lf)}
                 className="px-3 py-1 bg-blue-600 text-white rounded"
               >
-                View
+                {t('tenant.view')}
               </button>
 
               <button
                 onClick={() => downloadPdf(lf)}
                 className="px-3 py-1 bg-green-600 text-white rounded"
               >
-                Download
+                {t('tenant.download')}
               </button>
             </div>
           </div>
