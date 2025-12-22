@@ -37,7 +37,6 @@ interface UnitCalculation {
   camFee: number;
   generatorFee: number;
   transformerFee: number;
-  otherCAMFee: number;
   totalAmount: number;
 }
 
@@ -61,7 +60,6 @@ const UsageEntryPage: React.FC = () => {
     null
   );
   const [buildingUnits, setBuildingUnits] = useState<UnitWithOccupancy[]>([]);
-  const [otherCAMCosts, setOtherCAMCosts] = useState<number>(150000);
 
   // State for utility billing
   const [calculating, setCalculating] = useState(false);
@@ -334,16 +332,14 @@ const loadData = async () => {
         // Calculate CAM share based on unit space proportion
         const generatorShare = totalLeasableArea > 0 ? (unitSpace / totalLeasableArea) * generatorFee : 0;
         const transformerShare = totalLeasableArea > 0 ? (unitSpace / totalLeasableArea) * transformerFee : 0;
-        const otherCAMShare = totalLeasableArea > 0 ? (unitSpace / totalLeasableArea) * otherCAMCosts : 0;
 
-        const totalCAMFee = generatorShare + transformerShare + otherCAMShare;
+        const totalCAMFee = generatorShare + transformerShare;
 
         return {
           unitId: unit.id,
           camFee: parseFloat(totalCAMFee.toFixed(2)),
           generatorFee: parseFloat(generatorShare.toFixed(2)),
           transformerFee: parseFloat(transformerShare.toFixed(2)),
-          otherCAMFee: parseFloat(otherCAMShare.toFixed(2)),
           percentage: parseFloat(percentage.toFixed(2)),
         };
       });
@@ -458,7 +454,6 @@ const loadData = async () => {
             ...(unitCam?.otherCAMFee && unitCam.otherCAMFee > 0 ? [{
               utilityName: "Other CAM Costs",
               calculationMethod: "FIXED" as const,
-              calculationFormula: `(Other CAM ${otherCAMCosts} ÷ ${selectedBuilding.totalLeasableArea || 1}) × ${unit.unitSpace || 0}`,
               amount: unitCam.otherCAMFee,
               ratePerUnit: null,
               quantity: 1,
@@ -492,7 +487,6 @@ const loadData = async () => {
             camFee: unitCam?.camFee || 0,
             generatorFee: unitCam?.generatorFee || 0,
             transformerFee: unitCam?.transformerFee || 0,
-            otherCAMFee: unitCam?.otherCAMFee || 0,
             totalAmount: totalAmount,
           });
         } catch (error) {
@@ -553,8 +547,7 @@ const loadData = async () => {
           // Filter out CAM fees from utilityFees for backend
           const cleanUtilityFees = uc.utilityBilling?.utilityFees.filter(fee => 
             !fee.utilityName.includes('Generator Fee') &&
-            !fee.utilityName.includes('Transformer Fee') &&
-            !fee.utilityName.includes('Other CAM Costs')
+            !fee.utilityName.includes('Transformer Fee') 
           ) || [];
 
           return {
@@ -872,9 +865,7 @@ const loadData = async () => {
                       <span className="font-medium ml-2">
                         {(
                           (selectedBuilding.generatorFee || 0) +
-                          (selectedBuilding.transformerFee || 0) +
-                          otherCAMCosts
-                        ).toLocaleString()}{" "}
+                          (selectedBuilding.transformerFee || 0)                         ).toLocaleString()}{" "}
                         MMK
                       </span>
                     </div>
@@ -1077,14 +1068,7 @@ const loadData = async () => {
                                   </span>
                                 </div>
                               )}
-                              {calculation.otherCAMFee > 0 && (
-                                <div className="flex justify-between">
-                                  <span>Other CAM:</span>
-                                  <span className="font-medium">
-                                    {calculation.otherCAMFee.toLocaleString("en-US")} MMK
-                                  </span>
-                                </div>
-                              )}
+                              
                               <div className="mt-2 pt-2 border-t border-gray-200">
                                 <div className="flex justify-between font-bold text-green-600">
                                   <span>Total CAM:</span>
@@ -1154,13 +1138,7 @@ const loadData = async () => {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Total Other CAM Fees:</span>
-                  <span>
-                    {unitCalculations
-                      .reduce((sum, uc) => sum + uc.otherCAMFee, 0)
-                      .toLocaleString("en-US")}{" "}
-                    MMK
-                  </span>
+                  
                 </div>
                 <div className="flex justify-between border-t pt-2">
                   <span className="text-lg font-bold">Grand Total:</span>
