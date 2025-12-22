@@ -40,7 +40,6 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     type: "view" | "appointment";
     unit: Unit;
   } | null>(null);
-  const [isCheckingApproval, setIsCheckingApproval] = useState(false);
 
   const { isAuthenticated, userId } = useAuth();
 

@@ -85,6 +85,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 
       const response = await invoiceApi.getUnpaidInvoices();
       const unpaidInvoices = response.data;
+
+      console.log("unpaid invoices: " + unpaidInvoices);
       setInvoices(unpaidInvoices);
     } catch (err) {
       console.error("Error loading invoices:", err);

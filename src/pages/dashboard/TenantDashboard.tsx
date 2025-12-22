@@ -11,10 +11,14 @@ import MyContract from "../../components/tenant/MyContract";
 import MaintenanceRequests from "../../components/tenant/MaintenanceRequests";
 import { TenantAnnouncements } from "../../components/tenant/TenantAnnouncements";
 import MyReminders from "../../components/tenant/MyReminders";
-import MyLateFee from "../../components/tenant/MyLateFees";
 import MyLateFees from "../../components/tenant/MyLateFees";
+import { AvailableUnits } from "../../components/tenant/AvailableUnits";
 
-const TenantDashboard: React.FC = () => {
+interface HomepageProps {
+  onUnitDetail?: (unit: any) => void;
+}
+
+const TenantDashboard: React.FC<HomepageProps> = ({ onUnitDetail }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
@@ -65,15 +69,15 @@ const TenantDashboard: React.FC = () => {
       />
 
       {/* Main Content Area - Adjusted for fixed header and sidebar */}
-      <main className={`pt-16 min-h-screen transition-all duration-300 ${
-        isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      }`}>
+      <main
+        className={`pt-16 min-h-screen transition-all duration-300 ${
+          isSidebarCollapsed ? "lg:ml-20" : "lg:ml-64"
+        }`}
+      >
         <div className="p-6">
           <div className="max-w-7xl mx-auto">
             {/* Page Title */}
-            <div className="mb-6">
-              
-            </div>
+            <div className="mb-6"></div>
 
             {/* Content Area */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -89,6 +93,10 @@ const TenantDashboard: React.FC = () => {
                 <Route path="/reminders" element={<MyReminders />} />
                 <Route path="/maintenance" element={<MaintenanceRequests />} />
                 <Route path="/lateFees" element={<MyLateFees />} />
+                <Route
+                  path="/availableUnits"
+                  element={<AvailableUnits onUnitDetail={onUnitDetail} />}
+                />
               </Routes>
             </div>
           </div>

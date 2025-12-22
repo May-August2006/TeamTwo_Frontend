@@ -335,6 +335,8 @@ export interface LateFeeRequest {
 export interface LateFeePolicy {
   id?: number;
   amountPerDay: number | string;
+  gracePeriodDays: number; // integer
+  dailyInterestPercent: string;
 }
 
 export interface LateFeeResponseDTO {
@@ -346,16 +348,21 @@ export interface LateFeeResponseDTO {
   reason: string;
   appliedByName?: string;
   pdfUrl?: string;
+  status?: string;
 }
 
 export interface LateFeePolicyDTO {
   id: number; // database ID
-  amountPerDay: number; // late fee amount per day
-  createdAt?: string; // optional, if backend includes timestamps
-  updatedAt?: string;
+  amountPerDay: string; // use string for BigDecimal
+  gracePeriodDays: number; // integer
+  dailyInterestPercent: string; // use string for BigDecimal
+  createdAt?: string; // optional timestamp
+  updatedAt?: string; // optional timestamp
 }
 
 // Request payload for creating/updating policy
 export interface LateFeePolicyRequest {
-  amountPerDay: number; // late fee amount per day
+  amountPerDay: string; // "12.50"
+  gracePeriodDays: number;
+  dailyInterestPercent: string; // "0.5"
 }
