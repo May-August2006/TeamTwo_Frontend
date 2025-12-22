@@ -19,13 +19,14 @@ import {
   ThumbsUp,
   ThumbsDown,
   Clock,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { userApi } from "../../api/UserAPI";
 import { buildingApi } from "../../api/BuildingAPI";
 import { branchApi } from "../../api/BranchAPI";
 import { useTranslation } from "react-i18next";
 
-// In User interface, update:
 interface User {
   id: number;
   fullName: string;
@@ -35,7 +36,6 @@ interface User {
   isActive: boolean;
   approvalStatus?: "PENDING" | "APPROVED" | "REJECTED";
   lastLogin?: string;
-  branchId?: number;
   buildingId?: number;
   accountantBuildingId?: number;
   branchName?: string;
@@ -145,6 +145,7 @@ const UserManagement: React.FC = () => {
   });
 
   const [activeTab, setActiveTab] = useState<TabType>("all");
+  const [showInactiveUsers, setShowInactiveUsers] = useState(false); // NEW: Toggle for inactive users
   const notificationTimeoutsRef = useRef<{ [key: number]: NodeJS.Timeout }>({});
 
   const [newUser, setNewUser] = useState<UserRequest>({
@@ -206,27 +207,35 @@ const UserManagement: React.FC = () => {
   };
 
   const getFilteredUsers = (): User[] => {
+    let filtered = users;
+    
+    // First filter by active/inactive
+    if (!showInactiveUsers) {
+      filtered = filtered.filter(user => user.isActive);
+    }
+    
+    // Then filter by tab
     switch (activeTab) {
       case "all":
-        return users;
+        return filtered;
       case "guests":
-        return users.filter((user) => user.roleName === "ROLE_GUEST");
+        return filtered.filter((user) => user.roleName === "ROLE_GUEST");
       case "managers":
-        return users.filter((user) => user.roleName === "ROLE_MANAGER");
+        return filtered.filter((user) => user.roleName === "ROLE_MANAGER");
       case "accountants":
-        return users.filter((user) => user.roleName === "ROLE_ACCOUNTANT");
+        return filtered.filter((user) => user.roleName === "ROLE_ACCOUNTANT");
       case "admins":
-        return users.filter((user) => user.roleName === "ROLE_ADMIN");
+        return filtered.filter((user) => user.roleName === "ROLE_ADMIN");
       case "tenants":
-        return users.filter((user) => user.roleName === "ROLE_TENANT");
+        return filtered.filter((user) => user.roleName === "ROLE_TENANT");
       case "pending-approval":
-        return users.filter(
+        return filtered.filter(
           (user) =>
             user.roleName === "ROLE_GUEST" &&
             (user.approvalStatus === "PENDING" || !user.approvalStatus)
         );
       default:
-        return users;
+        return filtered;
     }
   };
 
@@ -257,22 +266,24 @@ const UserManagement: React.FC = () => {
   };
 
   const getUserCountByTab = (tab: TabType) => {
+    const activeUsers = showInactiveUsers ? users : users.filter(u => u.isActive);
+    
     switch (tab) {
       case "all":
-        return users.length;
+        return activeUsers.length;
       case "guests":
-        return users.filter((user) => user.roleName === "ROLE_GUEST").length;
+        return activeUsers.filter((user) => user.roleName === "ROLE_GUEST").length;
       case "managers":
-        return users.filter((user) => user.roleName === "ROLE_MANAGER").length;
+        return activeUsers.filter((user) => user.roleName === "ROLE_MANAGER").length;
       case "accountants":
-        return users.filter((user) => user.roleName === "ROLE_ACCOUNTANT")
+        return activeUsers.filter((user) => user.roleName === "ROLE_ACCOUNTANT")
           .length;
       case "admins":
-        return users.filter((user) => user.roleName === "ROLE_ADMIN").length;
+        return activeUsers.filter((user) => user.roleName === "ROLE_ADMIN").length;
       case "tenants":
-        return users.filter((user) => user.roleName === "ROLE_TENANT").length;
+        return activeUsers.filter((user) => user.roleName === "ROLE_TENANT").length;
       case "pending-approval":
-        return users.filter(
+        return activeUsers.filter(
           (user) =>
             user.roleName === "ROLE_GUEST" &&
             (user.approvalStatus === "PENDING" || !user.approvalStatus)
@@ -283,7 +294,6 @@ const UserManagement: React.FC = () => {
   };
 
   const getApprovalStatusDisplay = (status?: string) => {
-    // Default to PENDING if status is undefined
     const effectiveStatus = status || "PENDING";
 
     switch (effectiveStatus) {
@@ -314,7 +324,6 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  // UPDATE: Function to update user approval status (updated to include PENDING)
   const updateUserApprovalStatus = async (
     userId: number,
     status: "APPROVED" | "REJECTED" | "PENDING"
@@ -347,7 +356,6 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  // UPDATE: Function to handle approve user click
   const handleApproveUserClick = (user: User) => {
     const isCurrentlyApproved = user.approvalStatus === "APPROVED";
     const message = isCurrentlyApproved
@@ -369,7 +377,6 @@ const UserManagement: React.FC = () => {
     });
   };
 
-  // UPDATE: Function to handle reject user click
   const handleRejectUserClick = (user: User) => {
     const isCurrentlyRejected = user.approvalStatus === "REJECTED";
     const message = isCurrentlyRejected
@@ -391,7 +398,6 @@ const UserManagement: React.FC = () => {
     });
   };
 
-  // NEW: Function to handle pending user click
   const handlePendingUserClick = (user: User) => {
     const isCurrentlyPending =
       user.approvalStatus === "PENDING" || !user.approvalStatus;
@@ -419,12 +425,10 @@ const UserManagement: React.FC = () => {
     const newNotification: Notification = { id, type, message };
     setNotifications((prev) => [...prev, newNotification]);
 
-    // Clear any existing timeout for this id
     if (notificationTimeoutsRef.current[id]) {
       clearTimeout(notificationTimeoutsRef.current[id]);
     }
 
-    // Set new timeout
     notificationTimeoutsRef.current[id] = setTimeout(() => {
       removeNotification(id);
     }, 5000);
@@ -435,7 +439,6 @@ const UserManagement: React.FC = () => {
       prev.filter((notification) => notification.id !== id)
     );
 
-    // Clear the timeout
     if (notificationTimeoutsRef.current[id]) {
       clearTimeout(notificationTimeoutsRef.current[id]);
       delete notificationTimeoutsRef.current[id];
@@ -465,15 +468,13 @@ const UserManagement: React.FC = () => {
     closeConfirmation();
   };
 
-  useEffect(() => {
-    fetchAllData();
-
-    // Cleanup on component unmount
-    return () => {
-      Object.values(notificationTimeoutsRef.current).forEach(clearTimeout);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+ useEffect(() => {
+  fetchAllData();
+  
+  return () => {
+    Object.values(notificationTimeoutsRef.current).forEach(clearTimeout);
+  };
+}, []);
 
   const fetchAllData = async () => {
     try {
@@ -493,53 +494,55 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const fetchUsers = async () => {
-    try {
-      setErrors({});
-      const response = await userApi.getAll();
-
-      console.log("API Response:", response);
-      console.log("API Data:", response.data);
-
-      let usersData: User[] = [];
-
-      if (response.data) {
-        // Check if response is paginated (has content property)
-        if (Array.isArray(response.data)) {
-          usersData = response.data;
-        } else if (
-          response.data.content &&
-          Array.isArray(response.data.content)
-        ) {
-          usersData = response.data.content;
-        } else if (
-          typeof response.data === "object" &&
-          !Array.isArray(response.data)
-        ) {
-          // Single user object
-          usersData = [response.data];
-        }
-      }
-
-      // Ensure all guest users have an approvalStatus
-      const processedUsers = usersData.map((user: User) => {
-        // For ROLE_GUEST users, ensure approvalStatus is properly set
-        if (user.roleName === "ROLE_GUEST") {
-          return {
-            ...user,
-            // If approvalStatus is missing, set it to PENDING
-            approvalStatus: user.approvalStatus || "PENDING",
-          };
-        }
-        return user;
-      });
-
-      setUsers(processedUsers);
-    } catch (error: any) {
-      setErrors({ general: "Failed to load users" });
-      addNotification("error", "Failed to load users");
+  // In UserManagement.tsx, replace the fetchUsers function:
+const fetchUsers = async () => {
+  try {
+    setErrors({});
+    
+    let response;
+    
+    // Use different endpoint based on showInactiveUsers state
+    if (showInactiveUsers) {
+      response = await userApi.getAllIncludingInactive();
+    } else {
+      response = await userApi.getAll();
     }
-  };
+
+    let usersData: User[] = [];
+
+    if (response.data) {
+      if (Array.isArray(response.data)) {
+        usersData = response.data;
+      } else if (
+        response.data.content &&
+        Array.isArray(response.data.content)
+      ) {
+        usersData = response.data.content;
+      } else if (
+        typeof response.data === "object" &&
+        !Array.isArray(response.data)
+      ) {
+        usersData = [response.data];
+      }
+    }
+
+    const processedUsers = usersData.map((user: User) => {
+      if (user.roleName === "ROLE_GUEST") {
+        return {
+          ...user,
+          approvalStatus: user.approvalStatus || "PENDING",
+        };
+      }
+      return user;
+    });
+
+    setUsers(processedUsers);
+  } catch (error: any) {
+    setErrors({ general: "Failed to load users" });
+    addNotification("error", "Failed to load users");
+  }
+};
+      
 
   const fetchBuildings = async () => {
     try {
@@ -580,7 +583,6 @@ const UserManagement: React.FC = () => {
   };
 
   const getUserBuildingName = (user: User): string => {
-    // For managers
     if (user.roleName === "ROLE_MANAGER") {
       if (user.buildingId) {
         const building = buildings.find((b) => b.id === user.buildingId);
@@ -594,9 +596,7 @@ const UserManagement: React.FC = () => {
       }
     }
 
-    // For accountants
     if (user.roleName === "ROLE_ACCOUNTANT") {
-      // Try to find building where this user is accountant
       const accountantBuilding = buildings.find(
         (b) => b.accountantId === user.id
       );
@@ -604,7 +604,6 @@ const UserManagement: React.FC = () => {
         return accountantBuilding.buildingName;
       }
 
-      // Fallback to stored data
       if (user.accountantBuildingName) {
         return user.accountantBuildingName;
       }
@@ -640,7 +639,6 @@ const UserManagement: React.FC = () => {
     }
 
     if (user.roleName === "ROLE_ACCOUNTANT") {
-      // Find building where this user is accountant
       const accountantBuilding = buildings.find(
         (b) => b.accountantId === user.id
       );
@@ -799,7 +797,7 @@ const UserManagement: React.FC = () => {
         fullName: newUser.fullName.trim(),
         roleName: newUser.roleName,
         password: undefined,
-        branchId: newUser.branchId,
+        branchId: null, // Accountants are assigned to buildings, not branches
         buildingId: newUser.buildingId,
         approvalStatus: newUser.approvalStatus,
       };
@@ -846,16 +844,16 @@ const UserManagement: React.FC = () => {
           }
         }
 
-        if (newUser.roleName === "ROLE_ACCOUNTANT" && newUser.branchId) {
+        if (newUser.roleName === "ROLE_ACCOUNTANT" && newUser.buildingId) {
           try {
-            await branchApi.assignAccountant(newUser.branchId, createdUser.id);
+            await buildingApi.assignAccountant(newUser.buildingId, createdUser.id);
             addNotification(
               "info",
-              "Accountant assigned to branch successfully."
+              "Accountant assigned to building successfully."
             );
           } catch (assignError: any) {
             console.error(
-              "Failed to assign accountant to branch:",
+              "Failed to assign accountant to building:",
               assignError
             );
             addNotification(
@@ -1009,27 +1007,11 @@ const UserManagement: React.FC = () => {
 
     try {
       if (assignment.assignmentType === "manager" && assignment.buildingId) {
-        await buildingApi.assignManager(
-          assignment.buildingId,
-          assignment.userId
-        );
-        addNotification(
-          "success",
-          "Manager assigned to building successfully!"
-        );
-      } else if (
-        assignment.assignmentType === "accountant" &&
-        assignment.buildingId
-      ) {
-        // NEW: Assign accountant to building instead of branch
-        await buildingApi.assignAccountant(
-          assignment.buildingId,
-          assignment.userId
-        );
-        addNotification(
-          "success",
-          "Accountant assigned to building successfully!"
-        );
+        await userApi.assignManagerToBuilding(assignment.userId, assignment.buildingId);
+        addNotification("success", "Manager assigned to building successfully!");
+      } else if (assignment.assignmentType === "accountant" && assignment.buildingId) {
+        await userApi.assignAccountantToBuilding(assignment.userId, assignment.buildingId);
+        addNotification("success", "Accountant assigned to building successfully!");
       } else {
         throw new Error("Invalid assignment parameters");
       }
@@ -1044,8 +1026,7 @@ const UserManagement: React.FC = () => {
 
       fetchAllData();
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Failed to assign user";
+      const errorMessage = error.response?.data?.message || "Failed to assign user";
       setErrors({ general: errorMessage });
       addNotification("error", errorMessage);
     } finally {
@@ -1056,32 +1037,29 @@ const UserManagement: React.FC = () => {
   const handleRemoveAssignmentClick = (user: User) => {
     const buildingId = getUserBuildingId(user);
 
+    if (!buildingId) {
+      addNotification("error", "No building assignment found");
+      return;
+    }
+
     showConfirmation({
       title: "Remove Assignment",
-      message: `Are you sure you want to remove ${user.fullName} from their assignment?`,
+      message: `Are you sure you want to remove ${user.fullName} from their building assignment?`,
       confirmText: "Remove",
       cancelText: "Cancel",
       onConfirm: async () => {
         try {
-          if (user.roleName === "ROLE_MANAGER" && buildingId) {
+          if (user.roleName === "ROLE_MANAGER") {
             await buildingApi.removeManager(buildingId);
-            addNotification(
-              "success",
-              "Manager removed from building successfully!"
-            );
-          } else if (user.roleName === "ROLE_ACCOUNTANT" && buildingId) {
-            // NEW: Remove accountant from building
+            addNotification("success", "Manager removed from building successfully!");
+          } else if (user.roleName === "ROLE_ACCOUNTANT") {
             await buildingApi.removeAccountant(buildingId);
-            addNotification(
-              "success",
-              "Accountant removed from building successfully!"
-            );
+            addNotification("success", "Accountant removed from building successfully!");
           }
 
           fetchAllData();
         } catch (error: any) {
-          const errorMessage =
-            error.response?.data?.message || "Failed to remove assignment";
+          const errorMessage = error.response?.data?.message || "Failed to remove assignment";
           setErrors({ general: errorMessage });
           addNotification("error", errorMessage);
         }
@@ -1097,20 +1075,44 @@ const UserManagement: React.FC = () => {
     const user = users.find((u) => u.id === id);
 
     showConfirmation({
-      title: "Delete User",
+      title: "Deactivate User",
       message: user
-        ? `Are you sure you want to delete ${user.fullName}? This action cannot be undone.`
-        : "Are you sure you want to delete this user? This action cannot be undone.",
-      confirmText: "Delete",
+        ? `Are you sure you want to deactivate ${user.fullName}? They will no longer have access to the system.`
+        : "Are you sure you want to deactivate this user? They will no longer have access to the system.",
+      confirmText: "Deactivate",
       cancelText: "Cancel",
       onConfirm: async () => {
         try {
           await userApi.delete(id);
-          addNotification("success", "User deleted successfully!");
+          addNotification("success", "User deactivated successfully!");
           fetchAllData();
         } catch (error: any) {
           const errorMessage =
-            error.response?.data?.message || "Failed to delete user";
+            error.response?.data?.message || "Failed to deactivate user";
+          setErrors({ general: errorMessage });
+          addNotification("error", errorMessage);
+        }
+        setMobileMenuOpen(null);
+      },
+      onCancel: () => {
+        setMobileMenuOpen(null);
+      },
+    });
+  };
+
+  const handleRestoreUserClick = (user: User) => {
+    showConfirmation({
+      title: "Restore User",
+      message: `Are you sure you want to restore ${user.fullName}? They will regain access to the system.`,
+      confirmText: "Restore",
+      cancelText: "Cancel",
+      onConfirm: async () => {
+        try {
+          await userApi.restore(user.id);
+          addNotification("success", "User restored successfully!");
+          fetchAllData();
+        } catch (error: any) {
+          const errorMessage = error.response?.data?.message || "Failed to restore user";
           setErrors({ general: errorMessage });
           addNotification("error", errorMessage);
         }
@@ -1441,6 +1443,28 @@ const UserManagement: React.FC = () => {
           ))}
         </div>
 
+        {/* Toggle for showing inactive users */}
+        <div className="mt-4 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="showInactive"
+              checked={showInactiveUsers}
+              onChange={(e) => setShowInactiveUsers(e.target.checked)}
+              className="h-4 w-4 text-red-600 focus:ring-red-500 border-stone-300 rounded"
+            />
+            <label htmlFor="showInactive" className="text-sm text-stone-700">
+              Show deactivated users
+            </label>
+          </div>
+          
+          {showInactiveUsers && (
+            <div className="text-sm text-stone-500">
+              Showing {filteredUsers.filter(u => !u.isActive).length} deactivated users
+            </div>
+          )}
+        </div>
+
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center gap-2">
             <Info className="w-5 h-5 text-blue-600" />
@@ -1534,7 +1558,6 @@ const UserManagement: React.FC = () => {
                 filteredUsers.map((user: User) => {
                   const buildingName = getUserBuildingName(user);
                   const branchName = getUserBranchName(user);
-                  const hasAssignment = buildingName || branchName;
                   const approvalStatus = getApprovalStatusDisplay(
                     user.approvalStatus
                   );
@@ -1542,12 +1565,19 @@ const UserManagement: React.FC = () => {
                   return (
                     <tr
                       key={user.id}
-                      className="hover:bg-stone-50 transition-colors"
+                      className={`hover:bg-stone-50 transition-colors ${
+                        !user.isActive ? "bg-stone-50 opacity-80" : ""
+                      }`}
                     >
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                         <div>
                           <p className="text-sm font-medium text-neutral-800">
                             {user.fullName}
+                            {!user.isActive && (
+                              <span className="ml-2 text-xs text-stone-500">
+                                (Deactivated)
+                              </span>
+                            )}
                           </p>
                           <p className="text-sm text-stone-500">{user.email}</p>
                           <p className="text-xs text-stone-400">
@@ -1604,13 +1634,7 @@ const UserManagement: React.FC = () => {
                               <span>{buildingName} (Accountant)</span>
                             </div>
                           )}
-                        {branchName && user.roleName === "ROLE_ACCOUNTANT" && (
-                          <div className="flex items-center space-x-1 text-stone-700">
-                            <Briefcase className="w-4 h-4" />
-                            <span>{branchName} (Accountant)</span>
-                          </div>
-                        )}
-                        {!buildingName && !branchName && (
+                        {!buildingName && (
                           <span className="text-stone-400">Not assigned</span>
                         )}
                       </td>
@@ -1627,8 +1651,8 @@ const UserManagement: React.FC = () => {
                       </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
-                          {/* UPDATED: Approval buttons for all guest users */}
-                          {user.roleName === "ROLE_GUEST" && (
+                          {/* Approval buttons for guest users */}
+                          {user.roleName === "ROLE_GUEST" && user.isActive && (
                             <>
                               <button
                                 onClick={() => handleApproveUserClick(user)}
@@ -1680,7 +1704,19 @@ const UserManagement: React.FC = () => {
                             </>
                           )}
 
-                          {user.roleName === "ROLE_MANAGER" && (
+                          {/* Restore button for inactive users */}
+                          {!user.isActive && (
+                            <button
+                              onClick={() => handleRestoreUserClick(user)}
+                              className="text-green-600 hover:text-green-800 transition-colors"
+                              title="Restore User"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                          )}
+
+                          {/* Manager actions (only for active users) */}
+                          {user.roleName === "ROLE_MANAGER" && user.isActive && (
                             <>
                               {buildingName ? (
                                 <button
@@ -1705,15 +1741,17 @@ const UserManagement: React.FC = () => {
                               )}
                             </>
                           )}
-                          {user.roleName === "ROLE_ACCOUNTANT" && (
+
+                          {/* Accountant actions (only for active users) */}
+                          {user.roleName === "ROLE_ACCOUNTANT" && user.isActive && (
                             <>
-                              {branchName ? (
+                              {buildingName ? (
                                 <button
                                   onClick={() =>
                                     handleRemoveAssignmentClick(user)
                                   }
                                   className="text-red-700 hover:text-red-900 transition-colors"
-                                  title="Remove from Branch"
+                                  title="Remove from Building"
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
@@ -1723,7 +1761,7 @@ const UserManagement: React.FC = () => {
                                     openAssignModal(user, "accountant")
                                   }
                                   className="text-red-700 hover:text-red-900 transition-colors"
-                                  title="Assign to Branch"
+                                  title="Assign to Building"
                                 >
                                   <Briefcase className="w-4 h-4" />
                                 </button>
@@ -1731,21 +1769,27 @@ const UserManagement: React.FC = () => {
                             </>
                           )}
 
-                          <button
-                            onClick={() => handleEditClick(user)}
-                            className="text-stone-600 hover:text-stone-800 transition-colors"
-                            title="Edit User"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
+                          {/* Edit button (for all active users) */}
+                          {user.isActive && (
+                            <button
+                              onClick={() => handleEditClick(user)}
+                              className="text-stone-600 hover:text-stone-800 transition-colors"
+                              title="Edit User"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                          )}
 
-                          <button
-                            onClick={() => handleDeleteUserClick(user.id)}
-                            className="text-red-700 hover:text-red-900 transition-colors"
-                            title="Delete User"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {/* Delete/Deactivate button (only for active users) */}
+                          {user.isActive && (
+                            <button
+                              onClick={() => handleDeleteUserClick(user.id)}
+                              className="text-red-700 hover:text-red-900 transition-colors"
+                              title="Deactivate User"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -1777,7 +1821,6 @@ const UserManagement: React.FC = () => {
             filteredUsers.map((user: User) => {
               const buildingName = getUserBuildingName(user);
               const branchName = getUserBranchName(user);
-              const hasAssignment = buildingName || branchName;
               const approvalStatus = getApprovalStatusDisplay(
                 user.approvalStatus
               );
@@ -1785,7 +1828,9 @@ const UserManagement: React.FC = () => {
               return (
                 <div
                   key={user.id}
-                  className="border-b border-stone-200 p-4 bg-white hover:bg-stone-50 transition-colors"
+                  className={`border-b border-stone-200 p-4 hover:bg-stone-50 transition-colors ${
+                    !user.isActive ? "bg-stone-50 opacity-80" : ""
+                  }`}
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -1793,6 +1838,11 @@ const UserManagement: React.FC = () => {
                         <div>
                           <p className="font-medium text-neutral-800">
                             {user.fullName}
+                            {!user.isActive && (
+                              <span className="ml-2 text-xs text-stone-500">
+                                (Deactivated)
+                              </span>
+                            )}
                           </p>
                           <p className="text-sm text-stone-500">{user.email}</p>
                           <p className="text-xs text-stone-400">
@@ -1854,22 +1904,20 @@ const UserManagement: React.FC = () => {
                           </span>
                         </div>
 
-                        {hasAssignment && (
+                        {buildingName && (
                           <div className="flex justify-between">
                             <span className="text-stone-500">Assignment:</span>
                             <div className="text-right text-stone-700">
                               {buildingName && (
                                 <div className="flex items-center space-x-1 justify-end">
-                                  <Building className="w-3 h-3" />
+                                  {user.roleName === "ROLE_MANAGER" ? (
+                                    <Building className="w-3 h-3" />
+                                  ) : (
+                                    <Briefcase className="w-3 h-3" />
+                                  )}
                                   <span className="text-xs">
                                     {buildingName}
                                   </span>
-                                </div>
-                              )}
-                              {branchName && (
-                                <div className="flex items-center space-x-1 justify-end">
-                                  <Briefcase className="w-3 h-3" />
-                                  <span className="text-xs">{branchName}</span>
                                 </div>
                               )}
                             </div>
@@ -1883,8 +1931,8 @@ const UserManagement: React.FC = () => {
                   {mobileMenuOpen === user.id && (
                     <div className="mt-3 pt-3 border-t border-stone-200">
                       <div className="flex flex-wrap gap-3">
-                        {/* UPDATED: Approval buttons for all guest users */}
-                        {user.roleName === "ROLE_GUEST" && (
+                        {/* Approval buttons for guest users */}
+                        {user.roleName === "ROLE_GUEST" && user.isActive && (
                           <>
                             <button
                               onClick={() => handleApproveUserClick(user)}
@@ -1923,7 +1971,18 @@ const UserManagement: React.FC = () => {
                           </>
                         )}
 
-                        {user.roleName === "ROLE_MANAGER" && (
+                        {/* Restore button for inactive users */}
+                        {!user.isActive && (
+                          <button
+                            onClick={() => handleRestoreUserClick(user)}
+                            className="flex items-center space-x-1 text-green-600 hover:text-green-800 text-xs"
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                            <span>Restore</span>
+                          </button>
+                        )}
+
+                        {user.roleName === "ROLE_MANAGER" && user.isActive && (
                           <>
                             {buildingName ? (
                               <button
@@ -1946,9 +2005,9 @@ const UserManagement: React.FC = () => {
                             )}
                           </>
                         )}
-                        {user.roleName === "ROLE_ACCOUNTANT" && (
+                        {user.roleName === "ROLE_ACCOUNTANT" && user.isActive && (
                           <>
-                            {branchName ? (
+                            {buildingName ? (
                               <button
                                 onClick={() =>
                                   handleRemoveAssignmentClick(user)
@@ -1956,7 +2015,7 @@ const UserManagement: React.FC = () => {
                                 className="flex items-center space-x-1 text-red-700 hover:text-red-900 text-xs"
                               >
                                 <X className="w-3 h-3" />
-                                <span>Remove from Branch</span>
+                                <span>Remove from Building</span>
                               </button>
                             ) : (
                               <button
@@ -1966,27 +2025,31 @@ const UserManagement: React.FC = () => {
                                 className="flex items-center space-x-1 text-red-700 hover:text-red-900 text-xs"
                               >
                                 <Briefcase className="w-3 h-3" />
-                                <span>Assign to Branch</span>
+                                <span>Assign to Building</span>
                               </button>
                             )}
                           </>
                         )}
 
-                        <button
-                          onClick={() => handleEditClick(user)}
-                          className="flex items-center space-x-1 text-stone-600 hover:text-stone-800 text-xs"
-                        >
-                          <Edit className="w-3 h-3" />
-                          <span>Edit</span>
-                        </button>
+                        {user.isActive && (
+                          <button
+                            onClick={() => handleEditClick(user)}
+                            className="flex items-center space-x-1 text-stone-600 hover:text-stone-800 text-xs"
+                          >
+                            <Edit className="w-3 h-3" />
+                            <span>Edit</span>
+                          </button>
+                        )}
 
-                        <button
-                          onClick={() => handleDeleteUserClick(user.id)}
-                          className="flex items-center space-x-1 text-red-700 hover:text-red-900 text-xs"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          <span>Delete</span>
-                        </button>
+                        {user.isActive && (
+                          <button
+                            onClick={() => handleDeleteUserClick(user.id)}
+                            className="flex items-center space-x-1 text-red-700 hover:text-red-900 text-xs"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Deactivate</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}

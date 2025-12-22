@@ -5,9 +5,9 @@ import type { User, UserRequest } from "../types/type";
 
 export const userApi = {
   getAll: () => API.get<User[]>("/api/users"),
-  getById: (id: number) => API.get<User>(`/api/guests/${id}`),
+  getById: (id: number) => API.get<User>(`/api/users/${id}`), // Fixed: Changed from /api/guests to /api/users
   create: (user: UserRequest) => {
-    console.log("API - Creating user:", user); // Debug log
+    console.log("API - Creating user:", user);
     return API.post<User>("/api/users", user);
   },
   update: (id: number, user: UserRequest) =>
@@ -17,14 +17,23 @@ export const userApi = {
     API.put(`/api/users/${userId}/approval-status`, data),
 
   delete: (id: number) => API.delete<void>(`/api/users/${id}`),
+  
+  // NEW: Add restore method
+  restore: (id: number) => API.post<void>(`/api/users/${id}/restore`, {}),
+  
   getByRole: (roleName: string) =>
     API.get<User[]>(`/api/users/role/${roleName}`),
   getByRoles: (roleNames: string[]) =>
     API.get<User[]>(`/api/users/by-roles?roleNames=${roleNames.join(",")}`),
+  
+  // FIXED: Both manager and accountant assign to building
   assignManagerToBuilding: (userId: number, buildingId: number) =>
     API.post<User>(`/api/users/${userId}/assign-building/${buildingId}`, {}),
-  assignAccountantToBranch: (userId: number, branchId: number) =>
-    API.post<User>(`/api/users/${userId}/assign-branch/${branchId}`, {}),
+  
+  // FIXED: Changed from assignAccountantToBranch to assignAccountantToBuilding
+  assignAccountantToBuilding: (userId: number, buildingId: number) =>
+    API.post<User>(`/api/users/${userId}/assign-accountant-building/${buildingId}`, {}),
+  
   getAvailableManagers: () => API.get<User[]>("/api/users/managers/available"),
   getAvailableAccountants: () =>
     API.get<User[]>("/api/users/accountants/available"),
@@ -32,4 +41,7 @@ export const userApi = {
     API.get<{ available: boolean }>(`/api/users/check-username/${username}`),
   checkEmail: (email: string) =>
     API.get<{ available: boolean }>(`/api/users/check-email/${email}`),
+  
+  // NEW: Get all users including inactive
+  getAllIncludingInactive: () => API.get<User[]>("/api/users/all-including-inactive"),
 };
