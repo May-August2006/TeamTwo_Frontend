@@ -354,171 +354,350 @@ const loadData = async () => {
   // Calculate all utility fees for all occupied units in building
   const calculateAllUtilityFees = async () => {
     if (!selectedBuildingId) {
-      setError("Please select a building");
-      return;
+        setError("Please select a building");
+        return;
     }
 
     // Check if user has permission for this building
     if (!canAccessBuilding(selectedBuildingId)) {
-      setError("You can only calculate utility fees for your assigned building");
-      return;
+        setError("You can only calculate utility fees for your assigned building");
+        return;
     }
 
     if (!periodStart || !periodEnd) {
-      setError("Please select a billing period");
-      return;
+        setError("Please select a billing period");
+        return;
     }
 
     try {
-      setCalculating(true);
-      setError("");
+        setCalculating(true);
+        setError("");
 
-      // Load units with occupancy
-      const unitsWithOccupancy = await loadBuildingUnits(selectedBuildingId);
-      const occupiedUnits = unitsWithOccupancy.filter(
-        (unit) => unit.isOccupied
-      );
+        // Load units with occupancy
+        const unitsWithOccupancy = await loadBuildingUnits(selectedBuildingId);
+        const occupiedUnits = unitsWithOccupancy.filter(
+            (unit) => unit.isOccupied
+        );
 
-      if (occupiedUnits.length === 0) {
-        setError("No occupied units found in this building");
-        return;
-      }
-
-      // Get the selected building
-      const selectedBuilding = buildings.find(
-        (b) => b.id === selectedBuildingId
-      );
-      if (!selectedBuilding) {
-        setError("Selected building not found");
-        return;
-      }
-
-      // Calculate CAM distribution (Generator + Transformer + Other CAM)
-      const camDistribution = await calculateCAMDistribution(
-        selectedBuildingId,
-        occupiedUnits
-      );
-
-      // Calculate utility bills for each occupied unit
-      const calculations: UnitCalculation[] = [];
-
-      for (const unit of occupiedUnits) {
-        try {
-          // Get metered utilities ONLY (electricity, water, etc.)
-          const utilityBilling = await utilityApi.calculateUtilityBill(
-            unit.id,
-            periodStart,
-            periodEnd
-          );
-
-          // Find CAM distribution for this unit
-          const unitCam = camDistribution.find((cam) => cam.unitId === unit.id);
-
-          // Filter out any CAM fees that might be in the utilityBilling
-          const meteredUtilities = utilityBilling.utilityFees.filter(fee => 
-            !fee.utilityName.toLowerCase().includes('cam') &&
-            !fee.utilityName.toLowerCase().includes('generator') &&
-            !fee.utilityName.toLowerCase().includes('transformer') &&
-            !fee.utilityName.toLowerCase().includes('maintenance') &&
-            !fee.utilityName.toLowerCase().includes('internet') &&
-            !fee.utilityName.toLowerCase().includes('fixed')
-          );
-
-          // Create a combined billing that includes:
-          // 1. Metered utilities (from utilityBilling)
-          // 2. CAM fees (Generator, Transformer, Other CAM)
-          const combinedUtilityFees = [
-            // Metered utilities
-            ...meteredUtilities,
-            // CAM fees (added separately)
-            ...(unitCam?.generatorFee && unitCam.generatorFee > 0 ? [{
-              utilityName: "Generator Fee (CAM)",
-              calculationMethod: "FIXED" as const,
-              calculationFormula: `(Generator ${selectedBuilding.generatorFee || 0} ÷ ${selectedBuilding.totalLeasableArea || 1}) × ${unit.unitSpace || 0}`,
-              amount: unitCam.generatorFee,
-              ratePerUnit: null,
-              quantity: 1,
-              unit: undefined,
-              isCAM: true,
-            }] : []),
-            ...(unitCam?.transformerFee && unitCam.transformerFee > 0 ? [{
-              utilityName: "Transformer Fee (CAM)",
-              calculationMethod: "FIXED" as const,
-              calculationFormula: `(Transformer ${selectedBuilding.transformerFee || 0} ÷ ${selectedBuilding.totalLeasableArea || 1}) × ${unit.unitSpace || 0}`,
-              amount: unitCam.transformerFee,
-              ratePerUnit: null,
-              quantity: 1,
-              unit: undefined,
-              isCAM: true,
-            }] : []),
-            ...(unitCam?.otherCAMFee && unitCam.otherCAMFee > 0 ? [{
-              utilityName: "Other CAM Costs",
-              calculationMethod: "FIXED" as const,
-              amount: unitCam.otherCAMFee,
-              ratePerUnit: null,
-              quantity: 1,
-              unit: undefined,
-              isCAM: true,
-            }] : [])
-          ];
-
-          // Calculate totals
-          const totalMeteredUtilities = meteredUtilities.reduce(
-            (sum, fee) => sum + (fee.amount || 0), 0
-          );
-          const totalCAM = (unitCam?.camFee || 0);
-          const totalAmount = totalMeteredUtilities + totalCAM;
-
-          const displayUtilityBilling: UtilityBillingDTO = {
-            ...utilityBilling,
-            utilityFees: combinedUtilityFees,
-            totalAmount: totalAmount,
-            grandTotal: totalAmount,
-            taxAmount: utilityBilling.taxAmount || 0,
-          };
-
-          calculations.push({
-            unitId: unit.id,
-            unitNumber: unit.unitNumber,
-            unitSpace: unit.unitSpace || 0,
-            tenantName: unit.tenantName,
-            isOccupied: true,
-            utilityBilling: displayUtilityBilling,
-            camFee: unitCam?.camFee || 0,
-            generatorFee: unitCam?.generatorFee || 0,
-            transformerFee: unitCam?.transformerFee || 0,
-            totalAmount: totalAmount,
-          });
-        } catch (error) {
-          console.error(
-            `Error calculating for unit ${unit.unitNumber}:`,
-            error
-          );
-          // Continue with other units
+        if (occupiedUnits.length === 0) {
+            setError("No occupied units found in this building");
+            return;
         }
-      }
 
-      if (calculations.length === 0) {
-        setError("No utility calculations could be generated");
-        return;
-      }
+        // Get the selected building
+        const selectedBuilding = buildings.find(
+            (b) => b.id === selectedBuildingId
+        );
+        if (!selectedBuilding) {
+            setError("Selected building not found");
+            return;
+        }
 
-      setUnitCalculations(calculations);
-      setShowBilling(true);
-      setSuccess(
-        `Calculated bills for ${calculations.length} occupied units. Each unit pays: 
-        1. Metered utilities (electricity/water) + 
-        2. CAM fees (Generator, Transformer, Other CAM) based on unit space.`
-      );
+        // Calculate CAM distribution (Generator + Transformer + Other CAM)
+        const camDistribution = await calculateCAMDistribution(
+            selectedBuildingId,
+            occupiedUnits
+        );
+
+        // Calculate utility bills for each occupied unit
+        const calculations: UnitCalculation[] = [];
+
+        for (const unit of occupiedUnits) {
+            try {
+                // FIRST: Get contract utilities from the contract
+                let contractUtilities: any[] = [];
+                if (unit.contractId) {
+                    try {
+                        const contractResponse = await contractApi.getById(unit.contractId);
+                        const contract = contractResponse.data;
+                        console.log(`Contract ${unit.contractId} utilities:`, contract.includedUtilities);
+                        
+                        if (contract.includedUtilities && contract.includedUtilities.length > 0) {
+                            contractUtilities = contract.includedUtilities;
+                        }
+                    } catch (contractError) {
+                        console.error(`Error fetching contract ${unit.contractId}:`, contractError);
+                    }
+                }
+
+                // SECOND: Get metered utilities calculation from backend
+                let utilityBilling: UtilityBillingDTO | null = null;
+                try {
+                    utilityBilling = await utilityApi.calculateUtilityBill(
+                        unit.id,
+                        periodStart,
+                        periodEnd
+                    );
+                    console.log(`Unit ${unit.unitNumber} utility billing:`, utilityBilling);
+                } catch (billingError) {
+                    console.error(`Error calculating utility bill for unit ${unit.id}:`, billingError);
+                    // Create empty billing object
+                    utilityBilling = {
+                        unitId: unit.id,
+                        unitNumber: unit.unitNumber,
+                        unitSpace: unit.unitSpace || 0,
+                        unitType: unit.unitType || '',
+                        periodStart: new Date(periodStart),
+                        periodEnd: new Date(periodEnd),
+                        utilityFees: [],
+                        totalAmount: 0,
+                        grandTotal: 0,
+                        taxAmount: 0,
+                        buildingId: selectedBuildingId,
+                        buildingName: selectedBuilding.buildingName,
+                        totalLeasableArea: selectedBuilding.totalLeasableArea || 0,
+                        totalCAMCosts: selectedBuilding.totalCAMCosts || 0
+                    };
+                }
+
+                // THIRD: Find CAM distribution for this unit
+                const unitCam = camDistribution.find((cam) => cam.unitId === unit.id);
+
+                // FOURTH: Combine all utilities
+                const combinedUtilityFees: any[] = [];
+
+                // Add contract utilities (fixed, allocated, metered)
+                for (const utility of contractUtilities) {
+                    console.log(`Processing contract utility for unit ${unit.unitNumber}:`, utility);
+                    
+                    if (utility.calculationMethod === 'METERED') {
+                        // For metered utilities, find the calculated fee from utilityBilling
+                        const meteredFee = utilityBilling?.utilityFees?.find(f => 
+                            f.utilityTypeId === utility.id || 
+                            f.utilityName?.toLowerCase().includes(utility.utilityName?.toLowerCase() || '')
+                        );
+                        
+                        if (meteredFee) {
+                            combinedUtilityFees.push({
+                                ...meteredFee,
+                                isCAM: false,
+                                source: 'metered'
+                            });
+                        } else if (utility.ratePerUnit) {
+                            // If no meter reading, use base rate as minimum
+                            combinedUtilityFees.push({
+                                utilityName: utility.utilityName,
+                                calculationMethod: "FIXED",
+                                calculationFormula: `Minimum ${utility.utilityName} charge`,
+                                amount: utility.ratePerUnit,
+                                ratePerUnit: utility.ratePerUnit,
+                                quantity: 1,
+                                unit: undefined,
+                                isCAM: false,
+                                source: 'contract-fixed'
+                            });
+                        }
+                    } 
+                    else if (utility.calculationMethod === 'FIXED') {
+                        // Add fixed utilities
+                        if (utility.ratePerUnit) {
+                            combinedUtilityFees.push({
+                                utilityName: utility.utilityName,
+                                calculationMethod: "FIXED",
+                                calculationFormula: `Fixed ${utility.utilityName} fee`,
+                                amount: utility.ratePerUnit,
+                                ratePerUnit: utility.ratePerUnit,
+                                quantity: 1,
+                                unit: undefined,
+                                isCAM: false,
+                                source: 'contract-fixed'
+                            });
+                        }
+                    } 
+                    else if (utility.calculationMethod === 'ALLOCATED') {
+                        if (utility.utilityName.toLowerCase().includes('cam')) {
+                            // CAM will be handled separately below
+                            continue;
+                        } else {
+                            // Add other allocated utilities
+                            if (utility.ratePerUnit) {
+                                combinedUtilityFees.push({
+                                    utilityName: utility.utilityName,
+                                    calculationMethod: "ALLOCATED",
+                                    calculationFormula: `Allocated ${utility.utilityName}`,
+                                    amount: utility.ratePerUnit,
+                                    ratePerUnit: utility.ratePerUnit,
+                                    quantity: 1,
+                                    unit: undefined,
+                                    isCAM: false,
+                                    source: 'contract-allocated'
+                                });
+                            }
+                        }
+                    }
+                }
+
+                // Add any other metered utilities from utilityBilling that weren't in contract
+                if (utilityBilling?.utilityFees) {
+                    for (const fee of utilityBilling.utilityFees) {
+                        // Check if this fee is already in combinedUtilityFees
+                        const alreadyExists = combinedUtilityFees.some(existingFee => 
+                            existingFee.utilityName === fee.utilityName ||
+                            (fee.utilityTypeId && existingFee.utilityTypeId === fee.utilityTypeId)
+                        );
+                        
+                        if (!alreadyExists && !fee.utilityName.toLowerCase().includes('cam')) {
+                            combinedUtilityFees.push({
+                                ...fee,
+                                isCAM: false,
+                                source: 'metered-additional'
+                            });
+                        }
+                    }
+                }
+
+                // Add CAM fees (Generator, Transformer, Other CAM)
+                if (unitCam?.generatorFee && unitCam.generatorFee > 0) {
+                    combinedUtilityFees.push({
+                        utilityName: "Generator Fee (CAM)",
+                        calculationMethod: "FIXED" as const,
+                        calculationFormula: `(Generator ${selectedBuilding.generatorFee || 0} ÷ ${selectedBuilding.totalLeasableArea || 1}) × ${unit.unitSpace || 0}`,
+                        amount: unitCam.generatorFee,
+                        ratePerUnit: null,
+                        quantity: 1,
+                        unit: undefined,
+                        isCAM: true,
+                        source: 'cam'
+                    });
+                }
+                
+                if (unitCam?.transformerFee && unitCam.transformerFee > 0) {
+                    combinedUtilityFees.push({
+                        utilityName: "Transformer Fee (CAM)",
+                        calculationMethod: "FIXED" as const,
+                        calculationFormula: `(Transformer ${selectedBuilding.transformerFee || 0} ÷ ${selectedBuilding.totalLeasableArea || 1}) × ${unit.unitSpace || 0}`,
+                        amount: unitCam.transformerFee,
+                        ratePerUnit: null,
+                        quantity: 1,
+                        unit: undefined,
+                        isCAM: true,
+                        source: 'cam'
+                    });
+                }
+
+                if (unitCam?.otherCAMFee && unitCam.otherCAMFee > 0) {
+                    combinedUtilityFees.push({
+                        utilityName: "Other CAM Costs",
+                        calculationMethod: "FIXED" as const,
+                        calculationFormula: `Other CAM costs allocation`,
+                        amount: unitCam.otherCAMFee,
+                        ratePerUnit: null,
+                        quantity: 1,
+                        unit: undefined,
+                        isCAM: true,
+                        source: 'cam'
+                    });
+                }
+
+                // Calculate totals
+                const totalContractUtilities = combinedUtilityFees
+                    .filter(fee => !fee.isCAM)
+                    .reduce((sum, fee) => sum + (fee.amount || 0), 0);
+                    
+                const totalCAM = (unitCam?.camFee || 0);
+                const totalAmount = totalContractUtilities + totalCAM;
+
+                const displayUtilityBilling: UtilityBillingDTO = {
+                    ...(utilityBilling || {
+                        unitId: unit.id,
+                        unitNumber: unit.unitNumber,
+                        unitSpace: unit.unitSpace || 0,
+                        unitType: unit.unitType || '',
+                        periodStart: new Date(periodStart),
+                        periodEnd: new Date(periodEnd),
+                        buildingId: selectedBuildingId,
+                        buildingName: selectedBuilding.buildingName,
+                        totalLeasableArea: selectedBuilding.totalLeasableArea || 0,
+                        totalCAMCosts: selectedBuilding.totalCAMCosts || 0
+                    }),
+                    utilityFees: combinedUtilityFees,
+                    totalAmount: totalAmount,
+                    grandTotal: totalAmount,
+                    taxAmount: 0,
+                };
+
+                // Add contract info if available
+                if (unit.contractId) {
+                    displayUtilityBilling.contractId = unit.contractId;
+                    displayUtilityBilling.contractNumber = `CONTRACT-${unit.contractId}`;
+                }
+                if (unit.tenantName) {
+                    displayUtilityBilling.tenantName = unit.tenantName;
+                }
+
+                calculations.push({
+                    unitId: unit.id,
+                    unitNumber: unit.unitNumber,
+                    unitSpace: unit.unitSpace || 0,
+                    tenantName: unit.tenantName,
+                    isOccupied: true,
+                    utilityBilling: displayUtilityBilling,
+                    camFee: unitCam?.camFee || 0,
+                    generatorFee: unitCam?.generatorFee || 0,
+                    transformerFee: unitCam?.transformerFee || 0,
+                    totalAmount: totalAmount,
+                });
+
+                console.log(`Final calculation for unit ${unit.unitNumber}:`, {
+                    contractUtilities: contractUtilities.length,
+                    combinedFees: combinedUtilityFees.length,
+                    totalContractUtilities,
+                    totalCAM,
+                    totalAmount
+                });
+
+            } catch (error) {
+                console.error(
+                    `Error calculating for unit ${unit.unitNumber}:`,
+                    error
+                );
+                // Continue with other units but add error info
+                calculations.push({
+                    unitId: unit.id,
+                    unitNumber: unit.unitNumber,
+                    unitSpace: unit.unitSpace || 0,
+                    tenantName: unit.tenantName,
+                    isOccupied: true,
+                    utilityBilling: null,
+                    camFee: 0,
+                    generatorFee: 0,
+                    transformerFee: 0,
+                    totalAmount: 0,
+                });
+            }
+        }
+
+        if (calculations.length === 0) {
+            setError("No utility calculations could be generated");
+            return;
+        }
+
+        // Filter out units with errors (optional)
+        const validCalculations = calculations.filter(c => c.utilityBilling !== null);
+        
+        if (validCalculations.length === 0) {
+            setError("No valid utility calculations generated");
+            return;
+        }
+
+        setUnitCalculations(validCalculations);
+        setShowBilling(true);
+        setSuccess(
+            `Successfully calculated bills for ${validCalculations.length} occupied units. ` +
+            `Each bill includes: 1. Contract utilities + 2. Metered consumption + 3. CAM fees based on unit space.`
+        );
+        
+        console.log('Final calculations:', validCalculations);
+        
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Failed to calculate utility bills"
-      );
+        console.error('Error in calculateAllUtilityFees:', err);
+        setError(
+            err.response?.data?.message || "Failed to calculate utility bills"
+        );
     } finally {
-      setCalculating(false);
+        setCalculating(false);
     }
-  };
-
+};
   const generateAllInvoices = async () => {
     if (!selectedBuildingId) {
       setError("Please select a building");

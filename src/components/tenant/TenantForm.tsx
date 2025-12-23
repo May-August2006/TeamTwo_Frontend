@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import API from '../../api/api';
 import type { CreateTenantRequest, Tenant, TenantCategory, UpdateTenantRequest } from '../../types/tenant';
 
 // NRC Types and Interfaces
@@ -38,7 +39,6 @@ const MYANMAR_STATES: NRCState[] = [
   { code: '12', name: 'Yangon', nameMm: 'ရန်ကုန်' },
   { code: '13', name: 'Shan', nameMm: 'ရှမ်း' },
   { code: '14', name: 'Ayeyarwady', nameMm: 'ဧရာဝတီ' },
-  // { code: '15', name: 'Nay Pyi Taw', nameMm: 'နေပြည်တော်' },
 ];
 
 // NRC Types
@@ -92,9 +92,6 @@ const TOWNSHIPS_BY_STATE: string[][] = [
   
   // State 14 - Ayeyarwady
   ["AHGAPA","AHMANA","AHMATA","BAKALA","DADAYA","DANAHP","HAKAKA","HATHATA","HPAPANA","KAKAHTA","KAKANA","KAKHANA","KALANA","KAPANA","LAMANA","LAPATA","MAAHNA","MAAHPA","MAMAKA","MAMANA","NGAPATA","NGASANA","NGATHAKHA","NGATHAYA","NGAYAKA","NYATANA","PASALA","PATANA","PATHANA","PATHYA","THAPANA","WAKHAMA","YAKANA","YATHAYA","ZALANA"],
-  
-  // // State 15 - Nay Pyi Taw
-  // ["ZABUTHI","PYOKHANA","OOTHAYA","DEKHINA","PYINMANA","LEWEINA","DATWUN","PABANA"]
 ];
 
 // Utility functions
@@ -129,6 +126,21 @@ const validateNRC = (state: string, township: string, type: string, number: stri
   return errors;
 };
 
+interface GuestAccountStatus {
+  exists: boolean;
+  hasSameUser: boolean;
+  isGuestRole: boolean;
+  currentRole?: string;
+  userId?: number;
+  username?: string;
+  fullName?: string;
+  emailExists?: boolean;
+  usernameExists?: boolean;
+  differentUsers?: boolean;
+  emailUserHasTenant?: boolean;
+  usernameUserHasTenant?: boolean;
+}
+
 interface TenantFormProps {
   tenant?: Tenant;
   categories: TenantCategory[];
@@ -155,7 +167,6 @@ const TenantForm: React.FC<TenantFormProps> = ({
     address: '',
     tenantCategoryId: 0,
     username: '',
-    fullName: '',
   });
 
   // NRC components state
@@ -166,6 +177,10 @@ const TenantForm: React.FC<TenantFormProps> = ({
   
   const [filteredTownships, setFilteredTownships] = useState<string[]>([]);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [isCheckingGuest, setIsCheckingGuest] = useState(false);
+  const [guestAccountStatus, setGuestAccountStatus] = useState<GuestAccountStatus | null>(null);
 
   // Field length limits (matching backend DTO validation)
   const FIELD_LIMITS = {
@@ -176,7 +191,6 @@ const TenantForm: React.FC<TenantFormProps> = ({
     phone: { max: 11, min: 6 },
     address: { max: 500 },
     username: { max: 20, min: 3 },
-    fullName: { max: 30 },
   };
 
   // Validation patterns
@@ -207,7 +221,6 @@ const TenantForm: React.FC<TenantFormProps> = ({
         address: tenant.address || '',
         tenantCategoryId: tenant.tenantCategoryId,
         username: tenant.username,
-        fullName: tenant.fullName || '',
       });
 
       if (tenant.nrc_no) {
@@ -231,6 +244,233 @@ const TenantForm: React.FC<TenantFormProps> = ({
       setFormData(prev => ({ ...prev, nrc_no: '' }));
     }
   }, [nrcState, nrcTownship, nrcType, nrcNumber]);
+
+  // Check for duplicate email
+  const checkDuplicateEmail = async (): Promise<boolean> => {
+    if (!formData.email || !EMAIL_REGEX.test(formData.email)) return true;
+    
+    setIsCheckingEmail(true);
+    try {
+      const params: any = { email: formData.email };
+      if (isEditing && tenant?.id) {
+        params.tenantId = tenant.id;
+      }
+      
+      // Call backend API to check email availability
+      const response = await API.get(`/api/tenants/check-email`, { params });
+      
+      // If we get here without error, email is available
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.email;
+        return newErrors;
+      });
+      
+      return true;
+    } catch (error: any) {
+      // Handle 409 Conflict (email already exists)
+      if (error.response?.status === 409) {
+        const errorData = error.response.data;
+        const errorMessage = errorData.message || 'Email already registered';
+        setErrors(prev => ({ ...prev, email: errorMessage }));
+        setIsCheckingEmail(false);
+        return false;
+      }
+      
+      // Handle other API errors
+      if (error.response?.status === 400 || error.response?.status === 500) {
+        const errorData = error.response.data;
+        setErrors(prev => ({ ...prev, email: errorData.message || 'Error checking email' }));
+        setIsCheckingEmail(false);
+        return false;
+      }
+      
+      console.error('Error checking email:', error);
+      return true; // Don't block form submission on network errors
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
+  // Check for duplicate username
+  const checkDuplicateUsername = async (): Promise<boolean> => {
+    if (!formData.username || !USERNAME_REGEX.test(formData.username)) return true;
+    
+    setIsCheckingUsername(true);
+    try {
+      const params: any = { username: formData.username };
+      if (isEditing && tenant?.id) {
+        params.tenantId = tenant.id;
+      }
+      
+      const response = await API.get(`/api/tenants/check-username`, { params });
+      
+      // If we get here, username is available
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.username;
+        return newErrors;
+      });
+      
+      return true;
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        const errorData = error.response.data;
+        setErrors(prev => ({ ...prev, username: errorData.message || 'Username already taken' }));
+        setIsCheckingUsername(false);
+        return false;
+      }
+      
+      if (error.response?.status === 400 || error.response?.status === 500) {
+        const errorData = error.response.data;
+        setErrors(prev => ({ ...prev, username: errorData.message || 'Error checking username' }));
+        setIsCheckingUsername(false);
+        return false;
+      }
+      
+      console.error('Error checking username:', error);
+      return true;
+    } finally {
+      setIsCheckingUsername(false);
+    }
+  };
+
+  // Check guest account
+  const checkGuestAccount = async (): Promise<boolean> => {
+    if (!formData.email || !formData.username || !EMAIL_REGEX.test(formData.email) || !USERNAME_REGEX.test(formData.username)) {
+      setGuestAccountStatus(null);
+      return true;
+    }
+    
+    setIsCheckingGuest(true);
+    try {
+      const response = await API.get(`/api/tenants/check-guest-account`, {
+        params: {
+          email: formData.email,
+          username: formData.username
+        }
+      });
+      
+      const data = response.data;
+      
+      // Update guest account status for display
+      const guestStatus: GuestAccountStatus = {
+        exists: data.emailExists && data.usernameExists,
+        hasSameUser: data.hasSameUser || false,
+        isGuestRole: (data.emailUserIsGuest && data.usernameUserIsGuest) || false,
+        currentRole: data.emailUserRole || data.usernameUserRole,
+        userId: data.emailUserId || data.usernameUserId,
+        username: data.username,
+        fullName: data.fullName,
+        emailExists: data.emailExists,
+        usernameExists: data.usernameExists,
+        differentUsers: data.differentUsers,
+        emailUserHasTenant: data.emailUserHasTenant,
+        usernameUserHasTenant: data.usernameUserHasTenant
+      };
+      
+      setGuestAccountStatus(guestStatus);
+      
+      // Check for conflicts
+      let hasError = false;
+      const newErrors: { [key: string]: string } = {};
+      
+      // Case 1: Email and username belong to different users
+      if (data.differentUsers) {
+        newErrors.email = 'Email and username belong to different users';
+        newErrors.username = 'Email and username belong to different users';
+        hasError = true;
+      }
+      // Case 2: Email exists and already has tenant profile
+      else if (data.emailExists && data.emailUserHasTenant) {
+        newErrors.email = 'Email already registered';
+        hasError = true;
+      }
+      // Case 3: Username exists and already has tenant profile
+      else if (data.usernameExists && data.usernameUserHasTenant) {
+        newErrors.username = 'Username already taken';
+        hasError = true;
+      }
+      // Case 4: Email exists but not ROLE_GUEST
+      else if (data.emailExists && data.emailUserRole !== 'ROLE_GUEST' && data.hasSameUser) {
+        newErrors.email = `Cannot use this email (role: ${data.emailUserRole})`;
+        newErrors.username = `Cannot use this username (role: ${data.emailUserRole})`;
+        hasError = true;
+      }
+      // Case 5: Username exists but not ROLE_GUEST
+      else if (data.usernameExists && data.usernameUserRole !== 'ROLE_GUEST' && data.hasSameUser) {
+        newErrors.email = `Cannot use this email (role: ${data.usernameUserRole})`;
+        newErrors.username = `Cannot use this username (role: ${data.usernameUserRole})`;
+        hasError = true;
+      }
+      // Case 6: Email exists but no matching username
+      else if (data.emailExists && !data.hasSameUser) {
+        newErrors.email = 'Email already registered but username doesn\'t match';
+        hasError = true;
+      }
+      // Case 7: Username exists but no matching email
+      else if (data.usernameExists && !data.hasSameUser) {
+        newErrors.username = 'Username already taken but email doesn\'t match';
+        hasError = true;
+      }
+      
+      if (hasError) {
+        setErrors(prev => ({ ...prev, ...newErrors }));
+        setIsCheckingGuest(false);
+        return false;
+      }
+      
+      // Clear any previous guest account errors
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.email;
+        delete newErrors.username;
+        return newErrors;
+      });
+      
+      return true;
+    } catch (error: any) {
+      // API instance handles auth errors automatically
+      console.error('Error checking guest account:', error);
+      return true; // Don't block on network errors
+    } finally {
+      setIsCheckingGuest(false);
+    }
+  };
+
+  // Debounced check for email
+  useEffect(() => {
+    if (formData.email && EMAIL_REGEX.test(formData.email)) {
+      const timer = setTimeout(() => {
+        checkDuplicateEmail();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [formData.email]);
+
+  // Debounced check for username
+  useEffect(() => {
+    if (formData.username && USERNAME_REGEX.test(formData.username)) {
+      const timer = setTimeout(() => {
+        checkDuplicateUsername();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [formData.username]);
+
+  // Check guest account when both email and username are filled
+  useEffect(() => {
+    if (formData.email && formData.username && 
+        EMAIL_REGEX.test(formData.email) && 
+        USERNAME_REGEX.test(formData.username)) {
+      const timer = setTimeout(() => {
+        checkGuestAccount();
+      }, 700);
+      return () => clearTimeout(timer);
+    } else {
+      setGuestAccountStatus(null);
+    }
+  }, [formData.email, formData.username]);
 
   const validateForm = (): boolean => {
     const newErrors: { [key: string]: string } = {};
@@ -286,11 +526,6 @@ const TenantForm: React.FC<TenantFormProps> = ({
       newErrors.username = 'Username can only contain letters, numbers, dots, underscores, and hyphens';
     }
 
-    // Full name validation (optional)
-    if (formData.fullName && formData.fullName.length > FIELD_LIMITS.fullName.max) {
-      newErrors.fullName = `Full name cannot exceed ${FIELD_LIMITS.fullName.max} characters`;
-    }
-
     // Address validation (optional)
     if (formData.address && formData.address.length > FIELD_LIMITS.address.max) {
       newErrors.address = `Address cannot exceed ${FIELD_LIMITS.address.max} characters`;
@@ -328,20 +563,40 @@ const TenantForm: React.FC<TenantFormProps> = ({
       else if (!/^\d{6}$/.test(nrcNumber)) newErrors.nrcNumber = 'NRC number must be exactly 6 digits';
     }
 
-    setErrors(newErrors);
+    setErrors(prev => ({ ...prev, ...newErrors }));
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) onSubmit(formData);
+    
+    // First do client-side validation
+    if (!validateForm()) {
+      return;
+    }
+
+    // Then check for duplicates
+    const isEmailValid = await checkDuplicateEmail();
+    const isUsernameValid = await checkDuplicateUsername();
+    
+    // Only check guest account if both email and username are valid
+    let isGuestValid = true;
+    if (isEmailValid && isUsernameValid) {
+      isGuestValid = await checkGuestAccount();
+    }
+
+    if (!isEmailValid || !isUsernameValid || !isGuestValid) {
+      return;
+    }
+
+    // Submit the form
+    onSubmit(formData);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     
     // Apply field length limits
-    let limitedValue = value;
     switch (name) {
       case 'tenantName':
         if (value.length > FIELD_LIMITS.tenantName.max) return;
@@ -361,16 +616,21 @@ const TenantForm: React.FC<TenantFormProps> = ({
       case 'username':
         if (value.length > FIELD_LIMITS.username.max) return;
         break;
-      case 'fullName':
-        if (value.length > FIELD_LIMITS.fullName.max) return;
-        break;
       case 'nrc_no':
         if (value.length > FIELD_LIMITS.nrc_no.max) return;
         break;
     }
     
     setFormData(prev => ({ ...prev, [name]: name === 'tenantCategoryId' ? Number(value) : value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+    
+    // Clear error for this field when user starts typing
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -390,6 +650,11 @@ const TenantForm: React.FC<TenantFormProps> = ({
     setNrcNumber(value);
     if (errors.nrcNumber) setErrors(prev => ({ ...prev, nrcNumber: '' }));
   };
+
+  // Check if email and username are both filled and valid
+  const isBothCredentialsFilled = formData.email && formData.username && 
+                                  EMAIL_REGEX.test(formData.email) && 
+                                  USERNAME_REGEX.test(formData.username);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -449,20 +714,33 @@ const TenantForm: React.FC<TenantFormProps> = ({
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email *
               </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="example@domain.com"
-                disabled={isLoading}
-                maxLength={FIELD_LIMITS.email.max}
-              />
+              <div className="relative">
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
+                    errors.email ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="example@domain.com"
+                  disabled={isLoading}
+                  maxLength={FIELD_LIMITS.email.max}
+                />
+                {isCheckingEmail && (
+                  <div className="absolute right-2 top-2">
+                    <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                )}
+              </div>
               {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+              {!errors.email && formData.email && EMAIL_REGEX.test(formData.email) && !isCheckingEmail && (
+                <p className="mt-1 text-sm text-green-600">✓ Email is available</p>
+              )}
             </div>
 
             {/* Phone */}
@@ -491,41 +769,33 @@ const TenantForm: React.FC<TenantFormProps> = ({
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
                 Username *
               </label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
-                  errors.username ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter username"
-                disabled={isLoading}
-                maxLength={FIELD_LIMITS.username.max}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
+                    errors.username ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter username"
+                  disabled={isLoading}
+                  maxLength={FIELD_LIMITS.username.max}
+                />
+                {isCheckingUsername && (
+                  <div className="absolute right-2 top-2">
+                    <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  </div>
+                )}
+              </div>
               {errors.username && <p className="mt-1 text-sm text-red-600">{errors.username}</p>}
-            </div>
-
-            {/* Full Name */}
-            <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name
-              </label>
-              <input
-                type="text"
-                id="fullName"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
-                  errors.fullName ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Enter full name"
-                disabled={isLoading}
-                maxLength={FIELD_LIMITS.fullName.max}
-              />
-              {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
+              {!errors.username && formData.username && USERNAME_REGEX.test(formData.username) && !isCheckingUsername && (
+                <p className="mt-1 text-sm text-green-600">✓ Username is available</p>
+              )}
             </div>
 
             {/* Category */}
@@ -553,6 +823,74 @@ const TenantForm: React.FC<TenantFormProps> = ({
               {errors.tenantCategoryId && <p className="mt-1 text-sm text-red-600">{errors.tenantCategoryId}</p>}
             </div>
           </div>
+
+          {/* Guest Account Status Display */}
+          {/* {isBothCredentialsFilled && guestAccountStatus && (
+            <div className={`p-3 rounded-md border ${
+              guestAccountStatus.exists && guestAccountStatus.hasSameUser && guestAccountStatus.isGuestRole 
+                ? 'bg-green-50 border-green-200' 
+                : guestAccountStatus.differentUsers 
+                  ? 'bg-red-50 border-red-200'
+                  : (guestAccountStatus.emailExists && !guestAccountStatus.hasSameUser) || 
+                    (guestAccountStatus.usernameExists && !guestAccountStatus.hasSameUser)
+                    ? 'bg-yellow-50 border-yellow-200'
+                    : 'bg-blue-50 border-blue-200'
+            }`}>
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  {guestAccountStatus.exists && guestAccountStatus.hasSameUser && guestAccountStatus.isGuestRole ? (
+                    <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  ) : guestAccountStatus.differentUsers ? (
+                    <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  ) : (
+                    <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+                <div className="ml-3">
+                  <h3 className={`text-sm font-medium ${
+                    guestAccountStatus.exists && guestAccountStatus.hasSameUser && guestAccountStatus.isGuestRole 
+                      ? 'text-green-800' 
+                      : guestAccountStatus.differentUsers
+                        ? 'text-red-800'
+                        : 'text-yellow-800'
+                  }`}>
+                    {guestAccountStatus.exists && guestAccountStatus.hasSameUser && guestAccountStatus.isGuestRole 
+                      ? `Guest Account Found (ID: ${guestAccountStatus.userId})`
+                      : guestAccountStatus.differentUsers
+                        ? 'Credentials Conflict'
+                        : (guestAccountStatus.emailExists && !guestAccountStatus.hasSameUser) 
+                          ? 'Email Already Registered'
+                          : (guestAccountStatus.usernameExists && !guestAccountStatus.hasSameUser)
+                            ? 'Username Already Taken'
+                            : 'No Conflict Found'}
+                  </h3>
+                  <div className={`mt-1 text-sm ${
+                    guestAccountStatus.exists && guestAccountStatus.hasSameUser && guestAccountStatus.isGuestRole 
+                      ? 'text-green-700' 
+                      : guestAccountStatus.differentUsers
+                        ? 'text-red-700'
+                        : 'text-yellow-700'
+                  }`}>
+                    {guestAccountStatus.exists && guestAccountStatus.hasSameUser && guestAccountStatus.isGuestRole 
+                      ? `User: ${guestAccountStatus.username} will be converted to tenant.`
+                      : guestAccountStatus.differentUsers
+                        ? 'Email and username belong to different users.'
+                        : (guestAccountStatus.emailExists && !guestAccountStatus.hasSameUser)
+                          ? 'This email is already registered with a different username.'
+                          : (guestAccountStatus.usernameExists && !guestAccountStatus.hasSameUser)
+                            ? 'This username is already taken with a different email.'
+                            : 'Email and username are available.'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )} */}
 
           {/* NRC Number Section - Simple Compact Design */}
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -690,32 +1028,32 @@ const TenantForm: React.FC<TenantFormProps> = ({
           </div>
 
           <div className="flex justify-end space-x-3 pt-4">
-  <button
-    type="button"
-    onClick={onCancel}
-    disabled={isLoading}
-    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1E40AF] disabled:opacity-50 disabled:cursor-not-allowed"
-  >
-    Cancel
-  </button>
-  <button
-    type="submit"
-    disabled={isLoading}
-    className="px-4 py-2 text-sm font-medium text-white bg-[#1E40AF] border border-transparent rounded-md shadow-sm hover:bg-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1E40AF] disabled:opacity-50 disabled:cursor-not-allowed"
-  >
-    {isLoading ? (
-      <span className="flex items-center">
-        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        {isEditing ? 'Updating...' : 'Creating...'}
-      </span>
-    ) : (
-      isEditing ? 'Update' : 'Create'
-    )}
-  </button>
-</div>
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1E40AF] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading || isCheckingEmail || isCheckingUsername || isCheckingGuest}
+              className="px-4 py-2 text-sm font-medium text-white bg-[#1E40AF] border border-transparent rounded-md shadow-sm hover:bg-[#1E3A8A] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1E40AF] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading || isCheckingEmail || isCheckingUsername || isCheckingGuest ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {isEditing ? 'Updating...' : 'Creating...'}
+                </span>
+              ) : (
+                isEditing ? 'Update' : 'Create'
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>

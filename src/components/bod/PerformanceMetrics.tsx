@@ -61,7 +61,6 @@ const PerformanceMetrics: React.FC = () => {
   const [metrics, setMetrics] = useState<PerformanceMetricsDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dataSource, setDataSource] = useState<"REAL" | "MOCK" | "NO_DATA">("REAL");
   const [timeRange, setTimeRange] = useState<"YEAR" | "QUARTER" | "MONTH">("YEAR");
   const [refreshing, setRefreshing] = useState(false);
 
@@ -75,97 +74,26 @@ const PerformanceMetrics: React.FC = () => {
       setError(null);
       setRefreshing(true);
 
-      // Test if we have real data
-      try {
-        const testResponse = await axios.get(
-          "/api/dashboard/performance-metrics"
-        );
-        
-        console.log("Performance metrics API response:", testResponse.data);
-        
-        // Check if real data is available
-        if (testResponse.data.realTimeDataAvailable === false || 
-            (!testResponse.data.buildingUtilityData || testResponse.data.buildingUtilityData.length === 0)) {
-          console.warn("No real data found in response, showing sample data");
-          setDataSource("MOCK");
-        } else {
-          setDataSource("REAL");
-          // Process the real data
-          const processedData = processMetricsData(testResponse.data);
-          setMetrics(processedData);
-          setRefreshing(false);
-          setLoading(false);
-          return; // Exit early if we have real data
-        }
-      } catch (testError) {
-        console.warn("Performance metrics endpoint error:", testError);
-        setDataSource("MOCK");
+      const response = await axios.get(
+        "/api/dashboard/performance-metrics"
+      );
+      
+      console.log("Performance metrics API response:", response.data);
+      
+      // Check if real data is available
+      if (response.data.realTimeDataAvailable === false || 
+          (!response.data.buildingUtilityData || response.data.buildingUtilityData.length === 0)) {
+        console.warn("No real data found in response");
+        setMetrics(null);
+      } else {
+        // Process the real data
+        const processedData = processMetricsData(response.data);
+        setMetrics(processedData);
       }
-
-      // Fallback to sample data if no real data
-      setMetrics({
-        rentCollectionRate: 94.8,
-        rentCollectionChange: 1.7,
-        utilityCostChange: 15.5,
-        utilityCostChangeAmount: 25000000,
-        cumulativeSavings: -1500000,
-        industryAverageUtility: 12.0,
-        targetCollectionRate: 95,
-        buildingUtilityData: [
-          {
-            buildingName: "Sein Gay Har Parami Centre",
-            previousYearCost: 45000000,
-            currentYearCost: 52000000,
-            costChangePercentage: 15.6,
-            costChangeAmount: 7000000,
-            status: "NEEDS_ATTENTION",
-          },
-          {
-            buildingName: "Sein Gay Har Kamayut Centre",
-            previousYearCost: 38000000,
-            currentYearCost: 42000000,
-            costChangePercentage: 10.5,
-            costChangeAmount: 4000000,
-            status: "NEEDS_ATTENTION",
-          },
-          {
-            buildingName: "Hlaing Building 2",
-            previousYearCost: 28000000,
-            currentYearCost: 30000000,
-            costChangePercentage: 7.1,
-            costChangeAmount: 2000000,
-            status: "GOOD",
-          },
-          {
-            buildingName: "Sein Gay Har Kamayut Centre 2",
-            previousYearCost: 32000000,
-            currentYearCost: 33000000,
-            costChangePercentage: 3.1,
-            costChangeAmount: 1000000,
-            status: "GOOD",
-          },
-          {
-            buildingName: "Dagon Center",
-            previousYearCost: 55000000,
-            currentYearCost: 52000000,
-            costChangePercentage: -5.5,
-            costChangeAmount: -3000000,
-            status: "EXCELLENT",
-          },
-        ],
-        utilityTrendData: [
-          { year: "2021", totalCost: 180000000, label: "Baseline" },
-          { year: "2022", totalCost: 195000000, label: "+8.3%" },
-          { year: "2023", totalCost: 210000000, label: "+7.7%" },
-          { year: "2024", totalCost: 235000000, label: "+11.9%" },
-        ],
-        realTimeDataAvailable: false,
-        lastUpdated: new Date().toISOString(),
-      });
     } catch (error) {
       console.error("Error fetching performance metrics:", error);
       setError("Failed to load performance metrics. Please try again later.");
-      setDataSource("NO_DATA");
+      setMetrics(null);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -432,12 +360,109 @@ const PerformanceMetrics: React.FC = () => {
     );
   }
 
+  // No data state
   if (!metrics) {
     return (
       <div className="space-y-6">
+        {/* Header */}
         <div className="bg-gradient-to-br from-slate-900 to-[#1E40AF] rounded-2xl shadow-2xl p-6 text-white border border-[#1E3A8A]">
-          <h2 className="text-2xl font-bold mb-2 tracking-tight">Performance Metrics</h2>
-          <p className="text-blue-200 font-light">No performance data available</p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Performance Metrics</h2>
+              <p className="text-blue-200 font-light">
+                Key performance indicators for rent collection and utility cost management
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={fetchPerformanceMetrics}
+                disabled={refreshing}
+                className={`p-2.5 rounded-xl ${refreshing 
+                  ? 'bg-[#1E3A8A] cursor-not-allowed' 
+                  : 'bg-white/20 hover:bg-white/30'} transition-all duration-300 hover:scale-105`}
+              >
+                <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+              <div className="p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
+                <LineChart className="w-8 h-8 text-white" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* No Data Available Message */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-200 p-12">
+          <div className="flex flex-col items-center justify-center text-center">
+            <div className="w-24 h-24 bg-gradient-to-br from-slate-100 to-slate-200 rounded-full flex items-center justify-center mb-6 border border-slate-300">
+              <LineChart className="w-12 h-12 text-slate-500" />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 mb-4">
+              No Performance Data Available
+            </h3>
+            <p className="text-slate-600 max-w-2xl mb-8">
+              Performance metrics require paid invoices with utility items and contract data. 
+              Once you have paid invoices for rent and utilities, these metrics will be automatically calculated.
+            </p>
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200 max-w-2xl w-full mb-8">
+              <h4 className="font-semibold text-blue-900 mb-3 text-lg">To see performance metrics:</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+                  <span className="text-sm text-blue-800">
+                    Create and mark invoices with <strong>RENT</strong> items as <strong>PAID</strong>
+                  </span>
+                </div>
+                <div className="flex items-start">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+                  <span className="text-sm text-blue-800">
+                    Add utility invoices (<strong>ELECTRICITY</strong>, <strong>WATER</strong>) and mark as <strong>PAID</strong>
+                  </span>
+                </div>
+                <div className="flex items-start">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+                  <span className="text-sm text-blue-800">
+                    Ensure contracts are associated with units and buildings
+                  </span>
+                </div>
+                <div className="flex items-start">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+                  <span className="text-sm text-blue-800">
+                    Use issue dates in current or previous year
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => (window.location.href = "/invoices")}
+                className="px-6 py-3 bg-[#1E40AF] text-white rounded-xl hover:bg-[#1E3A8A] transition-all duration-300 font-medium shadow-md hover:shadow-lg"
+              >
+                Go to Invoices
+              </button>
+              <button
+                onClick={() => (window.location.href = "/contracts")}
+                className="px-6 py-3 bg-slate-100 text-slate-800 rounded-xl hover:bg-slate-200 transition-all duration-300 font-medium border border-slate-300"
+              >
+                Go to Contracts
+              </button>
+              <button
+                onClick={fetchPerformanceMetrics}
+                className="px-6 py-3 bg-white text-slate-800 rounded-xl hover:bg-slate-50 transition-all duration-300 font-medium border border-slate-300 flex items-center"
+              >
+                {refreshing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Refreshing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh Data
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -462,24 +487,12 @@ const PerformanceMetrics: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Data Source Indicator */}
+      {/* Header */}
       <div className="bg-gradient-to-br from-slate-900 to-[#1E40AF] rounded-2xl shadow-2xl p-6 text-white border border-[#1E3A8A]">
         <div className="flex justify-between items-start">
           <div>
             <div className="flex items-center space-x-3 mb-2">
               <h2 className="text-2xl font-bold tracking-tight">Performance Metrics</h2>
-              {dataSource === "MOCK" && (
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 shadow-sm">
-                  <AlertCircle className="w-3 h-3 mr-1.5" />
-                  Using Sample Data
-                </span>
-              )}
-              {dataSource === "REAL" && (
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm">
-                  <CheckCircle2 className="w-3 h-3 mr-1.5" />
-                  Real Data
-                </span>
-              )}
               {refreshing && (
                 <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300 shadow-sm">
                   <RefreshCw className="w-3 h-3 mr-1.5 animate-spin" />
@@ -490,13 +503,7 @@ const PerformanceMetrics: React.FC = () => {
             <p className="text-blue-200 font-light">
               Key performance indicators for rent collection and utility cost management
             </p>
-            {dataSource === "MOCK" && (
-              <p className="text-amber-200 text-sm mt-2 font-medium">
-                <AlertCircle className="w-4 h-4 inline mr-1.5" />
-                Real data will appear when you have paid invoices with utility items
-              </p>
-            )}
-            {dataSource === "REAL" && metrics.lastUpdated && (
+            {metrics.lastUpdated && (
               <div className="flex items-center mt-2 text-blue-100">
                 <Clock className="w-4 h-4 mr-1.5" />
                 <span className="text-sm">
@@ -938,16 +945,9 @@ const PerformanceMetrics: React.FC = () => {
               <h3 className="text-xl font-bold text-slate-900">
                 Building Utility Cost Analysis
               </h3>
-              {dataSource === "MOCK" && (
-                <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200 shadow-sm">
-                  Sample Data
-                </span>
-              )}
-              {dataSource === "REAL" && (
-                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 shadow-sm">
-                  Real Data • {buildingUtilityData.length} Properties
-                </span>
-              )}
+              <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 shadow-sm">
+                Real Data • {buildingUtilityData.length} Properties
+              </span>
             </div>
             <p className="text-slate-600">
               Detailed cost comparison and performance analysis by property
@@ -1135,79 +1135,6 @@ const PerformanceMetrics: React.FC = () => {
         </div>
       </div>
 
-      {/* Data Source Information */}
-      {dataSource === "MOCK" && (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl shadow-xl border border-amber-200 p-6">
-          <div className="flex items-start">
-            <div className="p-2.5 bg-gradient-to-br from-amber-100 to-orange-100 rounded-xl border border-amber-300 mr-4">
-              <AlertCircle className="w-6 h-6 text-amber-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-amber-800 mb-2">
-                Using Sample Data
-              </h3>
-              <p className="text-amber-700 mb-4">
-                Real performance metrics will appear when you have:
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full mr-3"></div>
-                  <span className="text-sm text-amber-700">
-                    Invoices with <code className="bg-amber-100 px-1.5 py-0.5 rounded text-amber-800 font-medium">RENT</code> items marked as <strong>PAID</strong>
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full mr-3"></div>
-                  <span className="text-sm text-amber-700">
-                    Utility invoices (<code className="bg-amber-100 px-1.5 py-0.5 rounded text-amber-800 font-medium">ELECTRICITY</code>, <code className="bg-amber-100 px-1.5 py-0.5 rounded text-amber-800 font-medium">WATER</code>) marked as <strong>PAID</strong>
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full mr-3"></div>
-                  <span className="text-sm text-amber-700">
-                    Issue dates in 2024 or 2025
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full mr-3"></div>
-                  <span className="text-sm text-amber-700">
-                    Contracts associated with units and buildings
-                  </span>
-                </div>
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => (window.location.href = "/invoices")}
-                  className="px-4 py-2.5 text-sm font-medium bg-amber-100 text-amber-800 rounded-xl hover:bg-amber-200 transition-all duration-300 border border-amber-300 shadow-sm hover:shadow"
-                >
-                  Go to Invoices
-                </button>
-                <button
-                  onClick={() => (window.location.href = "/contracts")}
-                  className="px-4 py-2.5 text-sm font-medium bg-amber-100 text-amber-800 rounded-xl hover:bg-amber-200 transition-all duration-300 border border-amber-300 shadow-sm hover:shadow"
-                >
-                  Go to Contracts
-                </button>
-                <button
-                  onClick={fetchPerformanceMetrics}
-                  disabled={refreshing}
-                  className="px-4 py-2.5 text-sm font-medium bg-[#1E40AF] text-white rounded-xl hover:bg-[#1E3A8A] transition-all duration-300 shadow-md hover:shadow-lg flex items-center"
-                >
-                  {refreshing ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Refreshing...
-                    </>
-                  ) : (
-                    "Refresh Data"
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Legend and Info */}
       <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-200 p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1258,7 +1185,7 @@ const PerformanceMetrics: React.FC = () => {
             </div>
           </div>
         </div>
-        {dataSource === "REAL" && metrics.lastUpdated && (
+        {metrics.lastUpdated && (
           <div className="mt-6 pt-4 border-t border-slate-200">
             <div className="flex items-center justify-center">
               <Clock className="w-4 h-4 text-slate-400 mr-2" />

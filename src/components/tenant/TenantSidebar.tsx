@@ -31,6 +31,9 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
+  const { t } = useTranslation(); // Get the t function here
+
+  // Move menuItems inside the component to use the t function
   const menuItems = [
     {
       name: "Dashboard",
@@ -172,12 +175,12 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
               >
                 <div
                   className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 ${
-                    isActivePath(item.path!) ? "from-red-100 to-red-50" : ""
+                    isActivePath(item.path) ? "from-red-100 to-red-50" : ""
                   } ${isCollapsed ? "" : "mr-2"}`}
                 >
                   {React.cloneElement(item.icon, {
                     className: `w-4 h-4 ${
-                      isActivePath(item.path!)
+                      isActivePath(item.path)
                         ? "text-red-600 font-bold"
                         : "text-stone-600"
                     }`,
