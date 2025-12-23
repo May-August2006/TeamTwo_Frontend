@@ -210,6 +210,7 @@ export interface InvoiceDTO {
 
   unpaidBalance: string;
   daysOverdue: number;
+  maxLateDays: number;
 
   lateFees?: LateFeeResponseDTO[];
 }
