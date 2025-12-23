@@ -26,7 +26,7 @@ export const appointmentApi = {
   // ✅ Update appointment status (PATCH)
   updateStatus: (
     appointmentId: number,
-    status: "PENDING" | "CONFIRMED" | "REJECTED" | "CANCELLED",
+    status: "SCHEDULED" | "CONFIRMED" | "REJECTED" | "CANCELLED",
     managerId: number
   ) =>
     API.patch<AppointmentDTO>(
