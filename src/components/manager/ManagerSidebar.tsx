@@ -36,39 +36,44 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
 
   const menuItems = [
     {
-      name: t('sidebar.overview', 'Overview'),
+      name: t("sidebar.overview", "Overview"),
       icon: <Home className="w-5 h-5" />,
       path: "/manager/overview",
     },
     {
-      name: t('sidebar.tenantManagement', 'Tenant Management'),
+      name: t("sidebar.tenantManagement", "Tenant Management"),
       icon: <Users className="w-5 h-5" />,
       path: "/manager/tenants",
     },
     {
-      name: t('sidebar.appointments', 'Appointments'),
+      name: t("sidebar.appointments", "Appointments"),
       icon: <Calendar className="w-5 h-5" />,
       path: "/manager/appointments",
     },
     {
-      name: t('sidebar.announcements', 'Announcements'),
+      name: t("sidebar.announcements", "Announcements"),
       icon: <Megaphone className="w-5 h-5" />,
       path: "/manager/announcements",
     },
     {
-      name: t('sidebar.leaseManagement', 'Lease Management'),
+      name: t("sidebar.leaseManagement", "Lease Management"),
       icon: <FileText className="w-5 h-5" />,
       path: "/manager/leases",
     },
     {
-      name: t('sidebar.maintenance', 'Maintenance'),
+      name: t("sidebar.maintenance", "Maintenance"),
       icon: <Wrench className="w-5 h-5" />,
       path: "/manager/maintenance",
     },
     {
-      name: t('sidebar.reports', 'Reports'),
+      name: t("sidebar.reports", "Reports"),
       icon: <BarChart3 className="w-5 h-5" />,
       path: "/manager/reports",
+    },
+    {
+      name: t("sidebar.overdueInvoices", "Overdue Invoices"),
+      icon: <FileText className="w-5 h-5" />,
+      path: "/manager/overdueInvoices",
     },
   ];
 
@@ -92,7 +97,11 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
         `}
       >
         {/* Logo Section */}
-        <div className={`flex items-center justify-between p-4 border-b border-stone-200 bg-gradient-to-r from-blue-50 to-white ${isCollapsed ? 'px-3' : 'px-6'}`}>
+        <div
+          className={`flex items-center justify-between p-4 border-b border-stone-200 bg-gradient-to-r from-blue-50 to-white ${
+            isCollapsed ? "px-3" : "px-6"
+          }`}
+        >
           {!isCollapsed && (
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md">
@@ -100,7 +109,7 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
               </div>
               <div>
                 <span className="text-lg font-bold text-stone-900">
-                  {t('sidebar.managerPortal', 'Manager Portal')}
+                  {t("sidebar.managerPortal", "Manager Portal")}
                 </span>
               </div>
             </div>
@@ -115,7 +124,11 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
               onClick={onToggleCollapse}
               className="hidden lg:block p-2 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors duration-150"
             >
-              <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
+              <ChevronRight
+                className={`w-4 h-4 transition-transform duration-300 ${
+                  isCollapsed ? "rotate-180" : ""
+                }`}
+              />
             </button>
             <button
               onClick={onClose}
@@ -128,7 +141,11 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
 
         {/* Navigation */}
         <div className="flex flex-col h-full">
-          <nav className={`flex-1 p-4 space-y-1 overflow-y-auto ${isCollapsed ? 'px-2' : ''}`}>
+          <nav
+            className={`flex-1 p-4 space-y-1 overflow-y-auto ${
+              isCollapsed ? "px-2" : ""
+            }`}
+          >
             {menuItems.map((item, index) => (
               <button
                 key={index}
@@ -140,18 +157,26 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
                       ? "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 border-l-2 border-blue-600 font-medium"
                       : "text-stone-700 hover:bg-gradient-to-r from-blue-50/50 to-blue-50 hover:text-stone-900"
                   }
-                  ${isCollapsed ? 'justify-center relative' : ''}
+                  ${isCollapsed ? "justify-center relative" : ""}
                 `}
-                title={isCollapsed ? item.name : ''}
+                title={isCollapsed ? item.name : ""}
               >
-                <div className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-200 ${
-                  isActivePath(item.path!) ? 'from-blue-100 to-blue-50' : ''
-                } ${isCollapsed ? '' : 'mr-2'}`}>
-                  {React.cloneElement(item.icon, { 
-                    className: `w-4 h-4 ${isActivePath(item.path!) ? 'text-blue-600 font-bold' : 'text-stone-600'}`
+                <div
+                  className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-200 ${
+                    isActivePath(item.path!) ? "from-blue-100 to-blue-50" : ""
+                  } ${isCollapsed ? "" : "mr-2"}`}
+                >
+                  {React.cloneElement(item.icon, {
+                    className: `w-4 h-4 ${
+                      isActivePath(item.path!)
+                        ? "text-blue-600 font-bold"
+                        : "text-stone-600"
+                    }`,
                   })}
                 </div>
-                {!isCollapsed && <span className="font-semibold">{item.name}</span>}
+                {!isCollapsed && (
+                  <span className="font-semibold">{item.name}</span>
+                )}
               </button>
             ))}
           </nav>
@@ -166,10 +191,10 @@ export const ManagerSidebar: React.FC<ManagerSidebarProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-stone-900 truncate">
-                      {t('common.managerUser', 'Manager User')}
+                      {t("common.managerUser", "Manager User")}
                     </p>
                     <p className="text-xs text-stone-500 truncate">
-                      {t('common.manager', 'Manager')}
+                      {t("common.manager", "Manager")}
                     </p>
                   </div>
                 </div>

@@ -26,7 +26,7 @@ export function LateFeeManagementPage() {
   );
   const hasOverdue = selectedInvoice && (selectedInvoice.daysOverdue ?? 0) > 0;
 
-  const [lateDays, setLateDays] = useState(1);
+  const [lateDays, setLateDays] = useState(0);
   const [reason, setReason] = useState("");
 
   const lateFeePaymentRef = useRef<HTMLDivElement | null>(null);
@@ -52,11 +52,11 @@ export function LateFeeManagementPage() {
   useEffect(() => {
     const checkUserRoleAndBuilding = async () => {
       try {
-        const userRole = localStorage.getItem('userRole') || '';
-        
-        if (userRole === 'ACCOUNTANT' || userRole === 'accountant') {
+        const userRole = localStorage.getItem("userRole") || "";
+
+        if (userRole === "ACCOUNTANT" || userRole === "accountant") {
           setIsAccountant(true);
-          
+
           // Get accountant's assigned building
           try {
             const buildingResponse = await buildingApi.getMyAssignedBuilding();
@@ -64,16 +64,23 @@ export function LateFeeManagementPage() {
               setAssignedBuilding(buildingResponse.data);
             }
           } catch (error) {
-            console.error('Error loading assigned building:', error);
+            console.error("Error loading assigned building:", error);
           }
         }
       } catch (error) {
-        console.error('Error checking user role:', error);
+        console.error("Error checking user role:", error);
       }
     };
-    
+
     checkUserRoleAndBuilding();
   }, []);
+
+  // Auto-set lateDays to overdue days whenever selectedInvoice changes
+  useEffect(() => {
+    if (selectedInvoice) {
+      setLateDays(selectedInvoice.daysOverdue ?? 0);
+    }
+  }, [selectedInvoice]);
 
   // -------------------------------------------------------------
   // Fetch overdue invoices
@@ -145,8 +152,14 @@ export function LateFeeManagementPage() {
     if (!selectedInvoice) return toast.error("Please select an invoice");
 
     // Check if selected invoice belongs to accountant's building
-    if (isAccountant && assignedBuilding && selectedInvoice.buildingId !== assignedBuilding.id) {
-      return toast.error("You can only apply late fees to invoices from your assigned building");
+    if (
+      isAccountant &&
+      assignedBuilding &&
+      selectedInvoice.buildingId !== assignedBuilding.id
+    ) {
+      return toast.error(
+        "You can only apply late fees to invoices from your assigned building"
+      );
     }
 
     const overdueDays = selectedInvoice.daysOverdue ?? 0;
@@ -288,10 +301,10 @@ export function LateFeeManagementPage() {
       );
     }
 
-    if (invoice.lateFees.every((lf) => lf.status === "WAIVED")) {
+    if (invoice.lateFees.every((lf) => lf.status === "EXPIRED")) {
       return (
         <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-red-700 font-semibold">
-          WAIVED
+          EXPIRED
         </span>
       );
     }
@@ -325,8 +338,14 @@ export function LateFeeManagementPage() {
             }
 
             // Check if selected invoice belongs to accountant's building
-            if (isAccountant && assignedBuilding && selectedInvoice.buildingId !== assignedBuilding.id) {
-              toast.error("You can only pay late fees for invoices from your assigned building");
+            if (
+              isAccountant &&
+              assignedBuilding &&
+              selectedInvoice.buildingId !== assignedBuilding.id
+            ) {
+              toast.error(
+                "You can only pay late fees for invoices from your assigned building"
+              );
               return;
             }
 
@@ -354,7 +373,8 @@ export function LateFeeManagementPage() {
             <div>
               <h3 className="font-medium text-blue-800">Accountant View</h3>
               <p className="text-sm text-blue-600">
-                Showing late fee management only for your assigned building: <strong>{assignedBuilding.buildingName}</strong>
+                Showing late fee management only for your assigned building:{" "}
+                <strong>{assignedBuilding.buildingName}</strong>
               </p>
             </div>
           </div>
@@ -498,24 +518,23 @@ export function LateFeeManagementPage() {
           </div>
         ) : filteredInvoices.length === 0 ? (
           <p className="text-gray-500 py-10 text-center">
-            {isAccountant && assignedBuilding ? (
-              `No overdue invoices found for ${assignedBuilding.buildingName}.`
-            ) : (
-              "No overdue invoices found."
-            )}
+            {isAccountant && assignedBuilding
+              ? `No overdue invoices found for ${assignedBuilding.buildingName}.`
+              : "No overdue invoices found."}
           </p>
         ) : (
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-100 border-b text-left">
-                <th className="p-3">Invoice ID</th>
+                {/* <th className="p-3">Invoice ID</th> */}
                 <th className="p-3">Invoice No</th>
                 <th className="p-3">Unpaid Balance</th>
                 <th className="p-3">Tenant</th>
-                <th className="p-3">Building</th>
+                <th className="p-3">Unit</th>
                 <th className="p-3">Overdue Days</th>
-                <th className="p-3">Balance</th>
-                <th className="p-3">Late Fee</th>
+                <th className="p-3">Max Late Days</th>
+                {/* <th className="p-3">Late Fee</th> */}
+                <th className="p-3">Late Fee Invoice</th>
                 <th className="p-3">Late Fee Status</th>
               </tr>
             </thead>
@@ -529,7 +548,7 @@ export function LateFeeManagementPage() {
                     inv.daysOverdue === 0 ? "opacity-60 cursor-not-allowed" : ""
                   } ${selectedInvoice?.id === inv.id ? "bg-blue-200" : ""}`}
                 >
-                  <td className="p-3">{inv.id}</td>
+                  {/* <td className="p-3">{inv.id}</td> */}
                   <td className="p-3">{inv.invoiceNumber}</td>
                   <td className="p-3">{inv.unpaidBalance}</td>
                   <td className="p-3">{inv.tenantName}</td>
@@ -540,11 +559,19 @@ export function LateFeeManagementPage() {
                         {inv.daysOverdue}
                       </span>
                     ) : (
-                      <span className="text-gray-400 italic">Not overdue</span>
+                      <span className="text-gray-400 italic">
+                        Not overdue Yet
+                      </span>
                     )}
                   </td>
+                  <td className="p-3">
+                    {inv.invoiceItems.some((item) => item.itemType === "RENT")
+                      ? inv.maxLateDays
+                      : "-"}{" "}
+                    {/* or null if you want empty cell */}
+                  </td>
 
-                  <td className="p-3">{inv.balanceAmount}</td>
+                  {/* <td className="p-3">{inv.paidAmount}</td> */}
 
                   <td className="p-3 flex items-center gap-2">
                     {inv.lateFees?.map((lf) => (

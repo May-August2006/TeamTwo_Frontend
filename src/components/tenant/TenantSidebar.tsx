@@ -33,42 +33,42 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
 }) => {
   const menuItems = [
     {
-      name: t('tenant.dashboard', 'Dashboard'),
+      name: "Dashboard",
       icon: <Home className="w-5 h-5" />,
       path: "/tenant",
     },
     {
-      name: t('tenant.invoices', 'My Invoices'),
+      name: "My Invoices",
       icon: <FileText className="w-5 h-5" />,
       path: "/tenant/invoices",
     },
     {
-      name: t('tenant.paymentHistory', 'Payment History'),
+      name: "Payment History",
       icon: <CreditCard className="w-5 h-5" />,
       path: "/tenant/payment-history",
     },
     {
-      name: t('tenant.contract', 'My Contract'),
+      name: "My Contract",
       icon: <FileCheck className="w-5 h-5" />,
       path: "/tenant/contract",
     },
     {
-      name: t('tenant.maintenance', 'Maintenance'),
+      name: "Maintenance",
       icon: <Wrench className="w-5 h-5" />,
       path: "/tenant/maintenance",
     },
     {
-      name: t('tenant.announcementsTitle', 'Announcements'),
+      name: "Announcements",
       icon: <Bell className="w-5 h-5" />,
       path: "/tenant/announcements",
     },
     {
-      name: t('tenant.remindersTitle', 'Reminders'),
+      name: "Reminders",
       icon: <Bell className="w-5 h-5" />,
       path: "/tenant/reminders",
     },
     {
-      name: t('tenant.lateFeesTitle', 'Late Fees'),
+      name: "Late Fees",
       icon: <FileCheck className="w-5 h-5" />,
       path: "/tenant/lateFees",
     },
@@ -88,7 +88,8 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
 
   const handleNavigation = (path: string) => {
     onNavigate(path);
-    if (window.innerWidth < 1024) { // Close on mobile after navigation
+    if (window.innerWidth < 1024) {
+      // Close on mobile after navigation
       onClose();
     }
   };
@@ -117,7 +118,7 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
               </div>
               <div>
                 <span className="text-lg font-bold text-stone-900">
-                  {t('tenant.dashboard', 'Tenant Portal')}
+                  Tenant Portal
                 </span>
               </div>
             </div>

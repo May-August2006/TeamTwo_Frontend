@@ -10,7 +10,7 @@ import AppointmentDetailPage from "../manager/AppointmentDetailPage";
 import SendAnnouncementPage from "../manager/SendAnnouncementPage";
 import ManagerMaintenancePage from "../manager/MaintenancePage";
 import LeaseManagement from "../manager/LeaseManagement";
-
+import { OverdueInvoicesPage } from "../manager/OverdueInvoicesPage";
 
 export default function ManagerDashboard() {
   return (
@@ -24,6 +24,7 @@ export default function ManagerDashboard() {
         <Route path="announcements" element={<SendAnnouncementPage />} />
         <Route path="reports" element={<ReportsPage />} />
         {/* Add the Maintenance route */}
+        <Route path="overdueInvoices" element={<OverdueInvoicesPage />} />
         <Route path="maintenance" element={<ManagerMaintenancePage />} />
         <Route path="*" element={<Navigate to="overview" replace />} />
       </Routes>
