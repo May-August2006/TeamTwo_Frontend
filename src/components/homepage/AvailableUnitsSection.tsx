@@ -10,6 +10,7 @@ import { appointmentApi } from "../../api/appointmentApi";
 import { useAuth } from "../../context/AuthContext";
 import { LoginPromptModal } from "../common/ui/LoginPromptModal";
 import { userApi } from "../../api/UserAPI";
+import { ToastNotification } from "../common/ui/ToastNotification";
 
 interface AvailableUnitsSectionProps {
   onUnitDetail?: (unit: Unit) => void;
@@ -29,7 +30,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [showFilters, setShowFilters] = useState(false); // NEW: Control filter visibility
+  const [showFilters, setShowFilters] = useState(false);
 
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [isAppointmentOpen, setIsAppointmentOpen] = useState(false);
@@ -42,12 +43,29 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   } | null>(null);
   const [isCheckingApproval, setIsCheckingApproval] = useState(false);
 
+  // Toast state
+  const [toast, setToast] = useState<{
+    show: boolean;
+    type: 'success' | 'error' | 'info';
+    message: string;
+  }>({ show: false, type: 'info', message: '' });
+
   const { isAuthenticated, userId } = useAuth();
 
   // Load units on initial mount
   useEffect(() => {
     loadAvailableUnits();
   }, []);
+
+  // Show toast function
+  const showToast = (type: 'success' | 'error' | 'info', message: string) => {
+    setToast({ show: true, type, message });
+  };
+
+  // Close toast function
+  const closeToast = () => {
+    setToast(prev => ({ ...prev, show: false }));
+  };
 
   const publicFetch = async (url: string, options?: RequestInit) => {
     try {
@@ -168,6 +186,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       console.error("❌ Error loading units:", err);
       setError(err.message || "Failed to load units");
       setAvailableUnits([]);
+      showToast('error', 'Failed to load available spaces. Please try again.');
     } finally {
       setLoading(false);
       setSearching(false);
@@ -178,7 +197,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   const handleApplySearch = async () => {
     console.log("🚀 Applying search with params:", pendingSearchParams);
     await loadAvailableUnits(pendingSearchParams);
-    setShowFilters(false); // Hide filters after search
+    setShowFilters(false);
   };
 
   const handleResetSearch = () => {
@@ -186,6 +205,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     setPendingSearchParams({});
     setShowFilters(false);
     loadAvailableUnits();
+    showToast('info', 'Filters have been reset');
   };
 
   const handlePendingFilterChange = (params: UnitSearchParams) => {
@@ -207,8 +227,10 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       setIsCheckingApproval(true);
       const res = await userApi.getById(userId!);
       if (res.data.approvalStatus !== "APPROVED") {
-        alert("Your account is pending approval. Redirecting to home page.");
-        window.location.href = "/";
+        showToast('warning', 'Your account is pending approval. Redirecting to home page.');
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 2000);
         return;
       }
       
@@ -216,12 +238,14 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
         onUnitDetail(unit);
       } else {
         console.log("ℹ️ No onUnitDetail handler provided");
-        alert(`Unit ${unit.unitNumber} details:\nSpace: ${unit.unitSpace} sqm\nType: ${unit.roomType?.typeName || 'N/A'}`);
+        showToast('info', `Unit ${unit.unitNumber} details:\nSpace: ${unit.unitSpace} sqm\nType: ${unit.roomType?.typeName || 'N/A'}`);
       }
     } catch (err) {
       console.error("Failed to verify approval:", err);
-      alert("Failed to verify your account. Redirecting to home page.");
-      window.location.href = "/";
+      showToast('error', 'Failed to verify your account. Redirecting to home page.');
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 2000);
       return;
     } finally {
       setIsCheckingApproval(false);
@@ -254,7 +278,10 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     if (pendingAction) {
       sessionStorage.setItem("pendingAction", JSON.stringify(pendingAction));
       sessionStorage.setItem("redirectAfterLogin", window.location.pathname);
-      window.location.href = "/login";
+      showToast('info', 'Redirecting to login page...');
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 1000);
     }
   };
 
@@ -279,20 +306,37 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     guestPhone: string;
   }) => {
     if (!userId) {
-      alert("Please login to book an appointment");
+      showToast('warning', 'Please login to book an appointment');
       return;
     }
 
     try {
       setIsBooking(true);
       console.log("📤 Submitting appointment:", data);
-      const response = await appointmentApi.book(userId || 0, data);
+      const response = await appointmentApi.book(userId, data);
       console.log("✅ Appointment booked:", response);
-      alert("Appointment booked successfully!");
+      
+      showToast('success', '✅ Appointment booked successfully! The manager will review your request.');
       closeAppointmentModal();
     } catch (err: any) {
       console.error("❌ Failed to book appointment:", err);
-      alert("Failed to book appointment. Please try again.");
+      
+      // Get error message from backend
+      let errorMessage = "Failed to book appointment. Please try again.";
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.data) {
+        errorMessage = err.response.data;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      // Show backend validation message
+      showToast('error', `${errorMessage}`);
+      
+      // Close modal immediately on error
+      closeAppointmentModal();
     } finally {
       setIsBooking(false);
     }
@@ -318,6 +362,16 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   return (
     <section id="available-units" className="py-8 bg-[#F8FAFC]">
       <div className="container mx-auto px-4">
+        {/* Toast Notification */}
+        {toast.show && (
+          <ToastNotification
+            type={toast.type}
+            message={toast.message}
+            onClose={closeToast}
+            duration={toast.type === 'error' ? 7000 : 5000}
+          />
+        )}
+
         {/* Compact Header */}
         <div className="text-center mb-6">
           <h2 className="text-2xl md:text-3xl font-bold text-[#0F172A] mb-2">
@@ -369,7 +423,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
           )}
         </div>
 
-        {/* Units Grid Section - This is where "View Available Spaces" scrolls to */}
+        {/* Units Grid Section */}
         <div id="units-grid-section" className="bg-white rounded-lg border border-[#E2E8F0]">
           {/* Results Header */}
           <div className="border-b border-[#E2E8F0] p-6">
@@ -404,7 +458,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                   variant="secondary"
                   size="sm"
                   className="border-gray-400 text-gray-600 hover:bg-gray-600 hover:text-white"
-                >
+                  >
                   {showFilters ? 'Hide Filters' : 'Show Filters'}
                 </Button>
               </div>
@@ -520,67 +574,9 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                   />
                 ))}
               </div>
-              
-              {/* Results Summary */}
-              {/* <div className="mt-8 pt-6 border-t border-[#E2E8F0]">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                  <div>
-                    <p className="text-gray-500 text-sm">
-                      Showing <span className="font-semibold text-[#0F172A]">{availableUnits.length}</span> available spaces
-                      {activeFiltersCount > 0 && (
-                        <span className="ml-2 text-[#64748B]">
-                          (filtered from total)
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="text-sm text-[#64748B] hover:text-[#1E40AF] transition-colors duration-300 flex items-center"
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                    Need Help?
-                  </button>
-                </div>
-              </div> */}
             </div>
           )}
         </div>
-
-        {/* CTA Section */}
-        {/* <div className="mt-8 text-center">
-          <div className="bg-gradient-to-r from-[#1E40AF]/5 to-[#3B82F6]/5 border border-[#1E40AF]/20 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-[#0F172A] mb-3">
-              Need help finding the perfect space?
-            </h3>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto text-sm">
-              All spaces shown are currently available for lease.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button
-                onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })}
-                variant="secondary"
-                size="sm"
-                className="border-[#1E40AF] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
-              >
-                Contact Our Team
-              </Button>
-              <Button
-                onClick={() => window.open('tel:+959123456789')}
-                variant="primary"
-                size="sm"
-                className="bg-gradient-to-r from-[#1E40AF] to-[#3B82F6] hover:from-[#1E3A8A] hover:to-[#2563EB] text-white"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-                Call Now
-              </Button>
-            </div>
-          </div>
-        </div> */}
 
         {/* Appointment Modal */}
         {selectedUnit && (

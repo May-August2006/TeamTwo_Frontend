@@ -103,7 +103,7 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#1E40AF] group-hover:w-full transition-all duration-300"></span>
               </button>
 
-              {isLoggedIn && (
+              {/* {isLoggedIn && (
                 <Link
                   to="/admin/rooms"
                   className="text-[#475569] font-medium text-lg hover:text-[#1E40AF] transition-colors duration-300 relative group"
@@ -111,7 +111,7 @@ export const Header: React.FC<HeaderProps> = ({
                   Admin
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#1E40AF] group-hover:w-full transition-all duration-300"></span>
                 </Link>
-              )}
+              )} */}
             </nav>
 
             {/* Desktop Auth Buttons */}

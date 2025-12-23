@@ -3,45 +3,59 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from './Header';
 import { Footer } from './Footer';
+import { useAuth } from '../../../context/AuthContext'; // Add this import
 
 interface LayoutProps {
   children: React.ReactNode;
   showHeader?: boolean;
   showFooter?: boolean;
-  isLoggedIn?: boolean;
-  userName?: string;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ 
   children, 
   showHeader = true, 
-  showFooter = true,
-  isLoggedIn = false,
-  userName
+  showFooter = true
 }) => {
   const navigate = useNavigate();
+  const { isAuthenticated, username, logout } = useAuth(); // Get auth state
 
   const handleLogin = () => {
-    navigate('/login'); // Use navigate instead of window.location.href
+    navigate('/login');
   };
 
   const handleRegister = () => {
-    navigate('/register'); // Use navigate instead of window.location.href
+    navigate('/register');
   };
 
   const handleLogout = () => {
-    // Add your logout logic here
-    console.log('Logout clicked');
-    // Clear auth tokens, context, etc.
-    navigate('/'); // Redirect to home after logout
+    // Clear authentication
+    if (logout) {
+      logout();
+    } else {
+      // Fallback if logout function doesn't exist
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+      sessionStorage.clear();
+    }
+    navigate('/');
+  };
+
+  // Get user's name from user object
+  const getUserName = () => {
+    if (username) {
+      return username || 'User';
+    }
+    return '';
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       {showHeader && (
         <Header 
-          isLoggedIn={isLoggedIn}
-          userName={userName}
+          isLoggedIn={isAuthenticated} // Pass real auth state
+          userName={getUserName()}
           onLogin={handleLogin}
           onRegister={handleRegister}
           onLogout={handleLogout}
