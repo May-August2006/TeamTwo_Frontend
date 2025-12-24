@@ -435,7 +435,7 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
                   Preview
                 </Button>
                 <Button 
-                  variant="primary" 
+                  variant="primary-blue" 
                   size="sm"
                   onClick={handleDownloadFile}
                   loading={fileLoading === 'download'}
@@ -447,13 +447,13 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
             )}
             
             {onEdit && contract.contractStatus !== 'TERMINATED' && contract.contractStatus !== 'EXPIRED' && (
-              <Button variant="primary" onClick={() => onEdit(contract)}>
+              <Button variant="primary-blue" onClick={() => onEdit(contract)}>
                 Edit Lease
               </Button>
             )}
             
             {onRenew && canTerminate && daysRemaining <= 60 && (
-              <Button variant="primary" onClick={() => onRenew(contract)}>
+              <Button variant="primary-blue" onClick={() => onRenew(contract)}>
                 Renew Lease
               </Button>
             )}

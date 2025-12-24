@@ -6,6 +6,13 @@ interface InactiveTenantListProps {
   onReactivate: (id: number) => void;
   loading: boolean;
   reactivatingId: number | null;
+  
+  // Pagination props
+  currentPage?: number;
+  itemsPerPage?: number;
+  totalItems?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
 }
 
 const InactiveTenantList: React.FC<InactiveTenantListProps> = ({
@@ -13,6 +20,13 @@ const InactiveTenantList: React.FC<InactiveTenantListProps> = ({
   onReactivate,
   loading,
   reactivatingId,
+  
+  // Pagination props
+  currentPage = 1,
+  itemsPerPage = 10,
+  totalItems = 0,
+  totalPages = 1,
+  onPageChange,
 }) => {
   if (loading) {
     return (
@@ -45,6 +59,51 @@ const InactiveTenantList: React.FC<InactiveTenantListProps> = ({
       </div>
     );
   }
+
+  // Helper function to get page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      let startPage = Math.max(1, currentPage - 2);
+      let endPage = Math.min(totalPages, currentPage + 2);
+      
+      if (currentPage <= 3) {
+        endPage = 5;
+      }
+      
+      if (currentPage >= totalPages - 2) {
+        startPage = totalPages - 4;
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+      
+      if (startPage > 1) {
+        pages.unshift("...");
+        pages.unshift(1);
+      }
+      
+      if (endPage < totalPages) {
+        pages.push("...");
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  const handlePageChange = (page: number) => {
+    if (onPageChange && page >= 1 && page <= totalPages) {
+      onPageChange(page);
+    }
+  };
 
   return (
     <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
@@ -206,6 +265,80 @@ const InactiveTenantList: React.FC<InactiveTenantListProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls - Similar to ContractList */}
+      {tenants.length > 0 && onPageChange && (
+        <div className="px-4 sm:px-6 py-4 bg-white border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* Results summary */}
+            <div className="text-sm text-gray-600">
+              Showing{" "}
+              <span className="font-medium text-gray-900">
+                {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalItems)}
+              </span>
+              {/* {" "}
+              of{" "}
+              <span className="font-medium text-gray-900">{totalItems}</span>{" "}
+              inactive tenants */}
+            </div>
+
+            {/* Navigation buttons */}
+            <div className="flex items-center space-x-2">
+              {/* Previous button */}
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="inline-flex items-center px-2 sm:px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span className="hidden sm:inline">Previous</span>
+                <span className="sm:hidden">Prev</span>
+              </button>
+
+              {/* Page numbers - Hidden on mobile */}
+              <div className="hidden sm:flex items-center space-x-1">
+                {getPageNumbers().map((page, index) => (
+                  page === "..." ? (
+                    <span key={`ellipsis-${index}`} className="px-2 py-1 text-sm text-gray-500">•••</span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page as number)}
+                      className={`w-8 h-8 text-sm rounded ${
+                        currentPage === page
+                          ? "bg-green-600 text-white"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                ))}
+              </div>
+
+              {/* Mobile page indicator */}
+              <div className="sm:hidden text-sm font-medium text-gray-700">
+                {currentPage}/{totalPages}
+              </div>
+
+              {/* Next button */}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="inline-flex items-center px-2 sm:px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="hidden sm:inline">Next</span>
+                <span className="sm:hidden">Next</span>
+                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

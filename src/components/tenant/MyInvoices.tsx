@@ -1,12 +1,14 @@
 /** @format */
 import { useEffect, useState, useRef } from "react";
 import toast, { Toaster } from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 import { useTenantInvoicesWebSocket } from "../../hooks/useTenantInvoicesWebSocket";
 import type { InvoiceDTO } from "../../types";
 import { tenantInvoiceApi } from "../../api/tenantInvoiceApi";
 
 export default function MyInvoices() {
+  const { t } = useTranslation();
   const jwtToken = localStorage.getItem("accessToken") || "";
 
   const { invoices, setInvoices, connected } =
@@ -19,7 +21,7 @@ export default function MyInvoices() {
     try {
       const res = await tenantInvoiceApi.getAll();
       setInvoices(res.data);
-      console.log("ivnoices for tenant: " + res.data);
+      console.log("invoices for tenant: " + res.data);
       res.data.forEach((inv) => seenInvoiceIds.current.add(inv.id));
     } catch {
       toast.error("Failed to load invoices");
@@ -73,7 +75,7 @@ export default function MyInvoices() {
     return (
       <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
         <div className="text-xl font-medium text-stone-700 animate-pulse">
-          Loading Invoices...
+          {t('tenant.loadingInvoices')}
         </div>
       </div>
     );
@@ -84,7 +86,7 @@ export default function MyInvoices() {
 
       <div className="flex justify-between items-center">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
-          My Invoices
+          {t('tenant.invoices')}
         </h2>
         <span
           className={`px-3 py-1 rounded-full text-sm font-semibold ${
@@ -93,7 +95,7 @@ export default function MyInvoices() {
               : "bg-red-100 text-red-800"
           }`}
         >
-          {connected ? "🟢 Online" : "🔴 Offline"}
+          {connected ? `🟢 ${t('tenant.online')}` : `🔴 ${t('tenant.offline')}`}
         </span>
       </div>
 
@@ -102,9 +104,9 @@ export default function MyInvoices() {
           <div className="p-8 text-center text-stone-500 bg-stone-50">
             <div className="text-5xl mb-3">📄</div>
             <div className="text-xl font-semibold text-stone-700">
-              No Invoices
+              {t('tenant.noInvoices')}
             </div>
-            <p className="text-sm mt-1">No invoices available at this time</p>
+            <p className="text-sm mt-1">{t('tenant.noInvoicesMessage')}</p>
           </div>
         )}
 
@@ -130,14 +132,14 @@ export default function MyInvoices() {
                 onClick={() => viewPdf(inv)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition duration-150 font-semibold transform active:scale-95"
               >
-                View
+                {t('tenant.view')}
               </button>
 
               <button
                 onClick={() => downloadPdf(inv)}
                 className="px-4 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition duration-150 font-semibold transform active:scale-95"
               >
-                Download
+                {t('tenant.download')}
               </button>
             </div>
           </div>

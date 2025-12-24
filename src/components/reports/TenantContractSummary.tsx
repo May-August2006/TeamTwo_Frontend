@@ -443,7 +443,7 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
             </Button>
 
             <Button
-              variant="danger"
+              variant="primary"
               onClick={exportToPDF}
               className="flex items-center gap-2"
             >

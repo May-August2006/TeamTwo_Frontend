@@ -9,16 +9,32 @@ import FinancialSummary from "../../components/bod/FinancialSummary";
 import PerformanceMetrics from "../../components/bod/PerformanceMetrics";
 import OccupancyLease from "../../components/bod/OccupancyLease";
 import Reports from "../../components/bod/Reports";
+import { useAuth } from "../../context/AuthContext"; // Import the useAuth hook
 
 const BODDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth(); // Get logout from auth context
 
   const handleLogout = () => {
-    console.log("Logging out...");
-    navigate("/login");
+    console.log("Logging out from BODDashboard...");
+    
+    // Call the auth context logout to clear all auth state
+    logout();
+    
+    // Additional cleanup if needed
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Navigate to login page
+    navigate("/login", { replace: true });
+    
+    // Optional: Force a page reload to ensure clean state
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
   };
 
   const handleNavigate = (path: string) => {
@@ -42,10 +58,10 @@ const BODDashboard: React.FC = () => {
         onToggleCollapse={handleToggleCollapse}
       />
 
-      {/* Header */}
+      {/* Header - Make sure onLogout is properly passed */}
       <BODHeader
         onMenuToggle={() => setSidebarOpen(true)}
-        onLogout={handleLogout}
+        onLogout={handleLogout} // This should now work
         pageTitle={""}
         isSidebarCollapsed={sidebarCollapsed}
       />

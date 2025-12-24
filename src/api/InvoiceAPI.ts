@@ -72,4 +72,7 @@ export const invoiceApi = {
     }),
 
   getOverdueInvoices: () => API.get<InvoiceDTO[]>("/api/invoices/overdue"),
+
+  getInvoicesWithWaivedLateFees: () =>
+    API.get<InvoiceDTO[]>("/api/invoices/lateFees/waived"),
 };

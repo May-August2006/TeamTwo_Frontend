@@ -21,6 +21,9 @@ export interface CreateContractRequest {
 }
 
 export interface Contract {
+  buildingId: number;
+  buildingName: string;
+  unitNumber: any;
   agreedToTerms: any;
   id: number;
   contractNumber: string;

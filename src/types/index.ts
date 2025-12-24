@@ -22,6 +22,9 @@ export interface BranchRequest {
 }
 
 export interface Building {
+  buildingId: number;
+  success: any;
+  branch?: Branch;
   buildingType: string;
   totalUnits: string;
   id: number;
@@ -207,6 +210,7 @@ export interface InvoiceDTO {
 
   unpaidBalance: string;
   daysOverdue: number;
+  maxLateDays: number;
 
   lateFees?: LateFeeResponseDTO[];
 }
@@ -258,6 +262,13 @@ export interface AppointmentRequest {
 }
 
 export interface AppointmentDTO {
+  unitNumber: number;
+  levelId: any;
+  branchId: any;
+  buildingId: any;
+  levelName: string;
+  buildingName: string;
+  branchName: string;
   id: number;
   guestName: string;
   guestEmail: string;
@@ -271,6 +282,9 @@ export interface AppointmentDTO {
 }
 
 export type Announcement = {
+  success: any;
+  buildingId: any;
+  buildingName: any;
   id: number;
   title: string;
   message: string;
@@ -283,6 +297,7 @@ export type AnnouncementRequest = {
   title: string;
   message: string;
   scheduledAt?: string;
+  buildingId?: number;
 };
 
 export interface ContractAlert {
@@ -321,6 +336,8 @@ export interface LateFeeRequest {
 export interface LateFeePolicy {
   id?: number;
   amountPerDay: number | string;
+  gracePeriodDays: number; // integer
+  dailyInterestPercent: string;
 }
 
 export interface LateFeeResponseDTO {
@@ -332,16 +349,21 @@ export interface LateFeeResponseDTO {
   reason: string;
   appliedByName?: string;
   pdfUrl?: string;
+  status?: string;
 }
 
 export interface LateFeePolicyDTO {
   id: number; // database ID
-  amountPerDay: number; // late fee amount per day
-  createdAt?: string; // optional, if backend includes timestamps
-  updatedAt?: string;
+  amountPerDay: string; // use string for BigDecimal
+  gracePeriodDays: number; // integer
+  dailyInterestPercent: string; // use string for BigDecimal
+  createdAt?: string; // optional timestamp
+  updatedAt?: string; // optional timestamp
 }
 
 // Request payload for creating/updating policy
 export interface LateFeePolicyRequest {
-  amountPerDay: number; // late fee amount per day
+  amountPerDay: string; // "12.50"
+  gracePeriodDays: number;
+  dailyInterestPercent: string; // "0.5"
 }

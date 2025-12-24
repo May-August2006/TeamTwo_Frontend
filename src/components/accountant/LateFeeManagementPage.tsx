@@ -1,9 +1,10 @@
 /** @format */
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
-import { FileText, Loader2, X } from "lucide-react";
+import { FileText, Loader2, X, Building } from "lucide-react";
 import { lateFeeApi } from "../../api/LateFeeAPI";
 import { invoiceApi } from "../../api/InvoiceAPI";
+import { buildingApi } from "../../api/BuildingAPI";
 import type {
   InvoiceDTO,
   LateFeePolicy,
@@ -23,8 +24,9 @@ export function LateFeeManagementPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDTO | null>(
     null
   );
+  const hasOverdue = selectedInvoice && (selectedInvoice.daysOverdue ?? 0) > 0;
 
-  const [lateDays, setLateDays] = useState(1);
+  const [lateDays, setLateDays] = useState(0);
   const [reason, setReason] = useState("");
 
   const lateFeePaymentRef = useRef<HTMLDivElement | null>(null);
@@ -35,6 +37,50 @@ export function LateFeeManagementPage() {
   // Policy state
   const [policy, setPolicy] = useState<LateFeePolicy | null>(null);
   const [newPolicyAmount, setNewPolicyAmount] = useState<number | "">("");
+  const [newGracePeriodDays, setNewGracePeriodDays] = useState<number>(0);
+  const [newDailyInterestPercent, setNewDailyInterestPercent] =
+    useState<string>("");
+
+  // Accountant restrictions
+  const [assignedBuilding, setAssignedBuilding] = useState<any>(null);
+  const [isAccountant, setIsAccountant] = useState(false);
+  const [filteredInvoices, setFilteredInvoices] = useState<InvoiceDTO[]>([]);
+
+  // -------------------------------------------------------------
+  // Check user role and assigned building
+  // -------------------------------------------------------------
+  useEffect(() => {
+    const checkUserRoleAndBuilding = async () => {
+      try {
+        const userRole = localStorage.getItem("userRole") || "";
+
+        if (userRole === "ACCOUNTANT" || userRole === "accountant") {
+          setIsAccountant(true);
+
+          // Get accountant's assigned building
+          try {
+            const buildingResponse = await buildingApi.getMyAssignedBuilding();
+            if (buildingResponse.data) {
+              setAssignedBuilding(buildingResponse.data);
+            }
+          } catch (error) {
+            console.error("Error loading assigned building:", error);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking user role:", error);
+      }
+    };
+
+    checkUserRoleAndBuilding();
+  }, []);
+
+  // Auto-set lateDays to overdue days whenever selectedInvoice changes
+  useEffect(() => {
+    if (selectedInvoice) {
+      setLateDays(selectedInvoice.daysOverdue ?? 0);
+    }
+  }, [selectedInvoice]);
 
   // -------------------------------------------------------------
   // Fetch overdue invoices
@@ -48,6 +94,8 @@ export function LateFeeManagementPage() {
         res.data.map(async (invoice) => {
           try {
             const lateFeeRes = await lateFeeApi.getByInvoiceId(invoice.id);
+
+            console.log("late fee: ", lateFeeRes);
             return { ...invoice, lateFees: lateFeeRes.data };
           } catch {
             return { ...invoice, lateFees: [] };
@@ -55,7 +103,16 @@ export function LateFeeManagementPage() {
         })
       );
 
-      setInvoices(invoicesWithLateFees);
+      // Filter invoices by assigned building if accountant
+      let filteredData = invoicesWithLateFees;
+      if (isAccountant && assignedBuilding) {
+        filteredData = invoicesWithLateFees.filter((invoice: InvoiceDTO) => {
+          return invoice.buildingId === assignedBuilding.id;
+        });
+      }
+
+      setInvoices(filteredData);
+      setFilteredInvoices(filteredData);
     } catch {
       toast.error("Failed to load overdue invoices");
     } finally {
@@ -85,6 +142,7 @@ export function LateFeeManagementPage() {
   useEffect(() => {
     loadInvoices();
     loadPolicy();
+    toast.success("Test toast is working!");
   }, []);
 
   // -------------------------------------------------------------
@@ -92,6 +150,17 @@ export function LateFeeManagementPage() {
   // -------------------------------------------------------------
   const createLateFee = async () => {
     if (!selectedInvoice) return toast.error("Please select an invoice");
+
+    // Check if selected invoice belongs to accountant's building
+    if (
+      isAccountant &&
+      assignedBuilding &&
+      selectedInvoice.buildingId !== assignedBuilding.id
+    ) {
+      return toast.error(
+        "You can only apply late fees to invoices from your assigned building"
+      );
+    }
 
     const overdueDays = selectedInvoice.daysOverdue ?? 0;
 
@@ -133,10 +202,25 @@ export function LateFeeManagementPage() {
   const updatePolicy = async () => {
     if (!policy) return toast.error("No policy loaded");
 
+    // Validation
+    if (!policy.amountPerDay || Number(policy.amountPerDay) <= 0) {
+      return toast.error("Amount per day must be greater than 0");
+    }
+    if (policy.gracePeriodDays == null || policy.gracePeriodDays < 0) {
+      return toast.error("Grace period must be 0 or greater");
+    }
+    if (!policy.dailyInterestPercent) {
+      return toast.error("Daily interest percent is required");
+    }
+
     try {
-      await lateFeeApi.updatePolicy({
-        amountPerDay: Number(policy.amountPerDay),
-      });
+      const request: LateFeePolicyRequest = {
+        amountPerDay: policy.amountPerDay.toString(),
+        gracePeriodDays: policy.gracePeriodDays,
+        dailyInterestPercent: policy.dailyInterestPercent.toString(),
+      };
+
+      await lateFeeApi.updatePolicy(request);
 
       toast.success("Policy updated successfully");
       loadPolicy();
@@ -154,14 +238,28 @@ export function LateFeeManagementPage() {
       return toast.error("Please enter a valid amount per day");
     }
 
+    if (newGracePeriodDays < 0) {
+      return toast.error("Grace period must be 0 or greater");
+    }
+    if (!newDailyInterestPercent) {
+      return toast.error("Daily interest percent is required");
+    }
+
     const request: LateFeePolicyRequest = {
-      amountPerDay: Number(newPolicyAmount),
+      amountPerDay: newPolicyAmount.toString(),
+      gracePeriodDays: newGracePeriodDays,
+      dailyInterestPercent: newDailyInterestPercent.toString(),
     };
 
     try {
       await lateFeeApi.createPolicy(request);
       toast.success("Late fee policy created successfully");
+
+      // Clear form
       setNewPolicyAmount("");
+      setNewGracePeriodDays(0);
+      setNewDailyInterestPercent("");
+
       loadPolicy();
     } catch (err) {
       console.error(err);
@@ -174,18 +272,80 @@ export function LateFeeManagementPage() {
   // -------------------------------------------------------------
   const closePdf = () => setPdfUrl(null);
 
+  const getLateFeeBadge = (invoice: InvoiceDTO) => {
+    if (!invoice.lateFees || invoice.lateFees.length === 0) return null;
+
+    console.log("late fee: ", invoice.lateFees);
+
+    if (invoice.lateFees.some((lf) => lf.status === "OVERDUE")) {
+      return (
+        <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 font-semibold">
+          OVERDUE
+        </span>
+      );
+    }
+
+    if (invoice.lateFees.some((lf) => lf.status === "PENDING")) {
+      return (
+        <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700 font-semibold">
+          PENDING
+        </span>
+      );
+    }
+
+    if (invoice.lateFees.every((lf) => lf.status === "PAID")) {
+      return (
+        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 font-semibold">
+          PAID
+        </span>
+      );
+    }
+
+    if (invoice.lateFees.every((lf) => lf.status === "EXPIRED")) {
+      return (
+        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-red-700 font-semibold">
+          EXPIRED
+        </span>
+      );
+    }
+
+    return null;
+  };
+
   // =============================================================
   // RENDER UI
   // =============================================================
   return (
     <div className="p-6 space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Late Fee Management</h1>
+        <div>
+          <h1 className="text-2xl font-semibold">Late Fee Management</h1>
+          {isAccountant && assignedBuilding && (
+            <div className="flex items-center gap-2 mt-2">
+              <Building className="w-4 h-4 text-blue-600" />
+              <span className="text-sm text-blue-700 font-medium">
+                {assignedBuilding.buildingName}
+              </span>
+            </div>
+          )}
+        </div>
 
         <button
           onClick={() => {
             if (!selectedInvoice) {
               toast.error("Please select an invoice first");
+              return;
+            }
+
+            // Check if selected invoice belongs to accountant's building
+            if (
+              isAccountant &&
+              assignedBuilding &&
+              selectedInvoice.buildingId !== assignedBuilding.id
+            ) {
+              toast.error(
+                "You can only pay late fees for invoices from your assigned building"
+              );
               return;
             }
 
@@ -201,48 +361,139 @@ export function LateFeeManagementPage() {
           }}
           className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
         >
-          Pay Late Fee
+          Record Late Fee Payment
         </button>
       </div>
 
+      {/* Accountant Info */}
+      {isAccountant && assignedBuilding && (
+        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-2">
+            <Building className="w-5 h-5 text-blue-600" />
+            <div>
+              <h3 className="font-medium text-blue-800">Accountant View</h3>
+              <p className="text-sm text-blue-600">
+                Showing late fee management only for your assigned building:{" "}
+                <strong>{assignedBuilding.buildingName}</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ---------------------- POLICY SECTION ------------------------- */}
       <section className="bg-white rounded-xl shadow p-5">
-        <h2 className="text-xl font-bold mb-3">Late Fee Policy</h2>
+        <h2 className="text-xl font-bold mb-4">Late Fee Policy</h2>
 
         {policy ? (
-          <div className="flex items-center gap-4">
-            <input
-              type="number"
-              value={policy.amountPerDay ?? ""}
-              onChange={(e) =>
-                setPolicy({ ...policy!, amountPerDay: Number(e.target.value) })
-              }
-              className="border p-2 rounded w-40"
-              placeholder="Amount per day"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            {/* Amount per day */}
+            <div className="flex flex-col">
+              <label className="text-sm font-semibold text-gray-600 mb-1">
+                Amount per day (MMK)
+              </label>
+              <input
+                type="number"
+                value={policy.amountPerDay ?? ""}
+                onChange={(e) =>
+                  setPolicy({
+                    ...policy!,
+                    amountPerDay: Number(e.target.value),
+                  })
+                }
+                className="border p-2 rounded"
+              />
+            </div>
 
+            {/* Grace period */}
+            <div className="flex flex-col">
+              <label className="text-sm font-semibold text-gray-600 mb-1">
+                Grace period (days)
+              </label>
+              <input
+                type="number"
+                value={policy.gracePeriodDays ?? 0}
+                onChange={(e) =>
+                  setPolicy({
+                    ...policy!,
+                    gracePeriodDays: Number(e.target.value),
+                  })
+                }
+                className="border p-2 rounded"
+              />
+            </div>
+
+            {/* Daily interest */}
+            <div className="flex flex-col">
+              <label className="text-sm font-semibold text-gray-600 mb-1">
+                Daily interest (%)
+              </label>
+              <input
+                type="text"
+                value={policy.dailyInterestPercent ?? ""}
+                onChange={(e) =>
+                  setPolicy({
+                    ...policy!,
+                    dailyInterestPercent: e.target.value,
+                  })
+                }
+                className="border p-2 rounded"
+              />
+            </div>
+
+            {/* Button */}
             <button
               onClick={updatePolicy}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 h-[42px]"
             >
               Update Policy
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-4">
-            <input
-              type="number"
-              value={newPolicyAmount}
-              onChange={(e) =>
-                setNewPolicyAmount(e.target.value ? Number(e.target.value) : "")
-              }
-              className="border p-2 rounded w-40"
-              placeholder="Amount per day"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div className="flex flex-col">
+              <label className="text-sm font-semibold text-gray-600 mb-1">
+                Amount per day (MMK)
+              </label>
+              <input
+                type="number"
+                value={newPolicyAmount}
+                onChange={(e) =>
+                  setNewPolicyAmount(
+                    e.target.value ? Number(e.target.value) : ""
+                  )
+                }
+                className="border p-2 rounded"
+              />
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-sm font-semibold text-gray-600 mb-1">
+                Grace period (days)
+              </label>
+              <input
+                type="number"
+                value={newGracePeriodDays}
+                onChange={(e) => setNewGracePeriodDays(Number(e.target.value))}
+                className="border p-2 rounded"
+              />
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-sm font-semibold text-gray-600 mb-1">
+                Daily interest (%)
+              </label>
+              <input
+                type="text"
+                value={newDailyInterestPercent}
+                onChange={(e) => setNewDailyInterestPercent(e.target.value)}
+                className="border p-2 rounded"
+              />
+            </div>
 
             <button
               onClick={createPolicy}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 h-[42px]"
             >
               Create Policy
             </button>
@@ -252,47 +503,75 @@ export function LateFeeManagementPage() {
 
       {/* ------------------- OVERDUE INVOICE LIST --------------------- */}
       <section className="bg-white rounded-xl shadow p-5">
-        <h2 className="text-xl font-bold mb-3">Overdue Invoices</h2>
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-xl font-bold">Overdue Invoices</h2>
+          {isAccountant && assignedBuilding && (
+            <span className="text-sm text-blue-600">
+              Filtered by: {assignedBuilding.buildingName}
+            </span>
+          )}
+        </div>
 
         {loading ? (
           <div className="flex justify-center py-10">
             <Loader2 className="animate-spin" />
           </div>
-        ) : invoices.length === 0 ? (
+        ) : filteredInvoices.length === 0 ? (
           <p className="text-gray-500 py-10 text-center">
-            No overdue invoices found.
+            {isAccountant && assignedBuilding
+              ? `No overdue invoices found for ${assignedBuilding.buildingName}.`
+              : "No overdue invoices found."}
           </p>
         ) : (
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-100 border-b text-left">
-                <th className="p-3">Invoice ID</th>
+                {/* <th className="p-3">Invoice ID</th> */}
                 <th className="p-3">Invoice No</th>
-                <th className="p-3">Unpaided Balance</th>
+                <th className="p-3">Unpaid Balance</th>
                 <th className="p-3">Tenant</th>
-                <th className="p-3">Room</th>
+                <th className="p-3">Unit</th>
                 <th className="p-3">Overdue Days</th>
-                <th className="p-3">Balance</th>
-                <th className="p-3">Late Fee</th>
+                <th className="p-3">Max Late Days</th>
+                {/* <th className="p-3">Late Fee</th> */}
+                <th className="p-3">Late Fee Invoice</th>
+                <th className="p-3">Late Fee Status</th>
               </tr>
             </thead>
 
             <tbody>
-              {invoices.map((inv) => (
+              {filteredInvoices.map((inv) => (
                 <tr
                   key={inv.id}
                   onClick={() => setSelectedInvoice(inv)}
                   className={`cursor-pointer hover:bg-blue-100 ${
-                    selectedInvoice?.id === inv.id ? "bg-blue-200" : ""
-                  }`}
+                    inv.daysOverdue === 0 ? "opacity-60 cursor-not-allowed" : ""
+                  } ${selectedInvoice?.id === inv.id ? "bg-blue-200" : ""}`}
                 >
-                  <td className="p-3">{inv.id}</td>
+                  {/* <td className="p-3">{inv.id}</td> */}
                   <td className="p-3">{inv.invoiceNumber}</td>
                   <td className="p-3">{inv.unpaidBalance}</td>
                   <td className="p-3">{inv.tenantName}</td>
                   <td className="p-3">{inv.roomNumber}</td>
-                  <td className="p-3">{inv.daysOverdue}</td>
-                  <td className="p-3">{inv.balanceAmount}</td>
+                  <td className="p-3">
+                    {inv.daysOverdue > 0 ? (
+                      <span className="font-semibold text-red-600">
+                        {inv.daysOverdue}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 italic">
+                        Not overdue Yet
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-3">
+                    {inv.invoiceItems.some((item) => item.itemType === "RENT")
+                      ? inv.maxLateDays
+                      : "-"}{" "}
+                    {/* or null if you want empty cell */}
+                  </td>
+
+                  {/* <td className="p-3">{inv.paidAmount}</td> */}
 
                   <td className="p-3 flex items-center gap-2">
                     {inv.lateFees?.map((lf) => (
@@ -311,6 +590,11 @@ export function LateFeeManagementPage() {
                       </button>
                     ))}
                   </td>
+                  <td className="p-3">
+                    {getLateFeeBadge(inv) ?? (
+                      <span className="text-gray-400 italic text-sm">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -323,46 +607,65 @@ export function LateFeeManagementPage() {
         <section className="bg-white rounded-xl shadow p-5">
           <h2 className="text-xl font-bold mb-3">Apply Late Fee</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="text-sm font-semibold">Late Days</label>
-              <input
-                type="number"
-                value={lateDays}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value) || 0;
-                  const overdueDays = selectedInvoice?.daysOverdue ?? 0;
-
-                  if (value > overdueDays) {
-                    toast.error(
-                      `Late days cannot exceed overdue days (${overdueDays})`
-                    );
-                    return;
-                  }
-
-                  setLateDays(value);
-                }}
-                className="border p-2 rounded w-full"
-              />
+          {!hasOverdue ? (
+            <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 p-4 rounded-lg">
+              This invoice is <strong>not overdue</strong>. Late fees can only
+              be applied to overdue invoices.
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-semibold">Late Days</label>
+                  <input
+                    type="number"
+                    value={lateDays}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      const overdueDays = selectedInvoice.daysOverdue ?? 0;
 
-            <div className="md:col-span-2">
-              <label className="text-sm font-semibold">Reason (optional)</label>
-              <input
-                type="text"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                className="border p-2 rounded w-full"
-              />
-            </div>
-          </div>
+                      if (value > overdueDays) {
+                        toast.error(
+                          `Late days cannot exceed overdue days (${overdueDays})`
+                        );
+                        return;
+                      }
 
-          <button
-            onClick={createLateFee}
-            className="mt-4 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
-          >
-            Generate Late Fee
-          </button>
+                      setLateDays(value);
+                    }}
+                    className="border p-2 rounded w-full"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Max: {selectedInvoice.daysOverdue} days
+                  </p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="text-sm font-semibold">
+                    Reason (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    className="border p-2 rounded w-full"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={createLateFee}
+                disabled={!hasOverdue}
+                className={`mt-4 px-6 py-2 rounded-lg text-white ${
+                  hasOverdue
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-gray-400 cursor-not-allowed"
+                }`}
+              >
+                Generate Late Fee
+              </button>
+            </>
+          )}
         </section>
       )}
 

@@ -133,19 +133,7 @@ const AccountantDashboard: React.FC = () => {
       case "usage-entry":
         return (
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <button
-              onClick={() => setActiveSection("bulk-readings")}
-              className="bg-stone-800 text-white px-4 py-2 rounded-lg hover:bg-stone-900 transition duration-150 text-sm sm:text-base"
-            >
-              Bulk Readings
-            </button>
-            <button
-              onClick={() => {}}
-              className="px-4 py-2 rounded-lg text-white font-semibold transition duration-150 text-sm sm:text-base"
-              style={{ backgroundColor: PRIMARY_COLOR }}
-            >
-              + Manual Entry
-            </button>
+            
           </div>
         );
       

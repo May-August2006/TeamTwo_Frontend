@@ -1,6 +1,7 @@
 /** @format */
 
-import React from "react";
+import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Home,
   FileText,
@@ -10,7 +11,6 @@ import {
   User,
   X,
   Bell,
-  ChevronDown,
   ChevronRight,
 } from "lucide-react";
 
@@ -31,10 +31,9 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
-  const [openSections, setOpenSections] = React.useState<Set<string>>(
-    new Set()
-  );
+  const { t } = useTranslation(); // Get the t function here
 
+  // Move menuItems inside the component to use the t function
   const menuItems = [
     {
       name: "Dashboard",
@@ -72,9 +71,14 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
       path: "/tenant/reminders",
     },
     {
-      name: "Late Fee",
+      name: "Late Fees",
       icon: <FileCheck className="w-5 h-5" />,
       path: "/tenant/lateFees",
+    },
+    {
+      name: "Available Units",
+      icon: <FileCheck className="w-5 h-5" />,
+      path: "/tenant/availableUnits",
     },
   ];
 
@@ -87,6 +91,10 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
 
   const handleNavigation = (path: string) => {
     onNavigate(path);
+    if (window.innerWidth < 1024) {
+      // Close on mobile after navigation
+      onClose();
+    }
   };
 
   return (
@@ -101,7 +109,11 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
         `}
       >
         {/* Logo Section - Only show icon when collapsed */}
-        <div className={`flex items-center justify-between p-4 border-b border-stone-200 bg-stone-50 ${isCollapsed ? 'px-3' : 'px-6'}`}>
+        <div
+          className={`flex items-center justify-between p-4 border-b border-stone-200 bg-stone-50 ${
+            isCollapsed ? "px-3" : "px-6"
+          }`}
+        >
           {!isCollapsed && (
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-gradient-to-br from-red-600 to-red-700 rounded-lg shadow-md">
@@ -124,7 +136,11 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
               onClick={onToggleCollapse}
               className="hidden lg:block p-2 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors duration-150"
             >
-              <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
+              <ChevronRight
+                className={`w-4 h-4 transition-transform duration-300 ${
+                  isCollapsed ? "rotate-180" : ""
+                }`}
+              />
             </button>
             <button
               onClick={onClose}
@@ -137,30 +153,42 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
 
         {/* Navigation */}
         <div className="flex flex-col h-full">
-          <nav className={`flex-1 p-4 space-y-1 overflow-y-auto ${isCollapsed ? 'px-2' : ''}`}>
+          <nav
+            className={`flex-1 p-4 space-y-1 overflow-y-auto ${
+              isCollapsed ? "px-2" : ""
+            }`}
+          >
             {menuItems.map((item, index) => (
               <button
                 key={index}
-                onClick={() => handleNavigation(item.path!)}
+                onClick={() => handleNavigation(item.path)}
                 className={`
                   flex items-center space-x-3 w-full p-3 text-left rounded-lg transition-colors duration-150 group
                   ${
-                    isActivePath(item.path!)
+                    isActivePath(item.path)
                       ? "bg-red-50 text-red-700 border-l-2 border-red-600 font-medium"
                       : "text-stone-700 hover:bg-stone-100 hover:text-stone-900"
                   }
-                  ${isCollapsed ? 'justify-center relative' : ''}
+                  ${isCollapsed ? "justify-center relative" : ""}
                 `}
-                title={isCollapsed ? item.name : ''}
+                title={isCollapsed ? item.name : ""}
               >
-                <div className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 ${
-                  isActivePath(item.path!) ? 'from-red-100 to-red-50' : ''
-                } ${isCollapsed ? '' : 'mr-2'}`}>
-                  {React.cloneElement(item.icon, { 
-                    className: `w-4 h-4 ${isActivePath(item.path!) ? 'text-red-600 font-bold' : 'text-stone-600'}`
+                <div
+                  className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 ${
+                    isActivePath(item.path) ? "from-red-100 to-red-50" : ""
+                  } ${isCollapsed ? "" : "mr-2"}`}
+                >
+                  {React.cloneElement(item.icon, {
+                    className: `w-4 h-4 ${
+                      isActivePath(item.path)
+                        ? "text-red-600 font-bold"
+                        : "text-stone-600"
+                    }`,
                   })}
                 </div>
-                {!isCollapsed && <span className="font-semibold">{item.name}</span>}
+                {!isCollapsed && (
+                  <span className="font-semibold">{item.name}</span>
+                )}
               </button>
             ))}
           </nav>
@@ -177,7 +205,9 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
                     <p className="text-sm font-semibold text-stone-900 truncate">
                       John Tenant
                     </p>
-                    <p className="text-xs text-stone-500 truncate">Retail Store A-102</p>
+                    <p className="text-xs text-stone-500 truncate">
+                      Retail Store A-102
+                    </p>
                   </div>
                 </div>
               </div>
