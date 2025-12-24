@@ -1,3 +1,4 @@
+
 import type { OutstandingBalanceReportDTO } from "../types/outstanding-balances";
 import API from "./api";
 
@@ -140,5 +141,5 @@ async getUtilityConsumptionData(params: {
       responseType: 'blob'
     });
     return response.data;
-  }
+  },
 };
