@@ -1,5 +1,5 @@
 /** @format */
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import { useContractAlerts } from "../hooks/useContractAlerts";
 import { alertApi } from "../api/alertApi";
@@ -8,21 +8,25 @@ import { getAccessToken } from "../Auth";
 import { Bell } from "lucide-react";
 
 export const AlertsDropdown = () => {
-  const [alerts, setAlerts] = useState<ContractAlert[]>([]);
-  const [open, setOpen] = useState(false);
   const jwtToken = getAccessToken();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [alerts, setAlerts] = useState<ContractAlert[]>([]);
 
+  // ----------------------------
+  // Fetch alerts from database on mount
+  // ----------------------------
   const fetchAlerts = async () => {
     try {
       const res = await alertApi.getAll();
-      const filteredAlerts = res.data.filter((alert) => {
+      // Filter alerts to last 30 days (optional)
+      const filtered = res.data.filter((a: ContractAlert) => {
         const daysOld =
-          (new Date().getTime() - new Date(alert.createdAt).getTime()) /
+          (new Date().getTime() - new Date(a.createdAt).getTime()) /
           (1000 * 60 * 60 * 24);
         return daysOld <= 30;
       });
-      setAlerts(filteredAlerts);
+      setAlerts(filtered);
     } catch (err) {
       console.error("Failed to fetch alerts:", err);
       toast.error("Failed to load alerts");
@@ -33,13 +37,24 @@ export const AlertsDropdown = () => {
     fetchAlerts();
   }, []);
 
-  const handleNewAlert = useCallback((newAlert: ContractAlert) => {
-    setAlerts((prev) => [newAlert, ...prev]);
-    toast.success(newAlert.message);
-  }, []);
+  // ----------------------------
+  // WebSocket hook for new alerts
+  // ----------------------------
+  const { alerts: wsAlerts, connected } = useContractAlerts(jwtToken || "");
 
-  useContractAlerts(jwtToken || "", handleNewAlert);
+  useEffect(() => {
+    // Only add new alerts that are not in the current list
+    wsAlerts.forEach((alert) => {
+      if (!alerts.find((a) => a.id === alert.id)) {
+        setAlerts((prev) => [alert, ...prev]);
+        if (!alert.read) toast.success(alert.message, { duration: 7000 });
+      }
+    });
+  }, [wsAlerts]);
 
+  // ----------------------------
+  // Mark alert as read
+  // ----------------------------
   const markRead = async (alertId: number) => {
     try {
       await alertApi.markRead(alertId);
@@ -52,15 +67,24 @@ export const AlertsDropdown = () => {
     }
   };
 
+  // ----------------------------
+  // Dropdown toggle
+  // ----------------------------
   const handleDropdownToggle = () => {
-    setOpen(!open);
-    if (!open) {
-      alerts.forEach((alert) => {
-        if (!alert.read) markRead(alert.id);
-      });
-    }
+    setOpen((prev) => {
+      const newOpen = !prev;
+      if (newOpen) {
+        alerts.forEach((alert) => {
+          if (!alert.read) markRead(alert.id);
+        });
+      }
+      return newOpen;
+    });
   };
 
+  // ----------------------------
+  // Close dropdown when clicking outside
+  // ----------------------------
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -93,8 +117,16 @@ export const AlertsDropdown = () => {
             {unreadCount}
           </span>
         )}
+
+        {/* 🟢 Connection indicator */}
+        <span
+          className={`absolute -bottom-1 -right-1 w-2 h-2 rounded-full ${
+            connected ? "bg-green-500" : "bg-gray-400"
+          }`}
+        ></span>
       </button>
 
+      {/* Dropdown */}
       {open && (
         <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-[#C8102E] rounded shadow-lg max-h-96 overflow-y-auto z-50">
           {alerts.length === 0 && (

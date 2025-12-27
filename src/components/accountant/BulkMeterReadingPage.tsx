@@ -34,7 +34,7 @@ const BulkMeterReadingPage: React.FC = () => {
   const { t } = useTranslation();
   
   const [bulkReadings, setBulkReadings] = useState<BulkReading[]>([]);
-  const [readingDate, setReadingDate] = useState<string>('');
+  const [readingDate, setReadingDate] = useState<string>("");
   const [buildingId, setBuildingId] = useState<number | null>(null);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [loading, setLoading] = useState(false);
@@ -42,7 +42,9 @@ const BulkMeterReadingPage: React.FC = () => {
   const [electricityUtility, setElectricityUtility] = useState<UtilityType | null>(null);
   const [waterUtility, setWaterUtility] = useState<UtilityType | null>(null);
   const [buildingUnits, setBuildingUnits] = useState<Unit[]>([]);
-  const [assignedBuildingId, setAssignedBuildingId] = useState<number | null>(null);
+  const [assignedBuildingId, setAssignedBuildingId] = useState<number | null>(
+    null
+  );
   const [occupiedUnits, setOccupiedUnits] = useState<Unit[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [buildingHasAllReadings, setBuildingHasAllReadings] = useState(false);
@@ -60,17 +62,17 @@ const BulkMeterReadingPage: React.FC = () => {
 
   // Get user role from JWT token
   const getUserRole = (): string => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
       try {
         const decoded: any = jwtDecode(token);
-        return decoded.role || 'ROLE_GUEST';
+        return decoded.role || "ROLE_GUEST";
       } catch (error) {
-        console.error('Error decoding token:', error);
-        return 'ROLE_GUEST';
+        console.error("Error decoding token:", error);
+        return "ROLE_GUEST";
       }
     }
-    return 'ROLE_GUEST';
+    return "ROLE_GUEST";
   };
 
   // Load contracts for the building
@@ -755,7 +757,7 @@ const BulkMeterReadingPage: React.FC = () => {
       });
     } finally {
       setLoading(false);
-      event.target.value = '';
+      event.target.value = "";
     }
   };
 
@@ -767,7 +769,7 @@ const BulkMeterReadingPage: React.FC = () => {
       });
       return;
     }
-    
+
     try {
       const bulkRequests = readingsToSubmit.flatMap(reading => {
         const requests = [];
@@ -799,10 +801,10 @@ const BulkMeterReadingPage: React.FC = () => {
             notes: source === 'Excel import' ? 'Imported from Excel' : 'Manual entry'
           });
         }
-        
+
         return requests;
       });
-      
+
       if (bulkRequests.length === 0) {
         setUploadStatus({
           type: 'warning',
