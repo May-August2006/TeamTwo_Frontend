@@ -12,7 +12,7 @@ interface UnitDetailProps {
   isOpen: boolean;
   onClose: () => void;
   onEdit: (unit: Unit) => void;
-  onDelete: (id: number, unitNumber: string) => void; // Updated to include unitNumber
+  onDelete: (id: number, unitNumber: string) => void;
 }
 
 export const UnitDetail: React.FC<UnitDetailProps> = ({
@@ -29,6 +29,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [updatingUtility, setUpdatingUtility] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'utilities' | 'location'>('details');
 
   useEffect(() => {
     if (isOpen && unitId) {
@@ -50,10 +51,31 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
     }
   };
 
+  // Add keyboard shortcuts for image gallery
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (isImageModalOpen && unit?.imageUrls) {
+        if (e.key === 'Escape') {
+          closeImageModal();
+        } else if (e.key === 'ArrowLeft') {
+          prevImage();
+        } else if (e.key === 'ArrowRight') {
+          nextImage();
+        } else if (e.key === 'd' || e.key === 'D') {
+          e.preventDefault();
+          downloadCurrentImage();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isImageModalOpen, unit?.imageUrls, selectedImageIndex]);
+
   const getUnitTypeBadge = (unitType: UnitType) => {
     const badges = {
       [UnitType.ROOM]: { 
-        color: 'bg-blue-100 text-blue-800', 
+        color: 'bg-blue-100 text-blue-800 border border-blue-200', 
         label: 'Room',
         icon: (
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,7 +84,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
         )
       },
       [UnitType.SPACE]: { 
-        color: 'bg-green-100 text-green-800', 
+        color: 'bg-green-100 text-green-800 border border-green-200', 
         label: 'Space',
         icon: (
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,7 +93,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
         )
       },
       [UnitType.HALL]: { 
-        color: 'bg-purple-100 text-purple-800', 
+        color: 'bg-purple-100 text-purple-800 border border-purple-200', 
         label: 'Hall',
         icon: (
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,46 +105,98 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
     return badges[unitType];
   };
 
-  const getTypeSpecificInfo = () => {
-    if (!unit) return null;
-    
-    switch (unit.unitType) {
-      case UnitType.ROOM:
-        return (
-          <div>
-            <p className="text-sm text-gray-500">Room Type</p>
-            <p className="font-medium">{unit.roomType?.typeName}</p>
+ const getTypeSpecificInfo = () => {
+  if (!unit) return null;
+  
+  switch (unit.unitType) {
+    case UnitType.ROOM:
+      return (
+        <>
+          {/* Room Type Box */}
+          <div className="bg-white p-3 rounded-lg shadow-sm">
+            <p className="text-sm text-gray-500 mb-1">Room Type</p>
+            <p className="font-medium text-gray-900">{unit.roomType?.typeName || 'N/A'}</p>
           </div>
-        );
-      case UnitType.SPACE:
-        return (
-          <div>
-            <p className="text-sm text-gray-500">Space Type</p>
-            <p className="font-medium">{unit.spaceType?.name}</p>
-            <p className="text-xs text-gray-500 mt-1">
-              Base Price: {formatCurrency(unit.spaceType?.basePricePerSqm || 0)} MMK/sqm
+          
+          {/* Room Description (if exists) */}
+          {unit.roomType?.description && (
+            <div className="bg-white p-3 rounded-lg shadow-sm">
+              <p className="text-sm text-gray-500 mb-1">Description</p>
+              <p className="font-medium text-gray-900 text-sm">{unit.roomType.description}</p>
+            </div>
+          )}
+        </>
+      );
+    case UnitType.SPACE:
+      return (
+        <>
+          {/* Space Type Box */}
+          <div className="bg-white p-3 rounded-lg shadow-sm">
+            <p className="text-sm text-gray-500 mb-1">Space Type</p>
+            <p className="font-medium text-gray-900">{unit.spaceType?.name || 'N/A'}</p>
+          </div>
+          
+          {/* Base Price per sqm Box */}
+          <div className="bg-white p-3 rounded-lg shadow-sm">
+            <p className="text-sm text-gray-500 mb-1">Base Price</p>
+            <p className="font-medium text-gray-900">
+              {formatCurrency(unit.spaceType?.basePricePerSqm || 0)}/sqm
             </p>
           </div>
-        );
-      case UnitType.HALL:
-        return (
-          <div>
-            <p className="text-sm text-gray-500">Hall Type</p>
-            <p className="font-medium">{unit.hallType?.name}</p>
-            <p className="text-xs text-gray-500 mt-1">
-              Capacity: {unit.hallType?.capacity} people
+          
+          {/* Total Price Box */}
+          <div className="bg-white p-3 rounded-lg shadow-sm">
+            <p className="text-sm text-gray-500 mb-1">Total Price</p>
+            <p className="font-medium text-gray-900">
+              {formatCurrency((unit.spaceType?.basePricePerSqm || 0) * unit.unitSpace)}
             </p>
-            {unit.hallType?.basePrice && (
-              <p className="text-xs text-gray-500 mt-1">
-                Base Price: {formatCurrency(unit.hallType.basePrice)} MMK
-              </p>
-            )}
           </div>
-        );
-      default:
-        return null;
-    }
-  };
+          
+          {/* Space Description (if exists) */}
+          {unit.spaceType?.description && (
+            <div className="bg-white p-3 rounded-lg shadow-sm">
+              <p className="text-sm text-gray-500 mb-1">Description</p>
+              <p className="font-medium text-gray-900 text-sm">{unit.spaceType.description}</p>
+            </div>
+          )}
+        </>
+      );
+    case UnitType.HALL:
+      return (
+        <>
+          {/* Hall Type Box */}
+          <div className="bg-white p-3 rounded-lg shadow-sm">
+            <p className="text-sm text-gray-500 mb-1">Hall Type</p>
+            <p className="font-medium text-gray-900">{unit.hallType?.name || 'N/A'}</p>
+          </div>
+          
+          {/* Capacity Box */}
+          <div className="bg-white p-3 rounded-lg shadow-sm">
+            <p className="text-sm text-gray-500 mb-1">Capacity</p>
+            <p className="font-medium text-gray-900">{unit.hallType?.capacity || 0} people</p>
+          </div>
+          
+          {/* Base Price Box (if exists) */}
+          {unit.hallType?.basePrice && (
+            <div className="bg-white p-3 rounded-lg shadow-sm">
+              <p className="text-sm text-gray-500 mb-1">Base Price</p>
+              <p className="font-medium text-gray-900">{formatCurrency(unit.hallType.basePrice)}</p>
+            </div>
+          )}
+          
+          {/* Hall Description (if exists) */}
+          {unit.hallType?.description && (
+            <div className="bg-white p-3 rounded-lg shadow-sm">
+              <p className="text-sm text-gray-500 mb-1">Description</p>
+              <p className="font-medium text-gray-900 text-sm">{unit.hallType.description}</p>
+            </div>
+          )}
+        </>
+      );
+    default:
+      return null;
+  }
+};
 
   // Toggle utility status
   const toggleUtilityStatus = async (utilityTypeId: number, currentStatus: boolean) => {
@@ -175,6 +249,15 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
     setSelectedImageIndex(index);
   };
 
+  const downloadCurrentImage = () => {
+    if (!unit?.imageUrls || !unit.imageUrls[selectedImageIndex]) return;
+    
+    const link = document.createElement('a');
+    link.href = unit.imageUrls[selectedImageIndex];
+    link.download = `Unit-${unit.unitNumber}-Image-${selectedImageIndex + 1}.jpg`;
+    link.click();
+  };
+
   const handleEdit = () => {
     if (unit) {
       onEdit(unit);
@@ -202,7 +285,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
 
   return (
     <>
-      {/* Unit Detail Modal */}
+      {/* Unit Detail Modal - Fixed to match size from first example */}
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
           {/* Header */}
@@ -244,7 +327,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
             ) : unit ? (
               <div className="p-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Image Gallery Section */}
+                  {/* Image Gallery Section - From first example */}
                   <div>
                     {/* Main Image */}
                     <div 
@@ -307,14 +390,14 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                     )}
                   </div>
 
-                  {/* Unit Details Section */}
+                  {/* Unit Details Section with Tabs */}
                   <div className="space-y-4">
-                    {/* Status Badge - Updated colors for mall owners */}
+                    {/* Status Badge */}
                     <div className="flex items-center justify-between">
                       <span className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
                         unit.isAvailable 
-                          ? 'bg-gray-100 text-gray-800' // Neutral gray for available units
-                          : 'bg-green-100 text-green-800' // Green for occupied (positive revenue)
+                          ? 'bg-gray-100 text-gray-800 border border-gray-300' 
+                          : 'bg-green-100 text-green-800 border border-green-300'
                       }`}>
                         <div className={`w-2 h-2 rounded-full mr-2 ${
                           unit.isAvailable ? 'bg-gray-500' : 'bg-green-500'
@@ -327,152 +410,210 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                       </div>
                     </div>
 
-                    {/* Unit Specifications */}
-                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                        Unit Specifications
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white p-3 rounded-lg shadow-sm">
-                          <p className="text-sm text-gray-500 mb-1">Unit Number</p>
-                          <p className="font-medium text-gray-900 text-lg font-mono">{unit.unitNumber}</p>
-                        </div>
-                        <div className="bg-white p-3 rounded-lg shadow-sm">
-                          {getTypeSpecificInfo()}
-                        </div>
-                        <div className="bg-white p-3 rounded-lg shadow-sm">
-                          <p className="text-sm text-gray-500 mb-1">Space Area</p>
-                          <p className="font-medium text-gray-900 text-lg">{unit.unitSpace} sqm</p>
-                        </div>
-                        <div className="bg-white p-3 rounded-lg shadow-sm">
-                          <p className="text-sm text-gray-500 mb-1">Meter</p>
-                          <p className={`font-medium text-lg ${unit.hasMeter ? 'text-green-600' : 'text-red-600'}`}>
-                            {unit.hasMeter ? (
-                              <span className="flex items-center">
-                                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Has Meter
-                              </span>
-                            ) : (
-                              <span className="flex items-center">
-                                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                No Meter
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
+                    {/* Tab Navigation */}
+                    <div className="border-b border-gray-200">
+                      <nav className="flex space-x-4">
+                        <button
+                          onClick={() => setActiveTab('details')}
+                          className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${
+                            activeTab === 'details'
+                              ? 'border-blue-500 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          Details
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('utilities')}
+                          className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${
+                            activeTab === 'utilities'
+                              ? 'border-blue-500 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          Utilities ({unit.utilities?.length || 0})
+                        </button>
+                        <button
+                          onClick={() => setActiveTab('location')}
+                          className={`py-2 px-4 text-sm font-medium border-b-2 transition-colors ${
+                            activeTab === 'location'
+                              ? 'border-blue-500 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          Location
+                        </button>
+                      </nav>
                     </div>
 
-                    {/* Utilities Section */}
-                    {unit.utilities && unit.utilities.length > 0 && (
-                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-200">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                          <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                          Utilities ({unit.utilities.filter(u => u.isActive).length} active / {unit.utilities.length} total)
-                        </h3>
-                        <div className="space-y-3">
-                          {unit.utilities.map((utility) => (
-                            <div 
-                              key={utility.id}
-                              className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
-                                utility.isActive 
-                                  ? 'bg-white border-green-200 shadow-sm' 
-                                  : 'bg-gray-50 border-gray-300 opacity-70'
-                              }`}
-                            >
-                              <div className="flex items-center space-x-4">
-                                <div className={`w-3 h-3 rounded-full ${
-                                  utility.isActive ? 'bg-green-500' : 'bg-gray-400'
-                                }`}></div>
-                                <div>
-                                  <p className={`font-medium ${
-                                    utility.isActive ? 'text-gray-900' : 'text-gray-500'
-                                  }`}>
-                                    {utility.utilityName}
-                                  </p>
-                                  <p className="text-sm text-gray-500 mt-1">
-                                    {formatCurrency(utility.ratePerUnit)} MMK per unit • {utility.calculationMethod}
-                                  </p>
-                                  {!utility.isActive && (
-                                    <p className="text-xs text-red-500 mt-1">Currently inactive</p>
-                                  )}
-                                </div>
-                              </div>
-                              <Button
-                                onClick={() => toggleUtilityStatus(utility.id, utility.isActive)}
-                                variant={utility.isActive ? "secondary" : "primary"}
-                                size="sm"
-                                disabled={updatingUtility === utility.id}
-                                loading={updatingUtility === utility.id}
-                                className="min-w-[100px]"
+                    {/* Tab Content */}
+                    <div className="mt-4">
+                      {activeTab === 'details' && (
+                        <div className="space-y-4">
+                          {/* Unit Specifications */}
+<div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
+  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+    <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+    </svg>
+    Unit Specifications
+  </h3>
+  <div className="grid grid-cols-2 gap-4">
+    {/* Unit Number Box */}
+    <div className="bg-white p-3 rounded-lg shadow-sm">
+      <p className="text-sm text-gray-500 mb-1">Unit Number</p>
+      <p className="font-medium text-gray-900 text-lg font-mono">{unit.unitNumber}</p>
+    </div>
+    
+    {/* Space Area Box */}
+    <div className="bg-white p-3 rounded-lg shadow-sm">
+      <p className="text-sm text-gray-500 mb-1">Space Area</p>
+      <p className="font-medium text-gray-900 text-lg">{unit.unitSpace} sqm</p>
+    </div>
+    
+    {/* Unit Type Box */}
+    <div className="bg-white p-3 rounded-lg shadow-sm">
+      <p className="text-sm text-gray-500 mb-1">Unit Type</p>
+      <p className="font-medium text-gray-900 capitalize">{unit.unitType.toLowerCase()}</p>
+    </div>
+    
+    {/* Meter Box */}
+    <div className="bg-white p-3 rounded-lg shadow-sm">
+      <p className="text-sm text-gray-500 mb-1">Meter</p>
+      <p className={`font-medium text-lg ${unit.hasMeter ? 'text-green-600' : 'text-red-600'}`}>
+        {unit.hasMeter ? (
+          <span className="flex items-center">
+            <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Has Meter
+          </span>
+        ) : (
+          <span className="flex items-center">
+            <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            No Meter
+          </span>
+        )}
+      </p>
+    </div>
+    
+    {/* Type-specific information */}
+    {getTypeSpecificInfo()}
+    
+    {/* Created Date Box */}
+    <div className="bg-white p-3 rounded-lg shadow-sm">
+      <p className="text-sm text-gray-500 mb-1">Created Date</p>
+      <p className="font-medium text-gray-900">
+        {new Date(unit.createdAt).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        })}
+      </p>
+    </div>
+    
+    {/* Last Updated Box */}
+    <div className="bg-white p-3 rounded-lg shadow-sm">
+      <p className="text-sm text-gray-500 mb-1">Last Updated</p>
+      <p className="font-medium text-gray-900">
+        {new Date(unit.updatedAt).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        })}
+      </p>
+    </div>
+  </div>
+</div>
+                        </div>
+                      )}
+
+                      {activeTab === 'utilities' && unit.utilities && unit.utilities.length > 0 && (
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-200">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            Utilities ({unit.utilities.filter(u => u.isActive).length} active / {unit.utilities.length} total)
+                          </h3>
+                          <div className="space-y-3">
+                            {unit.utilities.map((utility) => (
+                              <div 
+                                key={utility.id}
+                                className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
+                                  utility.isActive 
+                                    ? 'bg-white border-green-200 shadow-sm' 
+                                    : 'bg-gray-50 border-gray-300 opacity-70'
+                                }`}
                               >
-                                {updatingUtility === utility.id ? (
-                                  'Updating...'
-                                ) : utility.isActive ? (
-                                  'Deactivate'
-                                ) : (
-                                  'Activate'
-                                )}
-                              </Button>
+                                <div className="flex items-center space-x-4">
+                                  <div className={`w-3 h-3 rounded-full ${
+                                    utility.isActive ? 'bg-green-500' : 'bg-gray-400'
+                                  }`}></div>
+                                  <div>
+                                    <p className={`font-medium ${
+                                      utility.isActive ? 'text-gray-900' : 'text-gray-500'
+                                    }`}>
+                                      {utility.utilityName}
+                                    </p>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                      {formatCurrency(utility.ratePerUnit)} MMK per unit • {utility.calculationMethod}
+                                    </p>
+                                    {!utility.isActive && (
+                                      <p className="text-xs text-red-500 mt-1">Currently inactive</p>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button
+                                  onClick={() => toggleUtilityStatus(utility.id, utility.isActive)}
+                                  variant={utility.isActive ? "secondary" : "primary"}
+                                  size="sm"
+                                  disabled={updatingUtility === utility.id}
+                                  loading={updatingUtility === utility.id}
+                                  className="min-w-[100px]"
+                                >
+                                  {updatingUtility === utility.id ? (
+                                    'Updating...'
+                                  ) : utility.isActive ? (
+                                    'Deactivate'
+                                  ) : (
+                                    'Activate'
+                                  )}
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {activeTab === 'location' && (
+                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Location Information
+                          </h3>
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                              <span className="text-gray-600">Branch</span>
+                              <span className="font-medium text-gray-900">{unit.level.building.branch.branchName || unit.level.building.branchName}</span>
                             </div>
-                          ))}
+                            <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                              <span className="text-gray-600">Building</span>
+                              <span className="font-medium text-gray-900">{unit.level.building.buildingName}</span>
+                            </div>
+                            <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                              <span className="text-gray-600">Floor</span>
+                              <span className="font-medium text-gray-900">{unit.level.levelName} (Floor {unit.level.levelNumber})</span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    )}
-
-                    {/* Building Information */}
-                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-5 border border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Location Information
-                      </h3>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                          <span className="text-gray-600">Branch</span>
-                          <span className="font-medium text-gray-900">{unit.level.building.branch.branchName || unit.level.building.branchName}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                          <span className="text-gray-600">Building</span>
-                          <span className="font-medium text-gray-900">{unit.level.building.buildingName}</span>
-                        </div>
-                        <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                          <span className="text-gray-600">Floor</span>
-                          <span className="font-medium text-gray-900">{unit.level.levelName} (Floor {unit.level.levelNumber})</span>
-                        </div>
-                      </div>
+                      )}
                     </div>
-
-                    {/* Type Description */}
-                    {unit.roomType?.description && (
-                      <div className="bg-blue-50 rounded-xl p-5 border border-blue-200">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Room Type Description</h3>
-                        <p className="text-gray-700">{unit.roomType.description}</p>
-                      </div>
-                    )}
-                    {unit.spaceType?.description && (
-                      <div className="bg-green-50 rounded-xl p-5 border border-green-200">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Space Type Description</h3>
-                        <p className="text-gray-700">{unit.spaceType.description}</p>
-                      </div>
-                    )}
-                    {unit.hallType?.description && (
-                      <div className="bg-purple-50 rounded-xl p-5 border border-purple-200">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Hall Type Description</h3>
-                        <p className="text-gray-700">{unit.hallType.description}</p>
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -529,7 +670,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
         </div>
       </div>
 
-      {/* Image Gallery Modal */}
+      {/* Image Gallery Modal - From first example */}
       {isImageModalOpen && unit?.imageUrls && unit.imageUrls.length > 0 && (
         <div className="fixed inset-0 bg-black bg-opacity-90 z-[60] flex items-center justify-center p-4">
           <div className="relative max-w-6xl max-h-full w-full">

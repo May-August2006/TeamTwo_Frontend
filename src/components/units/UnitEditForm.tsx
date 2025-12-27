@@ -60,24 +60,41 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
-  // Uppercase unit number validation
+  // Add this constant for image limit
+  const MAX_IMAGES = 5;
+
+  // Uppercase unit number validation - UPDATED to match add form
   const validateUnitNumber = (value: string): string => {
-    const trimmed = value.trim();
+    const trimmed = value.trim().toUpperCase();
     
     if (!trimmed) {
       return 'Unit number is required';
     }
     
-    // Check if it contains only valid characters (letters, numbers, dash, underscore)
-    const isValidFormat = /^[A-Z0-9_-]+$/.test(trimmed);
-    if (!isValidFormat) {
-      return 'Unit number can only contain letters, numbers, dash (-) and underscore (_)';
+    // Check for UN- prefix
+    if (!trimmed.startsWith('UN-')) {
+      return 'Unit number must start with UN-';
     }
     
-    // Check length
-    if (trimmed.length > 20) {
-      return 'Unit number cannot exceed 20 characters';
+    // Check for UN- prefix and number format
+    const isValidFormat = /^UN-\d{1,3}$/.test(trimmed);
+    if (!isValidFormat) {
+      return 'Unit number must be in format UN- followed by 1-3 digits';
+    }
+    
+    // Extract the number part
+    const numberPart = trimmed.substring(3);
+    if (numberPart === '') {
+      return 'Please enter a number between 001 and 999';
+    }
+    
+    const number = parseInt(numberPart, 10);
+    
+    // Check if number is between 1 and 999
+    if (number < 1 || number > 999) {
+      return 'Unit number must be between UN-001 and UN-999';
     }
     
     return '';
@@ -211,8 +228,13 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     if (unit && dataLoaded) {
       console.log('Editing unit:', unit);
       
-      // Ensure unit number is uppercase
-      const unitNumber = unit.unitNumber ? unit.unitNumber.toUpperCase() : '';
+      // Ensure unit number is uppercase and has UN- prefix
+      let unitNumber = unit.unitNumber ? unit.unitNumber.toUpperCase() : '';
+      
+      // Add UN- prefix if missing (for backward compatibility)
+      if (unitNumber && !unitNumber.startsWith('UN-')) {
+        unitNumber = 'UN-' + unitNumber;
+      }
       
       const initialData = {
         unitNumber: unitNumber,
@@ -378,10 +400,22 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     if (!files) return;
 
     const newImages = Array.from(files);
+    
+    // Check if adding new images would exceed the limit when combined with existing images
+    const totalImagesAfterAddition = existingImages.length + selectedImages.length + newImages.length - imagesToRemove.length;
+    if (totalImagesAfterAddition > MAX_IMAGES) {
+      alert(`You can only have a maximum of ${MAX_IMAGES} images. You currently have ${existingImages.length} existing images and ${selectedImages.length} new images selected.`);
+      e.target.value = ''; // Reset the file input
+      return;
+    }
+
     setSelectedImages(prev => [...prev, ...newImages]);
 
     const newPreviews = newImages.map(file => URL.createObjectURL(file));
     setImagePreviews(prev => [...prev, ...newPreviews]);
+    
+    // Reset the file input
+    e.target.value = '';
   };
 
   const removeSelectedImage = (index: number) => {
@@ -539,31 +573,84 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleFieldTouch = (fieldName: string) => {
+    setTouchedFields(prev => ({ ...prev, [fieldName]: true }));
+  };
+
+  const handleChange = async (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
     // Special handling for unit number
     if (name === 'unitNumber') {
-      // Convert to uppercase immediately
-      const uppercaseValue = value.toUpperCase();
+      let processedValue = value.toUpperCase();
+      
+      // Always ensure UN- prefix
+      if (!processedValue.startsWith('UN-')) {
+        processedValue = 'UN-' + processedValue.replace(/^UN/, '');
+      }
+      
+      // Only allow digits after UN-
+      if (processedValue.length > 3) {
+        const prefix = processedValue.substring(0, 3); // UN-
+        const numberPart = processedValue.substring(3);
+        
+        // Only keep digits in number part
+        const digitsOnly = numberPart.replace(/\D/g, '');
+        
+        // Limit to 3 digits
+        const limitedDigits = digitsOnly.substring(0, 3);
+        
+        // Reconstruct value
+        processedValue = prefix + limitedDigits;
+      }
       
       setFormData(prev => ({
         ...prev,
-        [name]: uppercaseValue
+        [name]: processedValue
       }));
 
-      // Validate unit number
-      const unitNumberError = validateUnitNumber(uppercaseValue);
-      setErrors(prev => ({
-        ...prev,
-        [name]: unitNumberError
-      }));
+      // Mark field as touched
+      handleFieldTouch(name);
+
+      // Validate unit number immediately
+      const unitNumberError = validateUnitNumber(processedValue);
+      if (unitNumberError) {
+        setErrors(prev => ({
+          ...prev,
+          [name]: unitNumberError
+        }));
+      } else {
+        // Clear error if validation passes
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+    } else if (name === 'levelId') {
+      // Handle level change
+      setFormData(prev => ({ ...prev, levelId: value }));
+      handleFieldTouch(name);
+      
+      if (value) {
+        await fetchLevelDetails(parseInt(value));
+      } else {
+        setSelectedLevel(null);
+        setLevelUnitsCount(0);
+      }
+      
+      // Clear error
+      if (errors.levelId) {
+        setErrors(prev => ({ ...prev, levelId: '' }));
+      }
     } else {
       setFormData(prev => ({
         ...prev,
         [name]: value
       }));
+      handleFieldTouch(name);
 
+      // Clear error when user starts typing
       if (errors[name]) {
         setErrors(prev => ({ ...prev, [name]: '' }));
       }
@@ -575,20 +662,59 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     }
   };
 
+  // Fetch level details and count units in that level
+  const fetchLevelDetails = async (levelId: number) => {
+    try {
+      const response = await levelApi.getById(levelId);
+      setSelectedLevel(response.data);
+      
+      // Get current units count in this level
+      const unitsResponse = await unitApi.search({ levelId });
+      setLevelUnitsCount(unitsResponse.data.length);
+    } catch (error) {
+      console.error('Error fetching level details:', error);
+      setSelectedLevel(null);
+      setLevelUnitsCount(0);
+    }
+  };
+
   const handleUnitNumberBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     const { value } = e.target;
-    const uppercaseValue = value.toUpperCase();
+    let processedValue = value.toUpperCase();
     
-    // Ensure uppercase on blur
-    if (value !== uppercaseValue) {
+    // Ensure UN- prefix
+    if (!processedValue.startsWith('UN-')) {
+      processedValue = 'UN-' + processedValue.replace(/^UN/, '');
+    }
+    
+    // Format number part to 3 digits with leading zeros
+    if (processedValue.startsWith('UN-')) {
+      const numberPart = processedValue.substring(3);
+      if (numberPart !== '') {
+        const number = parseInt(numberPart, 10);
+        if (!isNaN(number) && number >= 1 && number <= 999) {
+          // Pad with leading zeros to 3 digits
+          processedValue = 'UN-' + number.toString().padStart(3, '0');
+        } else if (numberPart === '') {
+          // If empty after UN-, keep as is for error message
+          processedValue = 'UN-';
+        }
+      }
+    }
+    
+    // Update if value changed
+    if (value !== processedValue) {
       setFormData(prev => ({
         ...prev,
-        unitNumber: uppercaseValue
+        unitNumber: processedValue
       }));
     }
 
+    // Mark field as touched
+    handleFieldTouch('unitNumber');
+
     // Validate unit number on blur
-    const unitNumberError = validateUnitNumber(uppercaseValue);
+    const unitNumberError = validateUnitNumber(processedValue);
     if (unitNumberError) {
       setErrors(prev => ({
         ...prev,
@@ -597,11 +723,11 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
       return;
     }
 
-    // Check for duplicates when user leaves the field (only if valid)
-    if (formData.levelId && uppercaseValue) {
+    // Check for duplicates when user leaves the field (only if valid and has level selected)
+    if (formData.levelId && processedValue && processedValue !== 'UN-') {
       setIsCheckingDuplicate(true);
       try {
-        const isDuplicate = await checkDuplicateUnitNumber(uppercaseValue, formData.levelId);
+        const isDuplicate = await checkDuplicateUnitNumber(processedValue, formData.levelId);
         if (isDuplicate) {
           setErrors(prev => ({
             ...prev,
@@ -627,17 +753,32 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
 
   const handleUnitSpaceBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { value } = e.target;
+    handleFieldTouch('unitSpace');
     validateUnitSpaceField(value);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const { name } = e.currentTarget;
+  const handleUnitNumberKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const { selectionStart, value } = e.currentTarget;
     
-    if (name === 'unitNumber') {
-      // Allow only alphanumeric, dash, underscore, and backspace
-      const char = String.fromCharCode(e.charCode);
-      if (!/^[A-Za-z0-9_-]$/.test(char) && e.charCode !== 0) {
+    // Allow navigation keys (arrows, home, end, tab)
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Tab'].includes(e.key)) {
+      return;
+    }
+    
+    // Allow Ctrl/Command keys for shortcuts
+    if (e.ctrlKey || e.metaKey) {
+      return;
+    }
+    
+    // If cursor is in the UN- prefix area (positions 0-2), prevent most actions
+    if (selectionStart !== null && selectionStart < 3) {
+      // Allow arrow keys (already handled above) but prevent typing/deleting
+      if (e.key === 'Backspace' || e.key === 'Delete' || (e.key.length === 1 && !e.ctrlKey && !e.metaKey)) {
         e.preventDefault();
+        // Move cursor to after the prefix if user tries to type
+        if (e.key.length === 1) {
+          e.currentTarget.setSelectionRange(3, 3);
+        }
       }
     }
   };
@@ -869,15 +1010,14 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
             name="unitNumber"
             value={formData.unitNumber}
             onChange={handleChange}
+            onKeyDown={handleUnitNumberKeyDown}
             onBlur={handleUnitNumberBlur}
-            onKeyPress={handleKeyPress}
-            required
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase ${
               errors.unitNumber ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="Enter unit number (e.g., A-101, B_202)"
+            placeholder="Enter UN-001 to UN-999"
             style={{ textTransform: 'uppercase' }}
-            maxLength={20}
+            maxLength={7}
             disabled={isCheckingDuplicate}
           />
           {isCheckingDuplicate && (
@@ -888,16 +1028,23 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         </div>
         <div className="flex justify-between items-center mt-1">
           <p className="text-xs text-gray-500">
-            Use letters, numbers, dash (-) or underscore (_). Will be converted to uppercase.
+            Format: UN-001 to UN-999 (UN- prefix is fixed)
           </p>
           <span className="text-xs text-gray-400">
-            {formData.unitNumber.length}/20
+            {formData.unitNumber.length}/7
           </span>
         </div>
-        {errors.unitNumber && (
-          <p className="text-red-500 text-sm mt-1">{errors.unitNumber}</p>
+        {touchedFields.unitNumber && errors.unitNumber && (
+          <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-600 text-sm font-medium flex items-center">
+              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              {errors.unitNumber}
+            </p>
+          </div>
         )}
-        {!errors.unitNumber && formData.unitNumber && (
+        {!errors.unitNumber && formData.unitNumber && formData.levelId && !isCheckingDuplicate && formData.unitNumber !== 'UN-' && (
           <p className="text-green-500 text-sm mt-1">✓ Unit number format is valid</p>
         )}
       </div>
@@ -1117,7 +1264,24 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Unit Images
+          <span className="ml-2 text-xs text-gray-500">
+            (Max {MAX_IMAGES} images total)
+          </span>
         </label>
+        
+        {/* Show image count */}
+        <div className="mb-3 text-sm text-gray-600">
+          <span className={`font-medium ${
+            (existingImages.length + selectedImages.length - imagesToRemove.length) >= MAX_IMAGES 
+              ? 'text-red-600' 
+              : 'text-blue-600'
+          }`}>
+            {existingImages.length + selectedImages.length - imagesToRemove.length}/{MAX_IMAGES} images
+          </span>
+          {(existingImages.length + selectedImages.length - imagesToRemove.length) >= MAX_IMAGES && (
+            <span className="ml-2 text-red-500 text-xs">Maximum limit reached</span>
+          )}
+        </div>
         
         {/* Existing Images */}
         {existingImages.length > 0 && (
@@ -1175,7 +1339,11 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         )}
 
         {/* Add New Images */}
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+        <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+          (existingImages.length + selectedImages.length - imagesToRemove.length) >= MAX_IMAGES
+            ? 'border-red-300 bg-red-50 cursor-not-allowed'
+            : 'border-gray-300 hover:border-gray-400'
+        }`}>
           <input
             type="file"
             multiple
@@ -1183,16 +1351,31 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
             onChange={handleImageSelect}
             className="hidden"
             id="unit-images"
+            disabled={(existingImages.length + selectedImages.length - imagesToRemove.length) >= MAX_IMAGES}
           />
           <label
             htmlFor="unit-images"
-            className="cursor-pointer block"
+            className={`block ${
+              (existingImages.length + selectedImages.length - imagesToRemove.length) >= MAX_IMAGES
+                ? 'cursor-not-allowed'
+                : 'cursor-pointer'
+            }`}
           >
-            <svg className="w-8 h-8 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-8 h-8 mx-auto ${
+              (existingImages.length + selectedImages.length - imagesToRemove.length) >= MAX_IMAGES
+                ? 'text-red-400'
+                : 'text-gray-400'
+            }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            <p className="text-sm text-gray-600 mt-2">
-              Click to add more images
+            <p className={`text-sm mt-2 ${
+              (existingImages.length + selectedImages.length - imagesToRemove.length) >= MAX_IMAGES
+                ? 'text-red-600'
+                : 'text-gray-600'
+            }`}>
+              {(existingImages.length + selectedImages.length - imagesToRemove.length) >= MAX_IMAGES
+                ? 'Maximum image limit reached'
+                : 'Click to add more images'}
             </p>
             <p className="text-xs text-gray-500">
               PNG, JPG, JPEG up to 10MB each

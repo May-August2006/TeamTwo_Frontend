@@ -1,6 +1,7 @@
 /** @format */
 
 export interface User {
+  roles: any;
   message: any;
   user: User;
   errors: boolean;

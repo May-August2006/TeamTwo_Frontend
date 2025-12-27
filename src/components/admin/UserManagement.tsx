@@ -21,6 +21,7 @@ import {
   Clock,
   Eye,
   EyeOff,
+  Users2, // Add this for Board of Directors icon
 } from "lucide-react";
 import { userApi } from "../../api/UserAPI";
 import { buildingApi } from "../../api/BuildingAPI";
@@ -110,11 +111,12 @@ type TabType =
   | "guests"
   | "managers"
   | "accountants"
-  | "admins"
-  | "tenants"
-  | "pending-approval";
+  | "bod" // Add Board of Directors tab
+  | "pending-approval"
+  | "deactivated";
 
 const UserManagement: React.FC = () => {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<User[]>([]);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -145,7 +147,6 @@ const UserManagement: React.FC = () => {
   });
 
   const [activeTab, setActiveTab] = useState<TabType>("all");
-  const [showInactiveUsers, setShowInactiveUsers] = useState(false); // NEW: Toggle for inactive users
   const notificationTimeoutsRef = useRef<{ [key: number]: NodeJS.Timeout }>({});
 
   const [newUser, setNewUser] = useState<UserRequest>({
@@ -186,68 +187,59 @@ const UserManagement: React.FC = () => {
 
   const validationMessages = {
     username: {
-      required: "Username is required",
-      invalid:
-        "Username must be 3-20 characters (letters, numbers, underscores only)",
-      tooLong: `Username cannot exceed ${maxLengths.username} characters`,
-      exists: "Username already exists",
+      required: t('userManagement.validation.usernameRequired'),
+      invalid: t('userManagement.validation.usernameInvalid'),
+      tooLong: t('userManagement.validation.usernameTooLong', { max: maxLengths.username }),
+      exists: t('userManagement.validation.usernameExists'),
     },
     email: {
-      required: "Email is required",
-      invalid: "Please enter a valid email address",
-      tooLong: `Email cannot exceed ${maxLengths.email} characters`,
-      exists: "Email already exists",
+      required: t('userManagement.validation.emailRequired'),
+      invalid: t('userManagement.validation.emailInvalid'),
+      tooLong: t('userManagement.validation.emailTooLong', { max: maxLengths.email }),
+      exists: t('userManagement.validation.emailExists'),
     },
     fullName: {
-      required: "Full name is required",
-      invalid:
-        "Full name must be 2-30 characters (letters, spaces, dots, apostrophes, hyphens only)",
-      tooLong: `Full name cannot exceed ${maxLengths.fullName} characters`,
+      required: t('userManagement.validation.fullNameRequired'),
+      invalid: t('userManagement.validation.fullNameInvalid'),
+      tooLong: t('userManagement.validation.fullNameTooLong', { max: maxLengths.fullName }),
     },
   };
 
   const getFilteredUsers = (): User[] => {
-    let filtered = users;
-    
-    // First filter by active/inactive
-    if (!showInactiveUsers) {
-      filtered = filtered.filter(user => user.isActive);
-    }
-    
-    // Then filter by tab
     switch (activeTab) {
       case "all":
-        return filtered;
+        return users.filter(user => user.isActive);
       case "guests":
-        return filtered.filter((user) => user.roleName === "ROLE_GUEST");
+        return users.filter((user) => user.roleName === "ROLE_GUEST" && user.isActive);
       case "managers":
-        return filtered.filter((user) => user.roleName === "ROLE_MANAGER");
+        return users.filter((user) => user.roleName === "ROLE_MANAGER" && user.isActive);
       case "accountants":
-        return filtered.filter((user) => user.roleName === "ROLE_ACCOUNTANT");
-      case "admins":
-        return filtered.filter((user) => user.roleName === "ROLE_ADMIN");
-      case "tenants":
-        return filtered.filter((user) => user.roleName === "ROLE_TENANT");
+        return users.filter((user) => user.roleName === "ROLE_ACCOUNTANT" && user.isActive);
+      case "bod": // Add Board of Directors filter
+        return users.filter((user) => user.roleName === "ROLE_BOD" && user.isActive);
       case "pending-approval":
-        return filtered.filter(
+        return users.filter(
           (user) =>
             user.roleName === "ROLE_GUEST" &&
-            (user.approvalStatus === "PENDING" || !user.approvalStatus)
+            (user.approvalStatus === "PENDING" || !user.approvalStatus) &&
+            user.isActive
         );
+      case "deactivated":
+        return users.filter(user => !user.isActive);
       default:
-        return filtered;
+        return users.filter(user => user.isActive);
     }
   };
 
   const getTabDisplayName = (tab: TabType) => {
     const tabMap: Record<TabType, string> = {
-      all: "All Users",
-      guests: "Guests",
-      managers: "Managers",
-      accountants: "Accountants",
-      admins: "Administrators",
-      tenants: "Tenants",
-      "pending-approval": "Pending Approval",
+      all: t('userManagement.tabs.all'),
+      guests: t('userManagement.tabs.guests'),
+      managers: t('userManagement.tabs.managers'),
+      accountants: t('userManagement.tabs.accountants'),
+      bod: t('userManagement.tabs.bod'),
+      "pending-approval": t('userManagement.tabs.pendingApproval'),
+      deactivated: t('userManagement.tabs.deactivated'),
     };
     return tabMap[tab] || tab;
   };
@@ -258,36 +250,35 @@ const UserManagement: React.FC = () => {
       guests: <UserCog className="w-4 h-4" />,
       managers: <Building className="w-4 h-4" />,
       accountants: <Briefcase className="w-4 h-4" />,
-      admins: <AlertCircle className="w-4 h-4" />,
-      tenants: <Users className="w-4 h-4" />,
+      bod: <Users2 className="w-4 h-4" />, // Add Board of Directors icon
       "pending-approval": <Clock className="w-4 h-4" />,
+      deactivated: <XCircle className="w-4 h-4" />,
     };
     return iconMap[tab] || <Users className="w-4 h-4" />;
   };
 
   const getUserCountByTab = (tab: TabType) => {
-    const activeUsers = showInactiveUsers ? users : users.filter(u => u.isActive);
-    
     switch (tab) {
       case "all":
-        return activeUsers.length;
+        return users.filter(user => user.isActive).length;
       case "guests":
-        return activeUsers.filter((user) => user.roleName === "ROLE_GUEST").length;
+        return users.filter((user) => user.roleName === "ROLE_GUEST" && user.isActive).length;
       case "managers":
-        return activeUsers.filter((user) => user.roleName === "ROLE_MANAGER").length;
+        return users.filter((user) => user.roleName === "ROLE_MANAGER" && user.isActive).length;
       case "accountants":
-        return activeUsers.filter((user) => user.roleName === "ROLE_ACCOUNTANT")
+        return users.filter((user) => user.roleName === "ROLE_ACCOUNTANT" && user.isActive)
           .length;
-      case "admins":
-        return activeUsers.filter((user) => user.roleName === "ROLE_ADMIN").length;
-      case "tenants":
-        return activeUsers.filter((user) => user.roleName === "ROLE_TENANT").length;
+      case "bod": // Add Board of Directors count
+        return users.filter((user) => user.roleName === "ROLE_BOD" && user.isActive).length;
       case "pending-approval":
-        return activeUsers.filter(
+        return users.filter(
           (user) =>
             user.roleName === "ROLE_GUEST" &&
-            (user.approvalStatus === "PENDING" || !user.approvalStatus)
+            (user.approvalStatus === "PENDING" || !user.approvalStatus) &&
+            user.isActive
         ).length;
+      case "deactivated":
+        return users.filter(user => !user.isActive).length;
       default:
         return 0;
     }
@@ -299,25 +290,25 @@ const UserManagement: React.FC = () => {
     switch (effectiveStatus) {
       case "PENDING":
         return {
-          text: "Pending",
+          text: t('userManagement.approvalStatus.pending'),
           icon: <Clock className="w-3 h-3" />,
           color: "bg-yellow-100 text-yellow-800",
         };
       case "APPROVED":
         return {
-          text: "Approved",
+          text: t('userManagement.approvalStatus.approved'),
           icon: <CheckCircle className="w-3 h-3" />,
           color: "bg-green-100 text-green-800",
         };
       case "REJECTED":
         return {
-          text: "Rejected",
+          text: t('userManagement.approvalStatus.rejected'),
           icon: <XCircle className="w-3 h-3" />,
           color: "bg-red-100 text-red-800",
         };
       default:
         return {
-          text: "Pending",
+          text: t('userManagement.approvalStatus.pending'),
           icon: <Clock className="w-3 h-3" />,
           color: "bg-yellow-100 text-yellow-800",
         };
@@ -337,7 +328,7 @@ const UserManagement: React.FC = () => {
       if (response.data) {
         addNotification(
           "success",
-          `User status updated to ${status.toLowerCase()} successfully!`
+          t('userManagement.notifications.statusUpdated', { status: status.toLowerCase() })
         );
 
         setUsers((prevUsers) =>
@@ -349,7 +340,7 @@ const UserManagement: React.FC = () => {
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message ||
-        `Failed to update user status to ${status.toLowerCase()}`;
+        t('userManagement.errors.statusUpdateFailed', { status: status.toLowerCase() });
       addNotification("error", errorMessage);
     } finally {
       setLoading(false);
@@ -359,14 +350,14 @@ const UserManagement: React.FC = () => {
   const handleApproveUserClick = (user: User) => {
     const isCurrentlyApproved = user.approvalStatus === "APPROVED";
     const message = isCurrentlyApproved
-      ? `Are you sure you want to re-approve ${user.fullName}? This will grant them access to the system.`
-      : `Are you sure you want to approve ${user.fullName}? This will grant them access to the system.`;
+      ? t('userManagement.confirm.reApprove', { name: user.fullName })
+      : t('userManagement.confirm.approve', { name: user.fullName });
 
     showConfirmation({
-      title: "Approve User",
+      title: t('userManagement.confirm.approveTitle'),
       message,
-      confirmText: "Approve",
-      cancelText: "Cancel",
+      confirmText: t('userManagement.confirm.approve'),
+      cancelText: t('common.cancel'),
       onConfirm: async () => {
         await updateUserApprovalStatus(user.id, "APPROVED");
         setMobileMenuOpen(null);
@@ -380,14 +371,14 @@ const UserManagement: React.FC = () => {
   const handleRejectUserClick = (user: User) => {
     const isCurrentlyRejected = user.approvalStatus === "REJECTED";
     const message = isCurrentlyRejected
-      ? `Are you sure you want to keep ${user.fullName} rejected? This will deny them access to the system.`
-      : `Are you sure you want to reject ${user.fullName}? This will deny them access to the system.`;
+      ? t('userManagement.confirm.reReject', { name: user.fullName })
+      : t('userManagement.confirm.reject', { name: user.fullName });
 
     showConfirmation({
-      title: "Reject User",
+      title: t('userManagement.confirm.rejectTitle'),
       message,
-      confirmText: "Reject",
-      cancelText: "Cancel",
+      confirmText: t('userManagement.confirm.reject'),
+      cancelText: t('common.cancel'),
       onConfirm: async () => {
         await updateUserApprovalStatus(user.id, "REJECTED");
         setMobileMenuOpen(null);
@@ -402,14 +393,14 @@ const UserManagement: React.FC = () => {
     const isCurrentlyPending =
       user.approvalStatus === "PENDING" || !user.approvalStatus;
     const message = isCurrentlyPending
-      ? `Are you sure you want to keep ${user.fullName} in pending status?`
-      : `Are you sure you want to set ${user.fullName} to pending status?`;
+      ? t('userManagement.confirm.rePending', { name: user.fullName })
+      : t('userManagement.confirm.setPendingMessage', { name: user.fullName });
 
     showConfirmation({
-      title: "Set User to Pending",
+      title: t('userManagement.confirm.pendingTitle'),
       message,
-      confirmText: "Set to Pending",
-      cancelText: "Cancel",
+      confirmText: t('userManagement.confirm.setPending'),
+      cancelText: t('common.cancel'),
       onConfirm: async () => {
         await updateUserApprovalStatus(user.id, "PENDING");
         setMobileMenuOpen(null);
@@ -487,8 +478,8 @@ const UserManagement: React.FC = () => {
         fetchAvailableBranches(),
       ]);
     } catch (error) {
-      setErrors({ general: "Failed to load data. Please refresh the page." });
-      addNotification("error", "Failed to load data. Please refresh the page.");
+      setErrors({ general: t('userManagement.errors.loadDataFailed') });
+      addNotification("error", t('userManagement.errors.loadDataFailed'));
     } finally {
       setLoadingUsers(false);
     }
@@ -501,12 +492,8 @@ const fetchUsers = async () => {
     
     let response;
     
-    // Use different endpoint based on showInactiveUsers state
-    if (showInactiveUsers) {
-      response = await userApi.getAllIncludingInactive();
-    } else {
-      response = await userApi.getAll();
-    }
+    // Always fetch all users including inactive for the deactivated tab
+    response = await userApi.getAll();
 
     let usersData: User[] = [];
 
@@ -538,8 +525,8 @@ const fetchUsers = async () => {
 
     setUsers(processedUsers);
   } catch (error: any) {
-    setErrors({ general: "Failed to load users" });
-    addNotification("error", "Failed to load users");
+    setErrors({ general: t('userManagement.errors.loadUsersFailed') });
+    addNotification("error", t('userManagement.errors.loadUsersFailed'));
   }
 };
       
@@ -586,10 +573,10 @@ const fetchUsers = async () => {
     if (user.roleName === "ROLE_MANAGER") {
       if (user.buildingId) {
         const building = buildings.find((b) => b.id === user.buildingId);
-        return building ? building.buildingName : "Unknown Building";
+        return building ? building.buildingName : t('userManagement.unknownBuilding');
       }
       if (user.building) {
-        return user.building.buildingName || "Unknown Building";
+        return user.building.buildingName || t('userManagement.unknownBuilding');
       }
       if (user.buildingName) {
         return user.buildingName;
@@ -608,7 +595,7 @@ const fetchUsers = async () => {
         return user.accountantBuildingName;
       }
       if (user.accountantBuilding) {
-        return user.accountantBuilding.buildingName || "Unknown Building";
+        return user.accountantBuilding.buildingName || t('userManagement.unknownBuilding');
       }
     }
 
@@ -618,11 +605,11 @@ const fetchUsers = async () => {
   const getUserBranchName = (user: User): string => {
     if (user.branchId) {
       const branch = branches.find((b) => b.id === user.branchId);
-      return branch ? branch.branchName : "Unknown Branch";
+      return branch ? branch.branchName : t('userManagement.unknownBranch');
     }
 
     if (user.branch) {
-      return user.branch.branchName || "Unknown Branch";
+      return user.branch.branchName || t('userManagement.unknownBranch');
     }
 
     if (user.branchName) {
@@ -661,13 +648,13 @@ const fetchUsers = async () => {
     value: string
   ): string => {
     if (!value.trim()) {
-      return validationMessages[name]?.required || "This field is required";
+      return validationMessages[name]?.required || t('common.fieldRequired');
     }
 
     if (value.length > maxLengths[name]) {
       return (
         validationMessages[name]?.tooLong ||
-        `Cannot exceed ${maxLengths[name]} characters`
+        t('common.fieldTooLong', { max: maxLengths[name] })
       );
     }
 
@@ -824,7 +811,7 @@ const fetchUsers = async () => {
 
       addNotification(
         "success",
-        `User "${newUser.fullName}" created successfully! A default password has been generated.`
+        t('userManagement.notifications.userCreated', { name: newUser.fullName })
       );
 
       if (createdUser && createdUser.id) {
@@ -833,13 +820,13 @@ const fetchUsers = async () => {
             await buildingApi.assignManager(newUser.buildingId, createdUser.id);
             addNotification(
               "info",
-              "Manager assigned to building successfully."
+              t('userManagement.notifications.managerAssigned')
             );
           } catch (assignError: any) {
             console.error("Failed to assign manager to building:", assignError);
             addNotification(
               "warning",
-              "User created but manager assignment failed."
+              t('userManagement.notifications.managerAssignmentFailed')
             );
           }
         }
@@ -849,7 +836,7 @@ const fetchUsers = async () => {
             await buildingApi.assignAccountant(newUser.buildingId, createdUser.id);
             addNotification(
               "info",
-              "Accountant assigned to building successfully."
+              t('userManagement.notifications.accountantAssigned')
             );
           } catch (assignError: any) {
             console.error(
@@ -858,7 +845,7 @@ const fetchUsers = async () => {
             );
             addNotification(
               "warning",
-              "User created but accountant assignment failed."
+              t('userManagement.notifications.accountantAssignmentFailed')
             );
           }
         }
@@ -884,39 +871,39 @@ const fetchUsers = async () => {
           setErrors({ general: error.response.data.message });
           addNotification("error", error.response.data.message);
         } else if (error.response.status === 401) {
-          setErrors({ general: "Unauthorized. Please check your login." });
-          addNotification("error", "Unauthorized. Please check your login.");
+          setErrors({ general: t('userManagement.errors.unauthorized') });
+          addNotification("error", t('userManagement.errors.unauthorized'));
         } else if (error.response.status === 403) {
           setErrors({
-            general: "Forbidden. You don't have permission to create users.",
+            general: t('userManagement.errors.forbidden'),
           });
           addNotification(
             "error",
-            "Forbidden. You don't have permission to create users."
+            t('userManagement.errors.forbidden')
           );
         } else if (error.response.status === 400) {
-          setErrors({ general: "Bad request. Please check the form data." });
-          addNotification("error", "Bad request. Please check the form data.");
+          setErrors({ general: t('userManagement.errors.badRequest') });
+          addNotification("error", t('userManagement.errors.badRequest'));
         } else {
           setErrors({
-            general: `Server error (${error.response.status}). Please try again.`,
+            general: t('userManagement.errors.serverError', { status: error.response.status }),
           });
           addNotification(
             "error",
-            `Server error (${error.response.status}). Please try again.`
+            t('userManagement.errors.serverError', { status: error.response.status })
           );
         }
       } else if (error.request) {
         setErrors({
-          general: "No response from server. Check your network connection.",
+          general: t('userManagement.errors.networkError'),
         });
         addNotification(
           "error",
-          "No response from server. Check your network connection."
+          t('userManagement.errors.networkError')
         );
       } else {
-        setErrors({ general: "Error creating user: " + error.message });
-        addNotification("error", "Error creating user: " + error.message);
+        setErrors({ general: t('userManagement.errors.createUserError', { error: error.message }) });
+        addNotification("error", t('userManagement.errors.createUserError', { error: error.message }));
       }
     } finally {
       setLoading(false);
@@ -975,7 +962,7 @@ const fetchUsers = async () => {
         return;
       }
 
-      addNotification("success", "User updated successfully!");
+      addNotification("success", t('userManagement.notifications.userUpdated'));
 
       setShowEditModal(false);
       setEditingUser(null);
@@ -991,7 +978,7 @@ const fetchUsers = async () => {
         const errorMessage =
           error.response?.data?.error ||
           error.response?.data?.message ||
-          "Failed to update user. Please try again.";
+          t('userManagement.errors.updateUserFailed');
         setErrors({ general: errorMessage });
         addNotification("error", errorMessage);
       }
@@ -1008,10 +995,10 @@ const fetchUsers = async () => {
     try {
       if (assignment.assignmentType === "manager" && assignment.buildingId) {
         await userApi.assignManagerToBuilding(assignment.userId, assignment.buildingId);
-        addNotification("success", "Manager assigned to building successfully!");
+        addNotification("success", t('userManagement.notifications.managerAssignmentSuccess'));
       } else if (assignment.assignmentType === "accountant" && assignment.buildingId) {
         await userApi.assignAccountantToBuilding(assignment.userId, assignment.buildingId);
-        addNotification("success", "Accountant assigned to building successfully!");
+        addNotification("success", t('userManagement.notifications.accountantAssignmentSuccess'));
       } else {
         throw new Error("Invalid assignment parameters");
       }
@@ -1026,7 +1013,7 @@ const fetchUsers = async () => {
 
       fetchAllData();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Failed to assign user";
+      const errorMessage = error.response?.data?.message || t('userManagement.errors.assignmentFailed');
       setErrors({ general: errorMessage });
       addNotification("error", errorMessage);
     } finally {
@@ -1038,28 +1025,28 @@ const fetchUsers = async () => {
     const buildingId = getUserBuildingId(user);
 
     if (!buildingId) {
-      addNotification("error", "No building assignment found");
+      addNotification("error", t('userManagement.errors.noAssignmentFound'));
       return;
     }
 
     showConfirmation({
-      title: "Remove Assignment",
-      message: `Are you sure you want to remove ${user.fullName} from their building assignment?`,
-      confirmText: "Remove",
-      cancelText: "Cancel",
+      title: t('userManagement.confirm.removeAssignmentTitle'),
+      message: t('userManagement.confirm.removeAssignment', { name: user.fullName }),
+      confirmText: t('userManagement.confirm.remove'),
+      cancelText: t('common.cancel'),
       onConfirm: async () => {
         try {
           if (user.roleName === "ROLE_MANAGER") {
             await buildingApi.removeManager(buildingId);
-            addNotification("success", "Manager removed from building successfully!");
+            addNotification("success", t('userManagement.notifications.managerRemoved'));
           } else if (user.roleName === "ROLE_ACCOUNTANT") {
             await buildingApi.removeAccountant(buildingId);
-            addNotification("success", "Accountant removed from building successfully!");
+            addNotification("success", t('userManagement.notifications.accountantRemoved'));
           }
 
           fetchAllData();
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message || "Failed to remove assignment";
+          const errorMessage = error.response?.data?.message || t('userManagement.errors.removeAssignmentFailed');
           setErrors({ general: errorMessage });
           addNotification("error", errorMessage);
         }
@@ -1071,24 +1058,20 @@ const fetchUsers = async () => {
     });
   };
 
-  const handleDeleteUserClick = (id: number) => {
-    const user = users.find((u) => u.id === id);
-
+  const handleDeleteUserClick = async (user: User) => {
     showConfirmation({
-      title: "Deactivate User",
-      message: user
-        ? `Are you sure you want to deactivate ${user.fullName}? They will no longer have access to the system.`
-        : "Are you sure you want to deactivate this user? They will no longer have access to the system.",
-      confirmText: "Deactivate",
-      cancelText: "Cancel",
+      title: t('userManagement.confirm.deactivateTitle'),
+      message: t('userManagement.confirm.deactivateMessage', { name: user.fullName }),
+      confirmText: t('userManagement.confirm.deactivate'),
+      cancelText: t('common.cancel'),
       onConfirm: async () => {
         try {
-          await userApi.delete(id);
-          addNotification("success", "User deactivated successfully!");
+          await userApi.delete(user.id);
+          addNotification("success", t('userManagement.notifications.userDeactivated'));
           fetchAllData();
         } catch (error: any) {
           const errorMessage =
-            error.response?.data?.message || "Failed to deactivate user";
+            error.response?.data?.message || t('userManagement.errors.deactivateFailed');
           setErrors({ general: errorMessage });
           addNotification("error", errorMessage);
         }
@@ -1102,17 +1085,17 @@ const fetchUsers = async () => {
 
   const handleRestoreUserClick = (user: User) => {
     showConfirmation({
-      title: "Restore User",
-      message: `Are you sure you want to restore ${user.fullName}? They will regain access to the system.`,
-      confirmText: "Restore",
-      cancelText: "Cancel",
+      title: t('userManagement.confirm.restoreTitle'),
+      message: t('userManagement.confirm.restoreMessage', { name: user.fullName }),
+      confirmText: t('userManagement.confirm.restore'),
+      cancelText: t('common.cancel'),
       onConfirm: async () => {
         try {
           await userApi.restore(user.id);
-          addNotification("success", "User restored successfully!");
+          addNotification("success", t('userManagement.notifications.userRestored'));
           fetchAllData();
         } catch (error: any) {
-          const errorMessage = error.response?.data?.message || "Failed to restore user";
+          const errorMessage = error.response?.data?.message || t('userManagement.errors.restoreFailed');
           setErrors({ general: errorMessage });
           addNotification("error", errorMessage);
         }
@@ -1139,12 +1122,12 @@ const fetchUsers = async () => {
 
   const getRoleDisplayName = (roleName: string) => {
     const roleMap: { [key: string]: string } = {
-      ROLE_ADMIN: "Administrator",
-      ROLE_MANAGER: "Manager",
-      ROLE_ACCOUNTANT: "Accountant",
-      ROLE_BOD: "Board of Directors",
-      ROLE_TENANT: "Tenant",
-      ROLE_GUEST: "Guest",
+      ROLE_ADMIN: t('userManagement.roles.admin'),
+      ROLE_MANAGER: t('userManagement.roles.manager'),
+      ROLE_ACCOUNTANT: t('userManagement.roles.accountant'),
+      ROLE_BOD: t('userManagement.roles.bod'),
+      ROLE_TENANT: t('userManagement.roles.tenant'),
+      ROLE_GUEST: t('userManagement.roles.guest'),
     };
     return roleMap[roleName] || roleName;
   };
@@ -1198,11 +1181,11 @@ const fetchUsers = async () => {
       }
     }
 
-    if (field === "email" && patterns.email.test(truncatedValue)) {
+    if (field === "email") {
       const error = validateField("email", truncatedValue);
       if (error) {
         setErrors((prev) => ({ ...prev, email: error }));
-      } else {
+      } else if (patterns.email.test(truncatedValue)) {
         checkEmailAvailability(truncatedValue);
       }
     }
@@ -1285,7 +1268,7 @@ const fetchUsers = async () => {
             : "text-stone-500"
         }`}
       >
-        {currentLength}/{maxLength} characters {isOverLimit && "(Too long!)"}
+        {currentLength}/{maxLength} {t('common.characters')} {isOverLimit && `(${t('common.tooLong')})`}
       </div>
     );
   };
@@ -1325,9 +1308,9 @@ const fetchUsers = async () => {
     "guests",
     "managers",
     "accountants",
-    "admins",
-    "tenants",
+    "bod", // Add Board of Directors tab
     "pending-approval",
+    "deactivated",
   ];
   const filteredUsers = getFilteredUsers();
 
@@ -1372,14 +1355,14 @@ const fetchUsers = async () => {
                 onClick={handleCancel}
                 className="px-4 py-2 text-sm font-medium text-stone-700 hover:text-neutral-800 border border-stone-300 rounded-md transition-colors"
               >
-                {confirmation.cancelText || "Cancel"}
+                {confirmation.cancelText || t('common.cancel')}
               </button>
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-700 rounded-md hover:bg-red-800 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-[#1E40AF] rounded-md hover:bg-[#1E3A8A] transition-colors"
               >
-                {confirmation.confirmText || "Confirm"}
+                {confirmation.confirmText || t('common.confirm')}
               </button>
             </div>
           </div>
@@ -1389,10 +1372,10 @@ const fetchUsers = async () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
-            User Management
+            {t('userManagement.title')}
           </h1>
           <p className="text-stone-600 mt-1 text-sm sm:text-base">
-            Manage system users and their assigned roles and permissions.
+            {t('userManagement.subtitle')}
           </p>
         </div>
 
@@ -1401,10 +1384,10 @@ const fetchUsers = async () => {
             resetNewUserForm();
             setShowAddModal(true);
           }}
-          className="flex items-center space-x-2 bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded-lg transition-colors w-full sm:w-auto justify-center shadow-md"
+          className="flex items-center space-x-2 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white px-4 py-2 rounded-lg transition-colors w-full sm:w-auto justify-center shadow-md"
         >
           <Plus className="w-4 h-4" />
-          <span>Add New User</span>
+          <span>{t('userManagement.addUser')}</span>
         </button>
       </div>
 
@@ -1424,7 +1407,7 @@ const fetchUsers = async () => {
               onClick={() => setActiveTab(tab)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                 activeTab === tab
-                  ? "bg-red-700 text-white shadow-md"
+                  ? "bg-[#1E40AF] text-white shadow-md"
                   : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200"
               }`}
             >
@@ -1433,7 +1416,7 @@ const fetchUsers = async () => {
               <span
                 className={`text-xs px-2 py-0.5 rounded-full ${
                   activeTab === tab
-                    ? "bg-red-800 text-white"
+                    ? "bg-[#1E3A8A] text-white"
                     : "bg-stone-100 text-stone-700"
                 }`}
               >
@@ -1443,42 +1426,21 @@ const fetchUsers = async () => {
           ))}
         </div>
 
-        {/* Toggle for showing inactive users */}
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="showInactive"
-              checked={showInactiveUsers}
-              onChange={(e) => setShowInactiveUsers(e.target.checked)}
-              className="h-4 w-4 text-red-600 focus:ring-red-500 border-stone-300 rounded"
-            />
-            <label htmlFor="showInactive" className="text-sm text-stone-700">
-              Show deactivated users
-            </label>
-          </div>
-          
-          {showInactiveUsers && (
-            <div className="text-sm text-stone-500">
-              Showing {filteredUsers.filter(u => !u.isActive).length} deactivated users
-            </div>
-          )}
-        </div>
-
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        {/* <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center gap-2">
             <Info className="w-5 h-5 text-blue-600" />
             <p className="text-sm text-blue-800">
-              Showing{" "}
-              <span className="font-semibold">{filteredUsers.length}</span>{" "}
-              {getTabDisplayName(activeTab).toLowerCase()}
-              {activeTab === "guests" &&
-                " - Users with limited access permissions"}
-              {activeTab === "pending-approval" &&
-                " - Guest users awaiting approval"}
+              {t('userManagement.showingCount', {
+                count: filteredUsers.length,
+                tab: getTabDisplayName(activeTab).toLowerCase()
+              })}
+              {activeTab === "guests" && ` - ${t('userManagement.guestsDescription')}`}
+              {activeTab === "bod" && ` - ${t('userManagement.bodDescription')}`}
+              {activeTab === "pending-approval" && ` - ${t('userManagement.pendingApprovalDescription')}`}
+              {activeTab === "deactivated" && ` - ${t('userManagement.deactivatedDescription')}`}
             </p>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Users Table */}
@@ -1489,26 +1451,26 @@ const fetchUsers = async () => {
             <thead className="bg-stone-100">
               <tr>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-neutral-800 uppercase tracking-wider">
-                  User
+                  {t('userManagement.table.user')}
                 </th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-neutral-800 uppercase tracking-wider">
-                  Role
+                  {t('userManagement.table.role')}
                 </th>
                 {(activeTab === "guests" ||
                   activeTab === "pending-approval" ||
                   activeTab === "all") && (
                   <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-neutral-800 uppercase tracking-wider">
-                    Approval Status
+                    {t('userManagement.table.approvalStatus')}
                   </th>
                 )}
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-neutral-800 uppercase tracking-wider">
-                  Assignment
+                  {t('userManagement.table.assignment')}
                 </th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-neutral-800 uppercase tracking-wider">
-                  Status
+                  {t('userManagement.table.status')}
                 </th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-neutral-800 uppercase tracking-wider">
-                  Actions
+                  {t('userManagement.table.actions')}
                 </th>
               </tr>
             </thead>
@@ -1526,9 +1488,9 @@ const fetchUsers = async () => {
                     className="px-4 sm:px-6 py-8 text-center text-stone-500"
                   >
                     <div className="flex items-center justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E40AF]"></div>
                       <span className="ml-3 text-gray-600">
-                        Loading users...
+                        {t('userManagement.loadingUsers')}
                       </span>
                     </div>
                   </td>
@@ -1547,9 +1509,9 @@ const fetchUsers = async () => {
                   >
                     <div className="flex flex-col items-center justify-center">
                       <Users className="w-12 h-12 text-stone-300 mb-2" />
-                      <p className="text-lg font-medium">No users found</p>
+                      <p className="text-lg font-medium">{t('userManagement.noUsersFound')}</p>
                       <p className="text-sm">
-                        Try changing your filter or add a new user
+                        {t('userManagement.tryChangingFilter')}
                       </p>
                     </div>
                   </td>
@@ -1575,7 +1537,7 @@ const fetchUsers = async () => {
                             {user.fullName}
                             {!user.isActive && (
                               <span className="ml-2 text-xs text-stone-500">
-                                (Deactivated)
+                                ({t('userManagement.deactivated')})
                               </span>
                             )}
                           </p>
@@ -1594,6 +1556,8 @@ const fetchUsers = async () => {
                               ? "bg-blue-100 text-blue-800"
                               : user.roleName === "ROLE_ACCOUNTANT"
                               ? "bg-green-100 text-green-800"
+                              : user.roleName === "ROLE_BOD"
+                              ? "bg-indigo-100 text-indigo-800" // Add color for BOD
                               : user.roleName === "ROLE_GUEST"
                               ? "bg-gray-100 text-gray-800"
                               : user.roleName === "ROLE_TENANT"
@@ -1624,18 +1588,18 @@ const fetchUsers = async () => {
                         {buildingName && user.roleName === "ROLE_MANAGER" && (
                           <div className="flex items-center space-x-1 text-stone-700">
                             <Building className="w-4 h-4" />
-                            <span>{buildingName} (Manager)</span>
+                            <span>{buildingName} ({t('userManagement.manager')})</span>
                           </div>
                         )}
                         {buildingName &&
                           user.roleName === "ROLE_ACCOUNTANT" && (
                             <div className="flex items-center space-x-1 text-stone-700">
                               <Briefcase className="w-4 h-4" />
-                              <span>{buildingName} (Accountant)</span>
+                              <span>{buildingName} ({t('userManagement.accountant')})</span>
                             </div>
                           )}
                         {!buildingName && (
-                          <span className="text-stone-400">Not assigned</span>
+                          <span className="text-stone-400">{t('userManagement.notAssigned')}</span>
                         )}
                       </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
@@ -1646,7 +1610,7 @@ const fetchUsers = async () => {
                               : "bg-red-100 text-red-700"
                           }`}
                         >
-                          {user.isActive ? "Active" : "Inactive"}
+                          {user.isActive ? t('userManagement.active') : t('userManagement.inactive')}
                         </span>
                       </td>
                       <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1663,8 +1627,8 @@ const fetchUsers = async () => {
                                 }`}
                                 title={
                                   user.approvalStatus === "APPROVED"
-                                    ? "User is approved - Click to re-approve"
-                                    : "Approve User"
+                                    ? t('userManagement.tooltips.reApprove')
+                                    : t('userManagement.tooltips.approve')
                                 }
                               >
                                 <ThumbsUp className="w-4 h-4" />
@@ -1678,8 +1642,8 @@ const fetchUsers = async () => {
                                 }`}
                                 title={
                                   user.approvalStatus === "REJECTED"
-                                    ? "User is rejected - Click to reject again"
-                                    : "Reject User"
+                                    ? t('userManagement.tooltips.reReject')
+                                    : t('userManagement.tooltips.reject')
                                 }
                               >
                                 <ThumbsDown className="w-4 h-4" />
@@ -1695,8 +1659,8 @@ const fetchUsers = async () => {
                                 title={
                                   user.approvalStatus === "PENDING" ||
                                   !user.approvalStatus
-                                    ? "User is pending - Click to set pending again"
-                                    : "Set User to Pending"
+                                    ? t('userManagement.tooltips.rePending')
+                                    : t('userManagement.tooltips.setPending')
                                 }
                               >
                                 <Clock className="w-4 h-4" />
@@ -1709,7 +1673,7 @@ const fetchUsers = async () => {
                             <button
                               onClick={() => handleRestoreUserClick(user)}
                               className="text-green-600 hover:text-green-800 transition-colors"
-                              title="Restore User"
+                              title={t('userManagement.tooltips.restore')}
                             >
                               <CheckCircle className="w-4 h-4" />
                             </button>
@@ -1723,8 +1687,8 @@ const fetchUsers = async () => {
                                   onClick={() =>
                                     handleRemoveAssignmentClick(user)
                                   }
-                                  className="text-red-700 hover:text-red-900 transition-colors"
-                                  title="Remove from Building"
+                                  className="text-[#1E40AF] hover:text-[#1E3A8A] transition-colors"
+                                  title={t('userManagement.tooltips.removeFromBuilding')}
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
@@ -1733,8 +1697,8 @@ const fetchUsers = async () => {
                                   onClick={() =>
                                     openAssignModal(user, "manager")
                                   }
-                                  className="text-red-700 hover:text-red-900 transition-colors"
-                                  title="Assign to Building"
+                                  className="text-[#1E40AF] hover:text-[#1E3A8A] transition-colors"
+                                  title={t('userManagement.tooltips.assignToBuilding')}
                                 >
                                   <Building className="w-4 h-4" />
                                 </button>
@@ -1750,8 +1714,8 @@ const fetchUsers = async () => {
                                   onClick={() =>
                                     handleRemoveAssignmentClick(user)
                                   }
-                                  className="text-red-700 hover:text-red-900 transition-colors"
-                                  title="Remove from Building"
+                                  className="text-[#1E40AF] hover:text-[#1E3A8A] transition-colors"
+                                  title={t('userManagement.tooltips.removeFromBuilding')}
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
@@ -1760,8 +1724,8 @@ const fetchUsers = async () => {
                                   onClick={() =>
                                     openAssignModal(user, "accountant")
                                   }
-                                  className="text-red-700 hover:text-red-900 transition-colors"
-                                  title="Assign to Building"
+                                  className="text-[#1E40AF] hover:text-[#1E3A8A] transition-colors"
+                                  title={t('userManagement.tooltips.assignToBuilding')}
                                 >
                                   <Briefcase className="w-4 h-4" />
                                 </button>
@@ -1774,7 +1738,7 @@ const fetchUsers = async () => {
                             <button
                               onClick={() => handleEditClick(user)}
                               className="text-stone-600 hover:text-stone-800 transition-colors"
-                              title="Edit User"
+                              title={t('userManagement.tooltips.edit')}
                             >
                               <Edit className="w-4 h-4" />
                             </button>
@@ -1783,9 +1747,9 @@ const fetchUsers = async () => {
                           {/* Delete/Deactivate button (only for active users) */}
                           {user.isActive && (
                             <button
-                              onClick={() => handleDeleteUserClick(user.id)}
-                              className="text-red-700 hover:text-red-900 transition-colors"
-                              title="Deactivate User"
+                              onClick={() => handleDeleteUserClick(user)}
+                              className="text-[#1E40AF] hover:text-[#1E3A8A] transition-colors"
+                              title={t('userManagement.tooltips.deactivate')}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1804,16 +1768,16 @@ const fetchUsers = async () => {
         <div className="md:hidden">
           {loadingUsers ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-              <span className="ml-3 text-gray-600">Loading users...</span>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E40AF]"></div>
+              <span className="ml-3 text-gray-600">{t('userManagement.loadingUsers')}</span>
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="p-8 text-center text-stone-500">
               <div className="flex flex-col items-center justify-center">
                 <Users className="w-12 h-12 text-stone-300 mb-2" />
-                <p className="text-lg font-medium">No users found</p>
+                <p className="text-lg font-medium">{t('userManagement.noUsersFound')}</p>
                 <p className="text-sm">
-                  Try changing your filter or add a new user
+                  {t('userManagement.tryChangingFilter')}
                 </p>
               </div>
             </div>
@@ -1840,7 +1804,7 @@ const fetchUsers = async () => {
                             {user.fullName}
                             {!user.isActive && (
                               <span className="ml-2 text-xs text-stone-500">
-                                (Deactivated)
+                                ({t('userManagement.deactivated')})
                               </span>
                             )}
                           </p>
@@ -1859,7 +1823,7 @@ const fetchUsers = async () => {
 
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-stone-500">Role:</span>
+                          <span className="text-stone-500">{t('userManagement.table.role')}:</span>
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                               user.roleName === "ROLE_ADMIN"
@@ -1868,6 +1832,8 @@ const fetchUsers = async () => {
                                 ? "bg-blue-100 text-blue-800"
                                 : user.roleName === "ROLE_ACCOUNTANT"
                                 ? "bg-green-100 text-green-800"
+                                : user.roleName === "ROLE_BOD"
+                                ? "bg-indigo-100 text-indigo-800"
                                 : user.roleName === "ROLE_GUEST"
                                 ? "bg-gray-100 text-gray-800"
                                 : user.roleName === "ROLE_TENANT"
@@ -1881,7 +1847,7 @@ const fetchUsers = async () => {
 
                         {user.roleName === "ROLE_GUEST" && (
                           <div className="flex justify-between">
-                            <span className="text-stone-500">Approval:</span>
+                            <span className="text-stone-500">{t('userManagement.table.approvalStatus')}:</span>
                             <span
                               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${approvalStatus.color}`}
                             >
@@ -1892,7 +1858,7 @@ const fetchUsers = async () => {
                         )}
 
                         <div className="flex justify-between">
-                          <span className="text-stone-500">Status:</span>
+                          <span className="text-stone-500">{t('userManagement.table.status')}:</span>
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                               user.isActive
@@ -1900,13 +1866,13 @@ const fetchUsers = async () => {
                                 : "bg-red-100 text-red-700"
                             }`}
                           >
-                            {user.isActive ? "Active" : "Inactive"}
+                            {user.isActive ? t('userManagement.active') : t('userManagement.inactive')}
                           </span>
                         </div>
 
                         {buildingName && (
                           <div className="flex justify-between">
-                            <span className="text-stone-500">Assignment:</span>
+                            <span className="text-stone-500">{t('userManagement.table.assignment')}:</span>
                             <div className="text-right text-stone-700">
                               {buildingName && (
                                 <div className="flex items-center space-x-1 justify-end">
@@ -1943,7 +1909,7 @@ const fetchUsers = async () => {
                               }`}
                             >
                               <ThumbsUp className="w-3 h-3" />
-                              <span>Approve</span>
+                              <span>{t('userManagement.approve')}</span>
                             </button>
                             <button
                               onClick={() => handleRejectUserClick(user)}
@@ -1954,7 +1920,7 @@ const fetchUsers = async () => {
                               }`}
                             >
                               <ThumbsDown className="w-3 h-3" />
-                              <span>Reject</span>
+                              <span>{t('userManagement.reject')}</span>
                             </button>
                             <button
                               onClick={() => handlePendingUserClick(user)}
@@ -1966,7 +1932,7 @@ const fetchUsers = async () => {
                               }`}
                             >
                               <Clock className="w-3 h-3" />
-                              <span>Set to Pending</span>
+                              <span>{t('userManagement.setToPending')}</span>
                             </button>
                           </>
                         )}
@@ -1978,7 +1944,7 @@ const fetchUsers = async () => {
                             className="flex items-center space-x-1 text-green-600 hover:text-green-800 text-xs"
                           >
                             <CheckCircle className="w-3 h-3" />
-                            <span>Restore</span>
+                            <span>{t('userManagement.restore')}</span>
                           </button>
                         )}
 
@@ -1989,18 +1955,18 @@ const fetchUsers = async () => {
                                 onClick={() =>
                                   handleRemoveAssignmentClick(user)
                                 }
-                                className="flex items-center space-x-1 text-red-700 hover:text-red-900 text-xs"
+                                className="flex items-center space-x-1 text-[#1E40AF] hover:text-[#1E3A8A] text-xs"
                               >
                                 <X className="w-3 h-3" />
-                                <span>Remove from Building</span>
+                                <span>{t('userManagement.removeFromBuilding')}</span>
                               </button>
                             ) : (
                               <button
                                 onClick={() => openAssignModal(user, "manager")}
-                                className="flex items-center space-x-1 text-red-700 hover:text-red-900 text-xs"
+                                className="flex items-center space-x-1 text-[#1E40AF] hover:text-[#1E3A8A] text-xs"
                               >
                                 <Building className="w-3 h-3" />
-                                <span>Assign to Building</span>
+                                <span>{t('userManagement.assignToBuilding')}</span>
                               </button>
                             )}
                           </>
@@ -2012,20 +1978,20 @@ const fetchUsers = async () => {
                                 onClick={() =>
                                   handleRemoveAssignmentClick(user)
                                 }
-                                className="flex items-center space-x-1 text-red-700 hover:text-red-900 text-xs"
+                                className="flex items-center space-x-1 text-[#1E40AF] hover:text-[#1E3A8A] text-xs"
                               >
                                 <X className="w-3 h-3" />
-                                <span>Remove from Building</span>
+                                <span>{t('userManagement.removeFromBuilding')}</span>
                               </button>
                             ) : (
                               <button
                                 onClick={() =>
                                   openAssignModal(user, "accountant")
                                 }
-                                className="flex items-center space-x-1 text-red-700 hover:text-red-900 text-xs"
+                                className="flex items-center space-x-1 text-[#1E40AF] hover:text-[#1E3A8A] text-xs"
                               >
                                 <Briefcase className="w-3 h-3" />
-                                <span>Assign to Building</span>
+                                <span>{t('userManagement.assignToBuilding')}</span>
                               </button>
                             )}
                           </>
@@ -2037,17 +2003,17 @@ const fetchUsers = async () => {
                             className="flex items-center space-x-1 text-stone-600 hover:text-stone-800 text-xs"
                           >
                             <Edit className="w-3 h-3" />
-                            <span>Edit</span>
+                            <span>{t('userManagement.edit')}</span>
                           </button>
                         )}
 
                         {user.isActive && (
                           <button
-                            onClick={() => handleDeleteUserClick(user.id)}
-                            className="flex items-center space-x-1 text-red-700 hover:text-red-900 text-xs"
+                            onClick={() => handleDeleteUserClick(user)}
+                            className="flex items-center space-x-1 text-[#1E40AF] hover:text-[#1E3A8A] text-xs"
                           >
                             <Trash2 className="w-3 h-3" />
-                            <span>Deactivate</span>
+                            <span>{t('userManagement.deactivate')}</span>
                           </button>
                         )}
                       </div>
@@ -2063,227 +2029,247 @@ const fetchUsers = async () => {
       {/* Add User Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-neutral-800 bg-opacity-70 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
-            <h3 className="text-lg font-semibold mb-4 text-neutral-800">
-              Add New User
-            </h3>
-            <p className="text-sm text-stone-600 mb-4">
-              A default password will be auto-generated. User will need to reset
-              it on first login.
-            </p>
-            <form onSubmit={handleAddUser}>
-              <div className="space-y-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+            {/* Sticky Header */}
+            <div className="sticky top-0 bg-white border-b border-stone-200 p-4 sm:p-6 z-10">
+              <div className="flex justify-between items-center">
                 <div>
-                  <label className="block text-sm font-medium text-stone-700">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newUser.fullName}
-                    onChange={(e) =>
-                      handleFieldChange("fullName", e.target.value)
-                    }
-                    maxLength={maxLengths.fullName}
-                    className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 ${
-                      errors.fullName ? "border-red-500" : "border-stone-300"
-                    }`}
-                    placeholder="John Doe"
-                  />
-                  <CharacterCounter
-                    value={newUser.fullName}
-                    maxLength={maxLengths.fullName}
-                    field="fullName"
-                  />
-                  {errors.fullName && (
-                    <p className="mt-1 text-xs text-red-600">
-                      {errors.fullName}
-                    </p>
-                  )}
+                  <h3 className="text-lg font-semibold text-neutral-800">
+                    {t('userManagement.addNewUser')}
+                  </h3>
+                  <p className="text-sm text-stone-600 mt-1">
+                    {t('userManagement.defaultPasswordMessage')}
+                  </p>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-stone-700">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={newUser.email}
-                    onChange={(e) => handleFieldChange("email", e.target.value)}
-                    maxLength={maxLengths.email}
-                    className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 ${
-                      errors.email ? "border-red-500" : "border-stone-300"
-                    }`}
-                    placeholder="john@example.com"
-                  />
-                  <CharacterCounter
-                    value={newUser.email}
-                    maxLength={maxLengths.email}
-                    field="email"
-                  />
-                  {errors.email && (
-                    <p className="mt-1 text-xs text-red-600">{errors.email}</p>
-                  )}
-                  {checkingEmail && (
-                    <p className="mt-1 text-xs text-blue-600">
-                      Checking email availability...
-                    </p>
-                  )}
-                  {emailAvailable !== null && !errors.email && (
-                    <p
-                      className={`mt-1 text-xs ${
-                        emailAvailable ? "text-green-600" : "text-red-600"
-                      }`}
-                    >
-                      {emailAvailable
-                        ? "✓ Email is available"
-                        : "✗ Email is already taken"}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-stone-700">
-                    Username *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={newUser.username}
-                    onChange={(e) =>
-                      handleFieldChange("username", e.target.value)
-                    }
-                    maxLength={maxLengths.username}
-                    className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 ${
-                      errors.username ? "border-red-500" : "border-stone-300"
-                    }`}
-                    placeholder="johndoe123"
-                  />
-                  <CharacterCounter
-                    value={newUser.username}
-                    maxLength={maxLengths.username}
-                    field="username"
-                  />
-                  {errors.username && (
-                    <p className="mt-1 text-xs text-red-600">
-                      {errors.username}
-                    </p>
-                  )}
-                  {checkingUsername && (
-                    <p className="mt-1 text-xs text-blue-600">
-                      Checking username availability...
-                    </p>
-                  )}
-                  {usernameAvailable !== null && !errors.username && (
-                    <p
-                      className={`mt-1 text-xs ${
-                        usernameAvailable ? "text-green-600" : "text-red-600"
-                      }`}
-                    >
-                      {usernameAvailable
-                        ? "✓ Username is available"
-                        : "✗ Username is already taken"}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-stone-700">
-                    Role *
-                  </label>
-                  <select
-                    value={newUser.roleName}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, roleName: e.target.value })
-                    }
-                    className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
-                  >
-                    <option value="ROLE_GUEST">Guest</option>
-                    <option value="ROLE_TENANT">Tenant</option>
-                    <option value="ROLE_ACCOUNTANT">Accountant</option>
-                    <option value="ROLE_MANAGER">Manager</option>
-                    <option value="ROLE_BOD">Board of Directors</option>
-                    <option value="ROLE_ADMIN">Administrator</option>
-                  </select>
-                </div>
-
-                {newUser.roleName === "ROLE_GUEST" && (
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">
-                      Initial Approval Status
-                    </label>
-                    <select
-                      value={newUser.approvalStatus}
-                      onChange={(e) =>
-                        setNewUser({
-                          ...newUser,
-                          approvalStatus: e.target.value as
-                            | "PENDING"
-                            | "APPROVED"
-                            | "REJECTED",
-                        })
-                      }
-                      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
-                    >
-                      <option value="PENDING">
-                        Pending (Requires Approval)
-                      </option>
-                      <option value="APPROVED">Approved (Auto Access)</option>
-                      <option value="REJECTED">Rejected (No Access)</option>
-                    </select>
-                    <p className="text-xs text-stone-500 mt-1">
-                      Guest users require approval before they can access the
-                      system
-                    </p>
-                  </div>
-                )}
-
-                {showBuildingSelection && (
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">
-                      {newUser.roleName === "ROLE_MANAGER"
-                        ? "Assign to Building (as Manager)"
-                        : "Assign to Building (as Accountant)"}
-                    </label>
-                    <select
-                      value={newUser.buildingId || ""}
-                      onChange={(e) => handleBuildingChange(e.target.value)}
-                      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
-                    >
-                      <option value="">Select a building (optional)</option>
-                      {newUser.roleName === "ROLE_MANAGER"
-                        ? availableBuildings
-                            .filter((b) => !b.managerId)
-                            .map((building) => (
-                              <option key={building.id} value={building.id}>
-                                {building.buildingName} - {building.branchName}
-                              </option>
-                            ))
-                        : availableBuildings
-                            .filter((b) => !b.accountantId)
-                            .map((building) => (
-                              <option key={building.id} value={building.id}>
-                                {building.buildingName} - {building.branchName}
-                              </option>
-                            ))}
-                    </select>
-                    <p className="text-xs text-stone-500 mt-1">
-                      {newUser.roleName === "ROLE_MANAGER"
-                        ? "Only buildings without managers are shown"
-                        : "Only buildings without accountants are shown"}
-                    </p>
-                  </div>
-                )}
+                <button
+                  onClick={() => {
+                    setShowAddModal(false);
+                    resetNewUserForm();
+                  }}
+                  className="text-stone-400 hover:text-stone-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
+            </div>
+            
+            {/* Scrollable Form Content */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              <form onSubmit={handleAddUser}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700">
+                      {t('userManagement.form.fullName')} *
+                    </label>
+                    <input
+                      type="text"
+                      value={newUser.fullName}
+                      onChange={(e) =>
+                        handleFieldChange("fullName", e.target.value)
+                      }
+                      maxLength={maxLengths.fullName}
+                      className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm text-neutral-800 ${
+                        errors.fullName ? "border-red-500" : "border-stone-300"
+                      }`}
+                      placeholder={t('userManagement.form.fullNamePlaceholder')}
+                    />
+                    <CharacterCounter
+                      value={newUser.fullName}
+                      maxLength={maxLengths.fullName}
+                      field="fullName"
+                    />
+                    {errors.fullName && (
+                      <p className="mt-1 text-xs text-red-600">
+                        {errors.fullName}
+                      </p>
+                    )}
+                  </div>
 
-              {errors.general && (
-                <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
-                  {errors.general}
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700">
+                      {t('userManagement.form.email')} *
+                    </label>
+                    <input
+                      type="text"
+                      value={newUser.email}
+                      onChange={(e) => handleFieldChange("email", e.target.value)}
+                      maxLength={maxLengths.email}
+                      className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm text-neutral-800 ${
+                        errors.email ? "border-red-500" : "border-stone-300"
+                      }`}
+                      placeholder={t('userManagement.form.emailPlaceholder')}
+                    />
+                    <CharacterCounter
+                      value={newUser.email}
+                      maxLength={maxLengths.email}
+                      field="email"
+                    />
+                    {errors.email && (
+                      <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+                    )}
+                    {checkingEmail && (
+                      <p className="mt-1 text-xs text-blue-600">
+                        {t('userManagement.checkingEmail')}
+                      </p>
+                    )}
+                    {emailAvailable !== null && !errors.email && (
+                      <p
+                        className={`mt-1 text-xs ${
+                          emailAvailable ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
+                        {emailAvailable
+                          ? t('userManagement.emailAvailable')
+                          : t('userManagement.emailTaken')}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700">
+                      {t('userManagement.form.username')} *
+                    </label>
+                    <input
+                      type="text"
+                      value={newUser.username}
+                      onChange={(e) =>
+                        handleFieldChange("username", e.target.value)
+                      }
+                      maxLength={maxLengths.username}
+                      className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm text-neutral-800 ${
+                        errors.username ? "border-red-500" : "border-stone-300"
+                      }`}
+                      placeholder={t('userManagement.form.usernamePlaceholder')}
+                    />
+                    <CharacterCounter
+                      value={newUser.username}
+                      maxLength={maxLengths.username}
+                      field="username"
+                    />
+                    {errors.username && (
+                      <p className="mt-1 text-xs text-red-600">
+                        {errors.username}
+                      </p>
+                    )}
+                    {checkingUsername && (
+                      <p className="mt-1 text-xs text-blue-600">
+                        {t('userManagement.checkingUsername')}
+                      </p>
+                    )}
+                    {usernameAvailable !== null && !errors.username && (
+                      <p
+                        className={`mt-1 text-xs ${
+                          usernameAvailable ? "text-green-600" : "text-red-600"
+                        }`}
+                      >
+                        {usernameAvailable
+                          ? t('userManagement.usernameAvailable')
+                          : t('userManagement.usernameTaken')}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700">
+                      {t('userManagement.form.role')} *
+                    </label>
+                    <select
+                      value={newUser.roleName}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, roleName: e.target.value })
+                      }
+                      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm text-neutral-800 bg-white"
+                    >
+                      <option value="ROLE_GUEST">{t('userManagement.roles.guest')}</option>
+                      <option value="ROLE_ACCOUNTANT">{t('userManagement.roles.accountant')}</option>
+                      <option value="ROLE_MANAGER">{t('userManagement.roles.manager')}</option>
+                      <option value="ROLE_BOD">{t('userManagement.roles.bod')}</option>
+                    </select>
+                  </div>
+
+                  {newUser.roleName === "ROLE_GUEST" && (
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700">
+                        {t('userManagement.form.initialApprovalStatus')}
+                      </label>
+                      <select
+                        value={newUser.approvalStatus}
+                        onChange={(e) =>
+                          setNewUser({
+                            ...newUser,
+                            approvalStatus: e.target.value as
+                              | "PENDING"
+                              | "APPROVED"
+                              | "REJECTED",
+                          })
+                        }
+                        className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm text-neutral-800 bg-white"
+                      >
+                        <option value="PENDING">
+                          {t('userManagement.form.pendingRequiresApproval')}
+                        </option>
+                        <option value="APPROVED">
+                          {t('userManagement.form.approvedAutoAccess')}
+                        </option>
+                        <option value="REJECTED">
+                          {t('userManagement.form.rejectedNoAccess')}
+                        </option>
+                      </select>
+                      <p className="text-xs text-stone-500 mt-1">
+                        {t('userManagement.form.guestApprovalNote')}
+                      </p>
+                    </div>
+                  )}
+
+                  {showBuildingSelection && (
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700">
+                        {newUser.roleName === "ROLE_MANAGER"
+                          ? t('userManagement.form.assignManagerToBuilding')
+                          : t('userManagement.form.assignAccountantToBuilding')}
+                      </label>
+                      <select
+                        value={newUser.buildingId || ""}
+                        onChange={(e) => handleBuildingChange(e.target.value)}
+                        className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm text-neutral-800 bg-white"
+                      >
+                        <option value="">{t('userManagement.form.selectBuildingOptional')}</option>
+                        {newUser.roleName === "ROLE_MANAGER"
+                          ? availableBuildings
+                              .filter((b) => !b.managerId)
+                              .map((building) => (
+                                <option key={building.id} value={building.id}>
+                                  {building.buildingName} - {building.branchName}
+                                </option>
+                              ))
+                          : availableBuildings
+                              .filter((b) => !b.accountantId)
+                              .map((building) => (
+                                <option key={building.id} value={building.id}>
+                                  {building.buildingName} - {building.branchName}
+                                </option>
+                              ))}
+                      </select>
+                      <p className="text-xs text-stone-500 mt-1">
+                        {newUser.roleName === "ROLE_MANAGER"
+                          ? t('userManagement.form.onlyBuildingsWithoutManagers')
+                          : t('userManagement.form.onlyBuildingsWithoutAccountants')}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
 
-              <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-end">
+                {errors.general && (
+                  <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+                    {errors.general}
+                  </div>
+                )}
+              </form>
+            </div>
+            
+            {/* Sticky Footer */}
+            <div className="sticky bottom-0 bg-white border-t border-stone-200 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row gap-2 justify-end">
                 <button
                   type="button"
                   onClick={() => {
@@ -2292,22 +2278,26 @@ const fetchUsers = async () => {
                   }}
                   className="px-4 py-2 text-sm font-medium text-stone-700 hover:text-neutral-800 border border-stone-300 rounded-md transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
+                  onClick={handleAddUser}
                   disabled={
                     loading ||
                     Object.keys(errors).length > 0 ||
                     checkingUsername ||
-                    checkingEmail
+                    checkingEmail ||
+                    !newUser.fullName.trim() ||
+                    !newUser.email.trim() ||
+                    !newUser.username.trim()
                   }
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-700 rounded-md hover:bg-red-800 disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#1E40AF] rounded-md hover:bg-[#1E3A8A] disabled:opacity-50 transition-colors"
                 >
-                  {loading ? "Creating..." : "Create User"}
+                  {loading ? t('userManagement.creating') : t('userManagement.createUser')}
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
@@ -2317,26 +2307,25 @@ const fetchUsers = async () => {
         <div className="fixed inset-0 bg-neutral-800 bg-opacity-70 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
             <h3 className="text-lg font-semibold mb-4 text-neutral-800">
-              Edit User: {editingUser.fullName}
+              {t('userManagement.editUser', { name: editingUser.fullName })}
             </h3>
             <p className="text-sm text-stone-600 mb-4">
-              Role: {getRoleDisplayName(editingUser.roleName)}
+              {t('userManagement.role')} {getRoleDisplayName(editingUser.roleName)}
             </p>
             <form onSubmit={handleEditUser}>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-stone-700">
-                    Full Name *
+                    {t('userManagement.form.fullName')} *
                   </label>
                   <input
                     type="text"
-                    required
                     value={editUserData.fullName}
                     onChange={(e) =>
                       handleEditFieldChange("fullName", e.target.value)
                     }
                     maxLength={maxLengths.fullName}
-                    className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 ${
+                    className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm text-neutral-800 ${
                       errors.fullName ? "border-red-500" : "border-stone-300"
                     }`}
                   />
@@ -2353,17 +2342,16 @@ const fetchUsers = async () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-stone-700">
-                    Email *
+                    {t('userManagement.form.email')} *
                   </label>
                   <input
-                    type="email"
-                    required
+                    type="text"
                     value={editUserData.email}
                     onChange={(e) =>
                       handleEditFieldChange("email", e.target.value)
                     }
                     maxLength={maxLengths.email}
-                    className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 ${
+                    className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm text-neutral-800 ${
                       errors.email ? "border-red-500" : "border-stone-300"
                     }`}
                   />
@@ -2378,17 +2366,16 @@ const fetchUsers = async () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-stone-700">
-                    Username *
+                    {t('userManagement.form.username')} *
                   </label>
                   <input
                     type="text"
-                    required
                     value={editUserData.username}
                     onChange={(e) =>
                       handleEditFieldChange("username", e.target.value)
                     }
                     maxLength={maxLengths.username}
-                    className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 ${
+                    className={`mt-1 block w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm text-neutral-800 ${
                       errors.username ? "border-red-500" : "border-stone-300"
                     }`}
                   />
@@ -2421,14 +2408,14 @@ const fetchUsers = async () => {
                   }}
                   className="px-4 py-2 text-sm font-medium text-stone-700 hover:text-neutral-800 border border-stone-300 rounded-md transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
-                  disabled={loading || Object.keys(errors).length > 0}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-700 rounded-md hover:bg-red-800 disabled:opacity-50 transition-colors"
+                  disabled={loading || Object.keys(errors).length > 0 || !editUserData.fullName.trim() || !editUserData.email.trim() || !editUserData.username.trim()}
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#1E40AF] rounded-md hover:bg-[#1E3A8A] disabled:opacity-50 transition-colors"
                 >
-                  {loading ? "Updating..." : "Update User"}
+                  {loading ? t('userManagement.updating') : t('userManagement.updateUser')}
                 </button>
               </div>
             </form>
@@ -2441,17 +2428,19 @@ const fetchUsers = async () => {
         <div className="fixed inset-0 bg-neutral-800 bg-opacity-70 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto shadow-2xl">
             <h3 className="text-lg font-semibold mb-4 text-neutral-800">
-              Assign {selectedUser?.fullName} as{" "}
-              {assignment.assignmentType === "manager"
-                ? "Building Manager"
-                : "Building Accountant"}
+              {t('userManagement.assignUser', {
+                name: selectedUser?.fullName,
+                type: assignment.assignmentType === "manager"
+                  ? t('userManagement.buildingManager')
+                  : t('userManagement.buildingAccountant')
+              })}
             </h3>
             <form onSubmit={handleAssignUser}>
               <div className="space-y-4">
                 {assignment.assignmentType === "manager" && (
                   <div>
                     <label className="block text-sm font-medium text-stone-700">
-                      Select Building
+                      {t('userManagement.form.selectBuilding')}
                     </label>
                     <select
                       required
@@ -2462,9 +2451,9 @@ const fetchUsers = async () => {
                           "manager"
                         )
                       }
-                      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
+                      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm text-neutral-800 bg-white"
                     >
-                      <option value="">Choose a building...</option>
+                      <option value="">{t('userManagement.form.chooseBuilding')}</option>
                       {availableBuildings
                         .filter((b) => !b.managerId)
                         .map((building) => (
@@ -2475,12 +2464,12 @@ const fetchUsers = async () => {
                       {availableBuildings.filter((b) => !b.managerId).length ===
                         0 && (
                         <option value="" disabled>
-                          No available buildings without managers
+                          {t('userManagement.form.noAvailableBuildingsWithoutManagers')}
                         </option>
                       )}
                     </select>
                     <p className="text-xs text-stone-500 mt-1">
-                      Only buildings without managers are shown
+                      {t('userManagement.form.onlyBuildingsWithoutManagers')}
                     </p>
                   </div>
                 )}
@@ -2488,7 +2477,7 @@ const fetchUsers = async () => {
                 {assignment.assignmentType === "accountant" && (
                   <div>
                     <label className="block text-sm font-medium text-stone-700">
-                      Select Building
+                      {t('userManagement.form.selectBuilding')}
                     </label>
                     <select
                       required
@@ -2499,9 +2488,9 @@ const fetchUsers = async () => {
                           "accountant"
                         )
                       }
-                      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-red-700 focus:border-red-700 text-sm text-neutral-800 bg-white"
+                      className="mt-1 block w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm text-neutral-800 bg-white"
                     >
-                      <option value="">Choose a building...</option>
+                      <option value="">{t('userManagement.form.chooseBuilding')}</option>
                       {availableBuildings
                         .filter((b) => !b.accountantId)
                         .map((building) => (
@@ -2512,12 +2501,12 @@ const fetchUsers = async () => {
                       {availableBuildings.filter((b) => !b.accountantId)
                         .length === 0 && (
                         <option value="" disabled>
-                          No available buildings without accountants
+                          {t('userManagement.form.noAvailableBuildingsWithoutAccountants')}
                         </option>
                       )}
                     </select>
                     <p className="text-xs text-stone-500 mt-1">
-                      Only buildings without accountants are shown
+                      {t('userManagement.form.onlyBuildingsWithoutAccountants')}
                     </p>
                   </div>
                 )}
@@ -2535,7 +2524,7 @@ const fetchUsers = async () => {
                   onClick={() => setShowAssignModal(false)}
                   className="px-4 py-2 text-sm font-medium text-stone-700 hover:text-neutral-800 border border-stone-300 rounded-md transition-colors"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -2548,9 +2537,9 @@ const fetchUsers = async () => {
                       availableBuildings.filter((b) => !b.accountantId)
                         .length === 0)
                   }
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-700 rounded-md hover:bg-red-800 disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#1E40AF] rounded-md hover:bg-[#1E3A8A] disabled:opacity-50 transition-colors"
                 >
-                  {loading ? "Assigning..." : "Assign"}
+                  {loading ? t('userManagement.assigning') : t('userManagement.assign')}
                 </button>
               </div>
             </form>

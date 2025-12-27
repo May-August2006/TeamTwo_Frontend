@@ -16,8 +16,7 @@ export const UnitCard: React.FC<UnitCardProps> = ({
   onAppointment,
 }) => {
   // Replace the broken placeholder URL with this self-contained SVG
-  const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23f0f9ff'/%3E%3Cstop offset='100%25' stop-color='%23e0f2fe'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='300' fill='url(%23grad)'/%3E%3Crect x='40' y='40' width='320' height='180' rx='8' fill='white' stroke='%231E40AF' stroke-width='1.5' opacity='0.9'/%3E%3Crect x='100' y='80' width='200' height='20' rx='4' fill='%23e2e8f0'/%3E%3Crect x='100' y='110' width='150' height='15' rx='3' fill='%23e2e8f0'/%3E%3Crect x='100' y='130' width='180' height='15' rx='3' fill='%23e2e8f0'/%3E%3Ccircle cx='60' cy='160' r='20' fill='%231E40AF' opacity='0.8'/%3E%3Ctext x='60' y='165' font-family='Arial, sans-serif' font-size='12' text-anchor='middle' fill='white' font-weight='bold'%3E%24%3C/text%3E%3Ctext x='200' y='250' font-family='Arial, sans-serif' font-size='14' text-anchor='middle' fill='%23474f7a'%3ERetail Space%3C/text%3E%3C/svg%3E";
-
+ const placeholderImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23f1f5f9'/%3E%3Cstop offset='100%25' stop-color='%23e2e8f0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='300' fill='url(%23grad)'/%3E%3Crect x='80' y='80' width='240' height='140' rx='8' fill='white' stroke='%23cbd5e1' stroke-width='1'/%3E%3Ctext x='200' y='150' font-family='Arial, sans-serif' font-size='20' text-anchor='middle' fill='%23474f7a' font-weight='bold'%3EComing Soon%3C/text%3E%3Ctext x='200' y='180' font-family='Arial, sans-serif' font-size='14' text-anchor='middle' fill='%236b7280'%3EImage Not Available%3C/text%3E%3C/svg%3E";
   const primaryImage =
     unit.imageUrls?.[0] || placeholderImage; // Use the new placeholder
   const unitNumber = unit.unitNumber || "N/A";
@@ -25,6 +24,7 @@ export const UnitCard: React.FC<UnitCardProps> = ({
   const unitTypeName = unit.roomType?.typeName || "Retail Space";
   const buildingName = unit.level?.building?.buildingName || "Shopping Mall";
   const levelName = unit.level?.levelName || "Ground Floor";
+  const branchName = unit.level?.building?.branch?.branchName || ""; // Get branch name
 
   const getBusinessSuggestion = (space: number) => {
     if (space < 20) return "kiosks, small retail, or service businesses";
@@ -61,7 +61,9 @@ export const UnitCard: React.FC<UnitCardProps> = ({
           <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
-          <span>{buildingName} • {levelName}</span>
+          <span>
+            {branchName ? `${branchName} • ` : ""}{buildingName} • {levelName}
+          </span>
         </div>
 
         <div className="mb-4">

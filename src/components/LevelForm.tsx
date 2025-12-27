@@ -30,6 +30,16 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [selectedBuilding, setSelectedBuilding] = useState<Building | null>(null);
+  const [existingLevels, setExistingLevels] = useState<Level[]>([]);
+  const [buildingStats, setBuildingStats] = useState<{
+    usedFloors: number;
+    remainingFloors: number;
+    isFull: boolean;
+  }>({
+    usedFloors: 0,
+    remainingFloors: 0,
+    isFull: false,
+  });
   
   const { showSuccess, showError, showWarning } = useNotification();
 
@@ -44,7 +54,10 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
       });
       // Find the building for the existing level
       const building = buildings.find(b => b.id === level.buildingId);
-      if (building) setSelectedBuilding(building);
+      if (building) {
+        setSelectedBuilding(building);
+        loadExistingLevels(building.id);
+      }
     }
   }, [level]);
 
@@ -52,11 +65,39 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
   useEffect(() => {
     if (formData.buildingId > 0) {
       const building = buildings.find(b => b.id === formData.buildingId);
-      setSelectedBuilding(building || null);
+      if (building) {
+        setSelectedBuilding(building);
+        loadExistingLevels(building.id);
+      }
     } else {
       setSelectedBuilding(null);
+      setExistingLevels([]);
+      setBuildingStats({
+        usedFloors: 0,
+        remainingFloors: 0,
+        isFull: false,
+      });
     }
   }, [formData.buildingId, buildings]);
+
+  useEffect(() => {
+    if (selectedBuilding && existingLevels.length >= 0) {
+      const usedFloors = existingLevels.length;
+      const remainingFloors = selectedBuilding.totalFloors - usedFloors;
+      const isFull = remainingFloors <= 0;
+      
+      setBuildingStats({
+        usedFloors,
+        remainingFloors,
+        isFull,
+      });
+      
+      // Show warning if building is full (only for new level creation)
+      if (isFull && !level) {
+        showWarning(`This building has reached its maximum capacity (${selectedBuilding.totalFloors} floors)`);
+      }
+    }
+  }, [selectedBuilding, existingLevels]);
 
   const loadBuildings = async () => {
     try {
@@ -66,11 +107,24 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
       // If we have a level, find its building after loading buildings
       if (level) {
         const building = response.data.find((b: Building) => b.id === level.buildingId);
-        if (building) setSelectedBuilding(building);
+        if (building) {
+          setSelectedBuilding(building);
+          loadExistingLevels(building.id);
+        }
       }
     } catch (error) {
       console.error('Error loading buildings:', error);
       showError('Failed to load buildings');
+    }
+  };
+
+  const loadExistingLevels = async (buildingId: number) => {
+    try {
+      const response = await levelApi.getByBuildingId(buildingId);
+      setExistingLevels(response.data);
+    } catch (error) {
+      console.error('Error loading existing levels:', error);
+      setExistingLevels([]);
     }
   };
 
@@ -82,6 +136,11 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
       newErrors.buildingId = 'Please select a building';
     }
 
+    // Check if building is full (only for new level creation)
+    if (!level && selectedBuilding && buildingStats.isFull) {
+      newErrors.buildingId = `This building has reached its maximum capacity (${selectedBuilding.totalFloors} floors)`;
+    }
+
     // Level Name validation (matches DTO)
     if (!formData.levelName.trim()) {
       newErrors.levelName = 'Floor name is required';
@@ -89,25 +148,51 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
       newErrors.levelName = 'Floor name cannot exceed 20 characters';
     }
 
-    // Level Number validation (matches DTO)
+    // Check for duplicate level name (frontend validation)
+    if (formData.levelName.trim() && selectedBuilding) {
+      const isDuplicateName = existingLevels.some(
+        l => l.levelName.toLowerCase() === formData.levelName.toLowerCase() && 
+             (!level || l.id !== level.id)
+      );
+      if (isDuplicateName) {
+        newErrors.levelName = `"${formData.levelName}" already exists in this building`;
+      }
+    }
+
+    // Level Number validation (matches DTO) - Max 2 digits (99)
     if (formData.levelNumber < 0) {
       newErrors.levelNumber = 'Floor number cannot be negative';
+    } else if (formData.levelNumber > 99) {
+      newErrors.levelNumber = 'Floor number cannot exceed 99';
     } else if (formData.levelNumber > 2147483647) { // Max int value
       newErrors.levelNumber = 'Floor number is too large';
     } else if (formData.levelNumber < -2147483648) { // Min int value
       newErrors.levelNumber = 'Floor number cannot be negative';
     }
 
-    // Check if level number exceeds building's total floors
-    if (selectedBuilding && formData.levelNumber > selectedBuilding.totalFloors) {
-      newErrors.levelNumber = `Floor number cannot exceed building's total floors (${selectedBuilding.totalFloors})`;
+    // Check for duplicate level number (frontend validation)
+    if (selectedBuilding && formData.levelNumber >= 0) {
+      const isDuplicateNumber = existingLevels.some(
+        l => l.levelNumber === formData.levelNumber && 
+             (!level || l.id !== level.id)
+      );
+      if (isDuplicateNumber) {
+        newErrors.levelNumber = `Floor number ${formData.levelNumber} already exists in this building`;
+      }
     }
 
-    // Total Units validation (matches DTO)
+    // Total Units validation (matches DTO) - Max 4 digits (9999)
     if (formData.totalUnits < 0) {
       newErrors.totalUnits = 'Total units cannot be negative';
+    } else if (formData.totalUnits > 9999) {
+      newErrors.totalUnits = 'Total units cannot exceed 9999';
     } else if (formData.totalUnits > 2147483647) { // Max int value
       newErrors.totalUnits = 'Total units is too large';
+    }
+
+    // Check if totalUnits is 0 or empty (now required)
+    if (formData.totalUnits === 0) {
+      newErrors.totalUnits = 'Total units is required';
     }
 
     setErrors(newErrors);
@@ -192,7 +277,17 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
               totalUnits: 'Total units is too large. Maximum is 2,147,483,647' 
             }));
           }
-        } else {
+        } 
+        // Handle building full error
+        else if (errorMessage.includes('Cannot create more floors') || 
+                 errorMessage.includes('maximum capacity')) {
+          setErrors(prev => ({ 
+            ...prev, 
+            buildingId: errorMessage 
+          }));
+          showError(errorMessage);
+        }
+        else {
           showError(errorMessage);
         }
       } 
@@ -234,16 +329,38 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
         const numValue = parseFloat(value);
         
         // Check if it's a valid number and within reasonable bounds
-        if (!isNaN(numValue) && numValue <= 1000000 && numValue >= -1000000) {
+        if (!isNaN(numValue)) {
           // Use parseInt to ensure integer values
           const intValue = parseInt(value, 10);
           
           // Prevent extremely large numbers
-          if (!isNaN(intValue) && Math.abs(intValue) <= 1000000) {
-            setFormData(prev => ({
-              ...prev,
-              [name]: intValue
-            }));
+          if (!isNaN(intValue)) {
+            // NEW: Limit based on field type
+            if (name === 'levelNumber') {
+              // Limit floor number to 2 digits (0-99)
+              if (value.length <= 2 && intValue <= 99) {
+                setFormData(prev => ({
+                  ...prev,
+                  [name]: intValue
+                }));
+              }
+            } else if (name === 'totalUnits') {
+              // Limit total units to 4 digits (0-9999)
+              if (value.length <= 4 && intValue <= 9999) {
+                setFormData(prev => ({
+                  ...prev,
+                  [name]: intValue
+                }));
+              }
+            } else if (name === 'buildingId') {
+              // For building ID, use existing logic
+              if (Math.abs(intValue) <= 1000000) {
+                setFormData(prev => ({
+                  ...prev,
+                  [name]: intValue
+                }));
+              }
+            }
           }
         }
       }
@@ -264,240 +381,220 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
 
   return (
     <div className="fixed inset-0 bg-stone-900 bg-opacity-70 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl p-6 sm:p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6 pb-4 border-b border-stone-200">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-stone-900">
-              {level ? 'Edit Floor' : 'Add New Floor'}
-            </h2>
-            <p className="text-sm text-stone-500 mt-1">
-              {level ? 'Update floor details' : 'Create a new floor for your building'}
-            </p>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Sticky Header */}
+        <div className="sticky top-0 bg-white z-10 border-b border-stone-200">
+          <div className="flex justify-between items-center p-6 sm:p-8">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-stone-900">
+                {level ? 'Edit Floor' : 'Add New Floor'}
+              </h2>
+              <p className="text-sm text-stone-500 mt-1">
+                {level ? 'Update floor details' : 'Create a new floor for your building'}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition duration-150"
+              disabled={loading}
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition duration-150"
-            disabled={loading}
-          >
-            <X className="h-5 w-5" />
-          </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">
-              Building *
-            </label>
-            <select
-              name="buildingId"
-              value={formData.buildingId}
-              onChange={handleChange}
-              disabled={loading}
-              className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm sm:text-base transition duration-150 bg-white shadow-sm disabled:bg-stone-100 disabled:cursor-not-allowed ${
-                errors.buildingId ? 'border-red-500' : 'border-stone-300'
-              }`}
-            >
-              <option value={0}>Select a building</option>
-              {buildings.map((building) => (
-                <option key={building.id} value={building.id}>
-                  {building.buildingName} - {building.branchName} (Max Floors: {building.totalFloors})
-                </option>
-              ))}
-            </select>
-            {errors.buildingId && (
-              <p className="mt-1 text-xs text-red-600">{errors.buildingId}</p>
-            )}
-            {selectedBuilding && (
-              <div className="flex items-center justify-between mt-1">
-                <p className="text-xs text-stone-500">
-                  Selected: {selectedBuilding.buildingName}
-                </p>
-                <p className="text-xs font-medium text-blue-600">
-                  Total Floors: {selectedBuilding.totalFloors}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="block text-sm font-medium text-stone-700">
-                Floor Name *
+        {/* Scrollable Form Content */}
+        <div className="overflow-y-auto flex-1">
+          <form onSubmit={handleSubmit} className="space-y-5 p-6 sm:p-8 pt-4">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">
+                Building *
               </label>
-              <span className="text-xs text-stone-500">
-                Auto-capitalized
-              </span>
-            </div>
-            <input
-              type="text"
-              name="levelName"
-              value={formData.levelName}
-              onChange={handleChange}
-              maxLength={20}
-              disabled={loading}
-              className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm sm:text-base transition duration-150 shadow-sm disabled:bg-stone-100 disabled:cursor-not-allowed ${
-                errors.levelName ? 'border-red-500' : 'border-stone-300'
-              }`}
-              placeholder="e.g., Ground Floor, First Floor"
-            />
-            {errors.levelName && (
-              <p className="mt-1 text-xs text-red-600">{errors.levelName}</p>
-            )}
-            <p className="text-xs text-stone-500 mt-1">
-              {formData.levelName.length}/20 characters
-            </p>
-          </div>
-
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="block text-sm font-medium text-stone-700">
-                Floor Number *
-              </label>
-              <span className="text-xs text-stone-500">
-                {selectedBuilding ? `Max: ${selectedBuilding.totalFloors}` : 'Select building first'}
-              </span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <input
-                type="number"
-                name="levelNumber"
-                value={formData.levelNumber || ''}
+              <select
+                name="buildingId"
+                value={formData.buildingId}
                 onChange={handleChange}
-                min="0"
-                disabled={loading || !selectedBuilding}
-                className={`w-32 border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm sm:text-base transition duration-150 shadow-sm disabled:bg-stone-100 disabled:cursor-not-allowed ${
-                  errors.levelNumber ? 'border-red-500' : 'border-stone-300'
+                disabled={loading}
+                className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm sm:text-base transition duration-150 bg-white shadow-sm disabled:bg-stone-100 disabled:cursor-not-allowed ${
+                  errors.buildingId ? 'border-red-500' : 'border-stone-300'
                 }`}
-                placeholder="0"
-              />
-              <div className="flex-1">
-                {errors.levelNumber && (
-                  <p className="text-xs text-red-600">{errors.levelNumber}</p>
-                )}
-                {!errors.levelNumber && (
-                  <p className="text-xs text-stone-500">
-                    Floor number (0 for Ground, 1 for First, etc.)
-                  </p>
-                )}
-                {!level && selectedBuilding && !errors.levelNumber && (
-                  <p className="text-xs text-blue-600 mt-1">
-                    Valid range: 0 to {selectedBuilding.totalFloors}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="block text-sm font-medium text-stone-700">
-                Total Units
-              </label>
-              <span className="text-xs text-stone-500">
-                Optional
-              </span>
-            </div>
-            <input
-              type="number"
-              name="totalUnits"
-              value={formData.totalUnits || ''}
-              onChange={handleChange}
-              min="0"
-              max="1000000"
-              disabled={loading}
-              className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm sm:text-base transition duration-150 shadow-sm disabled:bg-stone-100 disabled:cursor-not-allowed ${
-                errors.totalUnits ? 'border-red-500' : 'border-stone-300'
-              }`}
-              placeholder="Enter number of units (optional)"
-            />
-            {errors.totalUnits && (
-              <p className="mt-1 text-xs text-red-600">{errors.totalUnits}</p>
-            )}
-            <p className="text-xs text-stone-500 mt-1">
-              Number of rooms, shops, or units on this floor
-            </p>
-          </div>
-
-          {/* Preview Section */}
-          <div className="bg-stone-50 border border-stone-200 rounded-lg p-4 mt-6">
-            <h3 className="text-sm font-medium text-stone-700 mb-2">Preview</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-stone-600">Building:</span>
-                <span className="font-medium">
-                  {selectedBuilding ? selectedBuilding.buildingName : 'Not selected'}
-                </span>
-              </div>
+              >
+                <option value={0}>Select a building</option>
+                {buildings.map((building) => (
+                  <option key={building.id} value={building.id}>
+                    {building.buildingName} - {building.branchName} (Max: {building.totalFloors})
+                  </option>
+                ))}
+              </select>
+              {errors.buildingId && (
+                <p className="mt-1 text-xs text-red-600">{errors.buildingId}</p>
+              )}
               {selectedBuilding && (
-                <div className="flex justify-between">
-                  <span className="text-stone-600">Building's Total Floors:</span>
-                  <span className={`font-medium ${selectedBuilding.totalFloors === 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {selectedBuilding.totalFloors} {selectedBuilding.totalFloors === 0 && '(Please update building)'}
-                  </span>
+                <div className="flex items-center justify-between mt-1">
+                  <div className="flex flex-col">
+                    <p className="text-xs text-stone-500">
+                      Selected: {selectedBuilding.buildingName}
+                    </p>
+                    <p className={`text-xs font-medium ${
+                      buildingStats.isFull ? 'text-red-600' : 'text-green-600'
+                    }`}>
+                      {buildingStats.isFull ? (
+                        <span className="flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          Full ({buildingStats.usedFloors}/{selectedBuilding.totalFloors})
+                        </span>
+                      ) : (
+                        `Capacity: ${buildingStats.usedFloors}/${selectedBuilding.totalFloors} (${buildingStats.remainingFloors} remaining)`
+                      )}
+                    </p>
+                  </div>
+                  <p className="text-xs font-medium text-blue-600">
+                    Total Allowed: {selectedBuilding.totalFloors}
+                  </p>
                 </div>
               )}
-              <div className="flex justify-between">
-                <span className="text-stone-600">Floor Name:</span>
-                <span className="font-medium">{formData.levelName || 'Not set'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-stone-600">Floor Number:</span>
-                <span className={`font-medium ${
-                  selectedBuilding && formData.levelNumber > selectedBuilding.totalFloors 
-                    ? 'text-red-600' 
-                    : ''
-                }`}>
-                  {formData.levelNumber === 0 ? 'Ground' : 
-                   formData.levelNumber === 1 ? '1st' :
-                   formData.levelNumber === 2 ? '2nd' :
-                   formData.levelNumber === 3 ? '3rd' :
-                   `${formData.levelNumber}th`} Floor
-                  {selectedBuilding && formData.levelNumber > selectedBuilding.totalFloors && 
-                    ' ⚠️ Exceeds limit'}
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-stone-700">
+                  Floor Name *
+                </label>
+                <span className="text-xs text-stone-500">
+                  Auto-capitalized
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-stone-600">Total Units:</span>
-                <span className="font-medium">{formData.totalUnits || 0}</span>
+              <input
+                type="text"
+                name="levelName"
+                value={formData.levelName}
+                onChange={handleChange}
+                maxLength={20}
+                disabled={loading}
+                className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm sm:text-base transition duration-150 shadow-sm disabled:bg-stone-100 disabled:cursor-not-allowed ${
+                  errors.levelName ? 'border-red-500' : 'border-stone-300'
+                }`}
+                placeholder="e.g., Ground Floor, First Floor"
+              />
+              {errors.levelName && (
+                <p className="mt-1 text-xs text-red-600">{errors.levelName}</p>
+              )}
+              <p className="text-xs text-stone-500 mt-1">
+                {formData.levelName.length}/20 characters
+              </p>
+            </div>
+
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-stone-700">
+                  Floor Number *
+                </label>
+                <span className="text-xs text-stone-500">
+                  0-99 allowed
+                </span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="number"
+                  name="levelNumber"
+                  value={formData.levelNumber || ''}
+                  onChange={handleChange}
+                  min="0"
+                  max="99"
+                  maxLength={2}
+                  disabled={loading || (!level && buildingStats.isFull)}
+                  className={`w-32 border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm sm:text-base transition duration-150 shadow-sm disabled:bg-stone-100 disabled:cursor-not-allowed ${
+                    errors.levelNumber ? 'border-red-500' : 'border-stone-300'
+                  }`}
+                  placeholder="0"
+                />
+                <div className="flex-1">
+                  {errors.levelNumber && (
+                    <p className="text-xs text-red-600">{errors.levelNumber}</p>
+                  )}
+                  {!errors.levelNumber && (
+                    <p className="text-xs text-stone-500">
+                      Floor number (0 for Ground, 1 for First, etc.)
+                    </p>
+                  )}
+                  {!level && selectedBuilding && buildingStats.isFull && !errors.levelNumber && (
+                    <p className="text-xs text-red-600 mt-1">
+                      Cannot add more floors - building is at full capacity
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-end pt-6 border-t border-stone-200">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading}
-              className="px-6 py-3 text-stone-600 border border-stone-300 rounded-lg hover:bg-stone-100 transition duration-150 font-medium text-sm sm:text-base shadow-sm w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-3 bg-red-600 text-white rounded-lg shadow-lg hover:bg-red-700 transition duration-150 font-semibold text-sm sm:text-base focus:outline-none focus:ring-4 focus:ring-red-300 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Saving...
-                </>
-              ) : level ? 'Update Floor' : 'Create Floor'}
-            </button>
-          </div>
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium text-stone-700">
+                  Total Units *
+                </label>
+                <span className="text-xs text-red-500 font-medium">
+                  Required
+                </span>
+              </div>
+              <input
+                type="number"
+                name="totalUnits"
+                value={formData.totalUnits || ''}
+                onChange={handleChange}
+                min="0"
+                max="9999"
+                maxLength={4}
+                disabled={loading}
+                className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm sm:text-base transition duration-150 shadow-sm disabled:bg-stone-100 disabled:cursor-not-allowed ${
+                  errors.totalUnits ? 'border-red-500' : 'border-stone-300'
+                }`}
+                placeholder="Enter number of units (required)"
+              />
+              {errors.totalUnits && (
+                <p className="mt-1 text-xs text-red-600">{errors.totalUnits}</p>
+              )}
+              <p className="text-xs text-stone-500 mt-1">
+                Number of rooms, shops, or units on this floor
+              </p>
+            </div>
 
-          <div className="text-xs text-stone-500 pt-4 border-t border-stone-100">
-            <p className="flex items-center gap-1">
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              <span>Floor names are automatically capitalized for consistency. Floor numbers cannot exceed the building's total floors limit.</span>
-            </p>
-          </div>
-        </form>
+            <div className="flex flex-col sm:flex-row gap-3 justify-end pt-6 border-t border-stone-200">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={loading}
+                className="px-6 py-3 text-stone-600 border border-stone-300 rounded-lg hover:bg-stone-100 transition duration-150 font-medium text-sm sm:text-base shadow-sm w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading || (!level && buildingStats.isFull)}
+                className="px-6 py-3 bg-[#1E40AF] text-white rounded-lg shadow-lg hover:bg-blue-800 transition duration-150 font-semibold text-sm sm:text-base focus:outline-none focus:ring-4 focus:ring-blue-300 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Saving...
+                  </>
+                ) : level ? 'Update Floor' : 'Create Floor'}
+              </button>
+            </div>
+
+            <div className="text-xs text-stone-500 pt-4 border-t border-stone-100">
+              <p className="flex items-center gap-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <span>Floor names are automatically capitalized for consistency. Each floor number must be unique within a building. Buildings have a maximum floor capacity.</span>
+              </p>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
