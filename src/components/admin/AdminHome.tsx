@@ -233,7 +233,7 @@ const AdminHome: React.FC<AdminHomeProps> = ({ onNavigate }) => {
       color: "bg-stone-100 text-stone-900 hover:bg-stone-200 border-stone-200",
     },
     {
-      label: t('admin.manageLevels') || "Manage Levels",
+      label: t('admin.manageLevels') || "Manage Floors",
       icon: <Layers className="w-5 h-5" />,
       onClick: () => onNavigate("/admin/levels"),
       color: "bg-stone-100 text-stone-900 hover:bg-stone-200 border-stone-200",
