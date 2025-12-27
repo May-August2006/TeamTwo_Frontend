@@ -10,6 +10,7 @@ import { OutstandingBalancesReport } from '../../components/reports/OutstandingB
 import { UtilityConsumptionReport } from '../../components/reports/UtilityConsumptionReport';
 import { MonthlyCollectionReport } from '../../components/reports/MonthlyCollectionReport';
 import { ExpenseVsRevenueReport } from '../../components/reports/ExpenseVsRevenueReport';
+import { useTranslation } from 'react-i18next';
 
 type ReportType = 
   | 'TENANT_CONTRACT_SUMMARY' 
