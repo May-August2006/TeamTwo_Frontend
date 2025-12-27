@@ -1,5 +1,5 @@
 // components/reports/OutstandingBalancesReport.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { reportApi } from '../../api/reportApi';
 import { Button } from '../common/ui/Button';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
@@ -22,16 +22,35 @@ export const OutstandingBalancesReport: React.FC<OutstandingBalancesReportProps>
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSticky, setIsSticky] = useState(false);
+  
+  // Create a ref for the header
+  const headerRef = useRef<HTMLDivElement>(null);
   
   // Filter states
   const [filters, setFilters] = useState<OutstandingBalanceFilterDTO>({
     overdueCategory: 'all'
   });
-  const [searchTerm, setSearchTerm] = useState('');
 
   // Load data when component mounts or filters change
   useEffect(() => {
     loadReportData();
+  }, [filters]);
+
+  // Add scroll listener for sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (headerRef.current) {
+        const headerHeight = headerRef.current.offsetHeight;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Add a small threshold to prevent flickering
+        setIsSticky(scrollTop > headerHeight + 10);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const loadReportData = async () => {
@@ -39,9 +58,9 @@ export const OutstandingBalancesReport: React.FC<OutstandingBalancesReportProps>
       setLoading(true);
       setError(null);
       
-      // For now, we'll just show that we can export
-      // In a real implementation, you might want to fetch data for display
-      setReportData([]);
+      // Actually fetch data from API
+      const data = await reportApi.getOutstandingBalancesData(filters);
+      setReportData(data);
       
     } catch (err) {
       console.error('Error loading report data:', err);
@@ -62,60 +81,59 @@ export const OutstandingBalancesReport: React.FC<OutstandingBalancesReportProps>
       overdueCategory: 'all',
       tenantName: undefined
     });
-    setSearchTerm('');
   };
 
- const exportReport = async (format: 'pdf' | 'excel') => {
-  try {
-    setExporting(true);
-    
-    const exportParams = {
-      ...filters,
-      format: format === 'excel' ? 'excel' : 'pdf'
-    };
+  const exportReport = async (format: 'pdf' | 'excel') => {
+    try {
+      setExporting(true);
+      
+      const exportParams = {
+        ...filters,
+        format: format === 'excel' ? 'excel' : 'pdf'
+      };
 
-    const blob = await reportApi.exportOutstandingBalancesReport(exportParams);
-    
-    // Create download link
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    
-    // Generate filename with correct extension
-    const today = new Date().toISOString().split('T')[0];
-    let filename = `outstanding-balances-${today}`;
-    
-    if (filters.startDate && filters.endDate) {
-      const start = filters.startDate.replace(/-/g, '');
-      const end = filters.endDate.replace(/-/g, '');
-      filename += `-${start}-${end}`;
+      const blob = await reportApi.exportOutstandingBalancesReport(exportParams);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Generate filename with correct extension
+      const today = new Date().toISOString().split('T')[0];
+      let filename = `outstanding-balances-${today}`;
+      
+      if (filters.startDate && filters.endDate) {
+        const start = filters.startDate.replace(/-/g, '');
+        const end = filters.endDate.replace(/-/g, '');
+        filename += `-${start}-${end}`;
+      }
+      
+      if (filters.overdueCategory && filters.overdueCategory !== 'all') {
+        // Clean up category for filename
+        const categoryClean = filters.overdueCategory.replace('+', 'plus');
+        filename += `-${categoryClean}`;
+      }
+      
+      // IMPORTANT: Use correct extension
+      const extension = format === 'excel' ? 'xlsx' : 'pdf';
+      filename += `.${extension}`;
+      
+      // Set proper content type for download
+      link.download = filename;
+      link.setAttribute('type', format === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf');
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(`Error exporting ${format.toUpperCase()}:`, err);
+      setError(`Failed to export ${format.toUpperCase()} report`);
+    } finally {
+      setExporting(false);
     }
-    
-    if (filters.overdueCategory && filters.overdueCategory !== 'all') {
-      // Clean up category for filename
-      const categoryClean = filters.overdueCategory.replace('+', 'plus');
-      filename += `-${categoryClean}`;
-    }
-    
-    // IMPORTANT: Use correct extension
-    const extension = format === 'excel' ? 'xlsx' : 'pdf';
-    filename += `.${extension}`;
-    
-    // Set proper content type for download
-    link.download = filename;
-    link.setAttribute('type', format === 'excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf');
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    console.error(`Error exporting ${format.toUpperCase()}:`, err);
-    setError(`Failed to export ${format.toUpperCase()} report`);
-  } finally {
-    setExporting(false);
-  }
-};
+  };
 
   const exportToPDF = () => exportReport('pdf');
   const exportToExcel = () => exportReport('excel');
@@ -146,8 +164,9 @@ export const OutstandingBalancesReport: React.FC<OutstandingBalancesReportProps>
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
+      currency: 'MMK',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
   };
 
@@ -199,6 +218,12 @@ export const OutstandingBalancesReport: React.FC<OutstandingBalancesReportProps>
           Paid
         </span>
       );
+    } else if (status === 'PARTIAL') {
+      return (
+        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+          Partial
+        </span>
+      );
     } else if (daysOverdue > 60) {
       return (
         <span className="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
@@ -217,10 +242,16 @@ export const OutstandingBalancesReport: React.FC<OutstandingBalancesReportProps>
           Overdue
         </span>
       );
+    } else if (status === 'UNPAID') {
+      return (
+        <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
+          Unpaid
+        </span>
+      );
     } else {
       return (
         <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-          Unpaid
+          {status}
         </span>
       );
     }
@@ -242,9 +273,16 @@ export const OutstandingBalancesReport: React.FC<OutstandingBalancesReportProps>
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-lg border border-stone-200">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      {/* Sticky Header - This will stick to top when scrolling */}
+      <div 
+        ref={headerRef}
+        className={`bg-white p-6 rounded-lg border border-stone-200 transition-all duration-300 ${
+          isSticky 
+            ? 'fixed top-0 left-0 right-0 z-50 shadow-lg rounded-none border-t-0 border-x-0' 
+            : ''
+        }`}
+      >
+        <div className={`flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 ${isSticky ? 'container mx-auto' : ''}`}>
           <div>
             <div className="flex items-center gap-4">
               <Button
@@ -288,20 +326,23 @@ export const OutstandingBalancesReport: React.FC<OutstandingBalancesReportProps>
               Export PDF
             </Button>
             <Button
-  variant="success"
-  onClick={exportToExcel}
-  loading={exporting}
-  disabled={exporting}
-  className="flex items-center gap-2"
->
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-  </svg>
-  Export Excel (XLSX)
-</Button>
+              variant="success"
+              onClick={exportToExcel}
+              loading={exporting}
+              disabled={exporting}
+              className="flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Export Excel (XLSX)
+            </Button>
           </div>
         </div>
       </div>
+
+      {/* Add padding when header is sticky to prevent content from jumping under it */}
+      {isSticky && <div className="h-24"></div>}
 
       {/* Error Display */}
       {error && (
@@ -315,13 +356,36 @@ export const OutstandingBalancesReport: React.FC<OutstandingBalancesReportProps>
         </div>
       )}
 
-      
+      {/* Summary Statistics */}
+      {reportData.length > 0 && (
+        <div className="bg-white p-6 rounded-lg border border-stone-200">
+          <h3 className="text-lg font-semibold text-stone-900 mb-4">Summary</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-red-50 p-4 rounded-lg">
+              <div className="text-sm text-red-700 font-medium">Total Outstanding</div>
+              <div className="text-2xl font-bold text-red-900 mt-1">{formatCurrency(summary.totalOutstanding)}</div>
+            </div>
+            <div className="bg-orange-50 p-4 rounded-lg">
+              <div className="text-sm text-orange-700 font-medium">Total Invoices</div>
+              <div className="text-2xl font-bold text-orange-900 mt-1">{summary.totalInvoices}</div>
+            </div>
+            <div className="bg-yellow-50 p-4 rounded-lg">
+              <div className="text-sm text-yellow-700 font-medium">Avg. Overdue Days</div>
+              <div className="text-2xl font-bold text-yellow-900 mt-1">{summary.avgOverdueDays} days</div>
+            </div>
+            <div className="bg-purple-50 p-4 rounded-lg">
+              <div className="text-sm text-purple-700 font-medium">Oldest Overdue</div>
+              <div className="text-2xl font-bold text-purple-900 mt-1">{summary.oldestOverdue} days</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg border border-stone-200">
         <h3 className="text-lg font-semibold text-stone-900 mb-4">Filter Outstanding Balances</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Date Range - Start Date */}
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">
@@ -365,8 +429,6 @@ export const OutstandingBalancesReport: React.FC<OutstandingBalancesReportProps>
               ))}
             </select>
           </div>
-
-          
         </div>
 
         {/* Quick Filters */}
@@ -448,11 +510,6 @@ export const OutstandingBalancesReport: React.FC<OutstandingBalancesReportProps>
                   Overdue: {filters.overdueCategory} days
                 </span>
               )}
-              {filters.tenantName && (
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Tenant: {filters.tenantName}
-                </span>
-              )}
             </div>
           </div>
         )}
@@ -475,35 +532,91 @@ export const OutstandingBalancesReport: React.FC<OutstandingBalancesReportProps>
         </div>
       </div>
 
-      {/* Preview Note */}
-      <div className="bg-white p-6 rounded-lg border border-stone-200 text-center">
-        <svg className="mx-auto h-12 w-12 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <h3 className="mt-2 text-sm font-medium text-stone-900">Data Preview Not Available</h3>
-        <p className="mt-1 text-sm text-stone-500">
-          The detailed data table is not loaded in this preview to optimize performance.
-          Apply your filters and export the report to see all outstanding balances.
-        </p>
-        <div className="mt-4 flex justify-center gap-3">
-          <Button
-            variant="primary"
-            onClick={exportToPDF}
-            loading={exporting}
-            disabled={exporting}
-          >
-            Export PDF Report
-          </Button>
-          <Button
-            variant="success"
-            onClick={exportToExcel}
-            loading={exporting}
-            disabled={exporting}
-          >
-            Export Excel Report
-          </Button>
+      {/* Data Table */}
+      {reportData.length > 0 ? (
+        <div className="bg-white rounded-lg border border-stone-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-stone-200">
+              <thead className="bg-stone-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
+                    Invoice
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
+                    Tenant
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
+                    Days Overdue
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-stone-200">
+                {reportData.map((item, index) => (
+                  <tr key={index} className="hover:bg-stone-50">
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-stone-900">
+                        {item.invoiceNumber}
+                      </div>
+                      <div className="text-sm text-stone-500">
+                        Due: {formatDate(item.dueDate)}
+                      </div>
+                      <div className="text-xs text-stone-400">
+                        Issued: {formatDate(item.issueDate)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-stone-900">
+                        {item.tenantName}
+                      </div>
+                      <div className="text-sm text-stone-500">
+                        {item.roomNumber} • {item.buildingName}
+                      </div>
+                      <div className="text-xs text-stone-400">
+                        {item.businessType}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-semibold text-red-600">
+                        {formatCurrency(item.balanceAmount)} outstanding
+                      </div>
+                      <div className="text-sm text-stone-500">
+                        Total: {formatCurrency(item.totalAmount)}
+                      </div>
+                      <div className="text-xs text-stone-400">
+                        Paid: {formatCurrency(item.paidAmount)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {getDaysOverdueBadge(item.daysOverdue)}
+                    </td>
+                    <td className="px-6 py-4">
+                      {getStatusBadge(item.invoiceStatus, item.daysOverdue)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      ) : !loading && (
+        <div className="bg-white p-6 rounded-lg border border-stone-200 text-center">
+          <svg className="mx-auto h-12 w-12 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <h3 className="mt-2 text-sm font-medium text-stone-900">No outstanding balances found</h3>
+          <p className="mt-1 text-sm text-stone-500">
+            {hasActiveFilters 
+              ? "No invoices match your current filters. Try adjusting your search criteria."
+              : "No outstanding invoices found. All invoices are paid up to date."}
+          </p>
+        </div>
+      )}
 
       {/* What's Included Section */}
       <div className="bg-white p-6 rounded-lg border border-stone-200">

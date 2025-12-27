@@ -13,6 +13,7 @@ import AccountantDashboard from "./pages/dashboard/AccountantDashboard";
 import BODDashboard from "./pages/dashboard/BODDashboard";
 import TenantDashboard from "./pages/dashboard/TenantDashboard";
 import HomePage from "./pages/HomePage";
+import MeterReadingPage from "./components/accountant/MeterReadingPage";
 
 const AppRoutes: React.FC = () => {
   const { isAuthenticated, roles } = useAuth();
@@ -83,6 +84,8 @@ const AppRoutes: React.FC = () => {
       {/* Auth routes */}
       <Route path="/logout" element={<Logout />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/meter-readings" element={<MeterReadingPage />} />
+
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

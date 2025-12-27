@@ -9,7 +9,7 @@ import { RentalRevenueByBusinessTypeReport } from '../../components/reports/Rent
 import { OutstandingBalancesReport } from '../../components/reports/OutstandingBalancesReport';
 import { UtilityConsumptionReport } from '../../components/reports/UtilityConsumptionReport';
 import { MonthlyCollectionReport } from '../../components/reports/MonthlyCollectionReport';
-import { useTranslation } from 'react-i18next';
+import { ExpenseVsRevenueReport } from '../../components/reports/ExpenseVsRevenueReport';
 
 type ReportType = 
   | 'TENANT_CONTRACT_SUMMARY' 
@@ -110,26 +110,9 @@ export const ReportsPage: React.FC = () => {
   return <OutstandingBalancesReport onBack={handleBackToReports} />;
       case 'MONTHLY_BILLING_SUMMARY':
         return <MonthlyCollectionReport onBack={handleBackToReports} />;
-      case 'EXPENSE_VS_REVENUE':
+    case 'EXPENSE_VS_REVENUE':
+      return <ExpenseVsRevenueReport onBack={handleBackToReports} />;
         
-        return (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">💰</div>
-            <h2 className="text-2xl font-bold text-stone-900 mb-2">
-              {t('reports.monthlyBillingSummary', "Monthly Billing Summary Report")}
-            </h2>
-            <p className="text-stone-600 mb-4">
-              {t('reports.monthlyBillingSummaryDesc', "This report will show monthly billing information")}
-            </p>
-            <button 
-              onClick={handleBackToReports}
-              className="text-white px-4 py-2 rounded-lg transition duration-150"
-              style={{ backgroundColor: '#1E40AF' }}
-            >
-              {t('common.backToReports', "Back to Reports")}
-            </button>
-          </div>
-        );
       default:
         return null;
     }

@@ -1,7 +1,7 @@
 /** @format */
 
 import API from "./api"; // Use your centralized API instance
-import type { Payment, PaymentRequest, PaymentAuditLog } from "../types";
+import type { Payment, PaymentRequest, PaymentAuditLog, PaginatedResponse } from "../types";
 
 export const paymentApi = {
   // MMS-14: Record a Tenant Payment
@@ -109,5 +109,62 @@ export const paymentApi = {
 async getMyPayments(): Promise<Payment[]> {
     const response = await API.get<Payment[]>("/api/payments/tenant/me");
     return response.data;
-}
+},
+
+getPaymentsPaginated: async (
+    page: number = 0, 
+    size: number = 10,
+    sortBy: string = 'createdAt',
+    sortDirection: string = 'DESC'
+  ) => {
+    const response = await API.get('/api/payments/paginated', {
+      params: { page, size, sortBy, sortDirection }
+    });
+    return response.data;
+  },
+
+  getFilteredPayments: async (
+    filters: {
+      tenantName?: string;
+      paymentStatus?: string;
+      paymentMethod?: string;
+      startDate?: string;
+      endDate?: string;
+    },
+    page: number = 0,
+    size: number = 10,
+    sortBy: string = 'createdAt',
+    sortDirection: string = 'DESC'
+  ) => {
+    const response = await API.get('/api/payments/filtered', {
+      params: {
+        ...filters,
+        page,
+        size,
+        sortBy,
+        sortDirection
+      }
+    });
+    return response.data;
+  },
+
+  getAuditLogsPaginated: async (
+    page: number,
+    size: number,
+    filters: any,
+    sortBy: string = "createdAt",
+    sortDirection: string = "DESC"
+  ): Promise<PaginatedResponse<PaymentAuditLog>> => {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+      sortBy,
+      sortDirection,
+      ...filters
+    });
+    
+    const response = await API.get(`/api/payment-audit-logs?${params}`);
+    return response.data;
+  },
+
 };

@@ -16,6 +16,7 @@ import {
   Calculator,
   Building2,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface SidebarProps {
   activeSection: string;
@@ -34,62 +35,68 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
+  const { t } = useTranslation();
   const [openSections, setOpenSections] = React.useState<Set<string>>(
     new Set()
   );
 
   const menuItems = [
     {
-      name: "Overview",
+      name: t('sidebar.sections.overview'),
       icon: <Home className="w-5 h-5" />,
       value: "overview",
     },
     {
-      name: "Payment",
+      name: t('sidebar.sections.payment'),
       icon: <CreditCard className="w-5 h-5" />,
       value: "payment",
     },
     {
-      name: "Reports",
+      name: t('sidebar.sections.reports'),
       icon: <BarChart3 className="w-5 h-5" />,
       value: "reports",
     },
     {
-      name: "Audit Log",
+      name: t('sidebar.sections.auditLog'),
       icon: <FileText className="w-5 h-5" />,
       value: "audit",
     },
     {
-      name: "Billing & Utilities",
+      name: t('sidebar.sections.billingUtilities'),
       icon: <DollarSign className="w-5 h-5" />,
       children: [
         {
-          name: "Utility Calculation",
+          name: t('sidebar.billingUtilities.utilityCalculation'),
           value: "usage-entry",
           icon: <Calculator className="w-4 h-4" />,
         },
         {
-          name: "Bulk Readings",
+          name: t('sidebar.billingUtilities.bulkReadings'),
           value: "bulk-readings",
           icon: <FileText className="w-4 h-4" />,
         },
         {
-          name: "Utility Expenses",
+          name: t('sidebar.billingUtilities.meterReadings'),
+          icon: <Calculator className="w-5 h-5" />,
+          value: "meter-readings",
+        },
+        {
+          name: t('sidebar.billingUtilities.utilityExpenses'),
           value: "building-invoices",
           icon: <Building2 className="w-4 h-4" />,
         },
         {
-          name: "Invoice Management",
+          name: t('sidebar.billingUtilities.invoiceManagement'),
           value: "invoices-management",
           icon: <Receipt className="w-4 h-4" />,
         },
         {
-          name: "Late Fee",
+          name: t('sidebar.billingUtilities.lateFee'),
           value: "late-fee",
           icon: <Tag className="w-4 h-4" />,
         },
         {
-          name: "Overdue & Outstanding",
+          name: t('sidebar.billingUtilities.overdueOutstanding'),
           value: "overdue-outstanding",
           icon: <BarChart3 className="w-4 h-4" />,
         },
@@ -103,7 +110,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onSectionChange(value);
     if (isCollapsed) {
       const newOpenSections = new Set(openSections);
-      newOpenSections.delete("Billing & Utilities");
+      newOpenSections.delete(t('sidebar.sections.billingUtilities'));
       setOpenSections(newOpenSections);
     }
   };
@@ -154,7 +161,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <div>
                 <span className="text-lg font-bold text-stone-900">
-                  Accountant Dashboard
+                  {t('sidebar.dashboard')}
                 </span>
               </div>
             </div>
@@ -372,10 +379,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-stone-900 truncate">
-                      Accountant User
+                      {t('sidebar.user.name')}
                     </p>
                     <p className="text-xs text-stone-500 truncate">
-                      Accountant
+                      {t('sidebar.user.role')}
                     </p>
                   </div>
                 </div>
