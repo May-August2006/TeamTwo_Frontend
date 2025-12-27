@@ -2,7 +2,7 @@
 
 // api/InvoiceAPI.ts
 import API from "./api";
-import type { InvoiceDTO } from "../types";
+import type { Level, InvoiceDTO } from "../types";
 
 export interface InvoiceSummaryDTO {
   id: number;
@@ -72,6 +72,11 @@ export const invoiceApi = {
     }),
 
   getOverdueInvoices: () => API.get<InvoiceDTO[]>("/api/invoices/overdue"),
+
+  getOverdueInvoicesByLevel: (levelId: number) =>
+    API.get<InvoiceDTO[]>(`/api/invoices/overdue/level/${levelId}`),
+
+  getLevelsByManager: () => API.get<Level[]>("/api/invoices/levels/manager"),
 
   getInvoicesWithWaivedLateFees: () =>
     API.get<InvoiceDTO[]>("/api/invoices/lateFees/waived"),

@@ -4,36 +4,44 @@ import SockJS from "sockjs-client";
 import { Client, type Message } from "@stomp/stompjs";
 import type { Announcement } from "../types";
 
-export function useAnnouncementsWebSocket(jwtToken: string) {
+export function useAnnouncementsWebSocket(
+  jwtToken: string,
+  buildingId?: number
+) {
   const stompClient = useRef<Client | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    if (!jwtToken) return;
+    if (!jwtToken || !buildingId) return;
 
     const socket = new SockJS("http://localhost:8080/ws");
     const client = new Client({
       webSocketFactory: () => socket as any,
-      debug: (str) => console.log("[Announcements STOMP]", str),
+      debug: (msg) => console.log("[Announcements STOMP]", msg),
       reconnectDelay: 5000,
       connectHeaders: { Authorization: `Bearer ${jwtToken}` },
+
       onConnect: () => {
         console.log("Connected to announcements WS");
         setConnected(true);
 
-        client.subscribe("/topic/announcements", (msg: Message) => {
+        const destination = `/topic/announcements/building/${buildingId}`;
+
+        client.subscribe(destination, (msg: Message) => {
           const ann: Announcement = JSON.parse(msg.body);
-          // Only add truly new announcements (dedupe by id)
+
           setAnnouncements((prev) => {
-            if (prev.find((p) => p.id === ann.id)) return prev;
-            return [ann, ...prev]; // newest first
+            if (prev.some((p) => p.id === ann.id)) return prev;
+            return [ann, ...prev];
           });
         });
       },
+
       onStompError: (frame) => {
         console.error("Announcements WS error:", frame.body);
       },
+
       onDisconnect: () => setConnected(false),
     });
 
@@ -44,7 +52,7 @@ export function useAnnouncementsWebSocket(jwtToken: string) {
       client.deactivate();
       stompClient.current = null;
     };
-  }, [jwtToken]);
+  }, [jwtToken, buildingId]);
 
   return { announcements, setAnnouncements, connected };
 }

@@ -34,7 +34,7 @@ interface BulkReading {
 
 const BulkMeterReadingPage: React.FC = () => {
   const [bulkReadings, setBulkReadings] = useState<BulkReading[]>([]);
-  const [readingDate, setReadingDate] = useState<string>('');
+  const [readingDate, setReadingDate] = useState<string>("");
   const [buildingId, setBuildingId] = useState<number | null>(null);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [loading, setLoading] = useState(false);
@@ -43,7 +43,9 @@ const BulkMeterReadingPage: React.FC = () => {
     useState<UtilityType | null>(null);
   const [waterUtility, setWaterUtility] = useState<UtilityType | null>(null);
   const [buildingUnits, setBuildingUnits] = useState<Unit[]>([]);
-  const [assignedBuildingId, setAssignedBuildingId] = useState<number | null>(null);
+  const [assignedBuildingId, setAssignedBuildingId] = useState<number | null>(
+    null
+  );
   const [occupiedUnits, setOccupiedUnits] = useState<Unit[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [buildingHasAllReadings, setBuildingHasAllReadings] = useState(false);
@@ -63,17 +65,17 @@ const BulkMeterReadingPage: React.FC = () => {
 
   // Get user role from JWT token
   const getUserRole = (): string => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (token) {
       try {
         const decoded: any = jwtDecode(token);
-        return decoded.role || 'ROLE_GUEST';
+        return decoded.role || "ROLE_GUEST";
       } catch (error) {
-        console.error('Error decoding token:', error);
-        return 'ROLE_GUEST';
+        console.error("Error decoding token:", error);
+        return "ROLE_GUEST";
       }
     }
-    return 'ROLE_GUEST';
+    return "ROLE_GUEST";
   };
 
   // Debounced status check function
@@ -281,6 +283,13 @@ const BulkMeterReadingPage: React.FC = () => {
           break;
         }
       }
+
+      setBuildingHasAllReadings(allUnitsHaveReadings);
+    } catch (error) {
+      console.error("Error checking building readings status:", error);
+      setBuildingHasAllReadings(false);
+    } finally {
+      setCheckingStatus(false);
     }
   }, [buildingId, readingDate, electricityUtility, waterUtility]);
 
@@ -757,7 +766,7 @@ const BulkMeterReadingPage: React.FC = () => {
       });
     } finally {
       setLoading(false);
-      event.target.value = '';
+      event.target.value = "";
     }
   };
 
@@ -772,7 +781,7 @@ const BulkMeterReadingPage: React.FC = () => {
       });
       return;
     }
-    
+
     try {
       const bulkRequests = readingsToSubmit.flatMap((reading) => {
         const requests = [];
@@ -815,10 +824,10 @@ const BulkMeterReadingPage: React.FC = () => {
                 : "Manual entry",
           });
         }
-        
+
         return requests;
       });
-      
+
       if (bulkRequests.length === 0) {
         setUploadStatus({
           type: "warning",
@@ -972,7 +981,7 @@ const BulkMeterReadingPage: React.FC = () => {
                 Select Building
               </label>
               <select
-                value={buildingId || ''}
+                value={buildingId || ""}
                 onChange={(e) => handleBuildingChange(Number(e.target.value))}
                 className="w-full border border-gray-300 rounded px-3 py-2"
                 disabled={loading || (assignedBuildingId && !isAdmin)}
@@ -982,14 +991,16 @@ const BulkMeterReadingPage: React.FC = () => {
                     <option value="">Select building...</option>
                     {buildings.map((building) => (
                       <option key={building.id} value={building.id}>
-                        {building.buildingName} - {building.buildingType || 'Commercial'}
+                        {building.buildingName} -{" "}
+                        {building.buildingType || "Commercial"}
                       </option>
                     ))}
                   </>
                 ) : assignedBuildingId ? (
                   <>
                     <option value={assignedBuildingId}>
-                      {buildings.find(b => b.id === assignedBuildingId)?.buildingName || 'My Assigned Building'}
+                      {buildings.find((b) => b.id === assignedBuildingId)
+                        ?.buildingName || "My Assigned Building"}
                     </option>
                   </>
                 ) : (
@@ -1050,7 +1061,7 @@ const BulkMeterReadingPage: React.FC = () => {
               </label>
             </div>
           </div>
-          
+
           {/* Building Info */}
           {buildingId && (
             <div className="mt-4 p-4 bg-blue-50 rounded border border-blue-200">
@@ -1071,13 +1082,15 @@ const BulkMeterReadingPage: React.FC = () => {
                 <div>
                   <span className="text-gray-600">Electricity Utility:</span>
                   <span className="font-medium ml-2">
-                    {electricityUtility ? electricityUtility.utilityName : 'Not configured'}
+                    {electricityUtility
+                      ? electricityUtility.utilityName
+                      : "Not configured"}
                   </span>
                 </div>
                 <div>
                   <span className="text-gray-600">Water Utility:</span>
                   <span className="font-medium ml-2">
-                    {waterUtility ? waterUtility.utilityName : 'Not configured'}
+                    {waterUtility ? waterUtility.utilityName : "Not configured"}
                   </span>
                 </div>
               </div>
@@ -1116,7 +1129,8 @@ const BulkMeterReadingPage: React.FC = () => {
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">
-                    Meter Readings for {buildings.find(b => b.id === buildingId)?.buildingName}
+                    Meter Readings for{" "}
+                    {buildings.find((b) => b.id === buildingId)?.buildingName}
                   </h2>
                   <p className="text-sm text-gray-600">
                     Date: {readingDate} | Units: {bulkReadings.length}
@@ -1135,7 +1149,7 @@ const BulkMeterReadingPage: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-100">
@@ -1333,7 +1347,7 @@ const BulkMeterReadingPage: React.FC = () => {
                 </tbody>
               </table>
             </div>
-            
+
             {/* Submit Button */}
             <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
               <div className="flex justify-between items-center">
@@ -1401,7 +1415,7 @@ const BulkMeterReadingPage: React.FC = () => {
               <Building2 className="mx-auto h-16 w-16" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {isAdmin ? 'Select a Building' : 'No Building Assigned'}
+              {isAdmin ? "Select a Building" : "No Building Assigned"}
             </h3>
             <p className="text-sm text-gray-600 mb-6">
               {isAdmin

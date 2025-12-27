@@ -315,6 +315,9 @@ export interface ReminderDTO {
   amount: number; // BigDecimal → number
   message: string;
   invoiceNumber: string;
+  isRead: boolean;
+  hidden: boolean;
+  type: string;
 }
 
 export interface PaymentStatusDTO {
