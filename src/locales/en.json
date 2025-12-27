@@ -29,7 +29,7 @@
     "unitAdded": "Unit {unitNumber} added"
   },
 
-  "sidebar": {
+  "adminsidebar": {
 
     "userManagement": "User Management",
     "adminDashboard": "Admin Dashboard",

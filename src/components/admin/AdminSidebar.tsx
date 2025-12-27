@@ -42,43 +42,43 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   const menuItems = [
     {
-      name: t('sidebar.dashboard'),
+      name: t('adminsidebar.dashboard'),
       icon: <Home className="w-5 h-5" />,
       path: "/admin",
     },
     {
-      name: t('sidebar.masterData'),
+      name: t('adminsidebar.masterData'),
       icon: <Settings className="w-5 h-5" />,
       children: [
         {
-          name: t('sidebar.branchManagement'),
+          name: t('adminsidebar.branchManagement'),
           path: "/admin/branches",
           icon: <Building2 className="w-4 h-4" />,
         },
         {
-          name: t('sidebar.buildingManagement'),
+          name: t('adminsidebar.buildingManagement'),
           path: "/admin/buildings",
           icon: <Building className="w-4 h-4" />,
         },
         {
-          name: t('sidebar.levelManagement'),
+          name: t('adminsidebar.levelManagement'),
           path: "/admin/levels",
           icon: <Layers className="w-4 h-4" />,
         },
         {
-          name: t('sidebar.unitManagement'),
+          name: t('adminsidebar.unitManagement'),
           path: "/admin/units",
           icon: <Package className="w-4 h-4" />,
         },
       ],
     },
     {
-      name: t('sidebar.utilityTypeManagement'),
+      name: t('adminsidebar.utilityTypeManagement'),
       path: "/admin/utility-types",
       icon: <Zap className="w-4 h-4" />,
     },
     {
-      name: t('sidebar.users'),
+      name: t('adminsidebar.users'),
       icon: <Users className="w-5 h-5" />,
       path: "/admin/users",
     },
@@ -286,9 +286,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-stone-900 truncate">
-                      Admin User
+                      {t('sidebar.adminUser')}
                     </p>
-                    <p className="text-xs text-stone-500 truncate">Administrator</p>
+                    <p className="text-xs text-stone-500 truncate">{t('sidebar.administrator')}</p>
                   </div>
                 </div>
               </div>
