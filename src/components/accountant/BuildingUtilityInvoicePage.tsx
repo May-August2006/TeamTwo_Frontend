@@ -16,6 +16,7 @@ import {
   Eye,
   Edit,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { buildingApi } from '../../api/BuildingAPI';
 import { contractApi } from '../../api/ContractAPI';
 import type { Building } from '../../types';
@@ -66,6 +67,7 @@ interface CAMSummary {
 const EXPENSES_STORAGE_KEY = 'mall_owner_expenses_fallback';
 
 const BuildingUtilityInvoicePage: React.FC = () => {
+  const { t } = useTranslation();
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [selectedBuildingId, setSelectedBuildingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -78,7 +80,9 @@ const BuildingUtilityInvoicePage: React.FC = () => {
   const [units, setUnits] = useState<UnitInfo[]>([]);
   const [mallOwnerExpenses, setMallOwnerExpenses] = useState<MallOwnerExpense[]>([]);
   const [showExpenseHistory, setShowExpenseHistory] = useState(false);
-  const [expenseDescription, setExpenseDescription] = useState<string>('Mall Owner CAM Expense for Vacant Units');
+  const [expenseDescription, setExpenseDescription] = useState<string>(
+    t('buildingUtilityInvoicePage.form.descriptionPlaceholder')
+  );
   const [exportFormat, setExportFormat] = useState<'JSON' | 'CSV'>('JSON');
   const [assignedBuildingId, setAssignedBuildingId] = useState<number | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -191,7 +195,7 @@ const BuildingUtilityInvoicePage: React.FC = () => {
       await loadExpensesFromBackend();
       
     } catch (error: any) {
-      setError('Failed to load data: ' + (error.message || 'Unknown error'));
+      setError(t('buildingUtilityInvoicePage.errors.failedLoad', { error: error.message || 'Unknown error' }));
       console.error('Error loading data:', error);
     } finally {
       setLoading(false);
@@ -201,7 +205,7 @@ const BuildingUtilityInvoicePage: React.FC = () => {
   const loadBuildingUnits = async (buildingId: number) => {
     // Check if user has permission for this building
     if (assignedBuildingId && buildingId !== assignedBuildingId && !isAdmin) {
-      alert('You can only access CAM calculations for your assigned building');
+      alert(t('buildingUtilityInvoicePage.errors.noAccess'));
       return [];
     }
     
@@ -259,7 +263,7 @@ const BuildingUtilityInvoicePage: React.FC = () => {
       
     } catch (error: any) {
       console.error('Error loading building units:', error);
-      setError('Failed to load unit information');
+      setError(t('buildingUtilityInvoicePage.errors.failedLoad', { error: 'Failed to load unit information' }));
       return [];
     } finally {
       setLoading(false);
@@ -281,7 +285,7 @@ const BuildingUtilityInvoicePage: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading expenses from backend:', error);
-      setError('Failed to load expenses from server. Using local storage as fallback.');
+      setError(t('buildingUtilityInvoicePage.errors.serverFallback'));
       // Fallback to localStorage
       loadExpensesFromStorage();
     }
@@ -305,13 +309,13 @@ const BuildingUtilityInvoicePage: React.FC = () => {
 
   const calculateCAMDistsribution = async () => {
     if (!selectedBuildingId) {
-      setError('Please select a building');
+      setError(t('buildingUtilityInvoicePage.errors.selectBuilding'));
       return;
     }
     
     // Check if user has permission for this building
     if (assignedBuildingId && selectedBuildingId !== assignedBuildingId && !isAdmin) {
-      alert('You can only calculate CAM for your assigned building');
+      alert(t('buildingUtilityInvoicePage.errors.noAccessCalculate'));
       return;
     }
     
@@ -325,28 +329,32 @@ const BuildingUtilityInvoicePage: React.FC = () => {
       const endDate = new Date(periodEnd);
       
       if (startDate >= endDate) {
-        setError('Period start date must be before period end date');
+        setError(t('buildingUtilityInvoicePage.errors.periodDates'));
         return;
       }
       
       // Check if period is in the future
       const today = new Date();
       if (startDate > today) {
-        setError('Period start date cannot be in the future');
+        setError(t('buildingUtilityInvoicePage.errors.futureDate'));
         return;
       }
       
       // Get the selected building to access generator and transformer fees
       const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
       if (!selectedBuilding) {
-        setError('Selected building not found');
+        setError(t('buildingUtilityInvoicePage.errors.buildingNotFound'));
         return;
       }
       
       // Check if expense already exists for this period
       const isDuplicate = await checkDuplicateExpense(selectedBuildingId, periodStart, periodEnd);
       if (isDuplicate) {
-        setError(`An expense record already exists for ${selectedBuilding.buildingName} for period ${periodStart} to ${periodEnd}. Please select a different period.`);
+        setError(t('buildingUtilityInvoicePage.alerts.duplicateExpense', {
+          buildingName: selectedBuilding.buildingName,
+          periodStart: periodStart,
+          periodEnd: periodEnd
+        }));
         return;
       }
       
@@ -354,7 +362,7 @@ const BuildingUtilityInvoicePage: React.FC = () => {
       const unitsWithOccupancy = await loadBuildingUnits(selectedBuildingId);
       
       if (unitsWithOccupancy.length === 0) {
-        setError('No units found in this building');
+        setError(t('buildingUtilityInvoicePage.errors.noUnits'));
         return;
       }
       
@@ -364,7 +372,7 @@ const BuildingUtilityInvoicePage: React.FC = () => {
       const totalLeasableArea = selectedBuilding.totalLeasableArea || 0;
       
       if (totalLeasableArea === 0) {
-        setError('Total leasable area is not set for this building');
+        setError(t('buildingUtilityInvoicePage.errors.leasableArea'));
         return;
       }
       
@@ -456,10 +464,14 @@ const BuildingUtilityInvoicePage: React.FC = () => {
       
       setCamSummary(summary);
       setShowCAMPreview(true);
-      setSuccess(`Calculated CAM distribution: ${occupiedUnitsCount} occupied units, ${vacantUnitsCount} vacant units, ${unallocatedArea.toFixed(0)} sq.ft unallocated`);
+      setSuccess(t('buildingUtilityInvoicePage.alerts.calculated', {
+        occupiedUnitsCount,
+        vacantUnitsCount,
+        unallocatedArea: unallocatedArea.toFixed(0)
+      }));
       
     } catch (error: any) {
-      setError('Error calculating CAM distribution: ' + (error.message || 'Unknown error'));
+      setError(t('buildingUtilityInvoicePage.errors.failedCalculate', { error: error.message || 'Unknown error' }));
       console.error('Error calculating CAM:', error);
     } finally {
       setLoading(false);
@@ -469,12 +481,12 @@ const BuildingUtilityInvoicePage: React.FC = () => {
   // Save Mall Owner Expense to backend
   const saveMallOwnerExpense = async () => {
     if (!selectedBuildingId || !camSummary) {
-      setError('Please calculate CAM distribution first');
+      setError(t('buildingUtilityInvoicePage.errors.calculateFirst'));
       return;
     }
     
     if (!periodStart || !periodEnd) {
-      setError('Please select period dates');
+      setError(t('buildingUtilityInvoicePage.errors.selectPeriod'));
       return;
     }
     
@@ -485,7 +497,7 @@ const BuildingUtilityInvoicePage: React.FC = () => {
       // Get selected building
       const selectedBuilding = buildings.find(b => b.id === selectedBuildingId);
       if (!selectedBuilding) {
-        setError('Selected building not found');
+        setError(t('buildingUtilityInvoicePage.errors.buildingNotFound'));
         return;
       }
       
@@ -502,7 +514,7 @@ const BuildingUtilityInvoicePage: React.FC = () => {
         generatorShare,
         transformerShare,
         otherCAMShare,
-        description: expenseDescription || `Mall Owner CAM Expense for ${periodStart} to ${periodEnd}`,
+        description: expenseDescription || t('buildingUtilityInvoicePage.saveExpense.title'),
         otherCAMCosts,
         totalVacantArea: camSummary.totalVacantArea,
         totalUnallocatedArea: camSummary.unallocatedArea,
@@ -515,8 +527,8 @@ const BuildingUtilityInvoicePage: React.FC = () => {
       
       const response = await expenseApi.createExpense(request);
       
-      setSuccess(`Mall owner expense of ${formatCurrency(camSummary.ownerCAM)} saved successfully!`);
-      setExpenseDescription('Mall Owner CAM Expense for Vacant Units');
+      setSuccess(t('buildingUtilityInvoicePage.alerts.expenseSaved', { amount: formatCurrency(camSummary.ownerCAM) }));
+      setExpenseDescription(t('buildingUtilityInvoicePage.form.descriptionPlaceholder'));
       
       // Refresh expenses list
       await loadExpensesFromBackend();
@@ -528,7 +540,7 @@ const BuildingUtilityInvoicePage: React.FC = () => {
       }, 2000);
       
     } catch (error: any) {
-      setError('Failed to save mall owner expense: ' + (error.message || 'Unknown error'));
+      setError(t('buildingUtilityInvoicePage.errors.failedSave', { error: error.message || 'Unknown error' }));
       console.error('Error saving expense:', error);
     }
   };
@@ -538,31 +550,31 @@ const BuildingUtilityInvoicePage: React.FC = () => {
     try {
       await expenseApi.updateExpenseStatus(expenseId, newStatus);
       await loadExpensesFromBackend();
-      setSuccess(`Expense status updated to ${newStatus}`);
+      setSuccess(t('buildingUtilityInvoicePage.alerts.statusUpdated', { status: newStatus }));
     } catch (error: any) {
-      setError('Failed to update expense status: ' + (error.message || 'Unknown error'));
+      setError(t('buildingUtilityInvoicePage.errors.failedUpdate', { error: error.message || 'Unknown error' }));
     }
   };
 
   // Delete expense from backend
   const deleteExpense = async (expenseId: number) => {
-    if (!window.confirm('Are you sure you want to delete this expense record?')) {
+    if (!window.confirm(t('buildingUtilityInvoicePage.deleteConfirm'))) {
       return;
     }
     
     try {
       await expenseApi.deleteExpense(expenseId);
       await loadExpensesFromBackend();
-      setSuccess('Expense record deleted successfully');
+      setSuccess(t('buildingUtilityInvoicePage.alerts.expenseDeleted'));
     } catch (error: any) {
-      setError('Failed to delete expense: ' + (error.message || 'Unknown error'));
+      setError(t('buildingUtilityInvoicePage.errors.failedDelete', { error: error.message || 'Unknown error' }));
     }
   };
 
   // Export expenses
   const exportExpenses = async () => {
     if (mallOwnerExpenses.length === 0) {
-      setError('No expenses to export');
+      setError(t('buildingUtilityInvoicePage.alerts.noExpensesExport'));
       return;
     }
 
@@ -618,7 +630,7 @@ const BuildingUtilityInvoicePage: React.FC = () => {
       }
     }
     
-    setSuccess(`Expenses exported as ${exportFormat} successfully!`);
+    setSuccess(t('buildingUtilityInvoicePage.alerts.exportSuccess', { format: exportFormat }));
   };
 
   const formatCurrency = (amount: number) => {
@@ -642,549 +654,589 @@ const BuildingUtilityInvoicePage: React.FC = () => {
     : mallOwnerExpenses.filter(expense => expense.buildingId === assignedBuildingId);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <FileText className="w-8 h-8 text-red-600" />
-            <h1 className="text-3xl font-bold text-gray-900">Mall Owner Expense Calculator</h1>
-          </div>
-          <p className="text-gray-600">
-            Calculate and track mall owner's utility expenses for vacant and unallocated areas
-          </p>
-          {!isAdmin && assignedBuildingId && (
-            <p className="text-sm text-blue-600 mt-1 flex items-center gap-1">
-              <Building2 className="w-4 h-4" />
-              You are assigned to: {buildings.find(b => b.id === assignedBuildingId)?.buildingName || 'My Assigned Building'}
-            </p>
-          )}
-        </div>
-
-        {/* Alerts */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <div>{error}</div>
-          </div>
-        )}
-        
-        {success && (
-          <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-lg flex items-start gap-2">
-            <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-            <div>{success}</div>
-          </div>
-        )}
-
-        {/* Statistics - Show only if user has expenses */}
-        {filteredExpenses.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="text-sm text-gray-500">Total Expenses</div>
-              <div className="text-2xl font-bold">{filteredExpenses.length}</div>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="text-sm text-gray-500">Total Amount</div>
-              <div className="text-2xl font-bold text-blue-600">
-                {formatCurrency(filteredExpenses.reduce((sum, exp) => sum + exp.totalAmount, 0))}
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="text-sm text-gray-500">Pending</div>
-              <div className="text-2xl font-bold text-yellow-600">
-                {filteredExpenses.filter(exp => exp.status === 'PENDING').length}
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="text-sm text-gray-500">Paid</div>
-              <div className="text-2xl font-bold text-green-600">
-                {filteredExpenses.filter(exp => exp.status === 'PAID' || exp.status === 'APPROVED').length}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Controls */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+    <div className="flex flex-col h-full animate-fadeIn">
+      {/* Sticky Header Section */}
+      <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+        <div className="p-4 lg:p-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Select Building *
-              </label>
-              <select
-                value={selectedBuildingId || ''}
-                onChange={(e) => {
-                  const newBuildingId = Number(e.target.value);
-                  // Check if user has permission for this building
-                  if (assignedBuildingId && newBuildingId !== assignedBuildingId && !isAdmin) {
-                    alert('You can only access CAM calculations for your assigned building');
-                    return;
-                  }
-                  setSelectedBuildingId(newBuildingId);
-                  setCamSummary(null);
-                  setShowCAMPreview(false);
-                  setUnits([]);
-                  setError('');
-                  setSuccess('');
-                }}
-                className="w-full border border-gray-300 rounded px-3 py-2"
-                disabled={loading || (!isAdmin && assignedBuildingId !== null)}
-              >
-                <option value="">Select building...</option>
-                {isAdmin ? (
-                  buildings.map((building) => (
-                    <option key={building.id} value={building.id}>
-                      {building.buildingName} ({building.branchName})
-                    </option>
-                  ))
-                ) : assignedBuildingId ? (
-                  <option value={assignedBuildingId}>
-                    {buildings.find(b => b.id === assignedBuildingId)?.buildingName || 'My Assigned Building'}
-                  </option>
-                ) : (
-                  <option value="">No building assigned</option>
-                )}
-              </select>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                {t('buildingUtilityInvoicePage.title')}
+              </h1>
+              <p className="text-gray-600 mt-1">
+                {t('buildingUtilityInvoicePage.subtitle')}
+              </p>
+              {!isAdmin && assignedBuildingId && (
+                <p className="text-sm text-blue-600 mt-1 flex items-center gap-1">
+                  <Building2 className="w-4 h-4" />
+                  {t('buildingUtilityInvoicePage.assignedBuildingInfo', {
+                    buildingName: buildings.find(b => b.id === assignedBuildingId)?.buildingName || 'My Assigned Building'
+                  })}
+                </p>
+              )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Period Start *
-              </label>
-              <input
-                type="date"
-                value={periodStart}
-                onChange={(e) => setPeriodStart(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Period End *
-              </label>
-              <input
-                type="date"
-                value={periodEnd}
-                onChange={(e) => setPeriodEnd(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2"
-                required
-              />
-            </div>
-
-            <div className="flex items-end">
+            <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
               <button
-                onClick={() => setShowExpenseHistory(!showExpenseHistory)}
-                className="w-full px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center justify-center gap-2"
+                onClick={loadData}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition duration-200 font-medium border border-gray-300"
               >
-                <History className="w-4 h-4" />
-                {showExpenseHistory ? 'Hide History' : 'View History'}
+                <RefreshCw className="w-4 h-4" />
+                {t('buildingUtilityInvoicePage.buttons.refresh')}
               </button>
             </div>
           </div>
-
-          
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button
-              onClick={calculateCAMDistsribution}
-              disabled={!selectedBuildingId || loading}
-              className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <RefreshCw className="w-5 h-5 animate-spin" />
-                  Calculating...
-                </>
-              ) : (
-                <>
-                  <PieChart className="w-5 h-5" />
-                  Calculate Mall Owner Expenses
-                </>
-              )}
-            </button>
-            
-            
-          </div>
         </div>
+      </div>
 
-        {/* CAM Distribution Preview */}
-        {showCAMPreview && camSummary && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <div className="flex justify-between items-center mb-6">
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 lg:p-6 space-y-6">
+          {/* Alerts */}
+          {error && (
+            <div className="p-4 bg-red-50 text-red-700 rounded-lg flex items-start gap-2 border border-red-200">
+              <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
               <div>
-                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <PieChart className="w-5 h-5" />
-                  Mall Owner Expense Calculation for {selectedBuilding?.buildingName}
-                </h2>
-                <p className="text-gray-600">
-                  Period: {formatDate(periodStart)} to {formatDate(periodEnd)}
-                </p>
+                <p className="font-medium">{t('buildingUtilityInvoicePage.error')}</p>
+                <p className="text-sm">{error}</p>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowCAMPreview(false)}
-                  className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+            </div>
+          )}
+          
+          {success && (
+            <div className="p-4 bg-green-50 text-green-700 rounded-lg flex items-start gap-2 border border-green-200">
+              <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium">{t('buildingUtilityInvoicePage.success')}</p>
+                <p className="text-sm">{success}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Statistics - Show only if user has expenses */}
+          {filteredExpenses.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+                <div className="text-sm text-gray-500">{t('buildingUtilityInvoicePage.statistics.totalExpenses')}</div>
+                <div className="text-2xl font-bold">{filteredExpenses.length}</div>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+                <div className="text-sm text-gray-500">{t('buildingUtilityInvoicePage.statistics.totalAmount')}</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(filteredExpenses.reduce((sum, exp) => sum + exp.totalAmount, 0))}
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+                <div className="text-sm text-gray-500">{t('buildingUtilityInvoicePage.statistics.pending')}</div>
+                <div className="text-2xl font-bold text-yellow-600">
+                  {filteredExpenses.filter(exp => exp.status === 'PENDING').length}
+                </div>
+              </div>
+              <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+                <div className="text-sm text-gray-500">{t('buildingUtilityInvoicePage.statistics.paid')}</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {filteredExpenses.filter(exp => exp.status === 'PAID' || exp.status === 'APPROVED').length}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Controls */}
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('buildingUtilityInvoicePage.form.selectBuilding')}
+                </label>
+                <select
+                  value={selectedBuildingId || ''}
+                  onChange={(e) => {
+                    const newBuildingId = Number(e.target.value);
+                    // Check if user has permission for this building
+                    if (assignedBuildingId && newBuildingId !== assignedBuildingId && !isAdmin) {
+                      alert(t('buildingUtilityInvoicePage.errors.noAccess'));
+                      return;
+                    }
+                    setSelectedBuildingId(newBuildingId);
+                    setCamSummary(null);
+                    setShowCAMPreview(false);
+                    setUnits([]);
+                    setError('');
+                    setSuccess('');
+                  }}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={loading || (!isAdmin && assignedBuildingId !== null)}
                 >
-                  Hide Preview
+                  <option value="">{t('buildingUtilityInvoicePage.form.selectBuildingPlaceholder')}</option>
+                  {isAdmin ? (
+                    buildings.map((building) => (
+                      <option key={building.id} value={building.id}>
+                        {building.buildingName} ({building.branchName})
+                      </option>
+                    ))
+                  ) : assignedBuildingId ? (
+                    <option value={assignedBuildingId}>
+                      {buildings.find(b => b.id === assignedBuildingId)?.buildingName || 'My Assigned Building'}
+                    </option>
+                  ) : (
+                    <option value="">{t('buildingUtilityInvoicePage.form.noBuildingAssigned')}</option>
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('buildingUtilityInvoicePage.form.periodStart')}
+                </label>
+                <input
+                  type="date"
+                  value={periodStart}
+                  onChange={(e) => setPeriodStart(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('buildingUtilityInvoicePage.form.periodEnd')}
+                </label>
+                <input
+                  type="date"
+                  value={periodEnd}
+                  onChange={(e) => setPeriodEnd(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  onClick={() => setShowExpenseHistory(!showExpenseHistory)}
+                  className="w-full px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 flex items-center justify-center gap-2 transition duration-200 font-medium"
+                >
+                  <History className="w-4 h-4" />
+                  {showExpenseHistory 
+                    ? t('buildingUtilityInvoicePage.buttons.hideHistory')
+                    : t('buildingUtilityInvoicePage.buttons.viewHistory')
+                  }
                 </button>
               </div>
             </div>
 
-            {/* Building Area Breakdown */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <h3 className="font-semibold text-blue-700 mb-2">Building Area</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Leasable Area:</span>
-                    <span className="font-bold">{camSummary.totalLeasableArea.toLocaleString()} sq.ft</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-green-600">Occupied Area:</span>
-                    <span className="font-bold">{camSummary.totalOccupiedArea.toLocaleString()} sq.ft ({camSummary.occupiedPercentage}%)</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-yellow-600">Vacant Area:</span>
-                    <span className="font-bold">{camSummary.totalVacantArea.toLocaleString()} sq.ft ({camSummary.vacantPercentage}%)</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-red-600">Unallocated Area:</span>
-                    <span className="font-bold">{camSummary.unallocatedArea.toLocaleString()} sq.ft ({camSummary.unallocatedPercentage}%)</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 bg-green-50 rounded-lg">
-                <h3 className="font-semibold text-green-700 mb-2">CAM Cost Breakdown</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Generator Fee:</span>
-                    <span className="font-bold">{formatCurrency(selectedBuilding?.generatorFee || 0)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Transformer Fee:</span>
-                    <span className="font-bold">{formatCurrency(selectedBuilding?.transformerFee || 0)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Other CAM Costs:</span>
-                    <span className="font-bold">{formatCurrency(otherCAMCosts)}</span>
-                  </div>
-                  <div className="flex justify-between pt-2 border-t border-green-200">
-                    <span className="font-bold text-green-700">Total CAM Costs:</span>
-                    <span className="font-bold text-green-700">{formatCurrency(camSummary.totalCAMCosts)}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 bg-purple-50 rounded-lg">
-                <h3 className="font-semibold text-purple-700 mb-2">Distribution</h3>
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-green-600">Tenants Pay:</span>
-                      <span className="font-bold text-green-700">{formatCurrency(camSummary.tenantsCAM)}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-green-500 h-2 rounded-full" 
-                        style={{ width: `${(camSummary.tenantsCAM / camSummary.totalCAMCosts) * 100}%` }}
-                      ></div>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      For {camSummary.occupiedUnitsCount} occupied units ({camSummary.occupiedPercentage}% of area)
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-red-600">Mall Owner Pays:</span>
-                      <span className="font-bold text-red-700">{formatCurrency(camSummary.ownerCAM)}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-red-500 h-2 rounded-full" 
-                        style={{ width: `${(camSummary.ownerCAM / camSummary.totalCAMCosts) * 100}%` }}
-                      ></div>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      For {camSummary.vacantUnitsCount} vacant units + unallocated area ({100 - camSummary.occupiedPercentage}% of area)
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={calculateCAMDistsribution}
+                disabled={!selectedBuildingId || loading}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2 transition duration-200 font-medium"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    {t('buildingUtilityInvoicePage.buttons.calculating')}
+                  </>
+                ) : (
+                  <>
+                    <PieChart className="w-5 h-5" />
+                    {t('buildingUtilityInvoicePage.buttons.calculateExpenses')}
+                  </>
+                )}
+              </button>
             </div>
+          </div>
 
-            {/* Save Expense Section */}
-            <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-              <h3 className="font-semibold text-yellow-700 mb-3">Save Expense Record</h3>
-              <div className="space-y-4">
+          {/* CAM Distribution Preview */}
+          {showCAMPreview && camSummary && (
+            <div className="bg-white rounded-lg shadow border border-gray-200 p-6 mb-6">
+              <div className="flex justify-between items-center mb-6">
                 <div>
-                  <label className="block text-sm font-medium text-yellow-700 mb-1">
-                    Expense Description
-                  </label>
-                  <textarea
-                    value={expenseDescription}
-                    onChange={(e) => setExpenseDescription(e.target.value)}
-                    className="w-full border border-yellow-300 rounded px-3 py-2"
-                    rows={2}
-                    placeholder="Enter description for this expense..."
-                  />
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <PieChart className="w-5 h-5" />
+                    {t('buildingUtilityInvoicePage.camPreview.title', {
+                      buildingName: selectedBuilding?.buildingName
+                    })}
+                  </h2>
+                  <p className="text-gray-600">
+                    {t('buildingUtilityInvoicePage.camPreview.period', {
+                      startDate: formatDate(periodStart),
+                      endDate: formatDate(periodEnd)
+                    })}
+                  </p>
                 </div>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <div className="text-sm text-yellow-700">Mall Owner's Share:</div>
-                    <div className="text-2xl font-bold text-red-600">{formatCurrency(camSummary.ownerCAM)}</div>
-                  </div>
+                <div className="flex gap-2">
                   <button
-                    onClick={saveMallOwnerExpense}
-                    className="px-6 py-3 bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-2"
+                    onClick={() => setShowCAMPreview(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-200"
                   >
-                    <Save className="w-5 h-5" />
-                    Save Expense Record
+                    {t('buildingUtilityInvoicePage.buttons.hidePreview')}
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
 
-        {/* Expense History Panel */}
-        {showExpenseHistory && (
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <History className="w-5 h-5" />
-                {isAdmin ? 'All Mall Owner Expenses' : 'Your Expense History'}
-                <span className="text-sm font-normal text-gray-500 ml-2">
-                  ({filteredExpenses.length} records)
-                </span>
-              </h3>
-              <div className="flex gap-2">
-                
-                
+              {/* Building Area Breakdown */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <h3 className="font-semibold text-blue-700 mb-2">
+                    {t('buildingUtilityInvoicePage.areaBreakdown.title')}
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">{t('buildingUtilityInvoicePage.areaBreakdown.totalLeasableArea')}</span>
+                      <span className="font-bold">{camSummary.totalLeasableArea.toLocaleString()} sq.ft</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-green-600">{t('buildingUtilityInvoicePage.areaBreakdown.occupiedArea')}</span>
+                      <span className="font-bold">{camSummary.totalOccupiedArea.toLocaleString()} sq.ft ({camSummary.occupiedPercentage}%)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-yellow-600">{t('buildingUtilityInvoicePage.areaBreakdown.vacantArea')}</span>
+                      <span className="font-bold">{camSummary.totalVacantArea.toLocaleString()} sq.ft ({camSummary.vacantPercentage}%)</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-red-600">{t('buildingUtilityInvoicePage.areaBreakdown.unallocatedArea')}</span>
+                      <span className="font-bold">{camSummary.unallocatedArea.toLocaleString()} sq.ft ({camSummary.unallocatedPercentage}%)</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                  <h3 className="font-semibold text-green-700 mb-2">
+                    {t('buildingUtilityInvoicePage.costBreakdown.title')}
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">{t('buildingUtilityInvoicePage.costBreakdown.generatorFee')}</span>
+                      <span className="font-bold">{formatCurrency(selectedBuilding?.generatorFee || 0)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">{t('buildingUtilityInvoicePage.costBreakdown.transformerFee')}</span>
+                      <span className="font-bold">{formatCurrency(selectedBuilding?.transformerFee || 0)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">{t('buildingUtilityInvoicePage.costBreakdown.otherCAMCosts')}</span>
+                      <span className="font-bold">{formatCurrency(otherCAMCosts)}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-green-200">
+                      <span className="font-bold text-green-700">{t('buildingUtilityInvoicePage.costBreakdown.totalCAMCosts')}</span>
+                      <span className="font-bold text-green-700">{formatCurrency(camSummary.totalCAMCosts)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <h3 className="font-semibold text-purple-700 mb-2">
+                    {t('buildingUtilityInvoicePage.distribution.title')}
+                  </h3>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-green-600">{t('buildingUtilityInvoicePage.distribution.tenantsPay')}</span>
+                        <span className="font-bold text-green-700">{formatCurrency(camSummary.tenantsCAM)}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-green-500 h-2 rounded-full" 
+                          style={{ width: `${(camSummary.tenantsCAM / camSummary.totalCAMCosts) * 100}%` }}
+                        ></div>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {t('buildingUtilityInvoicePage.distribution.occupiedUnits', {
+                          count: camSummary.occupiedUnitsCount,
+                          percentage: camSummary.occupiedPercentage
+                        })}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-red-600">{t('buildingUtilityInvoicePage.distribution.mallOwnerPays')}</span>
+                        <span className="font-bold text-red-700">{formatCurrency(camSummary.ownerCAM)}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-red-500 h-2 rounded-full" 
+                          style={{ width: `${(camSummary.ownerCAM / camSummary.totalCAMCosts) * 100}%` }}
+                        ></div>
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {t('buildingUtilityInvoicePage.distribution.vacantUnits', {
+                          vacantCount: camSummary.vacantUnitsCount,
+                          percentage: (100 - camSummary.occupiedPercentage).toFixed(2)
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Save Expense Section */}
+              <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                <h3 className="font-semibold text-yellow-700 mb-3">
+                  {t('buildingUtilityInvoicePage.saveExpense.title')}
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-yellow-700 mb-1">
+                      {t('buildingUtilityInvoicePage.form.expenseDescription')}
+                    </label>
+                    <textarea
+                      value={expenseDescription}
+                      onChange={(e) => setExpenseDescription(e.target.value)}
+                      className="w-full border border-yellow-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+                      rows={2}
+                      placeholder={t('buildingUtilityInvoicePage.form.descriptionPlaceholder')}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="text-sm text-yellow-700">{t('buildingUtilityInvoicePage.camPreview.mallOwnerShare')}</div>
+                      <div className="text-2xl font-bold text-red-600">{formatCurrency(camSummary.ownerCAM)}</div>
+                    </div>
+                    <button
+                      onClick={saveMallOwnerExpense}
+                      className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 transition duration-200 font-medium"
+                    >
+                      <Save className="w-5 h-5" />
+                      {t('buildingUtilityInvoicePage.buttons.saveExpenseRecord')}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
+          )}
 
-            {filteredExpenses.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Building & Period
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Amount Details
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Date Recorded
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {filteredExpenses.map((expense) => (
-                      <tr key={expense.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <div className="font-medium">{expense.buildingName}</div>
-                          <div className="text-sm text-gray-500">
-                            {formatDate(expense.periodStart)} to {formatDate(expense.periodEnd)}
-                          </div>
-                          <div className="text-xs text-gray-400 mt-1">{expense.description}</div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="font-bold text-red-600">
-                            {formatCurrency(expense.totalAmount)}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Generator: {formatCurrency(expense.generatorShare || 0)}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Transformer: {formatCurrency(expense.transformerShare || 0)}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            Other CAM: {formatCurrency(expense.otherCAMShare || 0)}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-col gap-2">
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              expense.status === 'PAID' || expense.status === 'APPROVED'
-                                ? 'bg-green-100 text-green-800'
-                                : expense.status === 'PENDING'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {expense.status}
+          {/* Expense History Panel */}
+          {showExpenseHistory && (
+            <div className="bg-white rounded-lg shadow border border-gray-200 p-6 mb-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <History className="w-5 h-5" />
+                  {isAdmin 
+                    ? t('buildingUtilityInvoicePage.expenseHistory.allExpenses')
+                    : t('buildingUtilityInvoicePage.expenseHistory.yourHistory')
+                  }
+                  <span className="text-sm font-normal text-gray-500 ml-2">
+                    {t('buildingUtilityInvoicePage.expenseHistory.records', { count: filteredExpenses.length })}
+                  </span>
+                </h3>
+              </div>
+
+              {filteredExpenses.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          {t('buildingUtilityInvoicePage.expenseHistory.buildingPeriod')}
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          {t('buildingUtilityInvoicePage.expenseHistory.amountDetails')}
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          {t('buildingUtilityInvoicePage.expenseHistory.status')}
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          {t('buildingUtilityInvoicePage.expenseHistory.dateRecorded')}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {filteredExpenses.map((expense) => (
+                        <tr key={expense.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <div className="font-medium">{expense.buildingName}</div>
+                            <div className="text-sm text-gray-500">
+                              {formatDate(expense.periodStart)} to {formatDate(expense.periodEnd)}
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">{expense.description}</div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-bold text-red-600">
+                              {formatCurrency(expense.totalAmount)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {t('buildingUtilityInvoicePage.expenseHistory.generator')} {formatCurrency(expense.generatorShare || 0)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {t('buildingUtilityInvoicePage.expenseHistory.transformer')} {formatCurrency(expense.transformerShare || 0)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {t('buildingUtilityInvoicePage.expenseHistory.otherCAM')} {formatCurrency(expense.otherCAMShare || 0)}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex flex-col gap-2">
+                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                expense.status === 'PAID' || expense.status === 'APPROVED'
+                                  ? 'bg-green-100 text-green-800'
+                                  : expense.status === 'PENDING'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {t(`buildingUtilityInvoicePage.status.${expense.status.toLowerCase()}`) || expense.status}
+                              </span>
+                              {(isAdmin || isAccountant) && (
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => updateExpenseStatus(expense.id, 'PENDING')}
+                                    className={`px-2 py-1 text-xs rounded-lg ${expense.status === 'PENDING' ? 'bg-yellow-500 text-white' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'}`}
+                                    title={t('buildingUtilityInvoicePage.buttons.markAsPending')}
+                                  >
+                                    {t('buildingUtilityInvoicePage.buttons.markAsPending')}
+                                  </button>
+                                  <button
+                                    onClick={() => updateExpenseStatus(expense.id, 'PAID')}
+                                    className={`px-2 py-1 text-xs rounded-lg ${expense.status === 'PAID' ? 'bg-green-500 text-white' : 'bg-green-100 text-green-800 hover:bg-green-200'}`}
+                                    title={t('buildingUtilityInvoicePage.buttons.markAsPaid')}
+                                  >
+                                    {t('buildingUtilityInvoicePage.buttons.markAsPaid')}
+                                  </button>
+                                  <button
+                                    onClick={() => updateExpenseStatus(expense.id, 'CANCELLED')}
+                                    className={`px-2 py-1 text-xs rounded-lg ${expense.status === 'CANCELLED' ? 'bg-red-500 text-white' : 'bg-red-100 text-red-800 hover:bg-red-200'}`}
+                                    title={t('buildingUtilityInvoicePage.buttons.markAsCancelled')}
+                                  >
+                                    {t('buildingUtilityInvoicePage.buttons.markAsCancelled')}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-sm text-gray-600">
+                              {formatDate(expense.dateRecorded)}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-gray-50 font-bold">
+                        <td colSpan={4} className="px-4 py-3 text-right">
+                          <div className="text-sm text-gray-600 inline-flex items-center gap-4">
+                            <span>{t('buildingUtilityInvoicePage.expenseHistory.totalRecords')} {filteredExpenses.length}</span>
+                            <span className="text-green-600">
+                              {t('buildingUtilityInvoicePage.expenseHistory.paidAmount')} {formatCurrency(filteredExpenses
+                                .filter(e => e.status === 'PAID' || e.status === 'APPROVED')
+                                .reduce((sum, e) => sum + e.totalAmount, 0))}
                             </span>
-                            {(isAdmin || isAccountant) && (
-                              <div className="flex gap-1">
-                                <button
-                                  onClick={() => updateExpenseStatus(expense.id, 'PENDING')}
-                                  className={`px-2 py-1 text-xs rounded ${expense.status === 'PENDING' ? 'bg-yellow-500 text-white' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'}`}
-                                  title="Mark as Pending"
-                                >
-                                  Pending
-                                </button>
-                                <button
-                                  onClick={() => updateExpenseStatus(expense.id, 'PAID')}
-                                  className={`px-2 py-1 text-xs rounded ${expense.status === 'PAID' ? 'bg-green-500 text-white' : 'bg-green-100 text-green-800 hover:bg-green-200'}`}
-                                  title="Mark as Paid"
-                                >
-                                  Paid
-                                </button>
-                                <button
-                                  onClick={() => updateExpenseStatus(expense.id, 'CANCELLED')}
-                                  className={`px-2 py-1 text-xs rounded ${expense.status === 'CANCELLED' ? 'bg-red-500 text-white' : 'bg-red-100 text-red-800 hover:bg-red-200'}`}
-                                  title="Mark as Cancelled"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="text-sm text-gray-600">
-                            {formatDate(expense.dateRecorded)}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => {
-                                // Re-calculate with this expense's data
-                                setSelectedBuildingId(expense.buildingId);
-                                setPeriodStart(expense.periodStart);
-                                setPeriodEnd(expense.periodEnd);
-                                setExpenseDescription(expense.description);
-                                setShowExpenseHistory(false);
-                                setShowCAMPreview(false);
-                                setTimeout(() => {
-                                  calculateCAMDistsribution();
-                                }, 100);
-                              }}
-                              className="p-1 text-blue-600 hover:text-blue-800"
-                              title="Re-calculate"
-                            >
-                              <Calculator className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                // View details
-                                alert(`Expense Details:\nBuilding: ${expense.buildingName}\nPeriod: ${expense.periodStart} to ${expense.periodEnd}\nAmount: ${formatCurrency(expense.totalAmount)}\nStatus: ${expense.status}\nDescription: ${expense.description}`);
-                              }}
-                              className="p-1 text-green-600 hover:text-green-800"
-                              title="View Details"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            {(isAdmin || isAccountant) && (
-                              <button
-                                onClick={() => deleteExpense(expense.id)}
-                                className="p-1 text-red-600 hover:text-red-800"
-                                title="Delete"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
+                            <span className="text-yellow-600">
+                              {t('buildingUtilityInvoicePage.expenseHistory.pendingAmount')} {formatCurrency(filteredExpenses
+                                .filter(e => e.status === 'PENDING')
+                                .reduce((sum, e) => sum + e.totalAmount, 0))}
+                            </span>
+                            <span className="text-blue-600">
+                              {t('buildingUtilityInvoicePage.expenseHistory.totalAmount')} {formatCurrency(filteredExpenses.reduce((sum, e) => sum + e.totalAmount, 0))}
+                            </span>
                           </div>
                         </td>
                       </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="bg-gray-50 font-bold">
-                      <td colSpan={5} className="px-4 py-3 text-right">
-                        <div className="text-sm text-gray-600 inline-flex items-center gap-4">
-                          <span>Total Records: {filteredExpenses.length}</span>
-                          <span className="text-green-600">
-                            Paid: {formatCurrency(filteredExpenses
-                              .filter(e => e.status === 'PAID' || e.status === 'APPROVED')
-                              .reduce((sum, e) => sum + e.totalAmount, 0))}
-                          </span>
-                          <span className="text-yellow-600">
-                            Pending: {formatCurrency(filteredExpenses
-                              .filter(e => e.status === 'PENDING')
-                              .reduce((sum, e) => sum + e.totalAmount, 0))}
-                          </span>
-                          <span className="text-blue-600">
-                            Total: {formatCurrency(filteredExpenses.reduce((sum, e) => sum + e.totalAmount, 0))}
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <History className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No expenses recorded</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Calculate and save mall owner expenses to see them here.
+                    </tfoot>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <History className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">
+                    {t('buildingUtilityInvoicePage.expenseHistory.noExpensesTitle')}
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {t('buildingUtilityInvoicePage.expenseHistory.noExpensesDescription')}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Quick Guide */}
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6 mt-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              {t('buildingUtilityInvoicePage.howItWorks.title')}
+            </h3>
+            <div className="space-y-4">
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-bold text-blue-700 mb-2">
+                  {t('buildingUtilityInvoicePage.howItWorks.keyPrinciple')}
+                </h4>
+                <p className="text-sm text-gray-700">
+                  {t('buildingUtilityInvoicePage.howItWorks.keyPrincipleText')}
                 </p>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Quick Guide */}
-        <div className="bg-white rounded-lg shadow p-6 mt-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            How It Works - Correct Calculation
-          </h3>
-          <div className="space-y-4">
-            <div className="p-4 bg-blue-50 rounded border border-blue-200">
-              <h4 className="font-bold text-blue-700 mb-2">Key Principle:</h4>
-              <p className="text-sm text-gray-700">
-                Mall owner pays for <strong>ALL areas that are NOT occupied by tenants</strong>. 
-                This includes both vacant units AND any unallocated space in the building.
-              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <div className="font-medium text-gray-700">
+                    {t('buildingUtilityInvoicePage.howItWorks.steps.calculateTotal')}
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {t('buildingUtilityInvoicePage.howItWorks.steps.calculateTotalText')}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <div className="font-medium text-gray-700">
+                    {t('buildingUtilityInvoicePage.howItWorks.steps.determineOccupied')}
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {t('buildingUtilityInvoicePage.howItWorks.steps.determineOccupiedText')}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <div className="font-medium text-gray-700">
+                    {t('buildingUtilityInvoicePage.howItWorks.steps.calculateOwnerShare')}
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {t('buildingUtilityInvoicePage.howItWorks.steps.calculateOwnerShareText')}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <h4 className="font-bold text-green-700 mb-2">
+                  {t('buildingUtilityInvoicePage.howItWorks.example.title')}
+                </h4>
+                <div className="text-sm text-gray-700 space-y-1">
+                  <div>
+                    {t('buildingUtilityInvoicePage.howItWorks.example.totalLeasable', { area: '5,000 sq.ft' })}
+                  </div>
+                  <div>
+                    {t('buildingUtilityInvoicePage.howItWorks.example.occupied', { area: '1,000 sq.ft', percentage: '20%' })}
+                  </div>
+                  <div>
+                    {t('buildingUtilityInvoicePage.howItWorks.example.vacant', { area: '3,000 sq.ft', percentage: '60%' })}
+                  </div>
+                  <div>
+                    {t('buildingUtilityInvoicePage.howItWorks.example.unallocated', { area: '1,000 sq.ft', percentage: '20%' })}
+                  </div>
+                  <div>
+                    {t('buildingUtilityInvoicePage.howItWorks.example.totalCAM', { amount: '1,000,000 MMK' })}
+                  </div>
+                  <div className="mt-2 font-bold">
+                    {t('buildingUtilityInvoicePage.howItWorks.example.tenantsPay', {
+                      area: '1,000 sq.ft',
+                      totalCost: '1,000,000',
+                      totalArea: '5,000',
+                      amount: '200,000 MMK'
+                    })}
+                  </div>
+                  <div className="font-bold">
+                    {t('buildingUtilityInvoicePage.howItWorks.example.ownerPays', {
+                      totalCost: '1,000,000',
+                      tenantsPay: '200,000',
+                      amount: '800,000 MMK'
+                    })}
+                  </div>
+                </div>
+              </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <div className="font-medium text-gray-700">1. Calculate Total CAM</div>
-                <p className="text-sm text-gray-600">Generator + Transformer + Other CAM costs.</p>
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="text-sm text-blue-700">
+                <strong>{t('buildingUtilityInvoicePage.howItWorks.note', {
+                  roleInfo: isAdmin 
+                    ? t('buildingUtilityInvoicePage.howItWorks.adminNote')
+                    : t('buildingUtilityInvoicePage.howItWorks.nonAdminNote')
+                })}</strong>
               </div>
-              <div className="space-y-2">
-                <div className="font-medium text-gray-700">2. Determine Occupied Area</div>
-                <p className="text-sm text-gray-600">Sum of all units with active tenants.</p>
-              </div>
-              <div className="space-y-2">
-                <div className="font-medium text-gray-700">3. Calculate Mall Owner Share</div>
-                <p className="text-sm text-gray-600">Total CAM - Tenants' portion for occupied area.</p>
-              </div>
-            </div>
-            
-            <div className="p-4 bg-green-50 rounded border border-green-200">
-              <h4 className="font-bold text-green-700 mb-2">Example (5000 sq.ft building):</h4>
-              <div className="text-sm text-gray-700 space-y-1">
-                <div>• Total leasable area: <strong>5,000 sq.ft</strong></div>
-                <div>• Occupied by tenants: <strong>1,000 sq.ft</strong> (20%)</div>
-                <div>• Vacant units: <strong>3,000 sq.ft</strong> (60%)</div>
-                <div>• Unallocated area: <strong>1,000 sq.ft</strong> (20%)</div>
-                <div>• Total CAM costs: <strong>1,000,000 MMK</strong></div>
-                <div className="mt-2 font-bold">→ Tenants pay: 1,000 sq.ft × (1,000,000 ÷ 5,000) = 200,000 MMK</div>
-                <div className="font-bold">→ Mall owner pays: 1,000,000 - 200,000 = 800,000 MMK</div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="mt-4 p-4 bg-blue-50 rounded border border-blue-200">
-            <div className="text-sm text-blue-700">
-              <strong>Note:</strong> All expense records are now stored in the database. 
-              {!isAdmin && " You can only view expenses for your assigned building."}
-              {isAdmin && " As an administrator, you can view all expenses."}
-              The system prevents duplicate entries for the same building and period.
             </div>
           </div>
         </div>

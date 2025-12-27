@@ -1,7 +1,18 @@
 /** @format */
 
 import React, { useEffect, useState } from "react";
-import { DollarSign, TrendingUp, PieChart, Calendar, TrendingDown, BarChart, Loader2, Building, Users } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { 
+  DollarSign, 
+  TrendingUp, 
+  PieChart, 
+  Calendar, 
+  TrendingDown, 
+  BarChart, 
+  Loader2, 
+  Building, 
+  Users 
+} from "lucide-react";
 import { dashboardApi } from "../../api/dashboardApi";
 import { expenseApi } from "../../api/ExpenseAPI";
 
@@ -20,6 +31,7 @@ interface FinancialMetrics {
 }
 
 const FinancialSummary: React.FC = () => {
+  const { t } = useTranslation();
   const [metrics, setMetrics] = useState<FinancialMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -81,23 +93,25 @@ const FinancialSummary: React.FC = () => {
   };
 
   const formatCurrency = (amount: number | undefined) => {
-    if (amount === undefined || amount === null) return "$0";
+    if (amount === undefined || amount === null) return "MMK 0";
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'MMK',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(amount).replace('MMK', 'MMK ');
   };
 
   const formatCompactCurrency = (amount: number | undefined) => {
-    if (amount === undefined || amount === null) return "$0";
-    if (Math.abs(amount) >= 1000000) {
-      return `$${(amount / 1000000).toFixed(1)}M`;
+    if (amount === undefined || amount === null) return "MMK 0";
+    if (Math.abs(amount) >= 1000000000) {
+      return `MMK ${(amount / 1000000000).toFixed(1)}B`;
+    } else if (Math.abs(amount) >= 1000000) {
+      return `MMK ${(amount / 1000000).toFixed(1)}M`;
     } else if (Math.abs(amount) >= 1000) {
-      return `$${(amount / 1000).toFixed(1)}K`;
+      return `MMK ${(amount / 1000).toFixed(1)}K`;
     }
-    return `$${amount}`;
+    return `MMK ${amount}`;
   };
 
   const formatPercentage = (value: number | undefined) => {
@@ -109,7 +123,9 @@ const FinancialSummary: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-96">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        <span className="ml-2 text-lg text-gray-600">Loading financial data...</span>
+        <span className="ml-2 text-lg text-gray-600">
+          {t('financialSummary.loading')}
+        </span>
       </div>
     );
   }
@@ -123,14 +139,14 @@ const FinancialSummary: React.FC = () => {
             onClick={fetchFinancialMetrics}
             className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all duration-200"
           >
-            Retry
+            {t('financialSummary.error.retry')}
           </button>
         </div>
       </div>
     );
   }
 
-  // Prepare chart data based on available metrics
+  // Prepare chart data based on available metrics (adjusted for MMK - values in millions)
   const revenueExpenseData = metrics ? [
     { month: "Jan", revenue: metrics.monthlyRevenue ? metrics.monthlyRevenue / 1000000 : 2.8, expenses: (metrics.totalExpenses / 12) / 1000000 },
     { month: "Feb", revenue: metrics.monthlyRevenue ? metrics.monthlyRevenue / 1000000 : 3.2, expenses: (metrics.totalExpenses / 12) / 1000000 },
@@ -144,20 +160,20 @@ const FinancialSummary: React.FC = () => {
     ? Math.max(...revenueExpenseData.map(d => Math.max(d.revenue, d.expenses)))
     : 1;
 
-  // Yearly trends data
+  // Yearly trends data with MMK
   const yearlyData = metrics ? [
     { 
       year: "2022", 
-      totalRevenue: "$10.6M", 
-      totalExpenses: "$6.2M", 
-      netProfit: "$4.4M", 
+      totalRevenue: "MMK 10.6B", 
+      totalExpenses: "MMK 6.2B", 
+      netProfit: "MMK 4.4B", 
       profitMargin: "41.5%" 
     },
     { 
       year: "2023", 
-      totalRevenue: "$11.9M", 
-      totalExpenses: "$6.5M", 
-      netProfit: "$5.4M", 
+      totalRevenue: "MMK 11.9B", 
+      totalExpenses: "MMK 6.5B", 
+      netProfit: "MMK 5.4B", 
       profitMargin: "45.4%" 
     },
     { 
@@ -174,8 +190,12 @@ const FinancialSummary: React.FC = () => {
       {/* Period Selector */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Financial Dashboard</h1>
-          <p className="text-gray-600">Real-time financial metrics and performance analysis</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {t('financialSummary.title')}
+          </h1>
+          <p className="text-gray-600">
+            {t('financialSummary.subtitle')}
+          </p>
         </div>
         <div className="flex space-x-2">
           <button
@@ -184,7 +204,7 @@ const FinancialSummary: React.FC = () => {
               ? 'bg-blue-600 text-white' 
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
           >
-            Monthly
+            {t('financialSummary.period.monthly')}
           </button>
           <button
             onClick={() => setPeriod('quarter')}
@@ -192,7 +212,7 @@ const FinancialSummary: React.FC = () => {
               ? 'bg-blue-600 text-white' 
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
           >
-            Quarterly
+            {t('financialSummary.period.quarterly')}
           </button>
           <button
             onClick={() => setPeriod('year')}
@@ -200,7 +220,7 @@ const FinancialSummary: React.FC = () => {
               ? 'bg-blue-600 text-white' 
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
           >
-            Yearly
+            {t('financialSummary.period.yearly')}
           </button>
         </div>
       </div>
@@ -215,7 +235,9 @@ const FinancialSummary: React.FC = () => {
               </svg>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">Partial Data Loaded</h3>
+              <h3 className="text-sm font-medium text-yellow-800">
+                {t('financialSummary.error.title')}
+              </h3>
               <div className="mt-2 text-sm text-yellow-700">
                 <p>{error}</p>
               </div>
@@ -230,11 +252,15 @@ const FinancialSummary: React.FC = () => {
         <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl shadow-lg border border-blue-100 p-6 hover:shadow-xl transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-medium text-blue-600">Total Revenue</p>
+              <p className="text-sm font-medium text-blue-600">
+                {t('financialSummary.cards.totalRevenue.title')}
+              </p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {formatCurrency(metrics?.totalRevenue)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">{period === 'year' ? 'Annual' : period === 'quarter' ? 'Quarterly' : 'Monthly'}</p>
+              <p className="text-sm text-gray-500 mt-1">
+                {t(`financialSummary.cards.totalRevenue.period.${period}`)}
+              </p>
             </div>
             <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl border border-blue-300">
               <DollarSign className="w-6 h-6 text-blue-700" />
@@ -243,7 +269,11 @@ const FinancialSummary: React.FC = () => {
           <div className="flex items-center mt-2 text-sm">
             <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
             <span className="text-green-600 font-medium">
-              {metrics?.profitMargin ? `Margin: ${formatPercentage(metrics.profitMargin)}` : 'Calculating...'}
+              {metrics?.profitMargin 
+                ? t('financialSummary.cards.totalRevenue.margin', { 
+                    margin: formatPercentage(metrics.profitMargin) 
+                  })
+                : 'Calculating...'}
             </span>
           </div>
         </div>
@@ -252,11 +282,15 @@ const FinancialSummary: React.FC = () => {
         <div className="bg-gradient-to-br from-red-50 to-white rounded-xl shadow-lg border border-red-100 p-6 hover:shadow-xl transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-medium text-red-600">Total Expenses</p>
+              <p className="text-sm font-medium text-red-600">
+                {t('financialSummary.cards.totalExpenses.title')}
+              </p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {formatCurrency(metrics?.totalExpenses)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">Mall Owner CAM & Utilities</p>
+              <p className="text-sm text-gray-500 mt-1">
+                {t('financialSummary.cards.totalExpenses.subtitle')}
+              </p>
             </div>
             <div className="p-3 bg-gradient-to-br from-red-100 to-red-200 rounded-xl border border-red-300">
               <TrendingDown className="w-6 h-6 text-red-700" />
@@ -265,7 +299,9 @@ const FinancialSummary: React.FC = () => {
           <div className="flex items-center mt-2 text-sm">
             <div className="text-gray-600">
               {metrics?.totalRevenue && metrics.totalRevenue > 0 
-                ? `Expense Ratio: ${formatPercentage((metrics.totalExpenses / metrics.totalRevenue) * 100)}`
+                ? t('financialSummary.cards.totalExpenses.ratio', { 
+                    ratio: formatPercentage((metrics.totalExpenses / metrics.totalRevenue) * 100)
+                  })
                 : 'No revenue data'}
             </div>
           </div>
@@ -275,11 +311,15 @@ const FinancialSummary: React.FC = () => {
         <div className="bg-gradient-to-br from-green-50 to-white rounded-xl shadow-lg border border-green-100 p-6 hover:shadow-xl transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-medium text-green-600">Net Profit</p>
+              <p className="text-sm font-medium text-green-600">
+                {t('financialSummary.cards.netProfit.title')}
+              </p>
               <p className="text-2xl font-bold text-gray-900 mt-1">
                 {formatCurrency(metrics?.netProfit)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">Revenue - Expenses</p>
+              <p className="text-sm text-gray-500 mt-1">
+                {t('financialSummary.cards.netProfit.subtitle')}
+              </p>
             </div>
             <div className="p-3 bg-gradient-to-br from-green-100 to-green-200 rounded-xl border border-green-300">
               <PieChart className="w-6 h-6 text-green-700" />
@@ -287,7 +327,9 @@ const FinancialSummary: React.FC = () => {
           </div>
           <div className="flex items-center mt-2 text-sm">
             <span className="text-green-600 font-medium">
-              Profit Margin: {formatPercentage(metrics?.profitMargin)}
+              {t('financialSummary.cards.netProfit.margin', { 
+                margin: formatPercentage(metrics?.profitMargin) 
+              })}
             </span>
           </div>
         </div>
@@ -296,15 +338,21 @@ const FinancialSummary: React.FC = () => {
         <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl shadow-lg border border-purple-100 p-6 hover:shadow-xl transition-all duration-300">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-medium text-purple-600">Performance Metrics</p>
+              <p className="text-sm font-medium text-purple-600">
+                {t('financialSummary.cards.performanceMetrics.title')}
+              </p>
               <div className="flex items-center space-x-4 mt-2">
                 <div>
                   <p className="text-lg font-bold text-gray-900">{formatPercentage(metrics?.occupancyRate)}</p>
-                  <p className="text-xs text-gray-500">Occupancy</p>
+                  <p className="text-xs text-gray-500">
+                    {t('financialSummary.cards.performanceMetrics.occupancy')}
+                  </p>
                 </div>
                 <div>
                   <p className="text-lg font-bold text-gray-900">{formatPercentage(metrics?.collectionEfficiency)}</p>
-                  <p className="text-xs text-gray-500">Collection</p>
+                  <p className="text-xs text-gray-500">
+                    {t('financialSummary.cards.performanceMetrics.collection')}
+                  </p>
                 </div>
               </div>
             </div>
@@ -314,68 +362,15 @@ const FinancialSummary: React.FC = () => {
           </div>
           <div className="flex items-center text-sm text-gray-600 mt-2">
             <Building className="w-4 h-4 mr-1" />
-            <span>{metrics?.occupiedUnits || 0}/{metrics?.totalUnits || 0} Units Occupied</span>
+            <span>
+              {t('financialSummary.cards.performanceMetrics.units', { 
+                occupied: metrics?.occupiedUnits || 0, 
+                total: metrics?.totalUnits || 0 
+              })}
+            </span>
           </div>
         </div>
       </div>
-
-      {/* Revenue vs Expenses Chart */}
-      {revenueExpenseData.length > 0 && (
-        <div className="bg-white rounded-xl shadow-lg border border-blue-100 p-6 hover:shadow-xl transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Revenue vs Expenses Trend</h3>
-              <p className="text-sm text-gray-600 mt-1">Monthly comparison (estimated)</p>
-            </div>
-            <div className="p-2 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-              <BarChart className="w-5 h-5 text-blue-700" />
-            </div>
-          </div>
-          
-          <div className="flex items-end space-x-4 h-64">
-            {revenueExpenseData.map((item, index) => (
-              <div key={index} className="flex-1 flex flex-col items-center">
-                <div className="text-center mb-2">
-                  <p className="text-xs font-bold text-gray-900">{item.month}</p>
-                </div>
-                <div className="w-full flex space-x-1">
-                  <div className="flex-1 relative">
-                    <div 
-                      className="bg-gradient-to-t from-blue-500 to-blue-700 rounded-t-lg transition-all duration-300 hover:opacity-90"
-                      style={{ height: `${(item.revenue / maxValue) * 100}%` }}
-                    ></div>
-                    <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-blue-700 whitespace-nowrap">
-                      ${item.revenue.toFixed(1)}M
-                    </div>
-                  </div>
-                  <div className="flex-1 relative">
-                    <div 
-                      className="bg-gradient-to-t from-red-500 to-red-700 rounded-t-lg transition-all duration-300 hover:opacity-90"
-                      style={{ height: `${(item.expenses / maxValue) * 100}%` }}
-                    ></div>
-                    <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-red-700 whitespace-nowrap">
-                      ${item.expenses.toFixed(1)}M
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="mt-8 pt-4 border-t border-gray-100">
-            <div className="flex items-center justify-center space-x-6">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-blue-700 rounded-sm mr-2"></div>
-                <span className="text-sm text-gray-600">Revenue</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-gradient-to-r from-red-500 to-red-700 rounded-sm mr-2"></div>
-                <span className="text-sm text-gray-600">Expenses</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Financial Health Dashboard */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -383,8 +378,12 @@ const FinancialSummary: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg border border-blue-100 p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Profitability Analysis</h3>
-              <p className="text-sm text-gray-600 mt-1">Revenue breakdown and margins</p>
+              <h3 className="text-lg font-bold text-gray-900">
+                {t('financialSummary.profitabilityAnalysis.title')}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {t('financialSummary.profitabilityAnalysis.subtitle')}
+              </p>
             </div>
             <div className="p-2 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200">
               <PieChart className="w-5 h-5 text-green-700" />
@@ -394,19 +393,27 @@ const FinancialSummary: React.FC = () => {
           {metrics && (
             <div className="space-y-4">
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-gray-700">Gross Revenue</span>
+                <span className="text-gray-700">
+                  {t('financialSummary.profitabilityAnalysis.grossRevenue')}
+                </span>
                 <span className="font-bold text-blue-600">{formatCurrency(metrics.totalRevenue)}</span>
               </div>
               <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-gray-700">Total Expenses</span>
+                <span className="text-gray-700">
+                  {t('financialSummary.profitabilityAnalysis.totalExpenses')}
+                </span>
                 <span className="font-bold text-red-600">{formatCurrency(metrics.totalExpenses)}</span>
               </div>
               <div className="flex justify-between items-center p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
-                <span className="text-gray-900 font-bold">Net Profit</span>
+                <span className="text-gray-900 font-bold">
+                  {t('financialSummary.profitabilityAnalysis.netProfit')}
+                </span>
                 <span className="font-bold text-green-700 text-lg">{formatCurrency(metrics.netProfit)}</span>
               </div>
               <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                <span className="text-gray-700">Profit Margin</span>
+                <span className="text-gray-700">
+                  {t('financialSummary.profitabilityAnalysis.profitMargin')}
+                </span>
                 <span className="font-bold text-blue-700">{formatPercentage(metrics.profitMargin)}</span>
               </div>
             </div>
@@ -417,8 +424,12 @@ const FinancialSummary: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg border border-blue-100 p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Operational Metrics</h3>
-              <p className="text-sm text-gray-600 mt-1">Property utilization and efficiency</p>
+              <h3 className="text-lg font-bold text-gray-900">
+                {t('financialSummary.operationalMetrics.title')}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {t('financialSummary.operationalMetrics.subtitle')}
+              </p>
             </div>
             <div className="p-2 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
               <Building className="w-5 h-5 text-blue-700" />
@@ -429,18 +440,24 @@ const FinancialSummary: React.FC = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-600">Total Units</p>
+                  <p className="text-sm text-blue-600">
+                    {t('financialSummary.operationalMetrics.totalUnits')}
+                  </p>
                   <p className="text-xl font-bold text-gray-900">{metrics.totalUnits}</p>
                 </div>
                 <div className="p-3 bg-green-50 rounded-lg">
-                  <p className="text-sm text-green-600">Occupied Units</p>
+                  <p className="text-sm text-green-600">
+                    {t('financialSummary.operationalMetrics.occupiedUnits')}
+                  </p>
                   <p className="text-xl font-bold text-gray-900">{metrics.occupiedUnits}</p>
                 </div>
               </div>
               
               <div className="p-3 bg-purple-50 rounded-lg">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-purple-600">Occupancy Rate</span>
+                  <span className="text-purple-600">
+                    {t('financialSummary.operationalMetrics.occupancyRate')}
+                  </span>
                   <span className="font-bold text-purple-700">{formatPercentage(metrics.occupancyRate)}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
@@ -453,7 +470,9 @@ const FinancialSummary: React.FC = () => {
               
               <div className="p-3 bg-yellow-50 rounded-lg">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-yellow-600">Collection Efficiency</span>
+                  <span className="text-yellow-600">
+                    {t('financialSummary.operationalMetrics.collectionEfficiency')}
+                  </span>
                   <span className="font-bold text-yellow-700">{formatPercentage(metrics.collectionEfficiency)}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
@@ -467,9 +486,7 @@ const FinancialSummary: React.FC = () => {
           )}
         </div>
       </div>
-
-      
-      </div>
+    </div>
   );
 };
 
