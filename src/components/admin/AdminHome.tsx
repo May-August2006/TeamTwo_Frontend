@@ -194,7 +194,7 @@ const AdminHome: React.FC<AdminHomeProps> = ({ onNavigate }) => {
       borderColor: "border-l-blue-800",
     },
     {
-      title: t('admin.totalLevels') || "Total Levels",
+      title: t('admin.totalLevels') || "Total Floors",
       value: loading ? "..." : stats.totalLevels.toString(),
       color: "bg-gradient-to-r from-blue-500 to-blue-600",
       borderColor: "border-l-blue-800",
