@@ -262,6 +262,8 @@ export interface AppointmentRequest {
 }
 
 export interface AppointmentDTO {
+  createdAt: any;
+  updatedAt: any;
   unitNumber: number;
   levelId: any;
   branchId: any;

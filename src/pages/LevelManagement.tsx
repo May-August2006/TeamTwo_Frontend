@@ -1,14 +1,21 @@
 /** @format */
 
 import React, { useState, useEffect } from "react";
-import { Layers, Calendar, Trash2, Edit2, X } from "lucide-react";
-import type { Level } from "../types";
+import { Layers, Calendar, Trash2, Edit2, X, ChevronDown } from "lucide-react";
+import type { Level, Building } from "../types";
 import { levelApi } from "../api/LevelAPI";
 import LevelForm from "../components/LevelForm";
 import { Notification, type NotificationType } from "../components/common/ui/Notification";
+import { branchApi } from "../api/BranchAPI";
+import type { Branch } from "../types";
+import { buildingApi } from "../api/BuildingAPI";
+import { useTranslation } from 'react-i18next';
 
 const LevelManagement: React.FC = () => {
+  const { t } = useTranslation();
   const [levels, setLevels] = useState<Level[]>([]);
+  const [buildings, setBuildings] = useState<Building[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [levelToDelete, setLevelToDelete] = useState<Level | null>(null);
@@ -16,6 +23,10 @@ const LevelManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
+  const [selectedBuildingId, setSelectedBuildingId] = useState<number | null>(null);
+  const [loadingBranches, setLoadingBranches] = useState(false);
+  const [loadingBuildings, setLoadingBuildings] = useState(false);
   const [notification, setNotification] = useState<{
     type: NotificationType;
     message: string;
@@ -23,14 +34,50 @@ const LevelManagement: React.FC = () => {
   } | null>(null);
 
   useEffect(() => {
+    loadBranches();
     loadLevels();
   }, []);
+
+  useEffect(() => {
+    if (selectedBranchId) {
+      loadBuildingsByBranch(selectedBranchId);
+    } else {
+      setBuildings([]);
+      setSelectedBuildingId(null);
+    }
+  }, [selectedBranchId]);
 
   const showNotification = (type: NotificationType, message: string, title?: string) => {
     setNotification({ type, message, title });
     setTimeout(() => {
       setNotification(null);
     }, 3000);
+  };
+
+  const loadBranches = async () => {
+    try {
+      setLoadingBranches(true);
+      const response = await branchApi.getAll();
+      setBranches(response.data);
+    } catch (error) {
+      console.error("Error loading branches:", error);
+      showNotification('error', t('error.loadBranchesFailed', "Failed to load branches. Please try again."), t('common.error', "Error"));
+    } finally {
+      setLoadingBranches(false);
+    }
+  };
+
+  const loadBuildingsByBranch = async (branchId: number) => {
+    try {
+      setLoadingBuildings(true);
+      const response = await buildingApi.getByBranchId(branchId);
+      setBuildings(response.data);
+    } catch (error) {
+      console.error("Error loading buildings:", error);
+      showNotification('error', t('error.loadBuildingsFailed', "Failed to load buildings. Please try again."), t('common.error', "Error"));
+    } finally {
+      setLoadingBuildings(false);
+    }
   };
 
   const loadLevels = async () => {
@@ -40,7 +87,7 @@ const LevelManagement: React.FC = () => {
       setLevels(response.data);
     } catch (error) {
       console.error("Error loading levels:", error);
-      showNotification('error', "Failed to load floors. Please try again.", "Error");
+      showNotification('error', t('error.loadFloorsFailed', "Failed to load floors. Please try again."), t('common.error', "Error"));
     } finally {
       setLoading(false);
     }
@@ -67,13 +114,13 @@ const LevelManagement: React.FC = () => {
     try {
       setDeleting(true);
       await levelApi.delete(levelToDelete.id);
-      showNotification('success', `Floor "${levelToDelete.levelName}" deleted successfully!`, "Deleted");
+      showNotification('success', t('notification.floorDeleted', 'Floor "{{name}}" deleted successfully!', { name: levelToDelete.levelName }), t('common.deleted', "Deleted"));
       loadLevels();
     } catch (error: any) {
       console.error("Error deleting level:", error);
       showNotification('error', 
-        error.response?.data?.message || "Failed to delete floor. Please try again.", 
-        "Delete Failed"
+        error.response?.data?.message || t('error.deleteFloorFailed', "Failed to delete floor. Please try again."), 
+        t('error.deleteFailed', "Delete Failed")
       );
     } finally {
       setDeleting(false);
@@ -90,27 +137,53 @@ const LevelManagement: React.FC = () => {
   const handleFormSubmit = (message: string) => {
     setShowForm(false);
     
-    let title = "Success";
+    let title = t('common.success', "Success");
     if (message.includes("created")) {
-      title = "Floor Created";
+      title = t('notification.floorCreatedTitle', "Floor Created");
     } else if (message.includes("updated")) {
-      title = "Floor Updated";
+      title = t('notification.floorUpdatedTitle', "Floor Updated");
     }
     
     showNotification('success', message, title);
     loadLevels();
   };
 
-  const filteredLevels = levels.filter(
-    (level) =>
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedBranchId(null);
+    setSelectedBuildingId(null);
+  };
+
+  const filteredLevels = levels.filter((level) => {
+    // First apply search filter
+    const matchesSearch = searchTerm === "" ||
       level.levelName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      level.buildingName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      level.buildingName.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Then apply branch filter
+    const matchesBranch = !selectedBranchId || 
+      buildings.some(building => building.id === level.buildingId && building.branchId === selectedBranchId);
+
+    // Then apply building filter
+    const matchesBuilding = !selectedBuildingId || level.buildingId === selectedBuildingId;
+
+    return matchesSearch && matchesBranch && matchesBuilding;
+  });
+
+  const getFloorLabel = (levelNumber: number) => {
+    if (levelNumber === 0) return t('common.groundFloor', 'Ground Floor');
+    if (levelNumber === 1) return t('common.firstFloor', '1st Floor');
+    if (levelNumber === 2) return t('common.secondFloor', '2nd Floor');
+    if (levelNumber === 3) return t('common.thirdFloor', '3rd Floor');
+    return t('common.nthFloor', '{{n}}th Floor', { n: levelNumber });
+  };
 
   if (loading) {
     return (
       <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
-        <div className="text-xl font-medium text-stone-700 animate-pulse">Loading Floor Management...</div>
+        <div className="text-xl font-medium text-stone-700 animate-pulse">
+          {t('common.loadingFloorManagement', 'Loading Floor Management...')}
+        </div>
       </div>
     );
   }
@@ -132,35 +205,94 @@ const LevelManagement: React.FC = () => {
       {/* Header and Add Button */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">Floor Management</h1>
-          <p className="text-stone-600 mt-1 text-sm sm:text-base">Manage all floors within your buildings.</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
+            {t('levelManagement.title', 'Floor Management')}
+          </h1>
+          <p className="text-stone-600 mt-1 text-sm sm:text-base">
+            {t('levelManagement.subtitle', 'Manage all floors within your buildings.')}
+          </p>
         </div>
         <button
           onClick={handleCreate}
-          className="bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-red-700 transition duration-150 flex items-center gap-2 w-full sm:w-auto justify-center font-semibold focus:outline-none focus:ring-4 focus:ring-red-300 transform active:scale-95"
+          className="bg-blue-800 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-blue-900 transition duration-150 flex items-center gap-2 w-full sm:w-auto justify-center font-semibold focus:outline-none focus:ring-4 focus:ring-blue-300 transform active:scale-95"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12h14"/>
             <path d="M12 5v14"/>
           </svg>
-          Add New Floor
+          {t('levelManagement.addFloor', 'Add New Floor')}
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6">
-        <div className="relative max-w-md">
+      {/* Filters Section */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        {/* Search Bar */}
+        <div className="flex-1 relative max-w-md">
           <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
             type="text"
-            placeholder="Search floors by name or building..."
+            placeholder={t('levelManagement.searchPlaceholder', 'Search floors by name or building...')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white shadow-sm"
+            maxLength={20}
+            className="w-full pl-10 pr-4 py-3 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 bg-white shadow-sm"
           />
         </div>
+
+        {/* Branch Filter Dropdown */}
+        <div className="relative">
+          <select
+            value={selectedBranchId || ""}
+            onChange={(e) => {
+              setSelectedBranchId(e.target.value ? Number(e.target.value) : null);
+              setSelectedBuildingId(null); // Reset building when branch changes
+            }}
+            className="appearance-none w-full sm:w-48 pl-4 pr-10 py-3 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 bg-white shadow-sm cursor-pointer"
+            disabled={loadingBranches}
+          >
+            <option value="">{t('levelManagement.allBranches', 'All Branches')}</option>
+            {branches.map((branch) => (
+              <option key={branch.id} value={branch.id}>
+                {branch.branchName}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-stone-400">
+            <ChevronDown className="h-5 w-5" />
+          </div>
+        </div>
+
+        {/* Building Filter Dropdown */}
+        <div className="relative">
+          <select
+            value={selectedBuildingId || ""}
+            onChange={(e) => setSelectedBuildingId(e.target.value ? Number(e.target.value) : null)}
+            className="appearance-none w-full sm:w-48 pl-4 pr-10 py-3 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 bg-white shadow-sm cursor-pointer"
+            disabled={!selectedBranchId || loadingBuildings}
+          >
+            <option value="">{t('levelManagement.allBuildings', 'All Buildings')}</option>
+            {buildings.map((building) => (
+              <option key={building.id} value={building.id}>
+                {building.buildingName}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-stone-400">
+            <ChevronDown className="h-5 w-5" />
+          </div>
+        </div>
+
+        {/* Clear Filters Button */}
+        {(searchTerm || selectedBranchId || selectedBuildingId) && (
+          <button
+            onClick={clearFilters}
+            className="px-4 py-3 text-blue-800 border border-blue-300 rounded-xl hover:bg-blue-50 transition duration-150 font-medium text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+          >
+            {t('levelManagement.clearFilters', 'Clear Filters')}
+          </button>
+        )}
       </div>
 
       
@@ -172,14 +304,17 @@ const LevelManagement: React.FC = () => {
               {/* Results Count */}
               <div className="flex justify-between items-center mb-4">
                 <p className="text-sm text-stone-600">
-                  Showing <span className="font-semibold">{filteredLevels.length}</span> of <span className="font-semibold">{levels.length}</span> floors
+                  {t('common.showingXofY', 'Showing {{count}} of {{total}} floors', { 
+                    count: filteredLevels.length, 
+                    total: levels.length 
+                  })}
                 </p>
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
-                    className="text-sm text-red-600 hover:text-red-700 font-medium"
+                    className="text-sm text-blue-800 hover:text-blue-900 font-medium"
                   >
-                    Clear search
+                    {t('common.clearSearch', 'Clear search')}
                   </button>
                 )}
               </div>
@@ -189,12 +324,12 @@ const LevelManagement: React.FC = () => {
                 {filteredLevels.map((level) => (
                   <div
                     key={level.id}
-                    className="bg-stone-50 rounded-xl shadow-sm border border-stone-200 p-6 hover:shadow-md transition-shadow duration-150 hover:border-red-200"
+                    className="bg-stone-50 rounded-xl shadow-sm border border-stone-200 p-6 hover:shadow-md transition-shadow duration-150 hover:border-blue-200"
                   >
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-red-100 rounded-lg">
-                          <Layers className="w-6 h-6 text-red-600" />
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <Layers className="w-6 h-6 text-blue-800" />
                         </div>
                         <div>
                           <h3 className="font-bold text-stone-900 text-lg">
@@ -206,15 +341,15 @@ const LevelManagement: React.FC = () => {
                       <div className="flex space-x-1">
                         <button
                           onClick={() => handleEdit(level)}
-                          className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-150"
-                          title="Edit floor"
+                          className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150"
+                          title={t('tooltip.editFloor', 'Edit floor')}
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteClick(level)}
-                          className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-150"
-                          title="Delete floor"
+                          className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150"
+                          title={t('tooltip.deleteFloor', 'Delete floor')}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -224,28 +359,24 @@ const LevelManagement: React.FC = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-stone-600">
-                          Floor Number:
+                          {t('common.floorNumber', 'Floor Number')}:
                         </span>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          {level.levelNumber === 0 ? 'Ground Floor' : 
-                           level.levelNumber === 1 ? '1st Floor' :
-                           level.levelNumber === 2 ? '2nd Floor' :
-                           level.levelNumber === 3 ? '3rd Floor' :
-                           `${level.levelNumber}th Floor`}
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          {getFloorLabel(level.levelNumber)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-stone-600">
-                          Total Units:
+                          {t('common.totalUnits', 'Total Units')}:
                         </span>
                         <span className="text-sm text-stone-900 font-medium">
-                          {level.totalUnits || 0} {level.totalUnits === 1 ? 'unit' : 'units'}
+                          {level.totalUnits || 0} {level.totalUnits === 1 ? t('common.unit', 'unit') : t('common.units', 'units')}
                         </span>
                       </div>
                       <div className="flex items-center space-x-2 text-xs text-stone-500 pt-3 border-t border-stone-200">
                         <Calendar className="w-3 h-3" />
                         <span>
-                          Created: {new Date(level.createdAt).toLocaleDateString('en-US', {
+                          {t('common.created', 'Created')}: {new Date(level.createdAt).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric'
@@ -262,20 +393,20 @@ const LevelManagement: React.FC = () => {
             <div className="text-center py-16 text-stone-500 bg-stone-50 rounded-xl">
               <div className="text-5xl mb-3">🏢</div>
               <div className="text-xl font-semibold text-stone-700 mb-2">
-                No Floors Yet
+                {t('levelManagement.noFloors', 'No Floors Yet')}
               </div>
               <p className="text-sm mb-6">
-                Start by clicking 'Add New Floor' to define your first floor.
+                {t('common.startByAdding', 'Start by clicking \'Add New Floor\' to define your first floor.')}
               </p>
               <button
                 onClick={handleCreate}
-                className="bg-red-600 text-white px-6 py-3 rounded-lg shadow hover:bg-red-700 transition duration-150 flex items-center gap-2 mx-auto"
+                className="bg-blue-800 text-white px-6 py-3 rounded-lg shadow hover:bg-blue-900 transition duration-150 flex items-center gap-2 mx-auto"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12h14"/>
                   <path d="M12 5v14"/>
                 </svg>
-                Add Your First Floor
+                {t('common.addYourFirst', 'Add Your First Floor')}
               </button>
             </div>
           )}
@@ -285,16 +416,16 @@ const LevelManagement: React.FC = () => {
             <div className="text-center py-16 text-stone-500 bg-stone-50 rounded-xl">
               <div className="text-5xl mb-3">🔍</div>
               <div className="text-xl font-semibold text-stone-700 mb-2">
-                No Floors Found
+                {t('levelManagement.noResults', 'No Floors Found')}
               </div>
               <p className="text-sm mb-4">
-                No floors match your search for "<span className="font-medium">{searchTerm}</span>"
+                {t('common.noMatchesFilters', 'No floors match your filters')}
               </p>
               <button
-                onClick={() => setSearchTerm('')}
-                className="text-red-600 hover:text-red-700 font-medium text-sm"
+                onClick={clearFilters}
+                className="text-blue-800 hover:text-blue-900 font-medium text-sm"
               >
-                Clear search and show all floors
+                {t('common.clearFiltersShowAll', 'Clear filters and show all floors')}
               </button>
             </div>
           )}
@@ -315,7 +446,9 @@ const LevelManagement: React.FC = () => {
         <div className="fixed inset-0 bg-stone-900 bg-opacity-70 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-stone-900">Delete Floor</h2>
+              <h2 className="text-xl font-bold text-stone-900">
+                {t('confirmation.deleteFloorTitle', 'Delete Floor')}
+              </h2>
               <button
                 onClick={handleDeleteCancel}
                 className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition duration-150"
@@ -326,26 +459,25 @@ const LevelManagement: React.FC = () => {
             </div>
             
             <div className="mb-6">
-              <div className="flex items-center space-x-3 mb-4 p-3 bg-red-50 rounded-lg">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <Layers className="w-5 h-5 text-red-600" />
+              <div className="flex items-center space-x-3 mb-4 p-3 bg-blue-50 rounded-lg">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Layers className="w-5 h-5 text-blue-800" />
                 </div>
                 <div>
                   <h3 className="font-bold text-stone-900">{levelToDelete.levelName}</h3>
                   <p className="text-sm text-stone-500">
-                    {levelToDelete.buildingName} • {levelToDelete.totalUnits || 0} units
+                    {levelToDelete.buildingName} • {levelToDelete.totalUnits || 0} {t('common.units', 'units')}
                   </p>
                 </div>
               </div>
               
               <p className="text-stone-700">
-                Are you sure you want to delete the floor "<span className="font-semibold">{levelToDelete.levelName}</span>"? 
-                This action cannot be undone and will remove all associated data.
+                {t('confirmation.deleteFloor', 'Are you sure you want to delete the floor "{{name}}"? This action cannot be undone and will remove all associated data.', { name: levelToDelete.levelName })}
               </p>
               
               <div className="mt-4 p-3 bg-stone-50 rounded-lg">
                 <p className="text-sm text-stone-600">
-                  <span className="font-medium">Note:</span> Deleting a floor will also remove all units and related information associated with this floor.
+                  <span className="font-medium">{t('common.note', 'Note')}:</span> {t('warning.deleteFloor', 'Deleting a floor will also remove all units and related information associated with this floor.')}
                 </p>
               </div>
             </div>
@@ -357,12 +489,12 @@ const LevelManagement: React.FC = () => {
                 className="px-6 py-3 text-stone-600 border border-stone-300 rounded-lg hover:bg-stone-100 transition duration-150 font-medium text-sm sm:text-base shadow-sm w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-stone-300"
                 disabled={deleting}
               >
-                Cancel
+                {t('common.cancel', 'Cancel')}
               </button>
               <button
                 onClick={handleDeleteConfirm}
                 disabled={deleting}
-                className="px-6 py-3 bg-red-600 text-white rounded-lg shadow-lg hover:bg-red-700 transition duration-150 font-semibold text-sm sm:text-base focus:outline-none focus:ring-4 focus:ring-red-300 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto flex items-center justify-center gap-2"
+                className="px-6 py-3 bg-blue-800 text-white rounded-lg shadow-lg hover:bg-blue-900 transition duration-150 font-semibold text-sm sm:text-base focus:outline-none focus:ring-4 focus:ring-blue-300 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto flex items-center justify-center gap-2"
               >
                 {deleting ? (
                   <>
@@ -370,12 +502,12 @@ const LevelManagement: React.FC = () => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Deleting...
+                    {t('common.deleting', 'Deleting...')}
                   </>
                 ) : (
                   <>
                     <Trash2 className="w-4 h-4" />
-                    Delete Floor
+                    {t('common.deleteFloor', 'Delete Floor')}
                   </>
                 )}
               </button>
@@ -392,8 +524,7 @@ const LevelManagement: React.FC = () => {
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
             <p>
-              <span className="font-medium">Tip:</span> You can edit or delete floors using the action buttons on each card. 
-              Floor names are automatically capitalized for consistency.
+              <span className="font-medium">{t('common.tip', 'Tip')}:</span> {t('tip.floorManagement', 'You can edit or delete floors using the action buttons on each card. Floor names are automatically capitalized for consistency. Select a branch first to filter buildings.')}
             </p>
           </div>
         </div>

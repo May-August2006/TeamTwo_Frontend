@@ -150,7 +150,7 @@ export const ApprovalStatusModal: React.FC<ApprovalStatusModalProps> = ({
 
             <Button
               onClick={() => onAction(config.secondaryAction as any)}
-              variant="outline"
+              variant="primary"
               className="flex-1"
             >
               {config.secondaryButtonText}

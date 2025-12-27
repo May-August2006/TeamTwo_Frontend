@@ -11,8 +11,8 @@ export const appointmentApi = {
     }),
 
   // (Optional) Get all appointments of logged-in user
-  getByUser: (userId: number) =>
-    API.get<AppointmentDTO[]>(`/api/appointments/user/${userId}`),
+  getByUser: (userId: number) =>{
+   return API.get<AppointmentDTO[]>(`/api/appointments/user/${userId}`)},
 
   getByManager: (managerId: number) =>
     API.get<AppointmentDTO[]>(`/api/appointments/manager/${managerId}`),

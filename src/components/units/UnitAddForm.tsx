@@ -68,6 +68,9 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
+  // Add this constant for image limit
+  const MAX_IMAGES = 5;
+
   // Load initial data
   useEffect(() => {
     const loadInitialData = async () => {
@@ -480,11 +483,23 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     if (!files) return;
 
     const newImages = Array.from(files);
+    
+    // Check if adding new images would exceed the limit
+    const totalImagesAfterAddition = selectedImages.length + newImages.length;
+    if (totalImagesAfterAddition > MAX_IMAGES) {
+      alert(`You can only upload a maximum of ${MAX_IMAGES} images. You currently have ${selectedImages.length} selected.`);
+      e.target.value = ''; // Reset the file input
+      return;
+    }
+
     setSelectedImages(prev => [...prev, ...newImages]);
 
     // Create preview URLs
     const newPreviews = newImages.map(file => URL.createObjectURL(file));
     setImagePreviews(prev => [...prev, ...newPreviews]);
+    
+    // Reset the file input
+    e.target.value = '';
   };
 
   const removeSelectedImage = (index: number) => {
@@ -506,12 +521,12 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       // Check for duplicates - only within same level
       const isDuplicate = await checkDuplicateUnitNumber(formData.unitNumber, formData.levelId);
       if (isDuplicate) {
-        newErrors.unitNumber = 'Unit number already exists on this level';
+        newErrors.unitNumber = 'Unit number already exists on this floor';
       }
     }
 
     if (!formData.levelId) {
-      newErrors.levelId = 'Please select a level';
+      newErrors.levelId = 'Please select a floor';
     } else if (selectedLevel) {
       // Validate level capacity
       if (!validateLevelCapacity()) {
@@ -798,13 +813,13 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         if (isDuplicate) {
           setErrors(prev => ({
             ...prev,
-            unitNumber: 'Unit number already exists on this level'
+            unitNumber: 'Unit number already exists on this floor'
           }));
         } else {
           // Clear duplicate error if it exists
           setErrors(prev => {
             const newErrors = { ...prev };
-            if (newErrors.unitNumber === 'Unit number already exists on this level') {
+            if (newErrors.unitNumber === 'Unit number already exists on this floor') {
               delete newErrors.unitNumber;
             }
             return newErrors;
@@ -1160,7 +1175,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       {/* Level Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Level *
+          floor *
         </label>
         <select
           name="levelId"
@@ -1171,7 +1186,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             errors.levelId ? 'border-red-500' : 'border-gray-300'
           }`}
         >
-          <option value="">Select Level</option>
+          <option value="">Select Floor</option>
           {levels.map(level => (
             <option key={level.id} value={level.id}>
               {level.levelName} (Floor {level.levelNumber})
@@ -1200,7 +1215,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
               </div>
             </div>
             {levelUnitsCount >= selectedLevel.totalUnits && (
-              <p className="text-red-600 text-xs mt-1">Level is at full capacity!</p>
+              <p className="text-red-600 text-xs mt-1">Floor is at full capacity!</p>
             )}
           </div>
         )}
@@ -1450,10 +1465,29 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Unit Images
+          <span className="ml-2 text-xs text-gray-500">
+            (Max {MAX_IMAGES} images)
+          </span>
         </label>
         
+        {/* Show remaining image count */}
+        {selectedImages.length > 0 && (
+          <div className="mb-3 text-sm text-gray-600">
+            <span className={`font-medium ${selectedImages.length >= MAX_IMAGES ? 'text-red-600' : 'text-blue-600'}`}>
+              {selectedImages.length}/{MAX_IMAGES} images selected
+            </span>
+            {selectedImages.length >= MAX_IMAGES && (
+              <span className="ml-2 text-red-500 text-xs">Maximum limit reached</span>
+            )}
+          </div>
+        )}
+        
         {/* Image Upload Input */}
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+        <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+          selectedImages.length >= MAX_IMAGES 
+            ? 'border-red-300 bg-red-50 cursor-not-allowed' 
+            : 'border-gray-300 hover:border-gray-400'
+        }`}>
           <input
             type="file"
             multiple
@@ -1461,16 +1495,23 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             onChange={handleImageSelect}
             className="hidden"
             id="unit-images"
+            disabled={selectedImages.length >= MAX_IMAGES}
           />
           <label
             htmlFor="unit-images"
-            className="cursor-pointer block"
+            className={`block ${selectedImages.length >= MAX_IMAGES ? 'cursor-not-allowed' : 'cursor-pointer'}`}
           >
-            <svg className="w-8 h-8 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-8 h-8 mx-auto ${
+              selectedImages.length >= MAX_IMAGES ? 'text-red-400' : 'text-gray-400'
+            }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <p className="text-sm text-gray-600 mt-2">
-              Click to upload images or drag and drop
+            <p className={`text-sm mt-2 ${
+              selectedImages.length >= MAX_IMAGES ? 'text-red-600' : 'text-gray-600'
+            }`}>
+              {selectedImages.length >= MAX_IMAGES 
+                ? 'Maximum image limit reached' 
+                : 'Click to upload images or drag and drop'}
             </p>
             <p className="text-xs text-gray-500">
               PNG, JPG, JPEG up to 10MB each
@@ -1504,6 +1545,9 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             </div>
             <p className="text-xs text-gray-500 mt-2">
               {selectedImages.length} image(s) selected
+              {selectedImages.length >= MAX_IMAGES && (
+                <span className="ml-2 text-red-500">(Maximum limit reached)</span>
+              )}
             </p>
           </div>
         )}

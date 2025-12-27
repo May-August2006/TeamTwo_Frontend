@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 
 interface ToastNotificationProps {
-  type: 'success' | 'error' | 'info';
+  type: 'success' |"warning"| 'error' | 'info';
   message: string;
   onClose: () => void;
   duration?: number;

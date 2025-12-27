@@ -196,7 +196,7 @@ export const Header: React.FC<HeaderProps> = ({
               Contact
             </button>
 
-            {isLoggedIn && (
+            {/* {isLoggedIn && (
               <Link
                 to="/admin/rooms"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -204,7 +204,7 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 Admin
               </Link>
-            )}
+            )} */}
 
             <div className="pt-6 border-t border-[#E2E8F0]">
               {isLoggedIn ? (
