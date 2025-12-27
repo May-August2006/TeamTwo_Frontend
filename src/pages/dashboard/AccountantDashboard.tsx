@@ -15,8 +15,8 @@ import BuildingUtilityInvoicePage from "../../components/accountant/BuildingUtil
 import { LateFeeManagementPage } from "../../components/accountant/LateFeeManagementPage";
 import { OverdueOrOutstandingPage } from "../../components/accountant/OverdueOrOustandingPage";
 import InvoicesPage from "../../components/accountant/InvoicesPage";
+import MeterReadingPage from "../../components/accountant/MeterReadingPage";
 
-const PRIMARY_COLOR = "#1E40AF";
 
 const AccountantDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState("overview");
@@ -84,6 +84,8 @@ const AccountantDashboard: React.FC = () => {
         return <BulkMeterReadingPage />;
       case "building-invoices":
         return <BuildingUtilityInvoicePage />;
+        case "meter-readings":
+          return <MeterReadingPage/>;
       case "payments":
         return <PaymentListPage />;
       case "invoices-management":
@@ -138,53 +140,45 @@ const AccountantDashboard: React.FC = () => {
         );
       
       case "building-invoices":
-        return (
-          <button
-            onClick={() => {}}
-            className="w-full sm:w-auto px-4 py-3 rounded-xl shadow-lg text-white font-semibold transform active:scale-95 transition duration-150 text-sm sm:text-base"
-            style={{ backgroundColor: PRIMARY_COLOR }}
-          >
-            + Generate Invoice
-          </button>
-        );
-      default:
-        return null;
+   
     }
   };
 
-  return (
-    <div className="flex min-h-screen bg-stone-50">
-      <style>{`
-        body { 
-          margin:0; 
-          padding:0; 
-          font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Oxygen','Ubuntu','Cantarell','Fira Sans','Droid Sans','Helvetica Neue',sans-serif; 
-          -webkit-font-smoothing:antialiased; 
-          -moz-osx-font-smoothing:grayscale; 
-          background-color:#fafaf9; 
-        }
-        * { box-sizing:border-box; }
-        @media (max-width: 640px) {
-          .hide-on-mobile { display: none !important; }
-        }
-      `}</style>
+return (
+  <div className="flex min-h-screen bg-stone-50">
+    <style>{`
+      body { 
+        margin:0; 
+        padding:0; 
+        font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Oxygen','Ubuntu','Cantarell','Fira Sans','Droid Sans','Helvetica Neue',sans-serif; 
+        -webkit-font-smoothing:antialiased; 
+        -moz-osx-font-smoothing:grayscale; 
+        background-color:#fafaf9; 
+      }
+      * { box-sizing:border-box; }
+      @media (max-width: 640px) {
+        .hide-on-mobile { display: none !important; }
+      }
+    `}</style>
 
-      <Sidebar
-        activeSection={activeSection}
-        onSectionChange={handleSectionChange}
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        isCollapsed={isMobile ? false : isSidebarCollapsed}
-        onToggleCollapse={handleToggleCollapse}
-      />
+    <Sidebar
+      activeSection={activeSection}
+      onSectionChange={handleSectionChange}
+      isOpen={isSidebarOpen}
+      onClose={() => setIsSidebarOpen(false)}
+      isCollapsed={isMobile ? false : isSidebarCollapsed}
+      onToggleCollapse={handleToggleCollapse}
+    />
 
-      <main
-        className={`flex-grow transition-all duration-300 w-full
-          ${isMobile ? "ml-0" : isSidebarCollapsed ? "lg:ml-20" : "lg:ml-64"}`}
-      >
-        <AppBar onMenuClick={toggleSidebar} showMenuButton={isMobile} />
-        <div className="h-16"></div>
-
+    <main
+      className={`flex-grow transition-all duration-300 w-full flex flex-col
+        ${isMobile ? "ml-0" : isSidebarCollapsed ? "lg:ml-20" : "lg:ml-64"}`}
+    >
+      <AppBar onMenuClick={toggleSidebar} showMenuButton={isMobile} />
+      <div className="h-16"></div> {/* Spacer for AppBar */}
+      
+      {/* Container for page content - defines the scrollable area */}
+      <div className="flex-1 flex flex-col min-h-0">
         <div className="p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-stone-900">
@@ -194,11 +188,15 @@ const AccountantDashboard: React.FC = () => {
             <div className="w-full sm:w-auto">{renderActionButtons()}</div>
           </div>
 
-          <div className="w-full overflow-x-auto">{renderContent()}</div>
+          {/* This container gives PaymentListPage a defined height for sticky positioning */}
+          <div className="w-full h-[calc(100vh-200px)] min-h-[500px]">
+            {renderContent()}
+          </div>
         </div>
-      </main>
-    </div>
-  );
+      </div>
+    </main>
+  </div>
+);
 };
 
 export default AccountantDashboard;

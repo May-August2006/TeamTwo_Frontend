@@ -1,6 +1,7 @@
 /** @format */
 
 import React from "react";
+import { useTranslation } from "react-i18next";
 import {
   Building2,
   BarChart3,
@@ -31,36 +32,38 @@ const BODSidebar: React.FC<BODSidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
+  const { t } = useTranslation();
+
   const menuItems = [
     {
-      name: "Dashboard",
+      name: t('bodSidebar.menu.dashboard.name'),
       icon: <Home className="w-5 h-5" />,
       path: "/bod",
-      description: "Overview"
+      description: t('bodSidebar.menu.dashboard.description')
     },
     {
-      name: "Occupancy & Lease",
+      name: t('bodSidebar.menu.occupancy.name'),
       icon: <Building className="w-5 h-5" />,
       path: "/bod/occupancy",
-      description: "Reviews"
+      description: t('bodSidebar.menu.occupancy.description')
     },
     {
-      name: "Performance",
+      name: t('bodSidebar.menu.performance.name'),
       icon: <Target className="w-5 h-5" />,
       path: "/bod/performance",
-      description: "Metrics"
+      description: t('bodSidebar.menu.performance.description')
     },
     {
-      name: "Financial Summary",
+      name: t('bodSidebar.menu.financialSummary.name'),
       icon: <DollarSign className="w-5 h-5" />,
       path: "/bod/financial-summary",
-      description: "Quarterly/Yearly"
+      description: t('bodSidebar.menu.financialSummary.description')
     },
     {
-      name: "Reports",
+      name: t('bodSidebar.menu.reports.name'),
       icon: <FileText className="w-5 h-5" />,
       path: "/bod/reports",
-      description: "Download"
+      description: t('bodSidebar.menu.reports.description')
     },
   ];
 
@@ -95,9 +98,11 @@ const BODSidebar: React.FC<BODSidebarProps> = ({
               </div>
               <div>
                 <span className="text-lg font-bold text-gray-900">
-                  Board of Directors
+                  {t('bodSidebar.title')}
                 </span>
-                <p className="text-xs text-gray-600">Strategic Dashboard</p>
+                <p className="text-xs text-gray-600">
+                  {t('bodSidebar.subtitle')}
+                </p>
               </div>
             </div>
           )}
@@ -169,9 +174,11 @@ const BODSidebar: React.FC<BODSidebarProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">
-                      Board Member
+                      {t('bodSidebar.user.role')}
                     </p>
-                    <p className="text-xs text-gray-500 truncate">Read-Only Access</p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {t('bodSidebar.user.access')}
+                    </p>
                   </div>
                 </div>
               </div>

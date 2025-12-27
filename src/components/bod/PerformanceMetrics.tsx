@@ -1,6 +1,7 @@
 /** @format */
 
 import React, { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   TrendingUp,
   TrendingDown,
@@ -58,6 +59,7 @@ interface PerformanceMetricsDTO {
 }
 
 const PerformanceMetrics: React.FC = () => {
+  const { t } = useTranslation();
   const [metrics, setMetrics] = useState<PerformanceMetricsDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -229,15 +231,15 @@ const PerformanceMetrics: React.FC = () => {
   const getStatusText = (
     status: "EXCELLENT" | "GOOD" | "NEEDS_ATTENTION" | undefined
   ) => {
-    if (!status) return "Unknown";
+    if (!status) return t('performanceMetrics.status.unknown');
 
     switch (status) {
       case "EXCELLENT":
-        return "Excellent";
+        return t('performanceMetrics.status.excellent');
       case "GOOD":
-        return "Good";
+        return t('performanceMetrics.status.good');
       case "NEEDS_ATTENTION":
-        return "Needs Attention";
+        return t('performanceMetrics.status.needsAttention');
       default:
         return status;
     }
@@ -281,9 +283,11 @@ const PerformanceMetrics: React.FC = () => {
         <div className="bg-gradient-to-br from-slate-900 to-[#1E40AF] rounded-2xl shadow-2xl p-6 text-white border border-[#1E3A8A]">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold mb-2 tracking-tight">Performance Metrics</h2>
+              <h2 className="text-2xl font-bold mb-2 tracking-tight">
+                {t('performanceMetrics.title')}
+              </h2>
               <p className="text-blue-200 font-light">
-                Loading key performance indicators...
+                {t('performanceMetrics.loading.title')}
               </p>
             </div>
             <div className="animate-pulse">
@@ -296,9 +300,11 @@ const PerformanceMetrics: React.FC = () => {
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-200 p-8">
           <div className="flex flex-col items-center justify-center space-y-4">
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#1E40AF] border-t-transparent"></div>
-            <p className="text-slate-700 font-medium">Calculating performance metrics...</p>
+            <p className="text-slate-700 font-medium">
+              {t('performanceMetrics.loading.spinnerText')}
+            </p>
             <p className="text-sm text-slate-500">
-              Fetching data from invoices, contracts, and utility records
+              {t('performanceMetrics.loading.fetchingData')}
             </p>
           </div>
         </div>
@@ -314,8 +320,12 @@ const PerformanceMetrics: React.FC = () => {
         <div className="bg-gradient-to-br from-slate-900 to-[#1E40AF] rounded-2xl shadow-2xl p-6 text-white border border-[#1E3A8A]">
           <div className="flex justify-between items-center">
             <div>
-              <h2 className="text-2xl font-bold mb-2 tracking-tight">Performance Metrics</h2>
-              <p className="text-blue-200 font-light">Error loading performance data</p>
+              <h2 className="text-2xl font-bold mb-2 tracking-tight">
+                {t('performanceMetrics.title')}
+              </h2>
+              <p className="text-blue-200 font-light">
+                {t('performanceMetrics.error.title')}
+              </p>
             </div>
             <AlertCircle className="w-8 h-8 text-rose-300" />
           </div>
@@ -327,16 +337,18 @@ const PerformanceMetrics: React.FC = () => {
             <AlertCircle className="w-6 h-6 text-rose-500 mr-3 mt-0.5" />
             <div>
               <h3 className="text-lg font-semibold text-rose-800 mb-2">
-                Unable to Load Metrics
+                {t('performanceMetrics.error.title')}
               </h3>
               <p className="text-rose-700 mb-4">{error}</p>
               <div className="space-y-3">
-                <p className="text-sm text-rose-600">This could be because:</p>
+                <p className="text-sm text-rose-600">
+                  {t('performanceMetrics.error.possibleReasons')}
+                </p>
                 <ul className="list-disc list-inside text-sm text-rose-600 space-y-1 ml-2">
-                  <li>No invoice data exists in the system</li>
-                  <li>Utility costs haven't been recorded yet</li>
-                  <li>Contract data is missing or incomplete</li>
-                  <li>The backend service is not properly configured</li>
+                  <li>{t('performanceMetrics.error.reasons.noInvoices')}</li>
+                  <li>{t('performanceMetrics.error.reasons.noUtilityCosts')}</li>
+                  <li>{t('performanceMetrics.error.reasons.missingContracts')}</li>
+                  <li>{t('performanceMetrics.error.reasons.backendIssue')}</li>
                 </ul>
               </div>
               <div className="mt-6 flex space-x-4">
@@ -344,13 +356,13 @@ const PerformanceMetrics: React.FC = () => {
                   onClick={fetchPerformanceMetrics}
                   className="px-4 py-2.5 bg-[#1E40AF] text-white rounded-xl hover:bg-[#1E3A8A] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:ring-offset-2 font-medium shadow-md hover:shadow-lg"
                 >
-                  Retry
+                  {t('performanceMetrics.buttons.retry')}
                 </button>
                 <button
                   onClick={() => window.location.reload()}
                   className="px-4 py-2.5 bg-slate-100 text-slate-800 rounded-xl hover:bg-slate-200 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 font-medium"
                 >
-                  Refresh Page
+                  {t('performanceMetrics.error.buttons.refreshPage')}
                 </button>
               </div>
             </div>
@@ -368,9 +380,11 @@ const PerformanceMetrics: React.FC = () => {
         <div className="bg-gradient-to-br from-slate-900 to-[#1E40AF] rounded-2xl shadow-2xl p-6 text-white border border-[#1E3A8A]">
           <div className="flex justify-between items-start">
             <div>
-              <h2 className="text-2xl font-bold tracking-tight">Performance Metrics</h2>
+              <h2 className="text-2xl font-bold tracking-tight">
+                {t('performanceMetrics.title')}
+              </h2>
               <p className="text-blue-200 font-light">
-                Key performance indicators for rent collection and utility cost management
+                {t('performanceMetrics.subtitle')}
               </p>
             </div>
             <div className="flex items-center space-x-2">
@@ -397,37 +411,44 @@ const PerformanceMetrics: React.FC = () => {
               <LineChart className="w-12 h-12 text-slate-500" />
             </div>
             <h3 className="text-2xl font-bold text-slate-900 mb-4">
-              No Performance Data Available
+              {t('performanceMetrics.noData.title')}
             </h3>
             <p className="text-slate-600 max-w-2xl mb-8">
-              Performance metrics require paid invoices with utility items and contract data. 
-              Once you have paid invoices for rent and utilities, these metrics will be automatically calculated.
+              {t('performanceMetrics.noData.description')}
             </p>
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200 max-w-2xl w-full mb-8">
-              <h4 className="font-semibold text-blue-900 mb-3 text-lg">To see performance metrics:</h4>
+              <h4 className="font-semibold text-blue-900 mb-3 text-lg">
+                {t('performanceMetrics.noData.howToSee')}
+              </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-start">
                   <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+                  <span 
+                    className="text-sm text-blue-800" 
+                    dangerouslySetInnerHTML={{ 
+                      __html: t('performanceMetrics.noData.requirements.rentInvoices') 
+                    }}
+                  />
+                </div>
+                <div className="flex items-start">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+                  <span 
+                    className="text-sm text-blue-800"
+                    dangerouslySetInnerHTML={{ 
+                      __html: t('performanceMetrics.noData.requirements.utilityInvoices') 
+                    }}
+                  />
+                </div>
+                <div className="flex items-start">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
                   <span className="text-sm text-blue-800">
-                    Create and mark invoices with <strong>RENT</strong> items as <strong>PAID</strong>
+                    {t('performanceMetrics.noData.requirements.contracts')}
                   </span>
                 </div>
                 <div className="flex items-start">
                   <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
                   <span className="text-sm text-blue-800">
-                    Add utility invoices (<strong>ELECTRICITY</strong>, <strong>WATER</strong>) and mark as <strong>PAID</strong>
-                  </span>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
-                  <span className="text-sm text-blue-800">
-                    Ensure contracts are associated with units and buildings
-                  </span>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
-                  <span className="text-sm text-blue-800">
-                    Use issue dates in current or previous year
+                    {t('performanceMetrics.noData.requirements.dates')}
                   </span>
                 </div>
               </div>
@@ -437,13 +458,13 @@ const PerformanceMetrics: React.FC = () => {
                 onClick={() => (window.location.href = "/invoices")}
                 className="px-6 py-3 bg-[#1E40AF] text-white rounded-xl hover:bg-[#1E3A8A] transition-all duration-300 font-medium shadow-md hover:shadow-lg"
               >
-                Go to Invoices
+                {t('performanceMetrics.noData.buttons.goToInvoices')}
               </button>
               <button
                 onClick={() => (window.location.href = "/contracts")}
                 className="px-6 py-3 bg-slate-100 text-slate-800 rounded-xl hover:bg-slate-200 transition-all duration-300 font-medium border border-slate-300"
               >
-                Go to Contracts
+                {t('performanceMetrics.noData.buttons.goToContracts')}
               </button>
               <button
                 onClick={fetchPerformanceMetrics}
@@ -452,12 +473,12 @@ const PerformanceMetrics: React.FC = () => {
                 {refreshing ? (
                   <>
                     <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Refreshing...
+                    {t('performanceMetrics.noData.buttons.refreshing')}
                   </>
                 ) : (
                   <>
                     <RefreshCw className="w-4 h-4 mr-2" />
-                    Refresh Data
+                    {t('performanceMetrics.noData.buttons.refreshData')}
                   </>
                 )}
               </button>
@@ -492,22 +513,26 @@ const PerformanceMetrics: React.FC = () => {
         <div className="flex justify-between items-start">
           <div>
             <div className="flex items-center space-x-3 mb-2">
-              <h2 className="text-2xl font-bold tracking-tight">Performance Metrics</h2>
+              <h2 className="text-2xl font-bold tracking-tight">
+                {t('performanceMetrics.title')}
+              </h2>
               {refreshing && (
                 <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300 shadow-sm">
                   <RefreshCw className="w-3 h-3 mr-1.5 animate-spin" />
-                  Updating...
+                  {t('performanceMetrics.buttons.updating')}
                 </span>
               )}
             </div>
             <p className="text-blue-200 font-light">
-              Key performance indicators for rent collection and utility cost management
+              {t('performanceMetrics.subtitle')}
             </p>
             {metrics.lastUpdated && (
               <div className="flex items-center mt-2 text-blue-100">
                 <Clock className="w-4 h-4 mr-1.5" />
                 <span className="text-sm">
-                  Last updated: {new Date(metrics.lastUpdated).toLocaleString()}
+                  {t('performanceMetrics.general.lastUpdated', { 
+                    date: new Date(metrics.lastUpdated).toLocaleString() 
+                  })}
                 </span>
               </div>
             )}
@@ -536,7 +561,7 @@ const PerformanceMetrics: React.FC = () => {
                     : "text-white hover:bg-white/20"
                 }`}
               >
-                Year
+                {t('performanceMetrics.timeRange.year')}
               </button>
               <button
                 onClick={() => setTimeRange("QUARTER")}
@@ -546,7 +571,7 @@ const PerformanceMetrics: React.FC = () => {
                     : "text-white hover:bg-white/20"
                 }`}
               >
-                Quarter
+                {t('performanceMetrics.timeRange.quarter')}
               </button>
               <button
                 onClick={() => setTimeRange("MONTH")}
@@ -556,7 +581,7 @@ const PerformanceMetrics: React.FC = () => {
                     : "text-white hover:bg-white/20"
                 }`}
               >
-                Month
+                {t('performanceMetrics.timeRange.month')}
               </button>
             </div>
           </div>
@@ -573,7 +598,9 @@ const PerformanceMetrics: React.FC = () => {
                 <div className="p-2 bg-gradient-to-br from-emerald-100 to-green-100 rounded-xl border border-emerald-200">
                   <DollarSign className="w-5 h-5 text-emerald-600" />
                 </div>
-                <p className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Rent Collection Rate</p>
+                <p className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                  {t('performanceMetrics.cards.rentCollectionRate.title')}
+                </p>
               </div>
               <p className="text-4xl font-bold text-slate-900 mt-2">
                 {rentCollectionRate.toFixed(1)}%
@@ -594,14 +621,18 @@ const PerformanceMetrics: React.FC = () => {
                     </span>
                   </>
                 )}
-                <span className="text-slate-500 text-sm ml-2">from last {timeRange.toLowerCase()}</span>
+                <span className="text-slate-500 text-sm ml-2">
+                  {t('performanceMetrics.cards.rentCollectionRate.fromLast', { 
+                    timeRange: t(`performanceMetrics.timeRange.${timeRange.toLowerCase()}`) 
+                  })}
+                </span>
               </div>
             </div>
             <Target className="w-8 h-8 text-slate-300 group-hover:text-emerald-400 transition-colors" />
           </div>
           <div className="mt-6">
             <div className="flex justify-between text-sm text-slate-600 mb-2">
-              <span>Progress</span>
+              <span>{t('performanceMetrics.cards.rentCollectionRate.progress')}</span>
               <span>{Math.min(rentCollectionRate, 100).toFixed(1)}%</span>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-2.5">
@@ -612,11 +643,15 @@ const PerformanceMetrics: React.FC = () => {
             </div>
             <div className="flex justify-between mt-4 pt-4 border-t border-slate-100">
               <div className="text-center">
-                <p className="text-xs text-slate-500">Target</p>
+                <p className="text-xs text-slate-500">
+                  {t('performanceMetrics.cards.rentCollectionRate.target')}
+                </p>
                 <p className="text-sm font-semibold text-slate-900">{targetCollectionRate.toFixed(0)}%</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-slate-500">Industry Avg</p>
+                <p className="text-xs text-slate-500">
+                  {t('performanceMetrics.cards.rentCollectionRate.industryAvg')}
+                </p>
                 <p className="text-sm font-semibold text-slate-900">90%</p>
               </div>
             </div>
@@ -643,7 +678,9 @@ const PerformanceMetrics: React.FC = () => {
                       : "text-rose-600"
                   }`} />
                 </div>
-                <p className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Utility Cost Change</p>
+                <p className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                  {t('performanceMetrics.cards.utilityCostChange.title')}
+                </p>
               </div>
               <p className={`text-4xl font-bold mt-2 ${
                 utilityCostChange < 0
@@ -675,14 +712,14 @@ const PerformanceMetrics: React.FC = () => {
                   <>
                     <TrendingDown className="w-4 h-4 text-emerald-500 mr-2" />
                     <span className="text-emerald-600 font-medium">
-                      Cost reduction achieved
+                      {t('performanceMetrics.cards.utilityCostChange.costReduction')}
                     </span>
                   </>
                 ) : (
                   <>
                     <TrendingUp className="w-4 h-4 text-rose-500 mr-2" />
                     <span className="text-rose-600 font-medium">
-                      Cost increase detected
+                      {t('performanceMetrics.cards.utilityCostChange.costIncrease')}
                     </span>
                   </>
                 )}
@@ -692,16 +729,23 @@ const PerformanceMetrics: React.FC = () => {
                   ? "bg-emerald-100 text-emerald-800"
                   : "bg-rose-100 text-rose-800"
               }`}>
-                {utilityCostChange < industryAverageUtility ? "Better" : "Worse"} than industry
+                {utilityCostChange < industryAverageUtility 
+                  ? t('performanceMetrics.cards.utilityCostChange.betterThanIndustry')
+                  : t('performanceMetrics.cards.utilityCostChange.worseThanIndustry')
+                }
               </div>
             </div>
             <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-100">
               <div className="text-center">
-                <p className="text-xs text-slate-500">Industry Average</p>
+                <p className="text-xs text-slate-500">
+                  {t('performanceMetrics.cards.utilityCostChange.industryAverage')}
+                </p>
                 <p className="text-sm font-semibold text-slate-900">{industryAverageUtility}%</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-slate-500">Your Performance</p>
+                <p className="text-xs text-slate-500">
+                  {t('performanceMetrics.cards.utilityCostChange.yourPerformance')}
+                </p>
                 <p className="text-sm font-semibold text-slate-900">{utilityCostChange.toFixed(1)}%</p>
               </div>
             </div>
@@ -716,18 +760,24 @@ const PerformanceMetrics: React.FC = () => {
                 <div className="p-2 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl border border-indigo-200">
                   <BarChart3 className="w-5 h-5 text-indigo-600" />
                 </div>
-                <p className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Total Utility Cost</p>
+                <p className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+                  {t('performanceMetrics.cards.totalUtilityCost.title')}
+                </p>
               </div>
               <p className="text-4xl font-bold text-slate-900 mt-2">
                 {formatCurrencyLakhs(totalUtilityCost)}
               </p>
-              <p className="text-slate-600 mt-2">Current Year Total</p>
+              <p className="text-slate-600 mt-2">
+                {t('performanceMetrics.cards.totalUtilityCost.currentYearTotal')}
+              </p>
             </div>
             <Building2 className="w-8 h-8 text-indigo-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="mt-6">
             <div className="flex items-center justify-between mb-4">
-              <span className="text-slate-600 font-medium">Average Building Change</span>
+              <span className="text-slate-600 font-medium">
+                {t('performanceMetrics.cards.totalUtilityCost.averageBuildingChange')}
+              </span>
               <span className={`text-lg font-bold ${
                 averageImprovement < 0
                   ? "text-emerald-600"
@@ -741,8 +791,12 @@ const PerformanceMetrics: React.FC = () => {
             </div>
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-slate-500">
-                <span>Best: {Math.min(...buildingUtilityData.map(b => b.costChangePercentage)).toFixed(1)}%</span>
-                <span>Worst: {Math.max(...buildingUtilityData.map(b => b.costChangePercentage)).toFixed(1)}%</span>
+                <span>
+                  {t('performanceMetrics.cards.totalUtilityCost.best')}: {Math.min(...buildingUtilityData.map(b => b.costChangePercentage)).toFixed(1)}%
+                </span>
+                <span>
+                  {t('performanceMetrics.cards.totalUtilityCost.worst')}: {Math.max(...buildingUtilityData.map(b => b.costChangePercentage)).toFixed(1)}%
+                </span>
               </div>
               <div className="w-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-400 h-1.5 rounded-full overflow-hidden">
                 <div 
@@ -753,19 +807,25 @@ const PerformanceMetrics: React.FC = () => {
             </div>
             <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-slate-100">
               <div className="text-center">
-                <p className="text-xs text-slate-500">Buildings</p>
+                <p className="text-xs text-slate-500">
+                  {t('performanceMetrics.cards.totalUtilityCost.buildings')}
+                </p>
                 <p className="text-sm font-semibold text-slate-900">{buildingUtilityData.length}</p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-slate-500">Status</p>
+                <p className="text-xs text-slate-500">
+                  {t('performanceMetrics.cards.totalUtilityCost.status')}
+                </p>
                 <p className="text-sm font-semibold text-emerald-600">
-                  {buildingUtilityData.filter(b => b.status === "EXCELLENT").length} Excellent
+                  {buildingUtilityData.filter(b => b.status === "EXCELLENT").length} {t('performanceMetrics.status.excellent')}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-xs text-slate-500">Attention</p>
+                <p className="text-xs text-slate-500">
+                  {t('performanceMetrics.cards.totalUtilityCost.attention')}
+                </p>
                 <p className="text-sm font-semibold text-rose-600">
-                  {buildingUtilityData.filter(b => b.status === "NEEDS_ATTENTION").length} Need
+                  {buildingUtilityData.filter(b => b.status === "NEEDS_ATTENTION").length} {t('performanceMetrics.status.needsAttention')}
                 </p>
               </div>
             </div>
@@ -779,8 +839,12 @@ const PerformanceMetrics: React.FC = () => {
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-200 p-6 group hover:shadow-2xl transition-all duration-500">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-bold text-slate-900 mb-1">Utility Cost Trend</h3>
-              <p className="text-slate-600">Annual utility costs in lakhs MMK</p>
+              <h3 className="text-xl font-bold text-slate-900 mb-1">
+                {t('performanceMetrics.charts.utilityTrend.title')}
+              </h3>
+              <p className="text-slate-600">
+                {t('performanceMetrics.charts.utilityTrend.description')}
+              </p>
             </div>
             <div className="p-2.5 bg-gradient-to-br from-[#1E40AF] to-blue-600 rounded-xl border border-blue-500 shadow-md">
               <LineChart className="w-5 h-5 text-white" />
@@ -813,8 +877,8 @@ const PerformanceMetrics: React.FC = () => {
                   tick={{ fill: '#64748b' }}
                 />
                 <Tooltip
-                  formatter={(value) => [`${value}L MMK`, "Cost"]}
-                  labelFormatter={(label) => `Year: ${label}`}
+                  formatter={(value) => [t('performanceMetrics.charts.utilityTrend.tooltip.cost', { value }), "Cost"]}
+                  labelFormatter={(label) => t('performanceMetrics.charts.utilityTrend.tooltip.year', { label })}
                   contentStyle={{
                     backgroundColor: "white",
                     border: "1px solid #cbd5e1",
@@ -839,12 +903,14 @@ const PerformanceMetrics: React.FC = () => {
           <div className="mt-6 pt-4 border-t border-slate-100">
             <div className="flex items-center justify-between">
               <p className="text-sm text-slate-600">
-                Shows year-over-year utility cost changes across all properties
+                {t('performanceMetrics.charts.utilityTrend.note')}
               </p>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-[#1E40AF] rounded-full mr-2"></div>
-                  <span className="text-xs text-slate-500">Total Cost</span>
+                  <span className="text-xs text-slate-500">
+                    {t('performanceMetrics.charts.utilityTrend.legend.totalCost')}
+                  </span>
                 </div>
                 <Percent className="w-4 h-4 text-slate-400" />
               </div>
@@ -856,8 +922,12 @@ const PerformanceMetrics: React.FC = () => {
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-200 p-6 group hover:shadow-2xl transition-all duration-500">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-xl font-bold text-slate-900 mb-1">Building Comparison</h3>
-              <p className="text-slate-600">Previous vs Current Year (Lakhs MMK)</p>
+              <h3 className="text-xl font-bold text-slate-900 mb-1">
+                {t('performanceMetrics.charts.buildingComparison.title')}
+              </h3>
+              <p className="text-slate-600">
+                {t('performanceMetrics.charts.buildingComparison.description')}
+              </p>
             </div>
             <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl border border-emerald-400 shadow-md">
               <Building2 className="w-5 h-5 text-white" />
@@ -886,9 +956,11 @@ const PerformanceMetrics: React.FC = () => {
                 <Tooltip
                   formatter={(value, name) => {
                     if (name === "change") {
-                      return [`${value}%`, "Change"];
+                      return [t('performanceMetrics.charts.buildingComparison.tooltip.change', { value }), "Change"];
                     }
-                    return [`${value}L MMK`, name === "previousYear" ? "Last Year" : "Current Year"];
+                    return [`${value}L MMK`, name === "previousYear" 
+                      ? t('performanceMetrics.charts.buildingComparison.tooltip.lastYear')
+                      : t('performanceMetrics.charts.buildingComparison.tooltip.currentYear')];
                   }}
                   labelStyle={{ fontWeight: "bold", color: "#1E293B" }}
                   contentStyle={{
@@ -901,14 +973,14 @@ const PerformanceMetrics: React.FC = () => {
                 />
                 <Legend />
                 <Bar
-                  name="Previous Year"
+                  name={t('performanceMetrics.charts.buildingComparison.tooltip.lastYear')}
                   dataKey="previousYear"
                   fill="#94a3b8"
                   radius={[8, 8, 0, 0]}
                   maxBarSize={40}
                 />
                 <Bar
-                  name="Current Year"
+                  name={t('performanceMetrics.charts.buildingComparison.tooltip.currentYear')}
                   dataKey="currentYear"
                   fill="#1E40AF"
                   radius={[8, 8, 0, 0]}
@@ -920,16 +992,20 @@ const PerformanceMetrics: React.FC = () => {
           <div className="mt-6 pt-4 border-t border-slate-100">
             <div className="flex items-center justify-between">
               <p className="text-sm text-slate-600">
-                Utility cost comparison between previous and current year
+                {t('performanceMetrics.charts.buildingComparison.note')}
               </p>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-[#94a3b8] rounded mr-2"></div>
-                  <span className="text-xs text-slate-500">Previous</span>
+                  <span className="text-xs text-slate-500">
+                    {t('performanceMetrics.charts.buildingComparison.legend.previous')}
+                  </span>
                 </div>
                 <div className="flex items-center">
                   <div className="w-3 h-3 bg-[#1E40AF] rounded mr-2"></div>
-                  <span className="text-xs text-slate-500">Current</span>
+                  <span className="text-xs text-slate-500">
+                    {t('performanceMetrics.charts.buildingComparison.legend.current')}
+                  </span>
                 </div>
               </div>
             </div>
@@ -943,14 +1019,14 @@ const PerformanceMetrics: React.FC = () => {
           <div>
             <div className="flex items-center space-x-3 mb-2">
               <h3 className="text-xl font-bold text-slate-900">
-                Building Utility Cost Analysis
+                {t('performanceMetrics.table.title')}
               </h3>
               <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 shadow-sm">
-                Real Data • {buildingUtilityData.length} Properties
+                {t('performanceMetrics.general.realData')} • {buildingUtilityData.length} {t('performanceMetrics.general.properties')}
               </span>
             </div>
             <p className="text-slate-600">
-              Detailed cost comparison and performance analysis by property
+              {t('performanceMetrics.table.subtitle')}
             </p>
           </div>
           <div className="p-2.5 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl border border-slate-300 shadow-sm">
@@ -963,25 +1039,25 @@ const PerformanceMetrics: React.FC = () => {
             <thead className="bg-gradient-to-r from-slate-50 to-slate-100">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-200">
-                  Property Name
+                  {t('performanceMetrics.table.columns.propertyName')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-200">
-                  Last Year
+                  {t('performanceMetrics.table.columns.lastYear')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-200">
-                  Current Year
+                  {t('performanceMetrics.table.columns.currentYear')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-200">
-                  Change %
+                  {t('performanceMetrics.table.columns.change')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-200">
-                  Amount
+                  {t('performanceMetrics.table.columns.amount')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-200">
-                  Status
+                  {t('performanceMetrics.table.columns.status')}
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider border-b border-slate-200">
-                  Actions
+                  {t('performanceMetrics.table.columns.actions')}
                 </th>
               </tr>
             </thead>
@@ -1065,7 +1141,7 @@ const PerformanceMetrics: React.FC = () => {
                             console.log("View details for:", building.buildingName);
                           }}
                         >
-                          Details →
+                          {t('performanceMetrics.table.detailsButton')}
                         </button>
                       </td>
                     </tr>
@@ -1076,9 +1152,11 @@ const PerformanceMetrics: React.FC = () => {
                   <td colSpan={7} className="px-6 py-12 text-center">
                     <div className="flex flex-col items-center justify-center text-slate-500">
                       <Building2 className="w-16 h-16 text-slate-300 mb-4" />
-                      <p className="text-lg font-medium mb-2">No building utility data available</p>
+                      <p className="text-lg font-medium mb-2">
+                        {t('performanceMetrics.table.noData')}
+                      </p>
                       <p className="text-sm text-slate-400">
-                        Add invoices with utility items to see performance metrics
+                        {t('performanceMetrics.table.noDataDescription')}
                       </p>
                     </div>
                   </td>
@@ -1088,7 +1166,9 @@ const PerformanceMetrics: React.FC = () => {
             {buildingUtilityData.length > 0 && (
               <tfoot className="bg-gradient-to-r from-slate-50 to-slate-100">
                 <tr>
-                  <td className="px-6 py-4 font-bold text-slate-900 border-t border-slate-200">TOTAL</td>
+                  <td className="px-6 py-4 font-bold text-slate-900 border-t border-slate-200">
+                    {t('performanceMetrics.table.total')}
+                  </td>
                   <td className="px-6 py-4 font-bold text-slate-900 border-t border-slate-200">
                     {formatCurrencyLakhs(
                       buildingUtilityData.reduce(
@@ -1124,7 +1204,7 @@ const PerformanceMetrics: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 border-t border-slate-200">
                     <span className="inline-flex px-4 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 border border-slate-300">
-                      Summary
+                      {t('performanceMetrics.table.summary')}
                     </span>
                   </td>
                   <td className="px-6 py-4 border-t border-slate-200"></td>
@@ -1139,48 +1219,66 @@ const PerformanceMetrics: React.FC = () => {
       <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-200 p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 className="text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wide">Data Interpretation</h4>
+            <h4 className="text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wide">
+              {t('performanceMetrics.legend.dataInterpretation.title')}
+            </h4>
             <p className="text-sm text-slate-600 mb-4">
-              Data shows utility cost changes year-over-year. Negative percentages indicate cost
-              reductions (good), positive percentages indicate cost increases (requires attention).
+              {t('performanceMetrics.legend.dataInterpretation.description')}
             </p>
             <div className="space-y-2">
               <div className="flex items-center">
                 <div className="w-3 h-3 bg-emerald-100 rounded-full mr-3 border border-emerald-300"></div>
                 <span className="text-sm text-slate-700">
-                  <span className="font-semibold text-emerald-700">EXCELLENT</span> – Cost reduction of 5% or more
+                  <span className="font-semibold text-emerald-700">
+                    {t('performanceMetrics.legend.dataInterpretation.excellent.label')}
+                  </span>{" "}
+                  {t('performanceMetrics.legend.dataInterpretation.excellent.description')}
                 </span>
               </div>
               <div className="flex items-center">
                 <div className="w-3 h-3 bg-amber-100 rounded-full mr-3 border border-amber-300"></div>
                 <span className="text-sm text-slate-700">
-                  <span className="font-semibold text-amber-700">GOOD</span> – Cost increase of less than 5%
+                  <span className="font-semibold text-amber-700">
+                    {t('performanceMetrics.legend.dataInterpretation.good.label')}
+                  </span>{" "}
+                  {t('performanceMetrics.legend.dataInterpretation.good.description')}
                 </span>
               </div>
               <div className="flex items-center">
                 <div className="w-3 h-3 bg-rose-100 rounded-full mr-3 border border-rose-300"></div>
                 <span className="text-sm text-slate-700">
-                  <span className="font-semibold text-rose-700">NEEDS ATTENTION</span> – Cost increase of more than 5%
+                  <span className="font-semibold text-rose-700">
+                    {t('performanceMetrics.legend.dataInterpretation.needsAttention.label')}
+                  </span>{" "}
+                  {t('performanceMetrics.legend.dataInterpretation.needsAttention.description')}
                 </span>
               </div>
             </div>
           </div>
           <div className="border-l border-slate-200 pl-6">
-            <h4 className="text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wide">Currency Information</h4>
+            <h4 className="text-sm font-semibold text-slate-900 mb-3 uppercase tracking-wide">
+              {t('performanceMetrics.legend.currencyInformation.title')}
+            </h4>
             <p className="text-sm text-slate-600 mb-4">
-              All monetary values are displayed in Myanmar Kyat (MMK). The values are shown in lakhs (1 Lakh = 100,000 MMK).
+              {t('performanceMetrics.legend.currencyInformation.description')}
             </p>
             <div className="grid grid-cols-1 gap-4">
               <div className="text-center p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200">
                 <p className="text-3xl font-bold text-[#1E40AF]">L</p>
-                <p className="text-sm text-slate-700 mt-1 font-medium">Lakhs (1,00,000 MMK)</p>
-                <p className="text-xs text-slate-600 mt-1">Example: 5.20L = 520,000 MMK</p>
+                <p className="text-sm text-slate-700 mt-1 font-medium">
+                  {t('performanceMetrics.legend.currencyInformation.description')}
+                </p>
+                <p className="text-xs text-slate-600 mt-1">
+                  {t('performanceMetrics.legend.currencyInformation.example')}
+                </p>
               </div>
             </div>
             <div className="mt-4 p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-              <p className="text-xs text-blue-700 font-medium">Note:</p>
+              <p className="text-xs text-blue-700 font-medium">
+                {t('performanceMetrics.legend.currencyInformation.note')}
+              </p>
               <p className="text-xs text-blue-600 mt-1">
-                All currency values are automatically converted to lakhs format. 1 Lakh = 100,000 Myanmar Kyats.
+                {t('performanceMetrics.legend.currencyInformation.noteDescription')}
               </p>
             </div>
           </div>
@@ -1190,7 +1288,9 @@ const PerformanceMetrics: React.FC = () => {
             <div className="flex items-center justify-center">
               <Clock className="w-4 h-4 text-slate-400 mr-2" />
               <p className="text-xs text-slate-500">
-                Data last fetched: {new Date(metrics.lastUpdated).toLocaleString()}
+                {t('performanceMetrics.general.dataLastFetched', { 
+                  date: new Date(metrics.lastUpdated).toLocaleString() 
+                })}
               </p>
             </div>
           </div>

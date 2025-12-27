@@ -22,6 +22,7 @@ export interface BranchRequest {
 }
 
 export interface Building {
+  totalCAMCosts: number;
   buildingId: number;
   success: any;
   branch?: Branch;
@@ -366,4 +367,14 @@ export interface LateFeePolicyRequest {
   amountPerDay: string; // "12.50"
   gracePeriodDays: number;
   dailyInterestPercent: string; // "0.5"
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }

@@ -1,13 +1,16 @@
-// BulkMeterReadingPage.tsx - Fixed version with debounced status check
+// BulkMeterReadingPage.tsx - Updated with start AND end date validation
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Save, Upload, Download, Building2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Save, Upload, Download, Building2, AlertCircle, CheckCircle, RefreshCw, Calendar } from 'lucide-react';
 import { meterReadingApi, utilityTypeApi } from '../../api/MeterReadingAPI';
 import { utilityApi } from '../../api/UtilityAPI';
 import { buildingApi } from '../../api/BuildingAPI';
+import { contractApi } from '../../api/ContractAPI';
 import type { Unit, UtilityType } from '../../types/unit';
 import type { Building } from '../../types';
+import type { Contract } from '../../types/contract';
 import { jwtDecode } from 'jwt-decode';
 import * as XLSX from 'xlsx';
+import { useTranslation } from 'react-i18next';
 
 interface BulkReading {
   unitId: number;
@@ -21,9 +24,15 @@ interface BulkReading {
   hasElectricityReading: boolean;
   hasWaterReading: boolean;
   isDisabled: boolean;
+  canHaveReading: boolean; // Whether unit can have reading for selected date
+  contractStartDate?: string; // Contract start date
+  contractEndDate?: string; // Contract end date
+  disabledReason?: string; // Reason why unit is disabled
 }
 
 const BulkMeterReadingPage: React.FC = () => {
+  const { t } = useTranslation();
+  
   const [bulkReadings, setBulkReadings] = useState<BulkReading[]>([]);
   const [readingDate, setReadingDate] = useState<string>('');
   const [buildingId, setBuildingId] = useState<number | null>(null);
@@ -41,12 +50,13 @@ const BulkMeterReadingPage: React.FC = () => {
     type: null,
     message: ''
   });
+  const [contracts, setContracts] = useState<Contract[]>([]);
 
   // Refs for debouncing
   const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastCheckedRef = useRef<string>('');
 
-  const pendingUnits = bulkReadings.filter(r => !r.hasMonthlyReading);
+  const pendingUnits = bulkReadings.filter(r => !r.hasMonthlyReading && r.canHaveReading);
 
   // Get user role from JWT token
   const getUserRole = (): string => {
@@ -63,200 +73,223 @@ const BulkMeterReadingPage: React.FC = () => {
     return 'ROLE_GUEST';
   };
 
-  // Debounced status check function
-const checkReadingStatus = useCallback(async (force: boolean = false) => {
-  if (!buildingId || !readingDate || !electricityUtility || !waterUtility || bulkReadings.length === 0) {
-    return;
-  }
-  
-  const checkKey = `${buildingId}-${readingDate}-${electricityUtility.id}-${waterUtility.id}`;
-  
-  if (!force && lastCheckedRef.current === checkKey) {
-    return;
-  }
-  
-  if (checkTimeoutRef.current) {
-    clearTimeout(checkTimeoutRef.current);
-  }
-  
-  lastCheckedRef.current = checkKey;
-  
-  try {
-    setCheckingStatus(true);
-    
-    const updatedReadings = await Promise.all(
-      bulkReadings.map(async (reading) => {
-        let hasElectricityReading = false;
-        let hasWaterReading = false;
-        let previousElectricityReading = reading.previousElectricityReading || 0;
-        let previousWaterReading = reading.previousWaterReading || 0;
-        
-        // First, try to get previous readings
-        try {
-          const electricityPrev = await meterReadingApi.getPreviousReading(
-            reading.unitId,
-            electricityUtility.id
-          );
-          previousElectricityReading = electricityPrev?.currentReading || 0;
-        } catch (error) {
-          console.log(`No previous electricity reading for unit ${reading.unitId}`);
-          previousElectricityReading = 0;
-        }
-        
-        try {
-          const waterPrev = await meterReadingApi.getPreviousReading(
-            reading.unitId,
-            waterUtility.id
-          );
-          previousWaterReading = waterPrev?.currentReading || 0;
-        } catch (error) {
-          console.log(`No previous water reading for unit ${reading.unitId}`);
-          previousWaterReading = 0;
-        }
-        
-        // Now check if readings exist for current month
-        try {
-          const elecStatus = await meterReadingApi.checkMonthlyReading(
-            reading.unitId,
-            electricityUtility.id,
-            readingDate
-          );
-          hasElectricityReading = elecStatus.hasReading;
-        } catch (error: any) {
-          if (error.response?.status !== 401) {
-            console.log(`No electricity reading for unit ${reading.unitId}`);
-          }
-        }
-        
-        try {
-  const electricityPrev = await meterReadingApi.getPreviousReading(
-    reading.unitId,
-    electricityUtility.id
-  );
-  console.log(`Unit ${reading.unitId} - Previous electricity:`, electricityPrev);
-  previousElectricityReading = electricityPrev?.currentReading || 0;
-} catch (error: any) {
-          if (error.response?.status !== 401) {
-            console.log(`No water reading for unit ${reading.unitId}`);
-          }
-        }
-        
-        const hasAnyReading = hasElectricityReading || hasWaterReading;
-        
-        return {
-          ...reading,
-          hasMonthlyReading: hasAnyReading,
-          hasElectricityReading,
-          hasWaterReading,
-          isDisabled: hasAnyReading,
-          previousElectricityReading,
-          previousWaterReading
-        };
-      })
-    );
-    
-    setBulkReadings(updatedReadings);
-    
-    const allUnitsRead = updatedReadings.every(r => r.hasMonthlyReading);
-    setBuildingHasAllReadings(allUnitsRead);
-    
-  } catch (error) {
-    console.error('Error checking reading status:', error);
-    lastCheckedRef.current = '';
-  } finally {
-    setCheckingStatus(false);
-  }
-}, [buildingId, readingDate, electricityUtility, waterUtility, bulkReadings]);
-
-// Update the useEffect to use a very short debounce (50ms) just for batching
-useEffect(() => {
-  if (buildingId && readingDate && electricityUtility && waterUtility) {
-    // Clear any pending checks
-    if (checkTimeoutRef.current) {
-      clearTimeout(checkTimeoutRef.current);
-    }
-    
-    // Check immediately (no delay) when date changes
-    checkTimeoutRef.current = setTimeout(() => {
-      if (bulkReadings.length > 0) {
-        // If we already have readings loaded, check their status
-        checkReadingStatus();
-      } else {
-        // If no readings yet, just check if building has all readings for this date
-        checkBuildingReadingsStatus();
-      }
-    }, 0); // 0ms delay - immediate but non-blocking
-  }
-  
-  return () => {
-    if (checkTimeoutRef.current) {
-      clearTimeout(checkTimeoutRef.current);
+  // Load contracts for the building
+  const loadContractsForBuilding = async (buildingId: number) => {
+    try {
+      const response = await buildingApi.getContractsByBuilding(buildingId);
+      setContracts(response.data || []);
+    } catch (error) {
+      console.error('Error loading contracts:', error);
+      setContracts([]);
     }
   };
-}, [readingDate, buildingId, electricityUtility?.id, waterUtility?.id]);
 
-// Add this new function to check if building has readings for the date
-const checkBuildingReadingsStatus = useCallback(async () => {
-  if (!buildingId || !readingDate || !electricityUtility || !waterUtility) {
-    return;
-  }
-  
-  try {
-    setCheckingStatus(true);
-    
-    // Get all units for this building
-    const occupiedUnitsResponse = await buildingApi.getOccupiedUnitsByBuilding(buildingId);
-    const occupiedUnitsData = occupiedUnitsResponse.data || [];
-    
-    // Filter only ROOM and HALL type units with meters
-    const unitsWithMeters = occupiedUnitsData.filter((unit: Unit) => 
-      unit.hasMeter && (unit.unitType === 'ROOM' || unit.unitType === 'HALL')
+  // Check if unit can have reading for selected date (BOTH start AND end date validation)
+  const canUnitHaveReading = (unitId: number): { 
+    canHave: boolean; 
+    reason?: string; 
+    startDate?: string; 
+    endDate?: string 
+  } => {
+    if (!readingDate) {
+      return { canHave: false, reason: t('BulkMeterReadingPage.statusMessages.selectDate') };
+    }
+
+    const contract = contracts.find(c => 
+      c.unit?.id === unitId && 
+      c.contractStatus === 'ACTIVE'
     );
-    
-    if (unitsWithMeters.length === 0) {
-      setBuildingHasAllReadings(false);
+
+    if (!contract) {
+      return { canHave: false, reason: t('BulkMeterReadingPage.buildingInfo.noActiveContract') };
+    }
+
+    const selectedDate = new Date(readingDate);
+    const contractStartDate = new Date(contract.startDate);
+    const contractEndDate = new Date(contract.endDate);
+
+    // Check if selected date is BEFORE contract start date
+    if (selectedDate < contractStartDate) {
+      return { 
+        canHave: false, 
+        reason: t('BulkMeterReadingPage.statusMessages.contractStarts', { date: contract.startDate }),
+        startDate: contract.startDate,
+        endDate: contract.endDate
+      };
+    }
+
+    // Check if selected date is AFTER contract end date
+    if (selectedDate > contractEndDate) {
+      return { 
+        canHave: false, 
+        reason: t('BulkMeterReadingPage.statusMessages.contractEnded', { date: contract.endDate }),
+        startDate: contract.startDate,
+        endDate: contract.endDate
+      };
+    }
+
+    // If selected date is BETWEEN start and end date (inclusive)
+    return { 
+      canHave: true, 
+      startDate: contract.startDate,
+      endDate: contract.endDate
+    };
+  };
+
+  // Debounced status check function
+  const checkReadingStatus = useCallback(async (force: boolean = false) => {
+    if (!buildingId || !readingDate || !electricityUtility || !waterUtility || bulkReadings.length === 0) {
       return;
     }
     
-    // Check if ALL units have readings for this date
-    let allUnitsHaveReadings = true;
+    const checkKey = `${buildingId}-${readingDate}-${electricityUtility.id}-${waterUtility.id}`;
     
-    for (const unit of unitsWithMeters) {
-      try {
-        // Check electricity reading
-        const elecStatus = await meterReadingApi.checkMonthlyReading(
-          unit.id,
-          electricityUtility.id,
-          readingDate
-        );
-        
-        // Check water reading
-        const waterStatus = await meterReadingApi.checkMonthlyReading(
-          unit.id,
-          waterUtility.id,
-          readingDate
-        );
-        
-        if (!elecStatus.hasReading && !waterStatus.hasReading) {
-          allUnitsHaveReadings = false;
-          break;
-        }
-      } catch (error) {
-        // If any check fails, assume not all have readings
-        allUnitsHaveReadings = false;
-        break;
-      }
+    if (!force && lastCheckedRef.current === checkKey) {
+      return;
     }
     
-    setBuildingHasAllReadings(allUnitsHaveReadings);
+    if (checkTimeoutRef.current) {
+      clearTimeout(checkTimeoutRef.current);
+    }
     
-  } catch (error) {
-    console.error('Error checking building readings status:', error);
-    setBuildingHasAllReadings(false);
-  } finally {
-    setCheckingStatus(false);
-  }
-}, [buildingId, readingDate, electricityUtility, waterUtility]);
+    lastCheckedRef.current = checkKey;
+    
+    try {
+      setCheckingStatus(true);
+      
+      const updatedReadings = await Promise.all(
+        bulkReadings.map(async (reading) => {
+          // Check if unit can have reading for this date (start AND end date check)
+          const canHaveInfo = canUnitHaveReading(reading.unitId);
+          
+          // If unit cannot have reading for this date, skip API calls
+          if (!canHaveInfo.canHave) {
+            return {
+              ...reading,
+              hasMonthlyReading: true, // Treat as already "read" to disable
+              hasElectricityReading: true,
+              hasWaterReading: true,
+              isDisabled: true,
+              canHaveReading: false,
+              contractStartDate: canHaveInfo.startDate,
+              contractEndDate: canHaveInfo.endDate,
+              disabledReason: canHaveInfo.reason,
+              previousElectricityReading: 0,
+              previousWaterReading: 0
+            };
+          }
+
+          let hasElectricityReading = false;
+          let hasWaterReading = false;
+          let previousElectricityReading = reading.previousElectricityReading || 0;
+          let previousWaterReading = reading.previousWaterReading || 0;
+          
+          // First, try to get previous readings
+          try {
+            const electricityPrev = await meterReadingApi.getPreviousReading(
+              reading.unitId,
+              electricityUtility.id
+            );
+            previousElectricityReading = electricityPrev?.currentReading || 0;
+          } catch (error) {
+            console.log(`No previous electricity reading for unit ${reading.unitId}`);
+            previousElectricityReading = 0;
+          }
+          
+          try {
+            const waterPrev = await meterReadingApi.getPreviousReading(
+              reading.unitId,
+              waterUtility.id
+            );
+            previousWaterReading = waterPrev?.currentReading || 0;
+          } catch (error) {
+            console.log(`No previous water reading for unit ${reading.unitId}`);
+            previousWaterReading = 0;
+          }
+          
+          // Now check if readings exist for current month
+          try {
+            const elecStatus = await meterReadingApi.checkMonthlyReading(
+              reading.unitId,
+              electricityUtility.id,
+              readingDate
+            );
+            hasElectricityReading = elecStatus.hasReading;
+          } catch (error: any) {
+            if (error.response?.status !== 401) {
+              console.log(`No electricity reading for unit ${reading.unitId}`);
+            }
+          }
+          
+          try {
+            const waterStatus = await meterReadingApi.checkMonthlyReading(
+              reading.unitId,
+              waterUtility.id,
+              readingDate
+            );
+            hasWaterReading = waterStatus.hasReading;
+          } catch (error: any) {
+            if (error.response?.status !== 401) {
+              console.log(`No water reading for unit ${reading.unitId}`);
+            }
+          }
+          
+          const hasAnyReading = hasElectricityReading || hasWaterReading;
+          
+          return {
+            ...reading,
+            hasMonthlyReading: hasAnyReading,
+            hasElectricityReading,
+            hasWaterReading,
+            isDisabled: hasAnyReading || !canHaveInfo.canHave,
+            canHaveReading: canHaveInfo.canHave,
+            contractStartDate: canHaveInfo.startDate,
+            contractEndDate: canHaveInfo.endDate,
+            disabledReason: canHaveInfo.reason,
+            previousElectricityReading,
+            previousWaterReading
+          };
+        })
+      );
+      
+      setBulkReadings(updatedReadings);
+      
+      // Calculate if all units that CAN have readings actually have them
+      const unitsThatCanHaveReadings = updatedReadings.filter(r => r.canHaveReading);
+      const allValidUnitsRead = unitsThatCanHaveReadings.length > 0 && 
+        unitsThatCanHaveReadings.every(r => r.hasMonthlyReading);
+      setBuildingHasAllReadings(allValidUnitsRead);
+      
+    } catch (error) {
+      console.error('Error checking reading status:', error);
+      lastCheckedRef.current = '';
+    } finally {
+      setCheckingStatus(false);
+    }
+  }, [buildingId, readingDate, electricityUtility, waterUtility, bulkReadings, contracts, t]);
+
+  // Update the useEffect to trigger status check when date changes
+  useEffect(() => {
+    if (buildingId && readingDate && electricityUtility && waterUtility) {
+      // Clear any pending checks
+      if (checkTimeoutRef.current) {
+        clearTimeout(checkTimeoutRef.current);
+      }
+      
+      // Check immediately when date changes
+      checkTimeoutRef.current = setTimeout(() => {
+        if (bulkReadings.length > 0) {
+          checkReadingStatus(true); // Force refresh with new date
+        }
+      }, 100);
+    }
+    
+    return () => {
+      if (checkTimeoutRef.current) {
+        clearTimeout(checkTimeoutRef.current);
+      }
+    };
+  }, [readingDate]);
 
   // Initialize with today's date
   useEffect(() => {
@@ -341,7 +374,7 @@ const checkBuildingReadingsStatus = useCallback(async () => {
       console.error('Error loading data:', error);
       setUploadStatus({
         type: 'error',
-        message: 'Failed to load data. Please refresh the page.'
+        message: t('BulkMeterReadingPage.statusMessages.refreshData')
       });
     } finally {
       setLoading(false);
@@ -349,114 +382,118 @@ const checkBuildingReadingsStatus = useCallback(async () => {
   };
 
   const handleBuildingChange = async (selectedBuildingId: number) => {
-  // Check permissions
-  if (assignedBuildingId && selectedBuildingId !== assignedBuildingId && !isAdmin) {
-    setUploadStatus({
-      type: 'error',
-      message: 'You can only access meter readings for your assigned building'
-    });
-    return;
-  }
-  
-  setBuildingId(selectedBuildingId);
-  lastCheckedRef.current = ''; // Reset last checked when building changes
-  
-  try {
-    setLoading(true);
-    setUploadStatus({ type: null, message: '' });
-    setBuildingHasAllReadings(false); // Reset initially
-    
-    // Get occupied units only
-    const occupiedUnitsResponse = await buildingApi.getOccupiedUnitsByBuilding(selectedBuildingId);
-    const occupiedUnitsData = occupiedUnitsResponse.data || [];
-
-    
-    
-    // Filter only ROOM and HALL type units with meters
-    const unitsWithMeters = occupiedUnitsData.filter((unit: Unit) => 
-      unit.hasMeter && (unit.unitType === 'ROOM' || unit.unitType === 'HALL')
-    );
-    
-    setOccupiedUnits(unitsWithMeters);
-    setBuildingUnits(unitsWithMeters);
-    
-    // Initialize readings with default values
-    const initialReadings: BulkReading[] = unitsWithMeters.map((unit: Unit) => ({
-      unitId: unit.id,
-      unitNumber: unit.unitNumber,
-      unitType: unit.unitType as 'ROOM' | 'HALL',
-      electricityReading: 0,
-      waterReading: 0,
-      previousElectricityReading: 0,
-      previousWaterReading: 0,
-      hasMonthlyReading: false,
-      hasElectricityReading: false,
-      hasWaterReading: false,
-      isDisabled: false
-    }));
-    
-    setBulkReadings(initialReadings);
-    
-    // Check building readings status immediately after loading units
-    if (readingDate && electricityUtility && waterUtility) {
-      await checkBuildingReadingsStatus();
+    // Check permissions
+    if (assignedBuildingId && selectedBuildingId !== assignedBuildingId && !isAdmin) {
+      setUploadStatus({
+        type: 'error',
+        message: t('BulkMeterReadingPage.statusMessages.noPermission')
+      });
+      return;
     }
     
-  } catch (error: any) {
-    console.error('Error loading building units:', error);
-    setUploadStatus({
-      type: 'error',
-      message: 'Error loading building units. Please try again.'
-    });
-  } finally {
-    setLoading(false);
-  }
-};
-
-// Also add this useEffect to check when utilities are loaded
-useEffect(() => {
-  if (buildingId && readingDate && electricityUtility && waterUtility && bulkReadings.length === 0) {
-    // If we have a building and date but no readings yet, check building status
-    checkBuildingReadingsStatus();
-  }
-}, [electricityUtility, waterUtility]);
-
-  const handleReadingChange = (unitId: number, field: keyof BulkReading, value: string) => {
-    setBulkReadings(prev => prev.map(reading => {
-      if (reading.unitId === unitId) {
-        const numValue = value === '' ? 0 : parseFloat(value) || 0;
-        
-        // Validate that new reading is >= previous reading
-        if (field === 'electricityReading' && reading.previousElectricityReading && numValue < reading.previousElectricityReading) {
-          setUploadStatus({
-            type: 'warning',
-            message: `Electricity reading for unit ${reading.unitNumber} cannot be less than previous reading (${reading.previousElectricityReading})`
-          });
-          return reading;
-        }
-        
-        if (field === 'waterReading' && reading.previousWaterReading && numValue < reading.previousWaterReading) {
-          setUploadStatus({
-            type: 'warning',
-            message: `Water reading for unit ${reading.unitNumber} cannot be less than previous reading (${reading.previousWaterReading})`
-          });
-          return reading;
-        }
+    setBuildingId(selectedBuildingId);
+    lastCheckedRef.current = ''; // Reset last checked when building changes
+    
+    try {
+      setLoading(true);
+      setUploadStatus({ type: null, message: '' });
+      setBuildingHasAllReadings(false);
+      setContracts([]); // Clear previous contracts
+      
+      // Load contracts for this building
+      await loadContractsForBuilding(selectedBuildingId);
+      
+      // Get occupied units only
+      const occupiedUnitsResponse = await buildingApi.getOccupiedUnitsByBuilding(selectedBuildingId);
+      const occupiedUnitsData = occupiedUnitsResponse.data || [];
+      
+      // Filter only ROOM and HALL type units with meters
+      const unitsWithMeters = occupiedUnitsData.filter((unit: Unit) => 
+        unit.hasMeter && (unit.unitType === 'ROOM' || unit.unitType === 'HALL')
+      );
+      
+      setOccupiedUnits(unitsWithMeters);
+      setBuildingUnits(unitsWithMeters);
+      
+      // Initialize readings with default values and check date validity
+      const initialReadings: BulkReading[] = unitsWithMeters.map((unit: Unit) => {
+        const canHaveInfo = canUnitHaveReading(unit.id);
         
         return {
-          ...reading,
-          [field]: numValue
+          unitId: unit.id,
+          unitNumber: unit.unitNumber,
+          unitType: unit.unitType as 'ROOM' | 'HALL',
+          electricityReading: 0,
+          waterReading: 0,
+          previousElectricityReading: 0,
+          previousWaterReading: 0,
+          hasMonthlyReading: false,
+          hasElectricityReading: false,
+          hasWaterReading: false,
+          isDisabled: !canHaveInfo.canHave,
+          canHaveReading: canHaveInfo.canHave,
+          contractStartDate: canHaveInfo.startDate,
+          contractEndDate: canHaveInfo.endDate,
+          disabledReason: canHaveInfo.reason
         };
+      });
+      
+      setBulkReadings(initialReadings);
+      
+      // Check reading status after loading
+      if (readingDate && electricityUtility && waterUtility) {
+        setTimeout(() => {
+          checkReadingStatus(true);
+        }, 500);
       }
-      return reading;
-    }));
+      
+    } catch (error: any) {
+      console.error('Error loading building units:', error);
+      setUploadStatus({
+        type: 'error',
+        message: t('BulkMeterReadingPage.statusMessages.loadError')
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const handleReadingChange = (unitId: number, field: keyof BulkReading, value: string) => {
+  setBulkReadings(prev => prev.map(reading => {
+    if (reading.unitId === unitId) {
+      // Allow empty string for typing
+      if (value === '' || value === '-') {
+        return {
+          ...reading,
+          [field]: value
+        };
+      }
+      
+      const numValue = parseFloat(value);
+      if (isNaN(numValue)) {
+        return reading;
+      }
+      
+      // Only validate when we have a complete number (not during typing)
+      // We'll do final validation on submit
+      return {
+        ...reading,
+        [field]: numValue
+      };
+    }
+    return reading;
+  }));
+  
+  // Clear any warnings when user starts typing
+  setUploadStatus({ type: null, message: '' });
+};
+
+  // =============== EXCEL CODE - KEPT EXACTLY AS BEFORE ===============
   const downloadExcelTemplate = () => {
     if (!buildingId || buildingUnits.length === 0) {
       setUploadStatus({
         type: 'warning',
-        message: 'Please select a building first'
+        message: t('BulkMeterReadingPage.statusMessages.selectBuildingFirst')
       });
       return;
     }
@@ -464,7 +501,7 @@ useEffect(() => {
     if (buildingHasAllReadings) {
       setUploadStatus({
         type: 'warning',
-        message: 'All units in this building already have readings for this month. Excel template download is disabled.'
+        message: t('BulkMeterReadingPage.statusMessages.allReadingsComplete')
       });
       return;
     }
@@ -626,7 +663,7 @@ useEffect(() => {
     if (buildingHasAllReadings) {
       setUploadStatus({
         type: 'warning',
-        message: 'All units already have readings for this month. Excel import is disabled.'
+        message: t('BulkMeterReadingPage.statusMessages.allReadingsComplete')
       });
       event.target.value = '';
       return;
@@ -635,7 +672,7 @@ useEffect(() => {
     if (!buildingId || !readingDate) {
       setUploadStatus({
         type: 'warning',
-        message: 'Please select a building and reading date first'
+        message: t('BulkMeterReadingPage.statusMessages.selectDateFirst')
       });
       event.target.value = '';
       return;
@@ -644,7 +681,7 @@ useEffect(() => {
     if (!file.name.endsWith('.xlsx')) {
       setUploadStatus({
         type: 'error',
-        message: 'Please upload an Excel (.xlsx) file'
+        message: t('BulkMeterReadingPage.statusMessages.excelOnly')
       });
       event.target.value = '';
       return;
@@ -669,7 +706,7 @@ useEffect(() => {
           if (!validateExcelFormat(sheetData)) {
             setUploadStatus({
               type: 'error',
-              message: 'Invalid Excel format. Please use the provided template.'
+              message: t('BulkMeterReadingPage.statusMessages.invalidFormat')
             });
             return;
           }
@@ -679,19 +716,32 @@ useEffect(() => {
           if (processedReadings.length === 0) {
             setUploadStatus({
               type: 'warning',
-              message: 'No valid readings found in Excel file'
+              message: t('BulkMeterReadingPage.statusMessages.noValidReadings')
             });
             return;
           }
 
-          // Submit the readings
-          await submitReadings(processedReadings, 'Excel import');
+          // Submit the readings - only for units that can have readings
+          const validReadings = processedReadings.filter(reading => {
+            const bulkReading = bulkReadings.find(r => r.unitId === reading.unitId);
+            return bulkReading?.canHaveReading && !bulkReading.hasMonthlyReading;
+          });
+
+          if (validReadings.length === 0) {
+            setUploadStatus({
+              type: 'warning',
+              message: t('BulkMeterReadingPage.statusMessages.noValidForDate')
+            });
+            return;
+          }
+
+          await submitReadings(validReadings, 'Excel import');
           
         } catch (innerError) {
           console.error('Excel parsing error:', innerError);
           setUploadStatus({
             type: 'error',
-            message: 'Failed to read Excel file. Please check the format.'
+            message: t('BulkMeterReadingPage.statusMessages.excelError')
           });
         }
       };
@@ -701,7 +751,7 @@ useEffect(() => {
       console.error('File upload error:', error);
       setUploadStatus({
         type: 'error',
-        message: 'Error processing Excel file'
+        message: t('BulkMeterReadingPage.statusMessages.fileError')
       });
     } finally {
       setLoading(false);
@@ -713,7 +763,7 @@ useEffect(() => {
     if (!electricityUtility || !waterUtility) {
       setUploadStatus({
         type: 'error',
-        message: 'Utilities not configured. Please contact administrator.'
+        message: t('BulkMeterReadingPage.statusMessages.utilitiesNotConfigured')
       });
       return;
     }
@@ -726,8 +776,8 @@ useEffect(() => {
         const fullReading = bulkReadings.find(r => r.unitId === reading.unitId);
         if (!fullReading) return [];
         
-        // Electricity reading - only submit if it doesn't already exist
-        if (!fullReading.hasElectricityReading && reading.electricityReading >= 0) {
+        // Electricity reading - only submit if it doesn't already exist and unit can have reading
+        if (!fullReading.hasElectricityReading && reading.electricityReading >= 0 && fullReading.canHaveReading) {
           requests.push({
             unitId: reading.unitId,
             utilityTypeId: electricityUtility.id,
@@ -738,8 +788,8 @@ useEffect(() => {
           });
         }
         
-        // Water reading - only submit if it doesn't already exist
-        if (!fullReading.hasWaterReading && reading.waterReading >= 0) {
+        // Water reading - only submit if it doesn't already exist and unit can have reading
+        if (!fullReading.hasWaterReading && reading.waterReading >= 0 && fullReading.canHaveReading) {
           requests.push({
             unitId: reading.unitId,
             utilityTypeId: waterUtility.id,
@@ -756,7 +806,7 @@ useEffect(() => {
       if (bulkRequests.length === 0) {
         setUploadStatus({
           type: 'warning',
-          message: 'No valid readings to submit. They may already exist.'
+          message: t('BulkMeterReadingPage.statusMessages.noValidToSubmit')
         });
         return;
       }
@@ -770,7 +820,10 @@ useEffect(() => {
       
       setUploadStatus({
         type: 'success',
-        message: `Successfully submitted ${bulkRequests.length} readings from ${source}!`
+        message: t('BulkMeterReadingPage.statusMessages.successSubmit', {
+          count: bulkRequests.length,
+          source: source
+        })
       });
       
       // Refresh status after submission (force refresh)
@@ -782,7 +835,7 @@ useEffect(() => {
       console.error('Error submitting readings:', error);
       setUploadStatus({
         type: 'error',
-        message: error.response?.data?.message || 'Error submitting readings. Please try again.'
+        message: error.response?.data?.message || t('BulkMeterReadingPage.statusMessages.apiError')
       });
     }
   };
@@ -791,18 +844,20 @@ useEffect(() => {
     if (!buildingId || !readingDate) {
       setUploadStatus({
         type: 'warning',
-        message: 'Please select a building and reading date'
+        message: t('BulkMeterReadingPage.statusMessages.selectDate')
       });
       return;
     }
     
-    // Filter out only units without monthly readings
-    const unitsToSubmit = bulkReadings.filter(r => !r.hasMonthlyReading);
+    // Filter out only units that can have readings and don't have monthly readings
+    const unitsToSubmit = bulkReadings.filter(r => 
+      r.canHaveReading && !r.hasMonthlyReading
+    );
     
     if (unitsToSubmit.length === 0) {
       setUploadStatus({
         type: 'warning',
-        message: 'All units already have readings for this month'
+        message: t('BulkMeterReadingPage.statusMessages.noValidUnits')
       });
       return;
     }
@@ -817,7 +872,7 @@ useEffect(() => {
     if (invalidReadings.length > 0) {
       setUploadStatus({
         type: 'error',
-        message: `Found ${invalidReadings.length} readings where current reading is less than previous reading. Please check the values.`
+        message: t('BulkMeterReadingPage.statusMessages.negativeConsumption', { count: invalidReadings.length })
       });
       return;
     }
@@ -831,429 +886,577 @@ useEffect(() => {
       console.error('Error submitting bulk readings:', error);
       setUploadStatus({
         type: 'error',
-        message: error.response?.data?.message || 'Error submitting readings. Please try again.'
+        message: error.response?.data?.message || t('BulkMeterReadingPage.statusMessages.apiError')
       });
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Building2 className="w-8 h-8 text-red-600" />
-              <h1 className="text-3xl font-bold text-gray-900">Bulk Meter Reading Entry</h1>
-            </div>
-            
-          </div>
-          <p className="text-gray-600">Enter meter readings for ROOM and HALL type units in a building at once</p>
-          {!isAdmin && assignedBuildingId && (
-            <p className="text-sm text-blue-600 mt-1">
-              You are assigned to: {
-                buildings.length > 0 
-                  ? buildings.find(b => b.id === assignedBuildingId)?.buildingName 
-                  : 'Loading...'
-              }
-            </p>
-          )}
-        </div>
+  // Count statistics
+  const validUnitsCount = bulkReadings.filter(r => r.canHaveReading).length;
+  const invalidUnitsCount = bulkReadings.filter(r => !r.canHaveReading).length;
+  const pendingValidUnits = bulkReadings.filter(r => r.canHaveReading && !r.hasMonthlyReading).length;
+  const completedValidUnits = bulkReadings.filter(r => r.canHaveReading && r.hasMonthlyReading).length;
 
-        {/* Status Message */}
-        {uploadStatus.type && (
-          <div className={`mb-6 p-4 rounded-lg border ${
-            uploadStatus.type === 'success' 
-              ? 'bg-green-50 text-green-700 border-green-200' 
-              : uploadStatus.type === 'error'
-              ? 'bg-red-50 text-red-700 border-red-200'
-              : uploadStatus.type === 'warning'
-              ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
-              : 'bg-blue-50 text-blue-700 border-blue-200'
-          }`}>
-            <div className="flex items-start gap-3">
-              {uploadStatus.type === 'success' ? (
-                <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              ) : uploadStatus.type === 'error' ? (
-                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-              ) : (
-                <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+  // Get detailed reasons for invalid units
+  const getInvalidUnitsDetails = () => {
+    const details = {
+      startedLater: 0,
+      endedEarlier: 0,
+      noContract: 0
+    };
+    
+    bulkReadings.filter(r => !r.canHaveReading).forEach(reading => {
+      if (reading.disabledReason?.includes('starts on')) {
+        details.startedLater++;
+      } else if (reading.disabledReason?.includes('ended on')) {
+        details.endedEarlier++;
+      } else if (reading.disabledReason?.includes('No active contract')) {
+        details.noContract++;
+      }
+    });
+    
+    return details;
+  };
+
+  const invalidDetails = getInvalidUnitsDetails();
+
+  return (
+    <div className="flex flex-col h-full animate-fadeIn">
+      {/* Sticky Header Section */}
+      <div className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+        <div className="p-4 lg:p-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                {t('BulkMeterReadingPage.title')}
+              </h1>
+              <p className="text-gray-600 mt-1">
+                {t('BulkMeterReadingPage.subtitle')}
+              </p>
+              {!isAdmin && assignedBuildingId && (
+                <p className="text-sm text-blue-600 mt-1">
+                  {t('BulkMeterReadingPage.assignedTo')} {
+                    buildings.length > 0 
+                      ? buildings.find(b => b.id === assignedBuildingId)?.buildingName 
+                      : t('BulkMeterReadingPage.loading')
+                  }
+                </p>
               )}
-              <div>
-                <p className="whitespace-pre-line">{uploadStatus.message}</p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+              <button
+                onClick={loadData}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition duration-200 font-medium border border-gray-300"
+              >
+                <RefreshCw className="w-4 h-4" />
+                {t('BulkMeterReadingPage.refresh')}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 lg:p-6 space-y-6">
+          {/* Status Message */}
+          {uploadStatus.type && (
+            <div className={`p-4 rounded-lg border ${
+              uploadStatus.type === 'success' 
+                ? 'bg-green-50 text-green-700 border-green-200' 
+                : uploadStatus.type === 'error'
+                ? 'bg-red-50 text-red-700 border-red-200'
+                : uploadStatus.type === 'warning'
+                ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                : 'bg-blue-50 text-blue-700 border-blue-200'
+            }`}>
+              <div className="flex items-start gap-3">
+                {uploadStatus.type === 'success' ? (
+                  <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                ) : uploadStatus.type === 'error' ? (
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                )}
+                <div>
+                  <p className="whitespace-pre-line">{uploadStatus.message}</p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Controls */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Select Building
-              </label>
-              <select
-                value={buildingId || ''}
-                onChange={(e) => handleBuildingChange(Number(e.target.value))}
-                className="w-full border border-gray-300 rounded px-3 py-2"
-                disabled={loading || (assignedBuildingId && !isAdmin)}
-              >
-                {isAdmin ? (
-                  <>
-                    <option value="">Select building...</option>
-                    {buildings.map((building) => (
-                      <option key={building.id} value={building.id}>
-                        {building.buildingName} - {building.buildingType || 'Commercial'}
+          {/* Controls */}
+          <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('BulkMeterReadingPage.controls.selectBuilding')}
+                </label>
+                <select
+                  value={buildingId || ''}
+                  onChange={(e) => handleBuildingChange(Number(e.target.value))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  disabled={loading || (assignedBuildingId && !isAdmin)}
+                >
+                  {isAdmin ? (
+                    <>
+                      <option value="">{t('BulkMeterReadingPage.controls.selectBuildingPlaceholder')}</option>
+                      {buildings.map((building) => (
+                        <option key={building.id} value={building.id}>
+                          {building.buildingName} - {building.buildingType || 'Commercial'}
+                        </option>
+                      ))}
+                    </>
+                  ) : assignedBuildingId ? (
+                    <>
+                      <option value={assignedBuildingId}>
+                        {buildings.find(b => b.id === assignedBuildingId)?.buildingName || t('BulkMeterReadingPage.controls.myAssignedBuilding')}
                       </option>
-                    ))}
-                  </>
-                ) : assignedBuildingId ? (
-                  <>
-                    <option value={assignedBuildingId}>
-                      {buildings.find(b => b.id === assignedBuildingId)?.buildingName || 'My Assigned Building'}
-                    </option>
-                  </>
-                ) : (
-                  <option value="">No building assigned</option>
-                )}
-              </select>
-            </div>
+                    </>
+                  ) : (
+                    <option value="">{t('BulkMeterReadingPage.controls.noBuildingAssigned')}</option>
+                  )}
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Reading Date *
-              </label>
-              <input
-                type="date"
-                value={readingDate}
-                onChange={(e) => setReadingDate(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2"
-                disabled={loading}
-                required
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Readings are recorded monthly. Once submitted, fields will be disabled.
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('BulkMeterReadingPage.controls.readingDate')}
+                </label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-gray-400" />
+                  <input
+                    type="date"
+                    value={readingDate}
+                    onChange={(e) => setReadingDate(e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={loading}
+                    required
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {t('BulkMeterReadingPage.controls.dateNote')}
+                </p>
+              </div>
+
+              <div className="flex items-end space-x-2">
+                <button 
+                  onClick={downloadExcelTemplate}
+                  disabled={loading || !buildingId || buildingHasAllReadings}
+                  className={`flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg transition-colors ${
+                    loading || !buildingId || buildingHasAllReadings
+                      ? 'opacity-50 cursor-not-allowed bg-gray-100'
+                      : 'hover:bg-gray-50 cursor-pointer'
+                  }`}
+                >
+                  <Download className="w-4 h-4" />
+                  {t('BulkMeterReadingPage.controls.downloadTemplate')}
+                </button>
+                
+                <label
+                  className={`flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg transition-colors
+                    ${loading || !buildingId || buildingHasAllReadings
+                      ? 'opacity-50 cursor-not-allowed bg-gray-100'
+                      : 'hover:bg-gray-50 cursor-pointer'
+                    }`}
+                >
+                  <Upload className="w-4 h-4" />
+                  {t('BulkMeterReadingPage.controls.importExcel')}
+                  <input
+                    type="file"
+                    accept=".xlsx"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    disabled={loading || !buildingId || buildingHasAllReadings}
+                  />
+                </label>
+              </div>
+            </div>
+            
+            {/* Building Info */}
+            {buildingId && (
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">{t('BulkMeterReadingPage.buildingInfo.building')}</span>
+                    <span className="font-medium ml-2">
+                      {buildings.find(b => b.id === buildingId)?.buildingName || 'Unknown Building'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">{t('BulkMeterReadingPage.buildingInfo.readingDate')}</span>
+                    <span className="font-medium ml-2">{readingDate}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">{t('BulkMeterReadingPage.buildingInfo.validUnits')}</span>
+                    <span className="font-medium ml-2">{validUnitsCount}/{occupiedUnits.length}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">{t('BulkMeterReadingPage.buildingInfo.pending')}</span>
+                    <span className="font-medium ml-2">{pendingValidUnits}</span>
+                  </div>
+                </div>
+                
+                {invalidUnitsCount > 0 && (
+                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                    <p className="text-sm text-yellow-800 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      {invalidUnitsCount} {t('BulkMeterReadingPage.buildingInfo.unitsCannotRead')} {readingDate}
+                      {invalidDetails.startedLater > 0 && ` (${invalidDetails.startedLater} ${t('BulkMeterReadingPage.buildingInfo.unitsStartLater')})`}
+                      {invalidDetails.endedEarlier > 0 && ` (${invalidDetails.endedEarlier} ${t('BulkMeterReadingPage.buildingInfo.unitsEndedEarlier')})`}
+                      {invalidDetails.noContract > 0 && ` (${invalidDetails.noContract} ${t('BulkMeterReadingPage.buildingInfo.noActiveContract')})`}
+                    </p>
+                  </div>
+                )}
+                
+                {buildingHasAllReadings && validUnitsCount > 0 && (
+                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded">
+                    <p className="text-sm text-green-800 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      {t('BulkMeterReadingPage.buildingInfo.allUnitsHaveReadings')} {readingDate}. {t('BulkMeterReadingPage.buildingInfo.noFurtherEntries')}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Bulk Readings Table */}
+          {bulkReadings.length > 0 && (
+            <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      {t('BulkMeterReadingPage.table.title')} {buildings.find(b => b.id === buildingId)?.buildingName}
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                      {t('BulkMeterReadingPage.table.date')} {readingDate} | {t('BulkMeterReadingPage.table.units')} {bulkReadings.length}
+                      {validUnitsCount > 0 && ` (${validUnitsCount} ${t('BulkMeterReadingPage.table.validForDate')})`}
+                      {invalidUnitsCount > 0 && ` (${invalidUnitsCount} ${t('BulkMeterReadingPage.table.invalid')})`}
+                    </p>
+                  </div>
+                  <div className="text-sm">
+                    <span className="text-gray-600">{t('BulkMeterReadingPage.table.validUnitsPending')}</span>
+                    <span className="font-medium ml-2">
+                      {pendingValidUnits}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                        {t('BulkMeterReadingPage.table.unitDetails')}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">
+                        {t('BulkMeterReadingPage.table.electricity')}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">
+                        {t('BulkMeterReadingPage.table.water')}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                        {t('BulkMeterReadingPage.table.previousReadings')}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                        {t('BulkMeterReadingPage.table.consumption')}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                        {t('BulkMeterReadingPage.table.status')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {bulkReadings.map((reading) => {
+                      const elecConsumption = reading.electricityReading - (reading.previousElectricityReading || 0);
+                      const waterConsumption = reading.waterReading - (reading.previousWaterReading || 0);
+                      
+                      // Determine row background color
+                      let rowClass = "hover:bg-gray-50 transition-colors";
+                      if (!reading.canHaveReading) {
+                        rowClass += " bg-red-50";
+                      } else if (reading.isDisabled) {
+                        rowClass += " bg-gray-50";
+                      }
+                      
+                      return (
+                        <tr key={reading.unitId} className={rowClass}>
+                          <td className="px-6 py-4">
+                            <div className="font-medium text-gray-900">
+                              {reading.unitNumber}
+                              <span className="ml-2 text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                                {reading.unitType === 'ROOM' ? t('BulkMeterReadingPage.table.room') : t('BulkMeterReadingPage.table.hall')}
+                              </span>
+                              {!reading.canHaveReading && (
+                                <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
+                                  {t('BulkMeterReadingPage.table.notAvailable')}
+                                </span>
+                              )}
+                              {reading.isDisabled && reading.canHaveReading && (
+                                <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                                  {t('BulkMeterReadingPage.table.alreadyRead')}
+                                </span>
+                              )}
+                            </div>
+                            {reading.contractStartDate && reading.contractEndDate && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {t('BulkMeterReadingPage.table.contract')} {reading.contractStartDate} {t('BulkMeterReadingPage.table.to')} {reading.contractEndDate}
+                              </div>
+                            )}
+                            {reading.disabledReason && !reading.canHaveReading && (
+                              <div className="text-xs text-red-600 mt-1">
+                                {reading.disabledReason}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <input
+  type="number"
+  step="0.01"
+  min={reading.previousElectricityReading || 0}
+  value={reading.electricityReading === 0 ? '' : reading.electricityReading}
+  onChange={(e) => handleReadingChange(
+    reading.unitId, 
+    'electricityReading', 
+    e.target.value
+  )}
+  onBlur={(e) => {
+    // Validate on blur (when user leaves the field)
+    const value = e.target.value;
+    if (value && reading.previousElectricityReading) {
+      const numValue = parseFloat(value);
+      if (numValue < reading.previousElectricityReading) {
+        setUploadStatus({
+          type: 'warning',
+          message: t('BulkMeterReadingPage.statusMessages.electricityLow', {
+            unit: reading.unitNumber,
+            previous: reading.previousElectricityReading
+          })
+        });
+        // Reset to previous value
+        handleReadingChange(reading.unitId, 'electricityReading', reading.previousElectricityReading.toString());
+      }
+    }
+  }}
+  className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+    reading.hasElectricityReading || loading || !reading.canHaveReading
+      ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' 
+      : ''
+  }`}
+  placeholder={t('BulkMeterReadingPage.table.enterCurrentReading')}
+  disabled={reading.hasElectricityReading || loading || !reading.canHaveReading}
+  title={!reading.canHaveReading ? reading.disabledReason : 
+         reading.hasElectricityReading ? t('BulkMeterReadingPage.table.alreadyRead') : ''}
+/>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {t('BulkMeterReadingPage.table.previous')} {reading.previousElectricityReading?.toFixed(2) || '0.00'} kWh
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <input
+  type="number"
+  step="0.01"
+  min={reading.previousWaterReading || 0}
+  value={reading.waterReading === 0 ? '' : reading.waterReading}
+  onChange={(e) => handleReadingChange(
+    reading.unitId, 
+    'waterReading', 
+    e.target.value
+  )}
+  onBlur={(e) => {
+    // Validate on blur (when user leaves the field)
+    const value = e.target.value;
+    if (value && reading.previousWaterReading) {
+      const numValue = parseFloat(value);
+      if (numValue < reading.previousWaterReading) {
+        setUploadStatus({
+          type: 'warning',
+          message: t('BulkMeterReadingPage.statusMessages.waterLow', {
+            unit: reading.unitNumber,
+            previous: reading.previousWaterReading
+          })
+        });
+        // Reset to previous value
+        handleReadingChange(reading.unitId, 'waterReading', reading.previousWaterReading.toString());
+      }
+    }
+  }}
+  className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+    reading.hasWaterReading || loading || !reading.canHaveReading
+      ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' 
+      : ''
+  }`}
+  placeholder={t('BulkMeterReadingPage.table.enterCurrentReading')}
+  disabled={reading.hasWaterReading || loading || !reading.canHaveReading}
+  title={!reading.canHaveReading ? reading.disabledReason : 
+         reading.hasWaterReading ? t('BulkMeterReadingPage.table.alreadyRead') : ''}
+/>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {t('BulkMeterReadingPage.table.previous')} {reading.previousWaterReading?.toFixed(2) || '0.00'} gal
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            <div className="space-y-2">
+                              <div className="p-2 bg-gray-50 rounded">
+                                <div className="font-medium">{t('BulkMeterReadingPage.table.electricityConsumption')}</div>
+                                <div>{reading.previousElectricityReading?.toFixed(2) || '0.00'} kWh</div>
+                              </div>
+                              <div className="p-2 bg-gray-50 rounded">
+                                <div className="font-medium">{t('BulkMeterReadingPage.table.waterConsumption')}</div>
+                                <div>{reading.previousWaterReading?.toFixed(2) || '0.00'} gal</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="space-y-3">
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">{t('BulkMeterReadingPage.table.electricityConsumption')}</div>
+                                <div className={`font-medium px-2 py-1 rounded ${
+                                  elecConsumption >= 0 
+                                    ? 'bg-green-50 text-green-700 border border-green-200' 
+                                    : 'bg-red-50 text-red-700 border border-red-200'
+                                }`}>
+                                  {elecConsumption >= 0 ? '+' : ''}{elecConsumption.toFixed(2)} kWh
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-gray-500 mb-1">{t('BulkMeterReadingPage.table.waterConsumption')}</div>
+                                <div className={`font-medium px-2 py-1 rounded ${
+                                  waterConsumption >= 0 
+                                    ? 'bg-blue-50 text-blue-700 border border-blue-200' 
+                                    : 'bg-red-50 text-red-700 border border-red-200'
+                                }`}>
+                                  {waterConsumption >= 0 ? '+' : ''}{waterConsumption.toFixed(2)} gal
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col gap-1">
+                              {!reading.canHaveReading ? (
+                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800">
+                                  {t('BulkMeterReadingPage.table.notAvailable')}
+                                </span>
+                              ) : reading.hasMonthlyReading ? (
+                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                  {t('BulkMeterReadingPage.table.alreadyRead')}
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">
+                                  {t('BulkMeterReadingPage.table.readyForEntry')}
+                                </span>
+                              )}
+                              
+                              {reading.canHaveReading && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {reading.hasMonthlyReading ? t('BulkMeterReadingPage.table.submitted') : t('BulkMeterReadingPage.table.pending')}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Submit Button */}
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                <div className="flex justify-between items-center">
+                  <div className="text-sm text-gray-600">
+                    <div>{t('BulkMeterReadingPage.table.totalUnits')} {bulkReadings.length}</div>
+                    <div className="mt-1">
+                      <span className="text-green-600">{t('BulkMeterReadingPage.table.validForDateCount')} {validUnitsCount} {t('BulkMeterReadingPage.table.unitsCount')}</span>
+                      <span className="ml-4 text-red-600">{t('BulkMeterReadingPage.table.invalid')}: {invalidUnitsCount} {t('BulkMeterReadingPage.table.unitsCount')}</span>
+                    </div>
+                    <div className="mt-1">
+                      <span className="text-blue-600">{t('BulkMeterReadingPage.table.pendingCount')} {pendingValidUnits} {t('BulkMeterReadingPage.table.unitsCount')}</span>
+                      <span className="ml-4 text-yellow-600">{t('BulkMeterReadingPage.table.completed')} {completedValidUnits} {t('BulkMeterReadingPage.table.unitsCount')}</span>
+                    </div>
+                    {invalidUnitsCount > 0 && (
+                      <div className="mt-1 text-xs">
+                        <span className="text-red-600">
+                          {t('BulkMeterReadingPage.table.invalidReasons')}: 
+                          {invalidDetails.startedLater > 0 && ` ${invalidDetails.startedLater} ${t('BulkMeterReadingPage.buildingInfo.unitsStartLater')}`}
+                          {invalidDetails.endedEarlier > 0 && ` ${invalidDetails.endedEarlier} ${t('BulkMeterReadingPage.buildingInfo.unitsEndedEarlier')}`}
+                          {invalidDetails.noContract > 0 && ` ${invalidDetails.noContract} ${t('BulkMeterReadingPage.buildingInfo.noActiveContract')}`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+  onClick={() => {
+    // Reset only the reading values, not the entire form
+    setBulkReadings(prev => prev.map(reading => ({
+      ...reading,
+      electricityReading: 0,
+      waterReading: 0
+    })));
+    setUploadStatus({ type: null, message: '' });
+  }}
+  className="flex items-center justify-center gap-2 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+  disabled={loading}
+>
+  {t('BulkMeterReadingPage.table.clearValues')}
+</button>
+                    <button
+                      onClick={submitBulkReadings}
+                      disabled={loading || pendingValidUnits === 0 || buildingHasAllReadings}
+                      className="flex items-center justify-center gap-2 px-6 py-2 bg-blue-800 text-white rounded-lg hover:bg-blue-900 transition duration-200 font-semibold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Save className="w-4 h-4" />
+                      {loading ? t('BulkMeterReadingPage.table.submitting') : 
+                       buildingHasAllReadings ? t('BulkMeterReadingPage.table.allReadingsSubmitted') : 
+                       t('BulkMeterReadingPage.table.submitPending', { count: pendingValidUnits })}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="text-center py-12">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="mt-2 text-gray-600">{t('BulkMeterReadingPage.loading')}</p>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!buildingId && !loading && (
+            <div className="text-center py-12 bg-white rounded-lg shadow border border-gray-200">
+              <div className="text-gray-400 mb-4">
+                <Building2 className="mx-auto h-16 w-16" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {isAdmin ? t('BulkMeterReadingPage.emptyState.selectBuilding') : t('BulkMeterReadingPage.emptyState.noBuildingAssigned')}
+              </h3>
+              <p className="text-sm text-gray-600 mb-6">
+                {isAdmin 
+                  ? t('BulkMeterReadingPage.emptyState.adminMessage')
+                  : t('BulkMeterReadingPage.emptyState.userMessage')
+                }
               </p>
             </div>
-
-            <div className="flex items-end space-x-2">
-              <button 
-                onClick={downloadExcelTemplate}
-                disabled={loading || !buildingId || buildingHasAllReadings}
-                className={`px-4 py-2 border border-gray-300 rounded flex items-center transition-colors ${
-                  loading || !buildingId || buildingHasAllReadings
-                    ? 'opacity-50 cursor-not-allowed bg-gray-100'
-                    : 'hover:bg-gray-50 cursor-pointer'
-                }`}
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download Excel Template
-              </button>
-              
-              <label
-                className={`px-4 py-2 border border-gray-300 rounded flex items-center transition-colors
-                  ${loading || !buildingId || buildingHasAllReadings
-                    ? 'opacity-50 cursor-not-allowed bg-gray-100'
-                    : 'hover:bg-gray-50 cursor-pointer'
-                  }`}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Import Excel
-                <input
-                  type="file"
-                  accept=".xlsx"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  disabled={loading || !buildingId || buildingHasAllReadings}
-                />
-              </label>
-            </div>
-          </div>
-          
-          {/* Building Info */}
-          {buildingId && (
-            <div className="mt-4 p-4 bg-blue-50 rounded border border-blue-200">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Building:</span>
-                  <span className="font-medium ml-2">
-                    {buildings.find(b => b.id === buildingId)?.buildingName || 'Unknown Building'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-600">ROOM/HALL Units:</span>
-                  <span className="font-medium ml-2">{occupiedUnits.length}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Electricity Utility:</span>
-                  <span className="font-medium ml-2">
-                    {electricityUtility ? electricityUtility.utilityName : 'Not configured'}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Water Utility:</span>
-                  <span className="font-medium ml-2">
-                    {waterUtility ? waterUtility.utilityName : 'Not configured'}
-                  </span>
-                </div>
-              </div>
-              
-              {buildingHasAllReadings && (
-                <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded">
-                  <p className="text-sm text-green-800 flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4" />
-                    All units in this building have readings for {readingDate}. No further entries needed.
-                  </p>
-                </div>
-              )}
-              
-              {!buildingHasAllReadings && bulkReadings.some(r => r.hasMonthlyReading) && (
-                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                  <p className="text-sm text-yellow-800 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" />
-                    {bulkReadings.filter(r => r.hasMonthlyReading).length} unit(s) already have readings for {readingDate}. 
-                    These are disabled to prevent duplicate entries.
-                  </p>
-                </div>
-              )}
-            </div>
           )}
         </div>
-
-        {/* Bulk Readings Table */}
-        {bulkReadings.length > 0 && (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Meter Readings for {buildings.find(b => b.id === buildingId)?.buildingName}
-                  </h2>
-                  <p className="text-sm text-gray-600">
-                    Date: {readingDate} | Units: {bulkReadings.length}
-                    {bulkReadings.filter(r => r.hasMonthlyReading).length > 0 && 
-                      ` (${bulkReadings.filter(r => r.hasMonthlyReading).length} units already read)`}
-                  </p>
-                </div>
-                <div className="text-sm">
-                  <span className="text-gray-600">Units Pending:</span>
-                  <span className="font-medium ml-2">
-                    {bulkReadings.filter(r => !r.hasMonthlyReading).length}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
-                      Unit Details
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">
-                      Electricity (kWh)
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">
-                      Water (gal)
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
-                      Previous Readings
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
-                      Consumption
-                    </th>
-                    
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {bulkReadings.map((reading) => {
-                    const elecConsumption = reading.electricityReading - (reading.previousElectricityReading || 0);
-                    const waterConsumption = reading.waterReading - (reading.previousWaterReading || 0);
-                    
-                    return (
-                      <tr key={reading.unitId} className={`hover:bg-gray-50 ${reading.isDisabled ? 'bg-gray-50' : ''}`}>
-                        <td className="px-6 py-4">
-                          <div className="font-medium text-gray-900">
-                            {reading.unitNumber}
-                            <span className="ml-2 text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
-                              {reading.unitType}
-                            </span>
-                            {reading.isDisabled && (
-                              <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                                Already Read
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="number"
-                                step="0.01"
-                                min={reading.previousElectricityReading || 0}
-                                value={reading.electricityReading || ''}
-                                onChange={(e) => handleReadingChange(
-                                  reading.unitId, 
-                                  'electricityReading', 
-                                  e.target.value
-                                )}
-                                className={`w-full border rounded px-3 py-2 ${
-                                  reading.hasElectricityReading || loading || buildingHasAllReadings
-                                    ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' 
-                                    : 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                }`}
-                                placeholder="Enter current reading"
-                                disabled={reading.hasElectricityReading || loading || buildingHasAllReadings}
-                                title={reading.hasElectricityReading ? 'Reading already submitted for this month' : ''}
-                              />
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Previous: {reading.previousElectricityReading?.toFixed(2) || '0.00'} kWh
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="number"
-                                step="0.01"
-                                min={reading.previousWaterReading || 0}
-                                value={reading.waterReading || ''}
-                                onChange={(e) => handleReadingChange(
-                                  reading.unitId, 
-                                  'waterReading', 
-                                  e.target.value
-                                )}
-                                className={`w-full border rounded px-3 py-2 ${
-                                  reading.hasWaterReading || loading || buildingHasAllReadings
-                                    ? 'bg-gray-100 text-gray-500 cursor-not-allowed border-gray-200' 
-                                    : 'border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
-                                }`}
-                                placeholder="Enter current reading"
-                                disabled={reading.hasWaterReading || loading || buildingHasAllReadings}
-                                title={reading.hasWaterReading ? 'Reading already submitted for this month' : ''}
-                              />
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Previous: {reading.previousWaterReading?.toFixed(2) || '0.00'} gal
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          <div className="space-y-2">
-                            <div className="p-2 bg-gray-50 rounded">
-                              <div className="font-medium">Electricity:</div>
-                              <div>{reading.previousElectricityReading?.toFixed(2) || '0.00'} kWh</div>
-                            </div>
-                            <div className="p-2 bg-gray-50 rounded">
-                              <div className="font-medium">Water:</div>
-                              <div>{reading.previousWaterReading?.toFixed(2) || '0.00'} gal</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="space-y-3">
-                            <div>
-                              <div className="text-xs text-gray-500 mb-1">Electricity:</div>
-                              <div className={`font-medium px-2 py-1 rounded ${
-                                elecConsumption >= 0 
-                                  ? 'bg-green-50 text-green-700 border border-green-200' 
-                                  : 'bg-red-50 text-red-700 border border-red-200'
-                              }`}>
-                                {elecConsumption >= 0 ? '+' : ''}{elecConsumption.toFixed(2)} kWh
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-xs text-gray-500 mb-1">Water:</div>
-                              <div className={`font-medium px-2 py-1 rounded ${
-                                waterConsumption >= 0 
-                                  ? 'bg-blue-50 text-blue-700 border border-blue-200' 
-                                  : 'bg-red-50 text-red-700 border border-red-200'
-                              }`}>
-                                {waterConsumption >= 0 ? '+' : ''}{waterConsumption.toFixed(2)} gal
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            
-            {/* Submit Button */}
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-              <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-600">
-                  <div>Total Units: {bulkReadings.length}</div>
-                  <div className="mt-1 text-green-600">
-                    Pending: {bulkReadings.filter(r => !r.hasMonthlyReading).length} units
-                  </div>
-                  <div className="text-yellow-600">
-                    Already Read: {bulkReadings.filter(r => r.hasMonthlyReading).length} units
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => {
-                      setBulkReadings([]);
-                      setBuildingId(null);
-                      setBuildingUnits([]);
-                      setBuildingHasAllReadings(false);
-                      setUploadStatus({ type: null, message: '' });
-                    }}
-                    className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                    disabled={loading}
-                  >
-                    Clear
-                  </button>
-                  <button
-                    onClick={submitBulkReadings}
-                    disabled={loading || pendingUnits.length === 0 || buildingHasAllReadings}
-                    className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 flex items-center transition-colors"
-                  >
-                    <Save className="w-4 h-4 mr-2" />
-                    {loading ? 'Submitting...' : buildingHasAllReadings ? 'All Readings Submitted' : 'Submit All Readings'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Loading State */}
-        {loading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-            <p className="mt-2 text-gray-600">Loading data...</p>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!buildingId && !loading && (
-          <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <Building2 className="mx-auto h-16 w-16" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {isAdmin ? 'Select a Building' : 'No Building Assigned'}
-            </h3>
-            <p className="text-sm text-gray-600 mb-6">
-              {isAdmin 
-                ? 'Choose a building from the dropdown above to start entering meter readings for ROOM and HALL units at once.'
-                : 'You have not been assigned to any building. Please contact your administrator.'
-              }
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
