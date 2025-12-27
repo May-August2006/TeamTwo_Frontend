@@ -28,8 +28,13 @@
     "availableUnits": "Available Units",
     "unitAdded": "Unit {unitNumber} added"
   },
-  
+
   "sidebar": {
+
+    "userManagement": "User Management",
+    "adminDashboard": "Admin Dashboard",
+    "adminUser": "Admin User",
+    "administrator": "Administrator",
     "dashboard": "Dashboard",
     "masterData": "Master Data Management",
     "branchManagement": "Branch Management",
@@ -49,56 +54,38 @@
     "managerPortal": "Manager Portal"
   },
   "header": {
-    "logout": "Logout"
-  },
-  "userManagement": {
-    "title": "User Management",
-    "subtitle": "Manage system users and their permissions",
-    "addUser": "Add New User",
+    "profile": "My Profile",
+    "settings": "Settings",
+    "changePassword": "Change Password",
+    "logout": "Logout",
+    "menu": "Menu",
     "user": "User",
-    "role": "Role",
-    "assignment": "Assignment",
-    "status": "Status",
-    "actions": "Actions",
-    "active": "Active",
-    "inactive": "Inactive",
-    "notAssigned": "Not assigned",
-    "removeFromBuilding": "Remove from Building",
-    "assignToBuilding": "Assign to Building",
-    "removeFromBranch": "Remove from Branch",
-    "assignToBranch": "Assign to Branch",
-    "editUser": "Edit User",
-    "deleteUser": "Delete User",
-    "addNewUser": "Add New User",
-    "fullName": "Full Name",
-    "email": "Email",
-    "username": "Username",
-    "roleName": "Role",
-    "password": "Password",
-    "assignToBuildingLabel": "Assign to Building",
-    "assignToBranchLabel": "Assign to Branch",
-    "noAvailableBuildings": "No available buildings",
-    "noAvailableBranches": "No available branches",
-    "onlyWithoutManagers": "Only buildings without managers are shown",
-    "onlyWithoutAccountants": "Only branches without accountants are shown",
-    "selectBuilding": "Select a building (optional)",
-    "selectBranch": "Select a branch (optional)",
-    "cancel": "Cancel",
-    "createUser": "Create User",
-    "creating": "Creating...",
-    "editUserTitle": "Edit User",
-    "updateUser": "Update User",
-    "updating": "Updating...",
-    "assignUser": "Assign User",
-    "assignAsManager": "Assign as Building Manager",
-    "assignAsAccountant": "Assign as Branch Accountant",
-    "chooseBuilding": "Choose a building...",
-    "chooseBranch": "Choose a branch...",
-    "assigning": "Assigning...",
-    "confirmDelete": "Are you sure you want to delete this user?",
-    "confirmRemoveAssignment": "Are you sure you want to remove {{name}} from their assignment?"
+    "version": "Version",
+    "copyright": "Copyright",
+    "language": "Language"
   },
+
   "branchManagement": {
+    "subtitle": "Manage all branches and their locations.",
+    "addNewBranch": "Add New Branch",
+
+    "accountant": "Accountant",
+    "editBranch": "Edit branch",
+    "deleteBranch": "Delete branch",
+    "noBranchesYet": "No Branches Yet",
+    "tryAdjustingSearch": "Try adjusting your search terms to find what you're looking for.",
+    "startByAdding": "Start by clicking 'Add New Branch' to define your first branch.",
+
+    "deleteConfirmation": "Are you sure you want to delete this branch? This action cannot be undone.",
+    "deleting": "Deleting...",
+    "loading": "Loading Branch Management...",
+    "errors": {
+      "loadFailed": "Failed to load branches",
+      "deleteFailed": "Failed to delete branch"
+    },
+    "success": {
+      "deleted": "Branch deleted successfully"
+    },
     "title": "Branch Management",
     "searchPlaceholder": "Search branches by name or address...",
     "addBranch": "Add Branch",
@@ -114,6 +101,7 @@
     "confirmDelete": "Are you sure you want to delete this branch?"
   },
   "buildingManagement": {
+
     "title": "Building Management",
     "searchPlaceholder": "Search buildings by name or code...",
     "addBuilding": "Add Building",
@@ -125,11 +113,25 @@
     "noBuildings": "No buildings yet",
     "noBuildingsFound": "No buildings found",
     "addFirstBuilding": "Add Your First Building",
-    "confirmDelete": "Are you sure you want to delete this building?"
+    "confirmDelete": "Are you sure you want to delete this building?",
+
+    "subtitle": "Manage all buildings within your branches",
+    "allBranches": "All Branches",
+    "clearFilters": "Clear Filters",
+    "noResults": "No Buildings Found"
   },
+
   "levelManagement": {
-    "title": "Level Management",
-    "searchPlaceholder": "Search levels by name or building...",
+    "subtitle": "Manage all floors within your buildings",
+    "addFloor": "Add New Floor",
+    "allBranches": "All Branches",
+    "allBuildings": "All Buildings",
+    "clearFilters": "Clear Filters",
+    "noFloors": "No Floors Yet",
+    "noResults": "No Floors Found",
+
+    "title": "Floor Management",
+    "searchPlaceholder": "Search floors by name or building...",
     "addLevel": "Add Level",
     "levelNumber": "Level Number",
     "floor": "Floor",
@@ -139,7 +141,18 @@
     "addFirstLevel": "Add Your First Level",
     "confirmDelete": "Are you sure you want to delete this level?"
   },
+
+  
   "unitManagement": {
+    "subtitle": "Manage all units and their types in your properties",
+    "addUnit": "Add Unit",
+    "addSpaceType": "Add Space Type",
+    "addHallType": "Add Hall Type",
+    "units": "Units",
+    "spaceTypes": "Space Types",
+    "hallTypes": "Hall Types",
+    "noSpaceTypes": "No Space Types Found",
+    "noHallTypes": "No Hall Types Found",
     "title": "Unit Management",
     "rooms": "Units",
     "roomTypes": "Room Types",
@@ -164,36 +177,6 @@
     "saveChanges": "Save Changes",
     "dueDatePlaceholder": "e.g., 1 for 1st of the month",
     "lateFeePlaceholder": "Enter late fee policy details..."
-  },
-  "common": {
-    "save": "Save",
-    "cancel": "Cancel",
-    "delete": "Delete",
-    "edit": "Edit",
-    "create": "Create",
-    "update": "Update",
-    "search": "Search",
-    "loading": "Loading...",
-    "error": "Error",
-    "success": "Success",
-    "confirm": "Confirm",
-    "yes": "Yes",
-    "no": "No",
-    "manager": "Manager",
-    "managerUser": "Manager User",
-    "myProfile": "My Profile",
-    "changePassword": "Change Password",
-    "welcome": "Welcome",
-    "loginRequired": "Login Required",
-    "goToLogin": "Go to Login",
-
-    "refreshing": "Refreshing...",
-    "refreshData": "Refresh Data",
-    "goBack": "Go Back",
-    "close": "Close",
-    "backToList": "Back to List",
-    "thisTenant": "this tenant",
-    "thisCategory": "this category"
   },
   
   "tenant": {
@@ -549,6 +532,455 @@
     "deleteFailed": "Failed to delete category",
     "deleteTitle": "Delete Category",
     "deleteMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone."
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "subtitle": "Update your account password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "passwordStrength": "Strength",
+    "passwordStrong": "Strong ✓",
+    "passwordGood": "Good",
+    "passwordWeak": "Weak",
+    "passwordVeryWeak": "Very Weak",
+    "requirementsTitle": "Password must contain:",
+    "requirements": "• 6-20 characters • Uppercase letter • Lowercase letter • Number • Special character (@#$%^&+=) • No spaces",
+    "passwordChanged": "Password changed successfully!",
+    "changing": "Changing Password...",
+    "cancel": "Cancel",
+    "stayLoggedIn": "You will remain logged in after changing your password.",
+    "errors": {
+      "currentRequired": "Current password is required",
+      "newRequired": "New password is required",
+      "confirmRequired": "Please confirm your password",
+      "passwordsMatch": "Passwords do not match",
+      "differentPassword": "New password must be different from current password",
+      "invalidPassword": "Password must contain uppercase, lowercase, number, and special character (@#$%^&+=)",
+      "sessionExpired": "Session expired. Please login again.",
+      "serverError": "Server error. Please try again later.",
+      "networkError": "Network error. Please check your connection.",
+      "loginRequired": "Please login to change your password"
+    }
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "rememberMe": "Remember me"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "accountant": "Accountant",
+    "manager": "Manager",
+    "user": "User"
+  },
+  "utilities": {
+    "title": "Utility Types",
+    "create": "Create Utility Type",
+    "edit": "Edit Utility Type",
+    "list": "Utility Types List",
+    "name": "Utility Name",
+    "code": "Utility Code",
+    "unit": "Unit",
+    "rate": "Rate",
+    "type": "Type",
+    "actions": "Actions",
+    "addNew": "Add New Utility Type",
+    "search": "Search utilities...",
+    "noResults": "No utility types found",
+    "confirmDelete": "Are you sure you want to delete this utility type?",
+    "deleteSuccess": "Utility type deleted successfully",
+    "createSuccess": "Utility type created successfully",
+    "updateSuccess": "Utility type updated successfully",
+    "types": {
+      "electricity": "Electricity",
+      "water": "Water",
+      "gas": "Gas",
+      "internet": "Internet",
+      "maintenance": "Maintenance",
+      "trash": "Trash Collection",
+      "parking": "Parking",
+      "security": "Security",
+      "common_area": "Common Area",
+      "other": "Other"
+    },
+    "units": {
+      "kwh": "kWh",
+      "cubic_meter": "m³",
+      "liter": "Liter",
+      "mbps": "Mbps",
+      "month": "Month",
+      "unit": "Unit",
+      "slot": "Slot",
+      "person": "Person",
+      "square_meter": "m²",
+      "other": "Other"
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Enter utility name",
+      "code": "Code",
+      "codePlaceholder": "Enter unique code",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter description",
+      "unit": "Unit",
+      "unitPlaceholder": "Select unit",
+      "rate": "Rate",
+      "ratePlaceholder": "Enter rate per unit",
+      "isActive": "Active",
+      "isBillable": "Billable",
+      "save": "Save",
+      "cancel": "Cancel",
+      "update": "Update"
+    },
+    "validation": {
+      "nameRequired": "Name is required",
+      "codeRequired": "Code is required",
+      "unitRequired": "Unit is required",
+      "rateRequired": "Rate is required",
+      "ratePositive": "Rate must be positive"
+    }
+  },
+  "common": {
+
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+
+    "view": "View",
+    "add": "Add",
+    "filter": "Filter",
+    "noData": "No data available",
+    "show": "Show",
+    "hide": "Hide",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "yes": "Yes",
+    "no": "No",
+    "manager": "Manager",
+    "managerUser": "Manager User",
+    "myProfile": "My Profile",
+    "changePassword": "Change Password",
+    "welcome": "Welcome",
+    "loginRequired": "Login Required",
+    "goToLogin": "Go to Login",
+
+    "refreshing": "Refreshing...",
+    "refreshData": "Refresh Data",
+    "goBack": "Go Back",
+    "backToList": "Back to List",
+    "thisTenant": "this tenant",
+    "thisCategory": "this category",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "continue": "Continue",
+    "fieldRequired": "This field is required",
+    "fieldTooLong": "Cannot exceed {{max}} characters",
+    "characters": "characters",
+    "words": "words",
+    "tooLong": "(Too long!)",
+    "charactersRemaining": "characters remaining"
+  },
+  
+  "utilityType": {
+    "title": "Utility Type Management",
+    "subtitle": "Manage utility types and calculation methods for billing configuration.",
+    "addButton": "Add Utility Type",
+    "editTitle": "Edit Utility Type",
+    "createTitle": "Add New Utility Type",
+    "updateButton": "Update Utility",
+    "createButton": "Create Utility",
+    "cancel": "Cancel",
+    "loading": "Loading Utility Types...",
+    "confirmAction": "Confirm Action",
+    "attention": "Attention",
+    "success": "Success",
+    "active": "Active",
+    "inactive": "Inactive",
+    "edit": "Edit",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "delete": "Delete",
+    "noDescription": "No description provided.",
+    "noUtilityTypes": "No Utility Types Found",
+    "startByAdding": "Start by clicking 'Add Utility Type' to define your first utility configuration.",
+    "configurationGuide": "Utility Type Configuration Guide",
+    "form": {
+      "utilityName": "Utility Name",
+      "utilityNamePlaceholder": "e.g., Electricity, Water, CAM",
+      "calculationMethod": "Calculation Method",
+      "fixedRate": "Fixed Rate",
+      "metered": "Metered (Consumption-based)",
+      "allocated": "Allocated",
+      "ratePerUnit": "Rate Per Unit",
+      "baseRate": "base rate for calculations",
+      "rateDescription": "Enter a value between 0 and 999,999.9999 with up to 4 decimal places",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe this utility type and how it should be calculated..."
+    },
+    "validation": {
+      "utilityNameRequired": "Utility name is required",
+      "utilityNameMinLength": "Utility name must be at least 2 characters",
+      "utilityNameMaxLength": "Utility name cannot exceed 50 characters",
+      "utilityNameInvalidChars": "Utility name can only contain letters, numbers, spaces, hyphens, and dots",
+      "utilityNameMaxWords": "Utility name should be maximum 5 words",
+      "utilityNameConsecutiveSpaces": "Utility name should not have consecutive spaces",
+      "utilityNameTrimSpaces": "Utility name should not start or end with spaces",
+      "utilityNameRestrictedWord": "Utility name cannot contain \"{{word}}\"",
+      "calculationMethodRequired": "Calculation method is required",
+      "ratePerUnitRequired": "Rate per unit is required",
+      "ratePerUnitInvalid": "Rate must be a valid number",
+      "ratePerUnitNegative": "Rate cannot be negative",
+      "ratePerUnitMax": "Rate cannot exceed 999,999.9999",
+      "ratePerUnitMaxDecimals": "Rate can have maximum 4 decimal places",
+      "descriptionMaxLength": "Description cannot exceed 500 characters"
+    },
+    "calculationMethods": {
+      "fixed": "Fixed rate per billing period",
+      "metered": "Based on actual consumption (meter reading)",
+      "allocated": "Allocated based on usage or area"
+    },
+    "table": {
+      "utilityName": "Utility Name",
+      "calculationMethod": "Calculation Method",
+      "rate": "Rate",
+      "status": "Status",
+      "description": "Description",
+      "actions": "Actions"
+    },
+    "confirm": {
+      "delete": "Are you sure you want to delete this utility type? This action cannot be undone.",
+      "toggleActive": "Are you sure you want to {{action}} this utility type?"
+    },
+    "errors": {
+      "fetchFailed": "Failed to fetch utility types",
+      "saveFailed": "Failed to save utility type",
+      "deleteFailed": "Failed to delete utility type",
+      "updateFailed": "Failed to update utility type",
+      "notFound": "Utility type not found.",
+      "validationErrors": "Please fix the validation errors above"
+    },
+    "success": {
+      "created": "Utility type created successfully!",
+      "updated": "Utility type updated successfully!",
+      "deleted": "Utility type deleted successfully!",
+      "activated": "Utility type activated successfully!",
+      "deactivated": "Utility type deactivated successfully!"
+    },
+    "guide": {
+      "fixedMethod": "FIXED Method",
+      "fixedDescription": "Use for utilities with consistent monthly charges like internet, cable TV, or basic service fees that don't vary with usage.",
+      "meteredMethod": "METERED Method",
+      "meteredDescription": "Use for consumption-based utilities like electricity, water, or gas that are measured by meters and vary monthly.",
+      "allocatedMethod": "ALLOCATED Method",
+      "allocatedDescription": "Use for shared expenses like Common Area Maintenance (CAM), trash collection, or security that are divided among tenants.",
+      "ratePerUnit": "Rate Per Unit",
+      "rateDescription": "Set the base rate that will be used in billing fee calculations. This serves as the default rate for this utility type."
+    }
+  },
+  "userManagement": {
+    "title": "User Management",
+    "subtitle": "Manage system users and their assigned roles and permissions",
+    "addUser": "Add New User",
+    "addNewUser": "Add New User",
+    "loadingUsers": "Loading users...",
+    "noUsersFound": "No users found",
+    "tryChangingFilter": "Try changing your filter or add a new user",
+    "deactivated": "Deactivated",
+    "unknownBuilding": "Unknown Building",
+    "unknownBranch": "Unknown Branch",
+    "notAssigned": "Not assigned",
+    "active": "Active",
+    "inactive": "Inactive",
+    "manager": "Manager",
+    "accountant": "Accountant",
+    "approve": "Approve",
+    "reject": "Reject",
+    "setToPending": "Set to Pending",
+    "restore": "Restore",
+    "removeFromBuilding": "Remove from Building",
+    "assignToBuilding": "Assign to Building",
+    "deactivate": "Deactivate",
+    "edit": "Edit",
+    "buildingManager": "Building Manager",
+    "buildingAccountant": "Building Accountant",
+    "assign": "Assign",
+    "creating": "Creating...",
+    "updating": "Updating...",
+    "assigning": "Assigning...",
+    "createUser": "Create User",
+    "updateUser": "Update User",
+    "editUser": "Edit User: {{name}}",
+    "assignUser": "Assign {{name}} as {{type}}",
+    "role": "Role:",
+    "defaultPasswordMessage": "A default password will be auto-generated. User will need to reset it on first login.",
+    "checkingEmail": "Checking email availability...",
+    "checkingUsername": "Checking username availability...",
+    "emailAvailable": "✓ Email is available",
+    "emailTaken": "✗ Email is already taken",
+    "usernameAvailable": "✓ Username is available",
+    "usernameTaken": "✗ Username is already taken",
+    
+    "tabs": {
+      "all": "All Users",
+      "guests": "Guests",
+      "managers": "Managers",
+      "accountants": "Accountants",
+      "bod": "Board of Directors",
+      "pendingApproval": "Pending Approval",
+      "deactivated": "Deactivated Users"
+    },
+    
+    "approvalStatus": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    
+    "roles": {
+      "admin": "Administrator",
+      "manager": "Manager",
+      "accountant": "Accountant",
+      "bod": "Board of Directors",
+      "tenant": "Tenant",
+      "guest": "Guest"
+    },
+    
+    "validation": {
+      "usernameRequired": "Username is required",
+      "usernameInvalid": "Username must be 3-20 characters (letters, numbers, underscores only)",
+      "usernameTooLong": "Username cannot exceed {{max}} characters",
+      "usernameExists": "Username already exists",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email address",
+      "emailTooLong": "Email cannot exceed {{max}} characters",
+      "emailExists": "Email already exists",
+      "fullNameRequired": "Full name is required",
+      "fullNameInvalid": "Full name must be 2-30 characters (letters, spaces, dots, apostrophes, hyphens only)",
+      "fullNameTooLong": "Full name cannot exceed {{max}} characters"
+    },
+    
+    "form": {
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "John Doe",
+      "email": "Email",
+      "emailPlaceholder": "john@example.com",
+      "username": "Username",
+      "usernamePlaceholder": "johndoe123",
+      "role": "Role",
+      "initialApprovalStatus": "Initial Approval Status",
+      "pendingRequiresApproval": "Pending (Requires Approval)",
+      "approvedAutoAccess": "Approved (Auto Access)",
+      "rejectedNoAccess": "Rejected (No Access)",
+      "guestApprovalNote": "Guest users require approval before they can access the system",
+      "assignManagerToBuilding": "Assign to Building (as Manager)",
+      "assignAccountantToBuilding": "Assign to Building (as Accountant)",
+      "selectBuildingOptional": "Select a building (optional)",
+      "onlyBuildingsWithoutManagers": "Only buildings without managers are shown",
+      "onlyBuildingsWithoutAccountants": "Only buildings without accountants are shown",
+      "selectBuilding": "Select Building",
+      "chooseBuilding": "Choose a building...",
+      "noAvailableBuildingsWithoutManagers": "No available buildings without managers",
+      "noAvailableBuildingsWithoutAccountants": "No available buildings without accountants"
+    },
+    
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "approvalStatus": "Approval Status",
+      "assignment": "Assignment",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    
+    "tooltips": {
+      "reApprove": "User is approved - Click to re-approve",
+      "approve": "Approve User",
+      "reReject": "User is rejected - Click to reject again",
+      "reject": "Reject User",
+      "rePending": "User is pending - Click to set pending again",
+      "setPending": "Set User to Pending",
+      "restore": "Restore User",
+      "removeFromBuilding": "Remove from Building",
+      "assignToBuilding": "Assign to Building",
+      "edit": "Edit User",
+      "deactivate": "Deactivate User"
+    },
+    
+    "confirm": {
+      "approveTitle": "Approve User",
+      "approve": "Approve",
+      "reApprove": "Are you sure you want to re-approve {{name}}? This will grant them access to the system.",
+      "rejectTitle": "Reject User",
+      "reject": "Reject",
+      "reReject": "Are you sure you want to keep {{name}} rejected? This will deny them access to the system.",
+      "pendingTitle": "Set User to Pending",
+      "setPending": "Set to Pending",
+      "rePending": "Are you sure you want to keep {{name}} in pending status?",
+      "setPendingMessage": "Are you sure you want to set {{name}} to pending status?",
+      "removeAssignmentTitle": "Remove Assignment",
+      "remove": "Remove",
+      "removeAssignment": "Are you sure you want to remove {{name}} from their building assignment?",
+      "deactivateTitle": "Deactivate User",
+      "deactivate": "Deactivate",
+      "deactivateMessage": "Are you sure you want to deactivate {{name}}? They will no longer have access to the system and will be removed from any building assignments.",
+      "restoreTitle": "Restore User",
+      "restore": "Restore",
+      "restoreMessage": "Are you sure you want to restore {{name}}? They will regain access to the system."
+    },
+    
+    "notifications": {
+      "statusUpdated": "User status updated to {{status}} successfully!",
+      "userCreated": "User \"{{name}}\" created successfully! A default password has been generated.",
+      "managerAssigned": "Manager assigned to building successfully.",
+      "managerAssignmentFailed": "User created but manager assignment failed.",
+      "accountantAssigned": "Accountant assigned to building successfully.",
+      "accountantAssignmentFailed": "User created but accountant assignment failed.",
+      "userUpdated": "User updated successfully!",
+      "managerAssignmentSuccess": "Manager assigned to building successfully!",
+      "accountantAssignmentSuccess": "Accountant assigned to building successfully!",
+      "managerRemoved": "Manager removed from building successfully!",
+      "accountantRemoved": "Accountant removed from building successfully!",
+      "userDeactivated": "User deactivated successfully!",
+      "userRestored": "User restored successfully!"
+    },
+    
+    "errors": {
+      "loadDataFailed": "Failed to load data. Please refresh the page.",
+      "loadUsersFailed": "Failed to load users",
+      "statusUpdateFailed": "Failed to update user status to {{status}}",
+      "unauthorized": "Unauthorized. Please check your login.",
+      "forbidden": "Forbidden. You don't have permission to create users.",
+      "badRequest": "Bad request. Please check the form data.",
+      "serverError": "Server error ({{status}}). Please try again.",
+      "networkError": "No response from server. Check your network connection.",
+      "createUserError": "Error creating user: {{error}}",
+      "updateUserFailed": "Failed to update user. Please try again.",
+      "assignmentFailed": "Failed to assign user",
+      "noAssignmentFound": "No building assignment found",
+      "removeAssignmentFailed": "Failed to remove assignment",
+      "deactivateFailed": "Failed to deactivate user",
+      "restoreFailed": "Failed to restore user"
+    },
+    
+    "showingCount": "Showing <1>{{count}}</1> {{tab}}",
+    "guestsDescription": "Users with limited access permissions",
+    "bodDescription": "Board of Directors with system-wide access",
+    "pendingApprovalDescription": "Guest users awaiting approval",
+    "deactivatedDescription": "Users who have been deactivated"
   }
   ,
 
@@ -1560,4 +1992,7 @@
 
 
 
+
+  
 }
+

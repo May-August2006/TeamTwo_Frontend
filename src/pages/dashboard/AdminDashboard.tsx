@@ -1,25 +1,37 @@
 /** @format */
 
-import React, { useState } from "react";
-import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
 import AdminSidebar from "../../components/admin/AdminSidebar";
 import AdminHeader from "../../components/admin/AdminHeader";
 import AdminHome from "../../components/admin/AdminHome";
 import BranchManagement from "../BranchManagement";
 import BuildingManagement from "../BuildingManagement";
 import LevelManagement from "../LevelManagement";
-import AdminBillingConfiguration from "../../components/admin/BillingConfiguration";
 import UserManagement from "../../components/admin/UserManagement";
 import { useTranslation } from "react-i18next";
 import UtilityTypeManagement from "../../components/admin/UtilityTypeManagement";
 import UnitManagement from "../UnitManagement";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 
 const AdminDashboard: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
+
+  // Check for mobile view on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024); // lg breakpoint
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const handleLogout = () => {
     navigate("/logout");
@@ -31,7 +43,13 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleToggleCollapse = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
+    if (!isMobile) {
+      setSidebarCollapsed(!sidebarCollapsed);
+    }
+  };
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
   };
 
   const getPageTitle = () => {
@@ -46,58 +64,59 @@ const AdminDashboard: React.FC = () => {
     return t('admin.dashboard');
   };
 
+  const renderContent = () => {
+    if (location.pathname === "/admin") return <AdminHome onNavigate={handleNavigate} />;
+    if (location.pathname.includes("branches")) return <BranchManagement />;
+    if (location.pathname.includes("buildings")) return <BuildingManagement />;
+    if (location.pathname.includes("levels")) return <LevelManagement />;
+    if (location.pathname.includes("utility-types")) return <UtilityTypeManagement />;
+    if (location.pathname.includes("users")) return <UserManagement />;
+    if (location.pathname.includes("units")) return <UnitManagement />;
+    return <AdminHome onNavigate={handleNavigate} />;
+  };
+
   return (
-    <div className="min-h-screen bg-stone-50">
-      {/* Fixed Sidebar */}
+    <div className="flex min-h-screen bg-stone-50">
+      <style>{`
+        body { 
+          margin:0; 
+          padding:0; 
+          font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Roboto','Oxygen','Ubuntu','Cantarell','Fira Sans','Droid Sans','Helvetica Neue',sans-serif; 
+          -webkit-font-smoothing:antialiased; 
+          -moz-osx-font-smoothing:grayscale; 
+          background-color:#fafaf9; 
+        }
+        * { box-sizing:border-box; }
+        @media (max-width: 640px) {
+          .hide-on-mobile { display: none !important; }
+        }
+      `}</style>
+
       <AdminSidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         currentPath={location.pathname}
         onNavigate={handleNavigate}
-        isCollapsed={sidebarCollapsed}
+        isCollapsed={isMobile ? false : sidebarCollapsed}
         onToggleCollapse={handleToggleCollapse}
       />
 
-      {/* Fixed Header */}
-      <AdminHeader
-        onMenuToggle={() => setSidebarOpen(true)}
-        onLogout={handleLogout}
-        pageTitle={getPageTitle()}
-      />
+      <main
+        className={`flex-grow transition-all duration-300 w-full
+          ${isMobile ? "ml-0" : sidebarCollapsed ? "lg:ml-20" : "lg:ml-64"}`}
+      >
+        <AdminHeader
+          onLogout={handleLogout}
+          pageTitle={getPageTitle()}
+          onMenuClick={toggleSidebar}
+          showMenuButton={isMobile}
+        />
+        <div className="h-16"></div>
 
-      {/* Main Content Area */}
-      <main className={`pt-16 min-h-screen transition-all duration-300 ${
-        sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      }`}>
-        <div className="p-4 sm:p-8">
-          <div className="max-w-7xl mx-auto">
-            {/* Content Area */}
-            <div className="bg-white rounded-xl shadow-lg border border-stone-200 overflow-hidden">
-              <Routes>
-                <Route
-                  path="/"
-                  element={<AdminHome onNavigate={handleNavigate} />}
-                />
-                <Route path="/branches" element={<BranchManagement />} />
-                <Route path="/buildings" element={<BuildingManagement />} />
-                <Route path="/levels" element={<LevelManagement />} />
-                <Route path="/utility-types" element={<UtilityTypeManagement />} />
-                <Route path="/billing" element={<AdminBillingConfiguration />} />
-                <Route path="/users" element={<UserManagement />} />
-                <Route path="/units" element={<UnitManagement />} />
-              </Routes>
-            </div>
-          </div>
+        <div className="p-4 sm:p-6 lg:p-8">
+          {renderContent()}
         </div>
       </main>
-
-      {/* Mobile Sidebar Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-stone-900 bg-opacity-70 z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
     </div>
   );
 };

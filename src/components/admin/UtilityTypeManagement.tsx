@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { utilityApi } from "../../api/UtilityAPI";
 import type { UtilityType, UtilityTypeRequest } from "../../types/unit";
 import { Zap, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Define validation error types inline
 interface FormErrors {
@@ -20,6 +21,12 @@ interface BackendValidationError {
     fieldErrors?: Record<string, string>;
 }
 
+// Helper function to format MMK with thousand separators
+const formatMMK = (amount: number): string => {
+    if (amount === null || amount === undefined) return "-";
+    return `MMK ${amount.toFixed(4).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+};
+
 // Custom Modal Component for Confirmation and Alerts
 const CustomMessageModal: React.FC<{
   message: string;
@@ -27,6 +34,8 @@ const CustomMessageModal: React.FC<{
   onConfirm?: () => void;
   type: 'confirm' | 'alert' | 'success';
 }> = ({ message, onClose, onConfirm, type }) => {
+  const { t } = useTranslation();
+  
   if (!message) return null;
 
   const getColors = () => {
@@ -34,11 +43,24 @@ const CustomMessageModal: React.FC<{
       case 'confirm':
         return { header: 'text-stone-900', border: 'border-stone-400' }; 
       case 'alert':
-        return { header: 'text-red-700', border: 'border-red-600' };
+        return { header: 'text-[#1E40AF]', border: 'border-[#1E40AF]' };
       case 'success':
         return { header: 'text-green-700', border: 'border-green-600' };
       default:
         return { header: 'text-stone-900', border: 'border-stone-400' };
+    }
+  };
+
+  const getTitle = () => {
+    switch (type) {
+      case 'confirm':
+        return t('utilityType.confirmAction');
+      case 'alert':
+        return t('utilityType.attention');
+      case 'success':
+        return t('utilityType.success');
+      default:
+        return '';
     }
   };
 
@@ -48,7 +70,7 @@ const CustomMessageModal: React.FC<{
     <div className="fixed inset-0 bg-stone-900 bg-opacity-70 flex items-center justify-center p-4 z-[99]">
       <div className={`bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm ${border} border-t-8`}>
         <h3 className={`text-xl font-bold mb-4 ${header}`}>
-          {type === 'confirm' ? 'Confirm Action' : type === 'success' ? 'Success' : 'Attention'}
+          {getTitle()}
         </h3>
         <p className="text-stone-700 mb-6">{message}</p>
         <div className="flex justify-end space-x-3">
@@ -57,7 +79,7 @@ const CustomMessageModal: React.FC<{
               onClick={onClose}
               className="px-4 py-2 text-stone-600 border border-stone-300 rounded-lg hover:bg-stone-100 transition duration-150"
             >
-              Cancel
+              {t('utilityType.cancel')}
             </button>
           )}
           <button
@@ -66,10 +88,10 @@ const CustomMessageModal: React.FC<{
               onClose();
             }}
             className={`px-4 py-2 rounded-lg text-white font-semibold transition duration-150 ${
-              type === 'success' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+              type === 'success' ? 'bg-green-600 hover:bg-green-700' : 'bg-[#1E40AF] hover:bg-[#1E3A8A]'
             }`}
           >
-            {type === 'confirm' ? 'Continue' : 'Close'}
+            {type === 'confirm' ? t('utilityType.continue') : t('utilityType.close')}
           </button>
         </div>
       </div>
@@ -91,32 +113,33 @@ const sanitizeUtilityName = (value: string): string => {
 
 // Validation function
 const validateForm = (formData: UtilityTypeRequest): FormErrors => {
+    const { t } = useTranslation();
     const errors: FormErrors = {};
 
     // Utility Name validation - with word limit
     if (!formData.utilityName.trim()) {
-        errors.utilityName = "Utility name is required";
+        errors.utilityName = t('utilityType.validation.utilityNameRequired');
     } else if (formData.utilityName.length < 2) {
-        errors.utilityName = "Utility name must be at least 2 characters";
+        errors.utilityName = t('utilityType.validation.utilityNameMinLength');
     } else if (formData.utilityName.length > 50) {
-        errors.utilityName = "Utility name cannot exceed 50 characters";
+        errors.utilityName = t('utilityType.validation.utilityNameMaxLength');
     } else if (!/^[a-zA-Z0-9\s\-\\.]+$/.test(formData.utilityName)) {
-        errors.utilityName = "Utility name can only contain letters, numbers, spaces, hyphens, and dots";
+        errors.utilityName = t('utilityType.validation.utilityNameInvalidChars');
     } else {
         // Check word count (max 5 words)
         const wordCount = getWordCount(formData.utilityName);
         if (wordCount > 5) {
-            errors.utilityName = "Utility name should be maximum 5 words";
+            errors.utilityName = t('utilityType.validation.utilityNameMaxWords');
         }
         
         // Check for consecutive spaces
         if (/\s{2,}/.test(formData.utilityName)) {
-            errors.utilityName = "Utility name should not have consecutive spaces";
+            errors.utilityName = t('utilityType.validation.utilityNameConsecutiveSpaces');
         }
         
         // Check for leading/trailing spaces
         if (formData.utilityName !== formData.utilityName.trim()) {
-            errors.utilityName = "Utility name should not start or end with spaces";
+            errors.utilityName = t('utilityType.validation.utilityNameTrimSpaces');
         }
         
         // Additional: Prevent restricted words (optional)
@@ -127,44 +150,45 @@ const validateForm = (formData: UtilityTypeRequest): FormErrors => {
         );
         
         if (foundRestrictedWord) {
-            errors.utilityName = `Utility name cannot contain "${foundRestrictedWord}"`;
+            errors.utilityName = t('utilityType.validation.utilityNameRestrictedWord', { word: foundRestrictedWord });
         }
     }
 
     // Calculation Method validation
     if (!formData.calculationMethod) {
-        errors.calculationMethod = "Calculation method is required";
+        errors.calculationMethod = t('utilityType.validation.calculationMethodRequired');
     }
 
     // Rate Per Unit validation
     if (formData.ratePerUnit === null || formData.ratePerUnit === undefined) {
-        errors.ratePerUnit = "Rate per unit is required";
+        errors.ratePerUnit = t('utilityType.validation.ratePerUnitRequired');
     } else {
         const rate = Number(formData.ratePerUnit);
         if (isNaN(rate)) {
-            errors.ratePerUnit = "Rate must be a valid number";
+            errors.ratePerUnit = t('utilityType.validation.ratePerUnitInvalid');
         } else if (rate < 0) {
-            errors.ratePerUnit = "Rate cannot be negative";
+            errors.ratePerUnit = t('utilityType.validation.ratePerUnitNegative');
         } else if (rate > 999999.9999) {
-            errors.ratePerUnit = "Rate cannot exceed 999,999.9999";
+            errors.ratePerUnit = t('utilityType.validation.ratePerUnitMax');
         } else {
             // Check decimal places
             const decimalPlaces = (rate.toString().split('.')[1] || '').length;
             if (decimalPlaces > 4) {
-                errors.ratePerUnit = "Rate can have maximum 4 decimal places";
+                errors.ratePerUnit = t('utilityType.validation.ratePerUnitMaxDecimals');
             }
         }
     }
 
     // Description validation
     if (formData.description && formData.description.length > 500) {
-        errors.description = "Description cannot exceed 500 characters";
+        errors.description = t('utilityType.validation.descriptionMaxLength');
     }
 
     return errors;
 };
 
 const UtilityTypeManagement: React.FC = () => {
+    const { t } = useTranslation();
     const [utilityTypes, setUtilityTypes] = useState<UtilityType[]>([]);
     const [showForm, setShowForm] = useState(false);
     const [editingUtility, setEditingUtility] = useState<UtilityType | null>(null);
@@ -195,7 +219,7 @@ const UtilityTypeManagement: React.FC = () => {
             setUtilityTypes(response.data);
         } catch (error) {
             console.error("Error fetching utility types:", error);
-            setMessage({ type: 'alert', text: "Failed to fetch utility types" });
+            setMessage({ type: 'alert', text: t('utilityType.errors.fetchFailed') });
         } finally {
             setLoading(false);
         }
@@ -240,7 +264,12 @@ const UtilityTypeManagement: React.FC = () => {
             
             resetFormAndClose();
             fetchUtilityTypes();
-            setMessage({ type: 'success', text: `Utility type ${editingUtility ? 'updated' : 'created'} successfully!` });
+            setMessage({ 
+                type: 'success', 
+                text: editingUtility 
+                    ? t('utilityType.success.updated') 
+                    : t('utilityType.success.created') 
+            });
         } catch (error: any) {
             console.error("Error saving utility type:", error);
             
@@ -259,10 +288,10 @@ const UtilityTypeManagement: React.FC = () => {
                 
                 setFormErrors(backendErrors);
                 
-                const errorMessage = backendError.message || "Please fix the validation errors above";
+                const errorMessage = backendError.message || t('utilityType.errors.validationErrors');
                 setMessage({ type: 'alert', text: errorMessage });
             } else {
-                const errorMessage = error.response?.data?.message || "Failed to save utility type";
+                const errorMessage = error.response?.data?.message || t('utilityType.errors.saveFailed');
                 setMessage({ type: 'alert', text: errorMessage });
             }
         }
@@ -284,10 +313,10 @@ const UtilityTypeManagement: React.FC = () => {
         try {
             await utilityApi.delete(id);
             fetchUtilityTypes();
-            setMessage({ type: 'success', text: "Utility type deleted successfully!" });
+            setMessage({ type: 'success', text: t('utilityType.success.deleted') });
         } catch (error: any) {
             console.error("Error deleting utility type:", error);
-            const errorMessage = error.response?.data?.message || "Failed to delete utility type";
+            const errorMessage = error.response?.data?.message || t('utilityType.errors.deleteFailed');
             setMessage({ type: 'alert', text: errorMessage });
         }
     };
@@ -295,7 +324,7 @@ const UtilityTypeManagement: React.FC = () => {
     const handleDelete = (id: number) => {
         setMessage({
             type: 'confirm',
-            text: "Are you sure you want to delete this utility type? This action cannot be undone.",
+            text: t('utilityType.confirm.delete'),
             onConfirm: () => executeDelete(id)
         });
     };
@@ -304,7 +333,7 @@ const UtilityTypeManagement: React.FC = () => {
         try {
             const utility = utilityTypes.find(u => u.id === id);
             if (!utility) {
-                setMessage({ type: 'alert', text: "Utility type not found." });
+                setMessage({ type: 'alert', text: t('utilityType.errors.notFound') });
                 return;
             }
 
@@ -318,10 +347,15 @@ const UtilityTypeManagement: React.FC = () => {
 
             await utilityApi.update(id, updateData);
             fetchUtilityTypes();
-            setMessage({ type: 'success', text: `Utility type ${!currentStatus ? 'activated' : 'deactivated'} successfully!` });
+            setMessage({ 
+                type: 'success', 
+                text: !currentStatus 
+                    ? t('utilityType.success.activated') 
+                    : t('utilityType.success.deactivated') 
+            });
         } catch (error: any) {
             console.error("Error updating utility type:", error);
-            const errorMessage = error.response?.data?.message || "Failed to update utility type";
+            const errorMessage = error.response?.data?.message || t('utilityType.errors.updateFailed');
             setMessage({ type: 'alert', text: errorMessage });
         }
     };
@@ -330,16 +364,16 @@ const UtilityTypeManagement: React.FC = () => {
         const action = currentStatus ? 'deactivate' : 'activate';
         setMessage({
             type: 'confirm',
-            text: `Are you sure you want to ${action} this utility type?`,
+            text: t('utilityType.confirm.toggleActive', { action }),
             onConfirm: () => executeToggleActive(id, currentStatus)
         });
     };
 
     const getCalculationMethodDescription = (method: string) => {
         switch (method) {
-            case 'FIXED': return 'Fixed rate per billing period';
-            case 'METERED': return 'Based on actual consumption (meter reading)';
-            case 'ALLOCATED': return 'Allocated based on usage or area';
+            case 'FIXED': return t('utilityType.calculationMethods.fixed');
+            case 'METERED': return t('utilityType.calculationMethods.metered');
+            case 'ALLOCATED': return t('utilityType.calculationMethods.allocated');
             default: return method;
         }
     };
@@ -367,6 +401,17 @@ const UtilityTypeManagement: React.FC = () => {
             }
         }
         
+        // Fix for rate input: prevent leading zeros
+        if (field === 'ratePerUnit') {
+            // Convert string to number, handle empty/NaN cases
+            const numValue = parseFloat(value);
+            if (isNaN(numValue)) {
+                sanitizedValue = 0;
+            } else {
+                sanitizedValue = numValue;
+            }
+        }
+        
         setFormData(prev => ({ ...prev, [field]: sanitizedValue }));
         
         // Clear validation error for this field
@@ -382,15 +427,15 @@ const UtilityTypeManagement: React.FC = () => {
     const getInputClassName = (fieldName: keyof FormErrors) => {
         const baseClass = "mt-1 block w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 text-sm sm:text-base transition duration-150 shadow-sm";
         if (formErrors[fieldName]) {
-            return `${baseClass} border-red-500 focus:ring-red-500 focus:border-red-500`;
+            return `${baseClass} border-[#1E40AF] focus:ring-[#1E40AF] focus:border-[#1E40AF]`;
         }
-        return `${baseClass} border-stone-300 focus:ring-red-500 focus:border-red-500`;
+        return `${baseClass} border-stone-300 focus:ring-[#1E40AF] focus:border-[#1E40AF]`;
     };
 
     if (loading) {
         return (
             <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
-                <div className="text-xl font-medium text-stone-700 animate-pulse">Loading Utility Types...</div>
+                <div className="text-xl font-medium text-stone-700 animate-pulse">{t('utilityType.loading')}</div>
             </div>
         );
     }
@@ -411,173 +456,193 @@ const UtilityTypeManagement: React.FC = () => {
             {/* Header and Add Button */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">Utility Type Management</h1>
-                    <p className="text-stone-600 mt-1 text-sm sm:text-base">Manage utility types and calculation methods for billing configuration.</p>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900">{t('utilityType.title')}</h1>
+                    <p className="text-stone-600 mt-1 text-sm sm:text-base">{t('utilityType.subtitle')}</p>
                 </div>
                 <button
                     onClick={() => {
                         setFormErrors({});
                         setShowForm(true);
                     }}
-                    className="bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-red-700 transition duration-150 flex items-center gap-2 w-full sm:w-auto justify-center font-semibold focus:outline-none focus:ring-4 focus:ring-red-300 transform active:scale-95"
+                    className="bg-[#1E40AF] text-white px-6 py-3 rounded-xl shadow-lg hover:bg-[#1E3A8A] transition duration-150 flex items-center gap-2 w-full sm:w-auto justify-center font-semibold focus:outline-none focus:ring-4 focus:ring-[#93C5FD] transform active:scale-95"
                 >
                     <Plus className="w-5 h-5" />
-                    Add Utility Type
+                    {t('utilityType.addButton')}
                 </button>
             </div>
 
             {/* Utility Type Creation/Edit Modal */}
             {showForm && (
                 <div className="fixed inset-0 bg-stone-900 bg-opacity-70 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-xl shadow-2xl p-6 sm:p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-xl sm:text-2xl font-bold mb-6 text-stone-900 border-b border-stone-200 pb-2">
-                            {editingUtility ? "Edit Utility Type" : "Add New Utility Type"}
-                        </h2>
-                        <form onSubmit={handleSubmit} className="space-y-5">
-                            
-                            {/* Utility Name Field */}
-                            <div>
-                                <label className="block text-sm font-medium text-stone-700">
-                                    Utility Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={formData.utilityName}
-                                    onChange={(e) => handleInputChange('utilityName', e.target.value)}
-                                    onBlur={(e) => {
-                                        // Clean up on blur - remove extra spaces and trim
-                                        const cleaned = sanitizeUtilityName(e.target.value);
-                                        if (cleaned !== formData.utilityName) {
-                                            setFormData(prev => ({ ...prev, utilityName: cleaned }));
-                                        }
-                                    }}
-                                    className={getInputClassName('utilityName')}
-                                    placeholder="e.g., Electricity, Water, CAM"
-                                    maxLength={50}
-                                />
-                                {formErrors.utilityName ? (
-                                    <p className="mt-1 text-xs text-red-600 font-medium">
-                                        {formErrors.utilityName}
-                                    </p>
-                                ) : (
-                                    <div className="flex justify-between items-center mt-1">
-                                        <span className={`text-xs ${
-                                            formData.utilityName.length > 50 ? 'text-red-600' : 'text-stone-500'
-                                        }`}>
-                                            {formData.utilityName.length}/50 characters
-                                        </span>
-                                        <span className={`text-xs ${
-                                            getWordCount(formData.utilityName) > 5 ? 'text-red-600' : 'text-stone-500'
-                                        }`}>
-                                            {getWordCount(formData.utilityName)}/5 words
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-                            
-                            {/* Calculation Method Field */}
-                            <div>
-                                <label className="block text-sm font-medium text-stone-700">
-                                    Calculation Method *
-                                </label>
-                                <select
-                                    required
-                                    value={formData.calculationMethod}
-                                    onChange={(e) => handleInputChange('calculationMethod', e.target.value)}
-                                    className={getInputClassName('calculationMethod')}
-                                >
-                                    <option value="FIXED">Fixed Rate</option>
-                                    <option value="METERED">Metered (Consumption-based)</option>
-                                    <option value="ALLOCATED">Allocated</option>
-                                </select>
-                                {formErrors.calculationMethod && (
-                                    <p className="mt-1 text-xs text-red-600 font-medium">
-                                        {formErrors.calculationMethod}
-                                    </p>
-                                )}
-                                <p className="text-xs text-red-700 mt-1 font-medium">
-                                    {getCalculationMethodDescription(formData.calculationMethod)}
-                                </p>
-                            </div>
-                            
-                            {/* Rate Per Unit Field */}
-                            <div>
-                                <label className="block text-sm font-medium text-stone-700">
-                                    Rate Per Unit *
-                                    <span className="text-stone-500 text-xs ml-2">
-                                        (base rate for calculations)
-                                    </span>
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.0001"
-                                    value={formData.ratePerUnit}
-                                    onChange={(e) => handleInputChange('ratePerUnit', parseFloat(e.target.value) || 0)}
-                                    className={getInputClassName('ratePerUnit')}
-                                    min={0}
-                                    max={999999.9999}
-                                />
-                                {formErrors.ratePerUnit && (
-                                    <p className="mt-1 text-xs text-red-600 font-medium">
-                                        {formErrors.ratePerUnit}
-                                    </p>
-                                )}
-                                <p className="text-xs text-stone-500 mt-1">
-                                    Enter a value between 0 and 999,999.9999 with up to 4 decimal places
-                                </p>
-                            </div>
-                            
-                            {/* Description Field */}
-                            <div>
-                                <label className="block text-sm font-medium text-stone-700">
-                                    Description
-                                </label>
-                                <textarea
-                                    value={formData.description}
-                                    onChange={(e) => handleInputChange('description', e.target.value)}
-                                    rows={3}
-                                    className={getInputClassName('description')}
-                                    placeholder="Describe this utility type and how it should be calculated..."
-                                    maxLength={500}
-                                />
-                                {formErrors.description && (
-                                    <p className="mt-1 text-xs text-red-600 font-medium">
-                                        {formErrors.description}
-                                    </p>
-                                )}
-                                <div className="flex justify-between items-center mt-1">
-                                    <span className={`text-xs ${
-                                        formData.description.length > 500 ? 'text-red-600' : 'text-stone-500'
-                                    }`}>
-                                        {formData.description.length}/500 characters
-                                    </span>
-                                    {formData.description.length >= 450 && (
-                                        <span className="text-xs text-amber-600 font-medium">
-                                            {500 - formData.description.length} characters remaining
-                                        </span>
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+                        {/* Sticky Header */}
+                        <div className="sticky top-0 bg-white border-b border-stone-200 px-6 pt-6 pb-2 z-10">
+                            <h2 className="text-xl sm:text-2xl font-bold text-stone-900">
+                                {editingUtility ? t('utilityType.editTitle') : t('utilityType.createTitle')}
+                            </h2>
+                        </div>
+                        
+                        {/* Scrollable Form Content */}
+                        <div className="overflow-y-auto flex-grow p-6 sm:p-8">
+                            <form onSubmit={handleSubmit} className="space-y-5">
+                                
+                                {/* Utility Name Field */}
+                                <div>
+                                    <label className="block text-sm font-medium text-stone-700">
+                                        {t('utilityType.form.utilityName')} *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={formData.utilityName}
+                                        onChange={(e) => handleInputChange('utilityName', e.target.value)}
+                                        onBlur={(e) => {
+                                            // Clean up on blur - remove extra spaces and trim
+                                            const cleaned = sanitizeUtilityName(e.target.value);
+                                            if (cleaned !== formData.utilityName) {
+                                                setFormData(prev => ({ ...prev, utilityName: cleaned }));
+                                            }
+                                        }}
+                                        className={getInputClassName('utilityName')}
+                                        placeholder={t('utilityType.form.utilityNamePlaceholder')}
+                                        maxLength={50}
+                                    />
+                                    {formErrors.utilityName ? (
+                                        <p className="mt-1 text-xs text-[#1E40AF] font-medium">
+                                            {formErrors.utilityName}
+                                        </p>
+                                    ) : (
+                                        <div className="flex justify-between items-center mt-1">
+                                            <span className={`text-xs ${
+                                                formData.utilityName.length > 50 ? 'text-[#1E40AF]' : 'text-stone-500'
+                                            }`}>
+                                                {formData.utilityName.length}/50 {t('utilityType.characters')}
+                                            </span>
+                                            <span className={`text-xs ${
+                                                getWordCount(formData.utilityName) > 5 ? 'text-[#1E40AF]' : 'text-stone-500'
+                                            }`}>
+                                                {getWordCount(formData.utilityName)}/5 {t('utilityType.words')}
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
-                            </div>
-                            
-                            {/* Form Actions */}
-                            <div className="flex flex-col sm:flex-row gap-3 justify-end pt-4 border-t border-stone-200">
+                                
+                                {/* Calculation Method Field */}
+                                <div>
+                                    <label className="block text-sm font-medium text-stone-700">
+                                        {t('utilityType.form.calculationMethod')} *
+                                    </label>
+                                    <select
+                                        required
+                                        value={formData.calculationMethod}
+                                        onChange={(e) => handleInputChange('calculationMethod', e.target.value)}
+                                        className={getInputClassName('calculationMethod')}
+                                    >
+                                        <option value="FIXED">{t('utilityType.form.fixedRate')}</option>
+                                        <option value="METERED">{t('utilityType.form.metered')}</option>
+                                        <option value="ALLOCATED">{t('utilityType.form.allocated')}</option>
+                                    </select>
+                                    {formErrors.calculationMethod && (
+                                        <p className="mt-1 text-xs text-[#1E40AF] font-medium">
+                                            {formErrors.calculationMethod}
+                                        </p>
+                                    )}
+                                    <p className="text-xs text-[#1E40AF] mt-1 font-medium">
+                                        {getCalculationMethodDescription(formData.calculationMethod)}
+                                    </p>
+                                </div>
+                                
+                                {/* Rate Per Unit Field */}
+                                <div>
+                                    <label className="block text-sm font-medium text-stone-700">
+                                        {t('utilityType.form.ratePerUnit')} *
+                                        <span className="text-stone-500 text-xs ml-2">
+                                            ({t('utilityType.form.baseRate')})
+                                        </span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.0001"
+                                        value={formData.ratePerUnit === 0 ? "" : formData.ratePerUnit}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            if (value === "" || value === "0") {
+                                                handleInputChange('ratePerUnit', 0);
+                                            } else {
+                                                // Remove leading zeros
+                                                const numValue = parseFloat(value.replace(/^0+/, ''));
+                                                handleInputChange('ratePerUnit', isNaN(numValue) ? 0 : numValue);
+                                            }
+                                        }}
+                                        className={getInputClassName('ratePerUnit')}
+                                        min={0}
+                                        max={999999.9999}
+                                        placeholder="0"
+                                    />
+                                    {formErrors.ratePerUnit && (
+                                        <p className="mt-1 text-xs text-[#1E40AF] font-medium">
+                                            {formErrors.ratePerUnit}
+                                        </p>
+                                    )}
+                                    <p className="text-xs text-stone-500 mt-1">
+                                        {t('utilityType.form.rateDescription')}
+                                    </p>
+                                </div>
+                                
+                                {/* Description Field */}
+                                <div>
+                                    <label className="block text-sm font-medium text-stone-700">
+                                        {t('utilityType.form.description')}
+                                    </label>
+                                    <textarea
+                                        value={formData.description}
+                                        onChange={(e) => handleInputChange('description', e.target.value)}
+                                        rows={3}
+                                        className={getInputClassName('description')}
+                                        placeholder={t('utilityType.form.descriptionPlaceholder')}
+                                        maxLength={500}
+                                    />
+                                    {formErrors.description && (
+                                        <p className="mt-1 text-xs text-[#1E40AF] font-medium">
+                                            {formErrors.description}
+                                        </p>
+                                    )}
+                                    <div className="flex justify-between items-center mt-1">
+                                        <span className={`text-xs ${
+                                            formData.description.length > 500 ? 'text-[#1E40AF]' : 'text-stone-500'
+                                        }`}>
+                                            {formData.description.length}/500 {t('utilityType.characters')}
+                                        </span>
+                                        {formData.description.length >= 450 && (
+                                            <span className="text-xs text-amber-600 font-medium">
+                                                {500 - formData.description.length} {t('utilityType.charactersRemaining')}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        {/* Sticky Footer with Actions */}
+                        <div className="sticky bottom-0 bg-white border-t border-stone-200 px-6 py-4">
+                            <div className="flex flex-col sm:flex-row gap-3 justify-end">
                                 <button
                                     type="button"
                                     onClick={resetFormAndClose}
                                     className="px-6 py-2 text-stone-600 border border-stone-300 rounded-lg hover:bg-stone-100 transition duration-150 font-medium text-sm sm:text-base shadow-sm"
                                 >
-                                    Cancel
+                                    {t('utilityType.cancel')}
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 bg-red-600 text-white rounded-lg shadow-lg hover:bg-red-700 transition duration-150 font-semibold text-sm sm:text-base focus:outline-none focus:ring-4 focus:ring-red-300 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    onClick={handleSubmit}
+                                    className="px-6 py-2 bg-[#1E40AF] text-white rounded-lg shadow-lg hover:bg-[#1E3A8A] transition duration-150 font-semibold text-sm sm:text-base focus:outline-none focus:ring-4 focus:ring-[#93C5FD] transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                     disabled={Object.keys(formErrors).length > 0}
                                 >
-                                    {editingUtility ? "Update Utility" : "Create Utility"}
+                                    {editingUtility ? t('utilityType.updateButton') : t('utilityType.createButton')}
                                 </button>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             )}
@@ -589,28 +654,28 @@ const UtilityTypeManagement: React.FC = () => {
                         <thead className="bg-stone-100">
                             <tr>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                                    Utility Name
+                                    {t('utilityType.table.utilityName')}
                                 </th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider hidden sm:table-cell">
-                                    Calculation Method
+                                    {t('utilityType.table.calculationMethod')}
                                 </th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                                    Rate
+                                    {t('utilityType.table.rate')}
                                 </th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                                    Status
+                                    {t('utilityType.table.status')}
                                 </th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider hidden lg:table-cell">
-                                    Description
+                                    {t('utilityType.table.description')}
                                 </th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                                    Actions
+                                    {t('utilityType.table.actions')}
                                 </th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-stone-100">
                             {utilityTypes.map((utility) => (
-                                <tr key={utility.id} className="hover:bg-red-50/50 transition duration-100">
+                                <tr key={utility.id} className="hover:bg-[#1E40AF]/5 transition duration-100">
                                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-stone-900">
                                         <div className="font-semibold">{utility.utilityName}</div>
                                         <div className="text-stone-500 text-xs mt-0.5 sm:hidden">
@@ -624,7 +689,7 @@ const UtilityTypeManagement: React.FC = () => {
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-stone-700">
                                         <div className="font-medium">
-                                            {utility.ratePerUnit ? `$${utility.ratePerUnit.toFixed(4)}` : '-'}
+                                            {utility.ratePerUnit ? formatMMK(utility.ratePerUnit) : '-'}
                                         </div>
                                     </td>
                                     <td className="px-4 py-4 whitespace-nowrap">
@@ -633,11 +698,11 @@ const UtilityTypeManagement: React.FC = () => {
                                                 ? "bg-green-100 text-green-800" 
                                                 : "bg-red-100 text-red-800"
                                         }`}>
-                                            {utility.isActive ? "Active" : "Inactive"}
+                                            {utility.isActive ? t('utilityType.active') : t('utilityType.inactive')}
                                         </span>
                                     </td>
                                     <td className="px-4 py-4 text-sm text-stone-500 hidden lg:table-cell">
-                                        <div className="truncate max-w-xs" title={utility.description || 'No description provided.'}>
+                                        <div className="truncate max-w-xs" title={utility.description || t('utilityType.noDescription')}>
                                             {utility.description || '-'}
                                         </div>
                                     </td>
@@ -645,9 +710,9 @@ const UtilityTypeManagement: React.FC = () => {
                                         <div className="flex flex-col sm:flex-row gap-2">
                                             <button
                                                 onClick={() => handleEdit(utility)}
-                                                className="text-red-600 hover:text-red-700 text-xs sm:text-sm font-medium"
+                                                className="text-[#1E40AF] hover:text-[#1E3A8A] text-xs sm:text-sm font-medium"
                                             >
-                                                Edit
+                                                {t('utilityType.edit')}
                                             </button>
                                             <button
                                                 onClick={() => handleToggleActive(utility.id, utility.isActive)}
@@ -655,13 +720,13 @@ const UtilityTypeManagement: React.FC = () => {
                                                     utility.isActive ? 'text-stone-600 hover:text-stone-900' : 'text-green-600 hover:text-green-700'
                                                 }`}
                                             >
-                                                {utility.isActive ? 'Deactivate' : 'Activate'}
+                                                {utility.isActive ? t('utilityType.deactivate') : t('utilityType.activate')}
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(utility.id)}
-                                                className="text-red-600 hover:text-red-800 text-xs sm:text-sm font-medium"
+                                                className="text-[#1E40AF] hover:text-[#1E3A8A] text-xs sm:text-sm font-medium"
                                             >
-                                                Delete
+                                                {t('utilityType.delete')}
                                             </button>
                                         </div>
                                     </td>
@@ -673,35 +738,35 @@ const UtilityTypeManagement: React.FC = () => {
                 {utilityTypes.length === 0 && (
                     <div className="text-center py-16 text-stone-500 bg-stone-50 rounded-b-xl">
                         <div className="text-5xl mb-3">⚡</div>
-                        <div className="text-xl font-semibold text-stone-700">No Utility Types Found</div>
-                        <p className="text-sm mt-1">Start by clicking "Add Utility Type" to define your first utility configuration.</p>
+                        <div className="text-xl font-semibold text-stone-700">{t('utilityType.noUtilityTypes')}</div>
+                        <p className="text-sm mt-1">{t('utilityType.startByAdding')}</p>
                     </div>
                 )}
             </div>
 
             {/* Thematic Configuration Guide */}
             <div className="mt-8 bg-stone-200 border border-stone-300 rounded-xl p-5 sm:p-6 shadow-inner">
-                <h3 className="text-lg font-bold text-stone-900 mb-4 border-b border-stone-300 pb-2">Utility Type Configuration Guide</h3>
+                <h3 className="text-lg font-bold text-stone-900 mb-4 border-b border-stone-300 pb-2">{t('utilityType.configurationGuide')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     
-                    <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-red-600">
-                        <strong className="text-red-700">FIXED Method</strong><br/>
-                        <p className="mt-1 text-stone-700">Use for utilities with consistent monthly charges like internet, cable TV, or basic service fees that don't vary with usage.</p>
+                    <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-[#1E40AF]">
+                        <strong className="text-[#1E40AF]">{t('utilityType.guide.fixedMethod')}</strong><br/>
+                        <p className="mt-1 text-stone-700">{t('utilityType.guide.fixedDescription')}</p>
                     </div>
                     
-                    <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-red-600">
-                        <strong className="text-red-700">METERED Method</strong><br/>
-                        <p className="mt-1 text-stone-700">Use for consumption-based utilities like electricity, water, or gas that are measured by meters and vary monthly.</p>
+                    <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-[#1E40AF]">
+                        <strong className="text-[#1E40AF]">{t('utilityType.guide.meteredMethod')}</strong><br/>
+                        <p className="mt-1 text-stone-700">{t('utilityType.guide.meteredDescription')}</p>
                     </div>
 
-                    <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-red-600">
-                        <strong className="text-red-700">ALLOCATED Method</strong><br/>
-                        <p className="mt-1 text-stone-700">Use for shared expenses like Common Area Maintenance (CAM), trash collection, or security that are divided among tenants.</p>
+                    <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-[#1E40AF]">
+                        <strong className="text-[#1E40AF]">{t('utilityType.guide.allocatedMethod')}</strong><br/>
+                        <p className="mt-1 text-stone-700">{t('utilityType.guide.allocatedDescription')}</p>
                     </div>
                     
-                    <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-red-600">
-                        <strong className="text-red-700">Rate Per Unit</strong><br/>
-                        <p className="mt-1 text-stone-700">Set the base rate that will be used in billing fee calculations. This serves as the default rate for this utility type.</p>
+                    <div className="bg-white p-4 rounded-lg shadow-md border-l-4 border-[#1E40AF]">
+                        <strong className="text-[#1E40AF]">{t('utilityType.guide.ratePerUnit')}</strong><br/>
+                        <p className="mt-1 text-stone-700">{t('utilityType.guide.rateDescription')}</p>
                     </div>
                     
                 </div>
