@@ -10,6 +10,7 @@ import { OutstandingBalancesReport } from '../../components/reports/OutstandingB
 import { UtilityConsumptionReport } from '../../components/reports/UtilityConsumptionReport';
 import { MonthlyCollectionReport } from '../../components/reports/MonthlyCollectionReport';
 import { ExpenseVsRevenueReport } from '../../components/reports/ExpenseVsRevenueReport';
+import { useTranslation } from 'react-i18next';
 
 type ReportType = 
   | 'TENANT_CONTRACT_SUMMARY' 
@@ -142,20 +143,7 @@ export const ReportsPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <select className="px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1E40AF] text-sm bg-white">
-              <option value="monthly">{t('reports.monthly', "Monthly")}</option>
-              <option value="quarterly">{t('reports.quarterly', "Quarterly")}</option>
-              <option value="yearly">{t('reports.yearly', "Yearly")}</option>
-            </select>
-
-            <button className="border border-stone-300 text-stone-700 px-4 py-2 rounded-lg hover:bg-stone-50 flex items-center gap-2 text-sm transition duration-150">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              {t('reports.exportAll', "Export All")}
-            </button>
-          </div>
+          
         </div>
 
         {/* Report Cards Grid */}
@@ -216,73 +204,6 @@ export const ReportsPage: React.FC = () => {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Quick Stats */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-white p-6 rounded-xl border border-stone-200">
-            <div className="flex items-center">
-              <div className="p-2 bg-[#1E40AF]/10 rounded-lg">
-                <svg className="w-6 h-6 text-[#1E40AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-stone-600">
-                  {t('reports.totalTenants', "Total Tenants")}
-                </p>
-                <p className="text-2xl font-bold text-stone-900">156</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl border border-stone-200">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-stone-600">
-                  {t('reports.occupiedUnits', "Occupied Units")}
-                </p>
-                <p className="text-2xl font-bold text-stone-900">142</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl border border-stone-200">
-            <div className="flex items-center">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-stone-600">
-                  {t('reports.expiringSoon', "Expiring Soon")}
-                </p>
-                <p className="text-2xl font-bold text-stone-900">8</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl border border-stone-200">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-stone-600">
-                  {t('reports.monthlyRevenue', "Monthly Revenue")}
-                </p>
-                <p className="text-2xl font-bold text-stone-900">45.2M</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

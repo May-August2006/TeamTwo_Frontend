@@ -1,7 +1,7 @@
 /** @format */
 
 // components/reports/ExpiringContractsReport.tsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { contractApi } from "../../api/ContractAPI";
 import type { Contract } from "../../types/contract";
 import type { ExpiringContract } from "../../types/expiring-contracts";
@@ -25,9 +25,29 @@ export const ExpiringContractsReport: React.FC<
   const [statusFilter, setStatusFilter] = useState<
     "ALL" | "EXPIRING_SOON" | "EXPIRED"
   >("ALL");
+  const [isSticky, setIsSticky] = useState(false);
+  
+  // Create a ref for the header
+  const headerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadContracts();
+  }, []);
+
+  // Add scroll listener for sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (headerRef.current) {
+        const headerHeight = headerRef.current.offsetHeight;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Add a small threshold to prevent flickering
+        setIsSticky(scrollTop > headerHeight + 10);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const loadContracts = async () => {
@@ -642,9 +662,16 @@ const exportToPDF = async () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+      {/* Sticky Header */}
+      <div 
+        ref={headerRef}
+        className={`bg-white p-6 rounded-lg border border-gray-200 transition-all duration-300 ${
+          isSticky 
+            ? 'fixed top-0 left-0 right-0 z-50 shadow-lg rounded-none border-t-0 border-x-0' 
+            : ''
+        }`}
+      >
+        <div className={`flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 ${isSticky ? 'container mx-auto' : ''}`}>
           <div className="flex-1">
             <div className="flex items-center gap-4 mb-2">
               {onBack && (
@@ -702,6 +729,9 @@ const exportToPDF = async () => {
           </div>
         </div>
       </div>
+
+      {/* Add padding when header is sticky to prevent content from jumping under it */}
+      {isSticky && <div className="h-24"></div>}
 
       {/* Alert Summary */}
       {stats.expiringSoon > 0 && (

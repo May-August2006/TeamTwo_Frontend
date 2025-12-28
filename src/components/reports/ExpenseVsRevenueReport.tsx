@@ -1,6 +1,6 @@
 // src/components/reports/ExpenseVsRevenueReport.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { expenseVsRevenueApi, type ExpenseVsRevenueDTO, type ExpenseRevenueFilterParams } from '../../api/expense-vs-revenue-api';
 import { Button } from '../common/ui/Button';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
@@ -16,6 +16,10 @@ export const ExpenseVsRevenueReport: React.FC<ExpenseVsRevenueReportProps> = ({ 
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [generatingExcel, setGeneratingExcel] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSticky, setIsSticky] = useState(false);
+  
+  // Create a ref for the header
+  const headerRef = useRef<HTMLDivElement>(null);
   
   // Filter states
   const [filters, setFilters] = useState<ExpenseRevenueFilterParams>({
@@ -73,6 +77,22 @@ export const ExpenseVsRevenueReport: React.FC<ExpenseVsRevenueReportProps> = ({ 
     
     setFilteredData(filtered);
   }, [reportData, searchTerm]);
+
+  // Add scroll listener for sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (headerRef.current) {
+        const headerHeight = headerRef.current.offsetHeight;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Add a small threshold to prevent flickering
+        setIsSticky(scrollTop > headerHeight + 10);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const loadReportData = async () => {
     try {
@@ -278,9 +298,16 @@ export const ExpenseVsRevenueReport: React.FC<ExpenseVsRevenueReportProps> = ({ 
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      {/* Sticky Header - This will stick to top when scrolling */}
+      <div 
+        ref={headerRef}
+        className={`bg-white p-6 rounded-lg border border-gray-200 transition-all duration-300 ${
+          isSticky 
+            ? 'fixed top-0 left-0 right-0 z-50 shadow-lg rounded-none border-t-0 border-x-0' 
+            : ''
+        }`}
+      >
+        <div className={`flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 ${isSticky ? 'container mx-auto' : ''}`}>
           <div>
             <div className="flex items-center gap-4">
               <Button
@@ -363,6 +390,21 @@ export const ExpenseVsRevenueReport: React.FC<ExpenseVsRevenueReportProps> = ({ 
           </div>
         </div>
       </div>
+
+      {/* Add padding when header is sticky to prevent content from jumping under it */}
+      {isSticky && <div className="h-24"></div>}
+
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+            <span className="text-red-800">{error}</span>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
@@ -481,18 +523,6 @@ export const ExpenseVsRevenueReport: React.FC<ExpenseVsRevenueReportProps> = ({ 
           </div>
         </div>
       </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-            <span className="text-red-800">{error}</span>
-          </div>
-        </div>
-      )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -1,5 +1,5 @@
 // components/reports/MonthlyCollectionReport.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../common/ui/Button';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
 import { monthlyCollectionApi } from '../../api/MonthlyCollectionAPI';
@@ -61,9 +61,29 @@ export const MonthlyCollectionReport: React.FC<MonthlyCollectionReportProps> = (
   const [generatingPdf, setGeneratingPdf] = useState<boolean>(false);
   const [generatingExcel, setGeneratingExcel] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSticky, setIsSticky] = useState(false);
+  
+  // Create a ref for the header
+  const headerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadMonthlyData(selectedMonth);
+  }, []);
+
+  // Add scroll listener for sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (headerRef.current) {
+        const headerHeight = headerRef.current.offsetHeight;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Add a small threshold to prevent flickering
+        setIsSticky(scrollTop > headerHeight + 10);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const loadMonthlyData = async (month: string) => {
@@ -180,9 +200,16 @@ export const MonthlyCollectionReport: React.FC<MonthlyCollectionReportProps> = (
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      {/* Sticky Header */}
+      <div 
+        ref={headerRef}
+        className={`bg-white p-6 rounded-lg border border-gray-200 transition-all duration-300 ${
+          isSticky 
+            ? 'fixed top-0 left-0 right-0 z-50 shadow-lg rounded-none border-t-0 border-x-0' 
+            : ''
+        }`}
+      >
+        <div className={`flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 ${isSticky ? 'container mx-auto' : ''}`}>
           <div>
             <div className="flex items-center gap-4">
               <Button
@@ -265,6 +292,9 @@ export const MonthlyCollectionReport: React.FC<MonthlyCollectionReportProps> = (
           </div>
         </div>
       </div>
+
+      {/* Add padding when header is sticky to prevent content from jumping under it */}
+      {isSticky && <div className="h-24"></div>}
 
       {/* Month Selector */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
