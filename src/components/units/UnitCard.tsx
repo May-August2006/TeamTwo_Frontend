@@ -4,6 +4,7 @@ import { UnitType, type Unit } from '../../types/unit';
 import { Button } from '../common/ui/Button';
 import { UnitDetail } from './UnitDetail';
 import { formatCurrency } from '../../utils/formatUtils'; // Import the utility
+import { useTranslation } from 'react-i18next'; // Add this import
 
 interface UnitCardProps {
   unit: Unit;
@@ -13,6 +14,7 @@ interface UnitCardProps {
 
 // components/units/UnitCard.tsx - Simplified version
 export const UnitCard: React.FC<UnitCardProps> = ({ unit, onEdit, onDelete }) => {
+  const { t } = useTranslation(); // Add this hook
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showActions, setShowActions] = useState(false);
@@ -23,17 +25,17 @@ export const UnitCard: React.FC<UnitCardProps> = ({ unit, onEdit, onDelete }) =>
     const badges = {
       [UnitType.ROOM]: { 
         color: 'bg-blue-100 text-blue-800', 
-        label: 'Room',
+        label: t('unit.room'),
         icon: '🏢'
       },
       [UnitType.SPACE]: { 
         color: 'bg-green-100 text-green-800', 
-        label: 'Space',
+        label: t('unit.space'),
         icon: '📐'
       },
       [UnitType.HALL]: { 
         color: 'bg-purple-100 text-purple-800', 
-        label: 'Hall',
+        label: t('unit.hall'),
         icon: '🎭'
       },
     };
@@ -53,7 +55,7 @@ export const UnitCard: React.FC<UnitCardProps> = ({ unit, onEdit, onDelete }) =>
             <button
               onClick={() => onEdit(unit)}
               className="p-2 bg-white rounded-full shadow-md hover:shadow-lg hover:bg-blue-50 transition-all duration-200 text-blue-600 hover:text-blue-700"
-              title="Edit unit"
+              title={t('unit.edit_unit')}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -63,7 +65,7 @@ export const UnitCard: React.FC<UnitCardProps> = ({ unit, onEdit, onDelete }) =>
               onClick={() => onDelete(unit.id, unit.unitNumber)}
               disabled={isDeleting}
               className="p-2 bg-white rounded-full shadow-md hover:shadow-lg hover:bg-red-50 transition-all duration-200 text-red-600 hover:text-red-700"
-              title="Delete unit"
+              title={t('unit.delete_unit')}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -88,7 +90,7 @@ export const UnitCard: React.FC<UnitCardProps> = ({ unit, onEdit, onDelete }) =>
               <div className="text-4xl mb-2 text-gray-300">
                 {getUnitTypeBadge(unit.unitType).icon}
               </div>
-              <p className="text-gray-400 text-xs">No Image</p>
+              <p className="text-gray-400 text-xs">{t('unit.no_image')}</p>
             </div>
           )}
           
@@ -103,7 +105,7 @@ export const UnitCard: React.FC<UnitCardProps> = ({ unit, onEdit, onDelete }) =>
                 : 'bg-green-100 text-green-700'
             }`}>
               <div className={`w-1.5 h-1.5 rounded-full mr-1.5 ${unit.isAvailable ? 'bg-gray-500' : 'bg-green-500'}`} />
-              {unit.isAvailable ? 'Available' : 'Occupied'}
+              {unit.isAvailable ? t('unit.available') : t('unit.occupied')}
             </span>
           </div>
         </div>
@@ -117,31 +119,31 @@ export const UnitCard: React.FC<UnitCardProps> = ({ unit, onEdit, onDelete }) =>
                 {unit.unitNumber}
               </h3>
               <span className="text-sm text-gray-500 font-mono">
-                {unit.unitSpace} sqm
+                {unit.unitSpace} {t('unit.sqm')}
               </span>
             </div>
             <p className="text-sm text-gray-600 flex items-center">
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               </svg>
-              {unit.level.building.buildingName}, Floor {unit.level.levelNumber}
+              {unit.level.building.branch.branchName || unit.level.building.branchName}, {unit.level.building.buildingName}, floor {unit.level.levelNumber}
             </p>
           </div>
 
           {/* Key Info */}
           <div className="space-y-2 mb-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Rental Fee</span>
-              <span className="font-semibold text-gray-900">{formatCurrency(unit.rentalFee)} MMK/mo</span>
+              <span className="text-gray-500">{t('unit.rental_fee')}</span>
+              <span className="font-semibold text-gray-900">{formatCurrency(unit.rentalFee)} MMK{t('unit.month')}</span>
             </div>
             {/* <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Utilities</span>
-              <span className="font-medium text-blue-600">{unit.utilities?.length || 0} active</span>
+              <span className="text-gray-500">{t('unit.utilities')}</span>
+              <span className="font-medium text-blue-600">{unit.utilities?.length || 0} {t('unit.active')}</span>
             </div>
             {unit.hasMeter && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-500">Meter</span>
-                <span className="font-medium text-green-600">Has meter</span>
+                <span className="text-gray-500">{t('unit.meter')}</span>
+                <span className="font-medium text-green-600">{t('unit.has_meter')}</span>
               </div>
             )} */}
           </div>
@@ -155,7 +157,7 @@ export const UnitCard: React.FC<UnitCardProps> = ({ unit, onEdit, onDelete }) =>
               onClick={() => setIsDetailModalOpen(true)}
               className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center"
             >
-              Quick view
+              {t('unit.quick_view')}
               <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

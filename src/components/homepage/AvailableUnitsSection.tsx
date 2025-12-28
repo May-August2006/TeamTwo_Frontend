@@ -11,6 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 import { LoginPromptModal } from "../common/ui/LoginPromptModal";
 import { userApi } from "../../api/UserAPI";
 import { ToastNotification } from "../common/ui/ToastNotification";
+import { useTranslation } from "react-i18next";
 
 interface AvailableUnitsSectionProps {
   onUnitDetail?: (unit: Unit) => void;
@@ -23,6 +24,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   onAppointment,
   onViewSpaces,
 }) => {
+  const { t } = useTranslation();
   const [availableUnits, setAvailableUnits] = useState<Unit[]>([]);
   const [allUnits, setAllUnits] = useState<Unit[]>([]); // Store all units for pagination
   const [activeSearchParams, setActiveSearchParams] = useState<UnitSearchParams>({});
@@ -208,7 +210,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       setError(err.message || "Failed to load units");
       setAllUnits([]);
       setAvailableUnits([]);
-      showToast('error', 'Failed to load available spaces. Please try again.');
+      showToast('error', t('homepage.units.errorLoading'));
     } finally {
       setLoading(false);
       setSearching(false);
@@ -227,7 +229,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     setPendingSearchParams({});
     setShowFilters(false);
     loadAvailableUnits();
-    showToast('info', 'Filters have been reset');
+    showToast('info', t('homepage.units.clearFilters'));
   };
 
   const handlePendingFilterChange = (params: UnitSearchParams) => {
@@ -293,7 +295,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
 
   // New function to check if user can view details or make appointment
   const checkUserEligibility = async (unitId: number, actionType: 'view' | 'appointment') => {
-    if (!userId) return { canProceed: false, message: 'Please login first' };
+    if (!userId) return { canProceed: false, message: t('common.toast.loginFirst') };
 
     try {
       // Get user info to check approval status and role
@@ -309,7 +311,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
         if (!isApproved && !isTenant) {
           return { 
             canProceed: false, 
-            message: 'Your account is pending approval. Only approved users or tenants can view unit details.' 
+            message: t('common.toast.accountPending')
           };
         }
         return { canProceed: true, message: '' };
@@ -320,7 +322,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
         if (!isApproved && !isTenant) {
           return { 
             canProceed: false, 
-            message: 'Your account is pending approval. Only approved users or tenants can book appointments.' 
+            message: t('common.toast.accountPendingAppointment')
           };
         }
 
@@ -341,8 +343,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
             if (status === 'SCHEDULED' || status === 'CONFIRMED') {
               return { 
                 canProceed: false, 
-                message: `You already have a ${status.toLowerCase()} appointment for this unit. ` +
-                        `You cannot make another appointment until this one is completed or cancelled.` 
+                message: t('common.toast.existingAppointment', { status: status.toLowerCase() })
               };
             }
             
@@ -356,8 +357,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                 const daysLeft = 3 - daysDiff;
                 return { 
                   canProceed: false, 
-                  message: `Your previous appointment for this unit was cancelled. ` +
-                          `Please wait ${daysLeft} more day${daysLeft !== 1 ? 's' : ''} before booking again.` 
+                  message: t('common.toast.cancelledWait', { days: daysLeft, s: daysLeft !== 1 ? 's' : '' })
                 };
               }
             }
@@ -369,7 +369,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
           // If we can't check appointments, allow proceeding but with a warning
           return { 
             canProceed: true, 
-            message: 'Unable to verify your existing appointments. Please proceed with caution.' 
+            message: t('common.toast.verifyError')
           };
         }
       }
@@ -379,7 +379,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       console.error("Error checking user eligibility:", err);
       return { 
         canProceed: false, 
-        message: 'Failed to verify your account status. Please try again later.' 
+        message: t('common.toast.failedToVerify')
       };
     }
   };
@@ -453,7 +453,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     if (pendingAction) {
       sessionStorage.setItem("pendingAction", JSON.stringify(pendingAction));
       sessionStorage.setItem("redirectAfterLogin", window.location.pathname);
-      showToast('info', 'Redirecting to login page...');
+      showToast('info', t('common.toast.redirecting'));
       setTimeout(() => {
         window.location.href = "/login";
       }, 1000);
@@ -481,7 +481,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     guestPhone: string;
   }) => {
     if (!userId) {
-      showToast('warning', 'Please login to book an appointment');
+      showToast('warning', t('homepage.appointment.loginRequired'));
       return;
     }
 
@@ -500,13 +500,13 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       const response = await appointmentApi.book(userId, data);
       console.log("✅ Appointment booked:", response);
       
-      showToast('success', '✅ Appointment booked successfully! The manager will review your request.');
+      showToast('success', t('homepage.appointment.appointmentBooked'));
       closeAppointmentModal();
     } catch (err: any) {
       console.error("❌ Failed to book appointment:", err);
       
       // Get error message from backend
-      let errorMessage = "Failed to book appointment. Please try again.";
+      let errorMessage = t('homepage.appointment.failedToBook');
       
       if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
@@ -559,10 +559,10 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
         {/* Compact Header */}
         <div className="text-center mb-6">
           <h2 className="text-2xl md:text-3xl font-bold text-[#0F172A] mb-2">
-            Available Retail Spaces
+            {t('homepage.units.availableRetailSpaces')}
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Browse our premium retail spaces - all shown are currently available
+            {t('homepage.units.browseDescription')}
           </p>
         </div>
 
@@ -581,15 +581,17 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
-              <span className="font-medium text-[#0F172A]">Search & Filter Spaces</span>
+              <span className="font-medium text-[#0F172A]">
+                {t('homepage.searchFilters.searchFilter')}
+              </span>
               {activeFiltersCount > 0 && (
                 <span className="bg-[#1E40AF] text-white text-xs px-2 py-1 rounded-full">
-                  {activeFiltersCount} active
+                  {activeFiltersCount} {t('homepage.units.active')}
                 </span>
               )}
             </div>
             <span className="text-gray-500 text-sm">
-              {showFilters ? 'Hide filters' : 'Show filters'}
+              {showFilters ? t('homepage.units.hideFilters') : t('homepage.units.showFilters')}
             </span>
           </button>
           
@@ -613,14 +615,16 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
           <div className="border-b border-[#E2E8F0] p-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h3 className="text-xl font-bold text-[#0F172A]">Available Spaces</h3>
+                <h3 className="text-xl font-bold text-[#0F172A]">
+                  {t('homepage.units.availableSpaces')}
+                </h3>
                 <div className="flex items-center space-x-2 mt-1">
                   <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#1E40AF]/10 text-[#1E40AF] text-sm">
-                    {allUnits.length} Available Spaces {/* Show total count */}
+                    {t('homepage.units.availableSpacesCount', { count: allUnits.length })}
                   </span>
                   {activeFiltersCount > 0 && (
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#F59E0B]/10 text-[#D97706] text-sm">
-                      {activeFiltersCount} Filter{activeFiltersCount !== 1 ? 's' : ''} Applied
+                      {t('homepage.units.filtersApplied', { count: activeFiltersCount, s: activeFiltersCount !== 1 ? 's' : '' })}
                     </span>
                   )}
                 </div>
@@ -634,7 +638,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                     size="sm"
                     className="border-[#1E40AF] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
                   >
-                    Clear Filters
+                    {t('homepage.units.clearFilters')}
                   </Button>
                 )}
                 <Button
@@ -643,7 +647,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                   size="sm"
                   className="border-gray-400 text-gray-600 hover:bg-gray-600 hover:text-white"
                   >
-                  {showFilters ? 'Hide Filters' : 'Show Filters'}
+                  {showFilters ? t('homepage.units.hideFilters') : t('homepage.units.showFilters')}
                 </Button>
               </div>
             </div>
@@ -657,8 +661,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <p className="text-[#1E40AF] text-sm">
-                      You have {pendingFiltersCount} filter{pendingFiltersCount !== 1 ? 's' : ''} set but not applied. 
-                      Click <strong>"Apply Filters"</strong> to see results.
+                      {t('homepage.units.pendingFiltersAlert', { count: pendingFiltersCount, s: pendingFiltersCount !== 1 ? 's' : '' })}
                     </p>
                   </div>
                 </div>
@@ -671,9 +674,9 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
               <LoadingSpinner size="md" className="mb-3" />
               <p className="text-gray-500">
                 {loading && isInitialLoad
-                  ? "Loading available spaces..."
+                  ? t('homepage.units.loadingSpaces')
                   : searching
-                  ? "Searching spaces..."
+                  ? t('homepage.units.searchingSpaces')
                   : "Loading..."}
               </p>
             </div>
@@ -689,8 +692,8 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
               </div>
               <h3 className="text-lg font-semibold text-[#0F172A] mb-2">
                 {activeFiltersCount > 0
-                  ? "Unable to Search Spaces"
-                  : "Unable to Load Spaces"}
+                  ? t('homepage.units.errorSearching')
+                  : t('homepage.units.errorLoading')}
               </h3>
               <p className="text-gray-500 mb-4 max-w-md mx-auto">{error}</p>
               <Button
@@ -699,7 +702,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                 size="sm"
                 className="border-[#1E40AF] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
               >
-                Try Again
+                {t('homepage.units.tryAgain')}
               </Button>
             </div>
           )}
@@ -714,13 +717,13 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
               </div>
               <h3 className="text-lg font-semibold text-[#0F172A] mb-2">
                 {activeFiltersCount > 0
-                  ? "No available spaces match your search"
-                  : "No available spaces at the moment"}
+                  ? t('homepage.units.noResults')
+                  : t('homepage.units.noAvailable')}
               </h3>
               <p className="text-gray-500 mb-6 max-w-md mx-auto">
                 {activeFiltersCount > 0
-                  ? "Try adjusting your filters or browse all available spaces."
-                  : "Check back soon for new retail space opportunities."}
+                  ? t('homepage.units.adjustFilters')
+                  : t('homepage.units.checkBack')}
               </p>
               {activeFiltersCount > 0 && (
                 <div className="flex gap-3 justify-center">
@@ -730,7 +733,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                     size="sm"
                     className="border-[#1E40AF] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white"
                   >
-                    Clear Filters
+                    {t('homepage.units.clearFilters')}
                   </Button>
                   <Button
                     onClick={() => loadAvailableUnits()}
@@ -738,7 +741,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                     size="sm"
                     className="bg-gradient-to-r from-[#1E40AF] to-[#3B82F6] hover:from-[#1E3A8A] hover:to-[#2563EB] text-white"
                   >
-                    Show All Available Spaces
+                    {t('homepage.units.showAll')}
                   </Button>
                 </div>
               )}
@@ -765,13 +768,10 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     {/* Results summary */}
                     <div className="text-sm text-gray-600">
-                      Showing{" "}
+                      {t('homepage.units.showing')}{" "}
                       <span className="font-medium text-gray-900">
                         {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, allUnits.length)}
                       </span>
-                      {/* {" "}of{" "}
-                      <span className="font-medium text-gray-900">{allUnits.length}</span>{" "}
-                      spaces */}
                     </div>
 
                     {/* Navigation buttons */}
@@ -785,8 +785,8 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
-                        <span className="hidden sm:inline">Previous</span>
-                        <span className="sm:hidden">Prev</span>
+                        <span className="hidden sm:inline">{t('homepage.units.previous')}</span>
+                        <span className="sm:hidden">{t('homepage.units.previous')}</span>
                       </button>
 
                       {/* Page numbers - Hidden on mobile */}
@@ -821,8 +821,8 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                         disabled={currentPage === totalPages}
                         className="inline-flex items-center px-2 sm:px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <span className="hidden sm:inline">Next</span>
-                        <span className="sm:hidden">Next</span>
+                        <span className="hidden sm:inline">{t('homepage.units.next')}</span>
+                        <span className="sm:hidden">{t('homepage.units.next')}</span>
                         <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
@@ -855,16 +855,16 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
             onConfirm={handleLoginConfirm}
             title={
               pendingAction.type === "view"
-                ? "View Details"
-                : "Book Appointment"
+                ? t('homepage.unitDetail.viewDetails')
+                : t('homepage.unitDetail.bookAppointment')
             }
             message={
               pendingAction.type === "view"
-                ? "You need to login to view unit details and pricing."
-                : "You need to login to book an appointment."
+                ? t('homepage.unitDetail.loginRequired')
+                : t('homepage.unitDetail.appointmentRequired')
             }
-            confirmText="Login Now"
-            cancelText="Maybe Later"
+            confirmText={t('homepage.unitDetail.loginNow')}
+            cancelText={t('homepage.unitDetail.maybeLater')}
           />
         )}
       </div>

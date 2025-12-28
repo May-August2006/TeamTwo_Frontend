@@ -4,6 +4,7 @@ import type { Building, Branch } from '../types';
 import { buildingApi } from '../api/BuildingAPI';
 import { branchApi } from '../api/BranchAPI';
 import { useNotification } from '../context/NotificationContext';
+import { useTranslation } from 'react-i18next';
 
 interface BuildingFormProps {
   building?: Building | null;
@@ -48,6 +49,7 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadBranches();
@@ -79,69 +81,69 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
 
     // Branch ID validation - REQUIRED
     if (!formData.branchId || formData.branchId <= 0) {
-      newErrors.branchId = 'Please select a branch';
+      newErrors.branchId = t('forms.building.validation.branchRequired');
     }
 
     // Building Name validation - REQUIRED
     if (!formData.buildingName.trim()) {
-      newErrors.buildingName = 'Building name is required';
+      newErrors.buildingName = t('forms.building.validation.nameRequired');
     } else if (formData.buildingName.length < 2) {
-      newErrors.buildingName = 'Building name must be at least 2 characters';
+      newErrors.buildingName = t('forms.building.validation.nameLength');
     } else if (formData.buildingName.length > 50) {
-      newErrors.buildingName = 'Building name must be less than 50 characters';
+      newErrors.buildingName = t('forms.building.validation.nameMax');
     } else if (!/^[a-zA-Z0-9\s\-\.\&]+$/.test(formData.buildingName)) {
-      newErrors.buildingName = 'Building name can only contain letters, numbers, spaces, hyphens, dots, and ampersands';
+      newErrors.buildingName = t('forms.building.validation.nameChars');
     }
 
     // Building Code validation - REQUIRED
     if (!formData.buildingCode.trim()) {
-      newErrors.buildingCode = 'Building code is required';
+      newErrors.buildingCode = t('forms.building.validation.codeRequired');
     } else if (formData.buildingCode.length > 20) {
-      newErrors.buildingCode = 'Building code must be less than 20 characters';
+      newErrors.buildingCode = t('forms.building.validation.codeMax');
     } else if (!/^[A-Z0-9\-]+$/.test(formData.buildingCode)) {
-      newErrors.buildingCode = 'Building code can only contain uppercase letters, numbers, and hyphens';
+      newErrors.buildingCode = t('forms.building.validation.codeChars');
     }
 
     // Total Floors validation - REQUIRED (FIXED: check for empty string and 0 value)
     if (formData.totalFloors === null || formData.totalFloors === undefined || formData.totalFloors === 0) {
-      newErrors.totalFloors = 'Total floors is required';
+      newErrors.totalFloors = t('forms.building.validation.floorsRequired');
     } else if (formData.totalFloors < 0) {
-      newErrors.totalFloors = 'Total floors cannot be negative';
+      newErrors.totalFloors = t('forms.building.validation.floorsNegative');
     } else if (formData.totalFloors > 25) {
-      newErrors.totalFloors = 'Total floors cannot exceed 25';
+      newErrors.totalFloors = t('forms.building.validation.floorsMax');
     }
 
     // Total Leasable Area validation - REQUIRED (FIXED: check for empty string and 0 value)
     if (formData.totalLeasableArea === null || formData.totalLeasableArea === undefined || formData.totalLeasableArea === 0) {
-      newErrors.totalLeasableArea = 'Total leasable area is required';
+      newErrors.totalLeasableArea = t('forms.building.validation.areaRequired');
     } else if (formData.totalLeasableArea < 0) {
-      newErrors.totalLeasableArea = 'Total leasable area cannot be negative';
+      newErrors.totalLeasableArea = t('forms.building.validation.areaNegative');
     } else if (formData.totalLeasableArea > 5000000) {
-      newErrors.totalLeasableArea = 'Total leasable area cannot exceed 5,000,000 sqft';
+      newErrors.totalLeasableArea = t('forms.building.validation.areaMax');
     } else if (formData.totalLeasableArea.toString().split('.')[1]?.length > 2) {
-      newErrors.totalLeasableArea = 'Total leasable area can only have up to 2 decimal places';
+      newErrors.totalLeasableArea = t('forms.building.validation.areaDecimals');
     }
 
     // Transformer Fee validation - REQUIRED (FIXED: check for empty string and 0 value)
     if (formData.transformerFee === null || formData.transformerFee === undefined || formData.transformerFee === 0) {
-      newErrors.transformerFee = 'Transformer fee is required';
+      newErrors.transformerFee = t('forms.building.validation.transformerRequired');
     } else if (formData.transformerFee < 0) {
-      newErrors.transformerFee = 'Transformer fee cannot be negative';
+      newErrors.transformerFee = t('forms.building.validation.transformerNegative');
     } else if (formData.transformerFee > 10000000) {
-      newErrors.transformerFee = 'Transformer fee cannot exceed 10,000,000 MMK';
+      newErrors.transformerFee = t('forms.building.validation.transformerMax');
     } else if (formData.transformerFee.toString().split('.')[1]?.length > 2) {
-      newErrors.transformerFee = 'Transformer fee can only have up to 2 decimal places';
+      newErrors.transformerFee = t('forms.building.validation.transformerDecimals');
     }
 
     // Generator Fee validation - REQUIRED (FIXED: check for empty string and 0 value)
     if (formData.generatorFee === null || formData.generatorFee === undefined || formData.generatorFee === 0) {
-      newErrors.generatorFee = 'Generator fee is required';
+      newErrors.generatorFee = t('forms.building.validation.generatorRequired');
     } else if (formData.generatorFee < 0) {
-      newErrors.generatorFee = 'Generator fee cannot be negative';
+      newErrors.generatorFee = t('forms.building.validation.generatorNegative');
     } else if (formData.generatorFee > 10000000) {
-      newErrors.generatorFee = 'Generator fee cannot exceed 10,000,000 MMK';
+      newErrors.generatorFee = t('forms.building.validation.generatorMax');
     } else if (formData.generatorFee.toString().split('.')[1]?.length > 2) {
-      newErrors.generatorFee = 'Generator fee can only have up to 2 decimal places';
+      newErrors.generatorFee = t('forms.building.validation.generatorDecimals');
     }
 
     setErrors(newErrors);
@@ -151,56 +153,56 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
   const validateField = (name: string, value: any): string | undefined => {
     switch (name) {
       case 'branchId':
-        if (!value || value <= 0) return 'Please select a branch';
+        if (!value || value <= 0) return t('forms.building.validation.branchRequired');
         return undefined;
       
       case 'buildingName':
-        if (!value || !value.trim()) return 'Building name is required';
-        if (value.length < 2) return 'Building name must be at least 2 characters';
-        if (value.length > 50) return 'Building name must be less than 50 characters';
+        if (!value || !value.trim()) return t('forms.building.validation.nameRequired');
+        if (value.length < 2) return t('forms.building.validation.nameLength');
+        if (value.length > 50) return t('forms.building.validation.nameMax');
         if (!/^[a-zA-Z0-9\s\-\.\&]+$/.test(value)) 
-          return 'Building name can only contain letters, numbers, spaces, hyphens, dots, and ampersands';
+          return t('forms.building.validation.nameChars');
         return undefined;
       
       case 'buildingCode':
-        if (!value || !value.trim()) return 'Building code is required';
-        if (value.length > 20) return 'Building code must be less than 20 characters';
+        if (!value || !value.trim()) return t('forms.building.validation.codeRequired');
+        if (value.length > 20) return t('forms.building.validation.codeMax');
         if (!/^[A-Z0-9\-]+$/.test(value)) 
-          return 'Building code can only contain uppercase letters, numbers, and hyphens';
+          return t('forms.building.validation.codeChars');
         return undefined;
       
       case 'totalFloors':
         if (value === null || value === undefined || value === '' || value === 0) 
-          return 'Total floors is required';
-        if (value < 0) return 'Total floors cannot be negative';
-        if (value > 25) return 'Total floors cannot exceed 25';
+          return t('forms.building.validation.floorsRequired');
+        if (value < 0) return t('forms.building.validation.floorsNegative');
+        if (value > 25) return t('forms.building.validation.floorsMax');
         return undefined;
       
       case 'totalLeasableArea':
         if (value === null || value === undefined || value === '' || value === 0) 
-          return 'Total leasable area is required';
-        if (value < 0) return 'Total leasable area cannot be negative';
-        if (value > 5000000) return 'Total leasable area cannot exceed 5,000,000 sqft';
+          return t('forms.building.validation.areaRequired');
+        if (value < 0) return t('forms.building.validation.areaNegative');
+        if (value > 5000000) return t('forms.building.validation.areaMax');
         if (value.toString().split('.')[1]?.length > 2) 
-          return 'Total leasable area can only have up to 2 decimal places';
+          return t('forms.building.validation.areaDecimals');
         return undefined;
       
       case 'transformerFee':
         if (value === null || value === undefined || value === '' || value === 0) 
-          return 'Transformer fee is required';
-        if (value < 0) return 'Transformer fee cannot be negative';
-        if (value > 10000000) return 'Transformer fee cannot exceed 10,000,000 MMK';
+          return t('forms.building.validation.transformerRequired');
+        if (value < 0) return t('forms.building.validation.transformerNegative');
+        if (value > 10000000) return t('forms.building.validation.transformerMax');
         if (value.toString().split('.')[1]?.length > 2) 
-          return 'Transformer fee can only have up to 2 decimal places';
+          return t('forms.building.validation.transformerDecimals');
         return undefined;
       
       case 'generatorFee':
         if (value === null || value === undefined || value === '' || value === 0) 
-          return 'Generator fee is required';
-        if (value < 0) return 'Generator fee cannot be negative';
-        if (value > 10000000) return 'Generator fee cannot exceed 10,000,000 MMK';
+          return t('forms.building.validation.generatorRequired');
+        if (value < 0) return t('forms.building.validation.generatorNegative');
+        if (value > 10000000) return t('forms.building.validation.generatorMax');
         if (value.toString().split('.')[1]?.length > 2) 
-          return 'Generator fee can only have up to 2 decimal places';
+          return t('forms.building.validation.generatorDecimals');
         return undefined;
       
       default:
@@ -561,7 +563,7 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
         <div className="sticky top-0 bg-white z-10 border-b border-stone-200 px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex-shrink-0 rounded-t-3xl">
           <div className="flex justify-between items-center">
             <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-stone-900">
-              {building ? 'Edit Building' : 'Add New Building'}
+              {building ? t('forms.building.edit') : t('forms.building.add')}
             </h2>
             <button
               onClick={onClose}
@@ -579,7 +581,7 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 lg:space-y-5">
             <div>
               <label className="block text-xs sm:text-sm font-medium text-stone-700 mb-1">
-                Branch *
+                {t('forms.building.branch')} *
               </label>
               <select
                 name="branchId"
@@ -591,7 +593,7 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
                   shouldShowError('branchId') ? 'border-red-500' : 'border-stone-300'
                 } ${(loading || branches.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <option value={0}>Select a branch *</option>
+                <option value={0}>{t('forms.building.hints.branch')}</option>
                 {branches.map((branch) => (
                   <option key={branch.id} value={branch.id}>
                     {branch.branchName}
@@ -602,13 +604,13 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
                 <p className="mt-1 text-xs text-red-600">{errors.branchId}</p>
               )}
               {branches.length === 0 && (
-                <p className="mt-1 text-xs text-yellow-600">No branches available. Please create a branch first.</p>
+                <p className="mt-1 text-xs text-yellow-600">{t('forms.building.hints.noBranches')}</p>
               )}
             </div>
 
             <div>
               <label className="block text-xs sm:text-sm font-medium text-stone-700 mb-1">
-                Building Name *
+                {t('forms.building.name')} *
               </label>
               <input
                 type="text"
@@ -620,23 +622,23 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
                 className={`w-full border rounded-2xl px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm lg:text-base focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition duration-150 shadow-sm ${
                   shouldShowError('buildingName') ? 'border-red-500' : 'border-stone-300'
                 } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                placeholder="Enter building name (2-50 characters) *"
+                placeholder={t('forms.building.hints.name')}
                 maxLength={50}
               />
               {shouldShowError('buildingName') && (
                 <p className="mt-1 text-xs text-red-600">{errors.buildingName}</p>
               )}
               <p className="mt-1 text-xs text-stone-500">
-                {formData.buildingName.length}/50 characters
+                {t('forms.common.characterCount', { count: formData.buildingName.length, max: 50 })}
               </p>
               {isCheckingDuplicate && (
-                <p className="mt-1 text-xs text-blue-600">Checking for duplicates...</p>
+                <p className="mt-1 text-xs text-blue-600">{t('forms.common.loading')}</p>
               )}
             </div>
 
             <div>
               <label className="block text-xs sm:text-sm font-medium text-stone-700 mb-1">
-                Building Code *
+                {t('forms.building.code')} *
               </label>
               <input
                 type="text"
@@ -648,24 +650,24 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
                 className={`w-full border rounded-2xl px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm lg:text-base focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition duration-150 shadow-sm ${
                   shouldShowError('buildingCode') ? 'border-red-500' : 'border-stone-300'
                 } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                placeholder="Enter building code (uppercase letters, numbers, hyphens only) *"
+                placeholder={t('forms.building.hints.code')}
                 maxLength={20}
               />
               {shouldShowError('buildingCode') && (
                 <p className="mt-1 text-xs text-red-600">{errors.buildingCode}</p>
               )}
               <p className="mt-1 text-xs text-stone-500">
-                {formData.buildingCode.length}/20 characters
+                {t('forms.common.characterCount', { count: formData.buildingCode.length, max: 20 })}
               </p>
               <p className="mt-1 text-xs text-blue-600">
-                Building code must be unique within the selected branch.
+                {t('forms.building.hints.codeUnique')}
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-stone-700 mb-1">
-                  Total Floors (0-25) *
+                  {t('forms.building.totalFloors')} ({t('forms.building.hints.floors')})
                 </label>
                 <input
                   type="text"
@@ -686,7 +688,7 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-stone-700 mb-1">
-                  Total Leasable Area (sqft) *
+                  {t('forms.building.totalLeasableArea')} ({t('forms.building.hints.area')})
                 </label>
                 <input
                   type="text"
@@ -705,7 +707,7 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
                 )}
                 {formData.totalLeasableArea > 0 && (
                   <p className="mt-1 text-xs text-stone-500">
-                    Current: {formatNumber(formData.totalLeasableArea)} sqft
+                    {t('forms.building.selected')}: {formatNumber(formData.totalLeasableArea)} sqft
                   </p>
                 )}
               </div>
@@ -714,7 +716,7 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-stone-700 mb-1">
-                  Transformer Fee (MMK) *
+                  {t('forms.building.transformerFee')} ({t('forms.building.hints.transformer')})
                 </label>
                 <input
                   type="text"
@@ -733,14 +735,14 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
                 )}
                 {formData.transformerFee > 0 && (
                   <p className="mt-1 text-xs text-stone-500">
-                    Current: {formatCurrency(formData.transformerFee)}
+                    {t('forms.building.selected')}: {formatCurrency(formData.transformerFee)}
                   </p>
                 )}
               </div>
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-stone-700 mb-1">
-                  Generator Fee (MMK) *
+                  {t('forms.building.generatorFee')} ({t('forms.building.hints.generator')})
                 </label>
                 <input
                   type="text"
@@ -759,7 +761,7 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
                 )}
                 {formData.generatorFee > 0 && (
                   <p className="mt-1 text-xs text-stone-500">
-                    Current: {formatCurrency(formData.generatorFee)}
+                    {t('forms.building.selected')}: {formatCurrency(formData.generatorFee)}
                   </p>
                 )}
               </div>
@@ -768,13 +770,13 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
             {(formData.transformerFee > 0 || formData.generatorFee > 0) && (
               <div className="bg-stone-50 p-3 sm:p-4 rounded-2xl border border-stone-200">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-stone-700">Total Additional Fees:</span>
+                  <span className="text-sm font-medium text-stone-700">{t('forms.building.totalAdditionalFees')}:</span>
                   <span className="text-lg font-bold text-stone-900">
                     {formatCurrency(formData.transformerFee + formData.generatorFee)}
                   </span>
                 </div>
                 <p className="text-xs text-stone-500 mt-1">
-                  (Transformer: {formatCurrency(formData.transformerFee)} + Generator: {formatCurrency(formData.generatorFee)})
+                  ({t('forms.building.transformerFee')}: {formatCurrency(formData.transformerFee)} + {t('forms.building.generatorFee')}: {formatCurrency(formData.generatorFee)})
                 </p>
               </div>
             )}
@@ -786,16 +788,16 @@ const BuildingForm: React.FC<BuildingFormProps> = ({ building, onClose, onSubmit
                 disabled={loading}
                 className="px-4 sm:px-6 py-2 sm:py-3 text-stone-600 border border-stone-300 rounded-2xl hover:bg-stone-100 transition duration-150 font-medium text-xs sm:text-sm lg:text-base shadow-sm w-full sm:w-auto order-2 sm:order-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Cancel
+                {t('forms.common.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={loading || isCheckingDuplicate}
                 className="px-4 sm:px-6 py-2 sm:py-3 bg-[#1E40AF] text-white rounded-2xl shadow-lg hover:bg-[#1E3A8A] transition duration-150 font-semibold text-xs sm:text-sm lg:text-base focus:outline-none focus:ring-4 focus:ring-[#93C5FD] transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto order-1 sm:order-2"
               >
-                {loading ? 'Saving...' : 
-                 isCheckingDuplicate ? 'Checking...' : 
-                 building ? 'Update Building' : 'Create Building'}
+                {loading ? t('forms.common.saving') : 
+                 isCheckingDuplicate ? t('forms.common.loading') : 
+                 building ? t('forms.common.update') : t('forms.common.create')}
               </button>
             </div>
           </form>

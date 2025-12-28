@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import type { Branch } from '../types';
 import { branchApi } from '../api/BranchAPI';
 import { useNotification } from '../context/NotificationContext';
+import { useTranslation } from 'react-i18next';
 
 interface BranchFormProps {
   branch?: Branch | null;
@@ -20,6 +21,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const { showError } = useNotification();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (branch) {
@@ -39,46 +41,46 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
 
     // Validate branch name (2-100 characters, required - matches backend @Size(min=2, max=100))
     if (!formData.branchName.trim()) {
-      newErrors.branchName = 'Branch name is required';
+      newErrors.branchName = t('forms.branch.validation.nameRequired');
     } else if (formData.branchName.trim().length < 2) {
-      newErrors.branchName = 'Branch name must be at least 2 characters';
+      newErrors.branchName = t('forms.branch.validation.nameLength');
     } else if (formData.branchName.trim().length > 100) {
-      newErrors.branchName = 'Branch name cannot exceed 100 characters';
+      newErrors.branchName = t('forms.branch.validation.nameMax');
     }
 
     // Validate address (max 250 characters, required - matches backend @Size(max=250))
     if (!formData.address.trim()) {
-      newErrors.address = 'Address is required';
+      newErrors.address = t('forms.branch.validation.addressRequired');
     } else if (formData.address.length > 250) {
-      newErrors.address = 'Address cannot exceed 250 characters';
+      newErrors.address = t('forms.branch.validation.addressMax');
     }
 
     // Validate phone (must be exactly 11 digits starting with 09, required - matches backend @Pattern)
     if (!formData.contactPhone.trim()) {
-      newErrors.contactPhone = 'Contact phone is required';
+      newErrors.contactPhone = t('forms.branch.validation.phoneRequired');
     } else {
       // Remove any non-digit characters for validation
       const cleanPhone = formData.contactPhone.replace(/\D/g, '');
       
       if (!cleanPhone.startsWith('09')) {
-        newErrors.contactPhone = 'Phone number must start with 09';
+        newErrors.contactPhone = t('forms.branch.validation.phoneStart');
       } else if (cleanPhone.length !== 11) {
-        newErrors.contactPhone = 'Phone number must be exactly 11 digits (09XXXXXXXXX)';
+        newErrors.contactPhone = t('forms.branch.validation.phoneDigits');
       } else if (!/^09\d{9}$/.test(cleanPhone)) {
-        newErrors.contactPhone = 'Invalid phone number format. Must be 09 followed by 9 digits';
+        newErrors.contactPhone = t('forms.branch.validation.phoneFormat');
       }
     }
 
     // Validate email (required, max 100 characters - matches backend @Email @Size(max=100))
     if (!formData.contactEmail.trim()) {
-      newErrors.contactEmail = 'Contact email is required';
+      newErrors.contactEmail = t('forms.branch.validation.emailRequired');
     } else {
       // More comprehensive email regex that matches Java's @Email annotation
       const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(formData.contactEmail)) {
-        newErrors.contactEmail = 'Invalid email format';
+        newErrors.contactEmail = t('forms.branch.validation.emailFormat');
       } else if (formData.contactEmail.length > 100) {
-        newErrors.contactEmail = 'Email cannot exceed 100 characters';
+        newErrors.contactEmail = t('forms.branch.validation.emailMax');
       }
     }
 
@@ -182,48 +184,48 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
     
     if (fieldName === 'branchName') {
       if (!formData.branchName.trim()) {
-        fieldErrors.branchName = 'Branch name is required';
+        fieldErrors.branchName = t('forms.branch.validation.nameRequired');
       } else if (formData.branchName.trim().length < 2) {
-        fieldErrors.branchName = 'Branch name must be at least 2 characters';
+        fieldErrors.branchName = t('forms.branch.validation.nameLength');
       } else if (formData.branchName.trim().length > 100) {
-        fieldErrors.branchName = 'Branch name cannot exceed 100 characters';
+        fieldErrors.branchName = t('forms.branch.validation.nameMax');
       }
     }
     
     if (fieldName === 'address') {
       if (!formData.address.trim()) {
-        fieldErrors.address = 'Address is required';
+        fieldErrors.address = t('forms.branch.validation.addressRequired');
       } else if (formData.address.length > 250) {
-        fieldErrors.address = 'Address cannot exceed 250 characters';
+        fieldErrors.address = t('forms.branch.validation.addressMax');
       }
     }
     
     if (fieldName === 'contactPhone') {
       if (!formData.contactPhone.trim()) {
-        fieldErrors.contactPhone = 'Contact phone is required';
+        fieldErrors.contactPhone = t('forms.branch.validation.phoneRequired');
       } else {
         // Remove any non-digit characters for validation
         const cleanPhone = formData.contactPhone.replace(/\D/g, '');
         
         if (!cleanPhone.startsWith('09')) {
-          fieldErrors.contactPhone = 'Phone number must start with 09';
+          fieldErrors.contactPhone = t('forms.branch.validation.phoneStart');
         } else if (cleanPhone.length !== 11) {
-          fieldErrors.contactPhone = 'Phone number must be exactly 11 digits (09XXXXXXXXX)';
+          fieldErrors.contactPhone = t('forms.branch.validation.phoneDigits');
         } else if (!/^09\d{9}$/.test(cleanPhone)) {
-          fieldErrors.contactPhone = 'Invalid phone number format. Must be 09 followed by 9 digits';
+          fieldErrors.contactPhone = t('forms.branch.validation.phoneFormat');
         }
       }
     }
     
     if (fieldName === 'contactEmail') {
       if (!formData.contactEmail.trim()) {
-        fieldErrors.contactEmail = 'Contact email is required';
+        fieldErrors.contactEmail = t('forms.branch.validation.emailRequired');
       } else {
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         if (!emailRegex.test(formData.contactEmail)) {
-          fieldErrors.contactEmail = 'Invalid email format';
+          fieldErrors.contactEmail = t('forms.branch.validation.emailFormat');
         } else if (formData.contactEmail.length > 100) {
-          fieldErrors.contactEmail = 'Email cannot exceed 100 characters';
+          fieldErrors.contactEmail = t('forms.branch.validation.emailMax');
         }
       }
     }
@@ -248,7 +250,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
         <div className="sticky top-0 bg-white z-10 border-b border-stone-200 px-6 py-4 sm:px-8">
           <div className="flex justify-between items-center">
             <h2 className="text-xl sm:text-2xl font-bold text-stone-900">
-              {branch ? 'Edit Branch' : 'Add New Branch'}
+              {branch ? t('forms.branch.edit') : t('forms.branch.add')}
             </h2>
             <button
               onClick={onClose}
@@ -266,7 +268,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1" htmlFor="branchName">
-                Branch Name *
+                {t('forms.branch.name')} *
               </label>
               <input
                 type="text"
@@ -276,7 +278,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
                 onChange={handleChange}
                 onBlur={() => handleBlur('branchName')}
                 className={getInputClassName('branchName')}
-                placeholder="Enter branch name (2-100 characters)"
+                placeholder={t('forms.branch.hints.name')}
                 disabled={loading}
                 maxLength={100}
               />
@@ -285,7 +287,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
                   <p className="text-sm text-red-600">{errors.branchName}</p>
                 ) : (
                   <p className="text-xs text-stone-500">
-                    {formData.branchName.length}/100 characters
+                    {t('forms.common.characterCount', { count: formData.branchName.length, max: 100 })}
                   </p>
                 )}
               </div>
@@ -293,7 +295,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
 
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1" htmlFor="address">
-                Address *
+                {t('forms.branch.address')} *
               </label>
               <textarea
                 id="address"
@@ -303,7 +305,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
                 onBlur={() => handleBlur('address')}
                 rows={3}
                 className={getInputClassName('address')}
-                placeholder="Enter branch address (max 250 characters)"
+                placeholder={t('forms.branch.hints.address')}
                 disabled={loading}
                 maxLength={250}
               />
@@ -312,7 +314,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
                   <p className="text-sm text-red-600">{errors.address}</p>
                 ) : (
                   <p className="text-xs text-stone-500">
-                    {formData.address.length}/250 characters
+                    {t('forms.common.characterCount', { count: formData.address.length, max: 250 })}
                   </p>
                 )}
               </div>
@@ -320,7 +322,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
 
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1" htmlFor="contactPhone">
-                Contact Phone *
+                {t('forms.branch.contactPhone')} *
               </label>
               <input
                 type="tel"
@@ -330,7 +332,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
                 onChange={handleChange}
                 onBlur={() => handleBlur('contactPhone')}
                 className={getInputClassName('contactPhone')}
-                placeholder="Enter phone number (09XXXXXXXXX)"
+                placeholder={t('forms.branch.hints.phone')}
                 disabled={loading}
                 maxLength={11}
                 pattern="09\d{9}"
@@ -341,14 +343,14 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
               )}
               {!errors.contactPhone && (
                 <p className="mt-1 text-xs text-stone-500">
-                  Must start with 09 and be exactly 11 digits (09XXXXXXXXX)
+                  {t('forms.branch.hints.phoneFormat')}
                 </p>
               )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1" htmlFor="contactEmail">
-                Contact Email *
+                {t('forms.branch.contactEmail')} *
               </label>
               <input
                 type="email"
@@ -358,7 +360,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
                 onChange={handleChange}
                 onBlur={() => handleBlur('contactEmail')}
                 className={getInputClassName('contactEmail')}
-                placeholder="Enter contact email"
+                placeholder={t('forms.branch.hints.email')}
                 disabled={loading}
                 maxLength={100}
               />
@@ -367,7 +369,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
                   <p className="text-sm text-red-600">{errors.contactEmail}</p>
                 ) : (
                   <p className="text-xs text-stone-500">
-                    {formData.contactEmail.length}/100 characters
+                    {t('forms.common.characterCount', { count: formData.contactEmail.length, max: 100 })}
                   </p>
                 )}
               </div>
@@ -382,7 +384,7 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
                   className="px-6 py-3 text-stone-600 border border-stone-300 rounded-lg hover:bg-stone-100 transition duration-150 font-medium text-sm sm:text-base shadow-sm w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-stone-300"
                   disabled={loading}
                 >
-                  Cancel
+                  {t('forms.common.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -396,9 +398,9 @@ const BranchForm: React.FC<BranchFormProps> = ({ branch, onClose, onSubmit }) =>
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Saving...
+                      {t('forms.common.saving')}
                     </span>
-                  ) : branch ? 'Update Branch' : 'Create Branch'}
+                  ) : branch ? t('forms.common.update') : t('forms.common.create')}
                 </button>
               </div>
             </div>

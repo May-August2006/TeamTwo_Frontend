@@ -1,5 +1,6 @@
 // components/units/UnitAddForm.tsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { branchApi } from '../../api/BranchAPI';
 import { buildingApi } from '../../api/BuildingAPI';
 import { levelApi } from '../../api/LevelAPI';
@@ -20,6 +21,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
   onCancel, 
   isLoading = false 
 }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     unitNumber: 'UN-',
     unitType: UnitType.ROOM,
@@ -254,31 +256,31 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     const trimmed = value.trim().toUpperCase();
     
     if (!trimmed) {
-      return 'Unit number is required';
+      return t('unit.errors.unitNumberRequired');
     }
     
     // Check for UN- prefix
     if (!trimmed.startsWith('UN-')) {
-      return 'Unit number must start with UN-';
+      return t('unit.errors.unitNumberPrefix');
     }
     
     // Check for UN- prefix and number format
     const isValidFormat = /^UN-\d{1,3}$/.test(trimmed);
     if (!isValidFormat) {
-      return 'Unit number must be in format UN- followed by 1-3 digits';
+      return t('unit.errors.unitNumberFormat');
     }
     
     // Extract the number part
     const numberPart = trimmed.substring(3);
     if (numberPart === '') {
-      return 'Please enter a number between 001 and 999';
+      return t('unit.errors.unitNumberBetween');
     }
     
     const number = parseInt(numberPart, 10);
     
     // Check if number is between 1 and 999
     if (number < 1 || number > 999) {
-      return 'Unit number must be between UN-001 and UN-999';
+      return t('unit.errors.unitNumberRange');
     }
     
     return '';
@@ -293,7 +295,10 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     if (levelUnitsCount >= selectedLevel.totalUnits) {
       setErrors(prev => ({
         ...prev,
-        levelId: `Level is at full capacity. Maximum ${selectedLevel.totalUnits} units allowed. Current: ${levelUnitsCount} units.`
+        levelId: t('unit.errors.levelFullCapacity', {
+          maxUnits: selectedLevel.totalUnits,
+          currentUnits: levelUnitsCount
+        })
       }));
       return false;
     }
@@ -313,7 +318,10 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       const availableArea = selectedBuilding.totalLeasableArea - buildingUsedArea;
       setErrors(prev => ({
         ...prev,
-        unitSpace: `Exceeds building's leasable area. Available: ${availableArea.toFixed(2)} sqm, Required: ${unitSpace.toFixed(2)} sqm`
+        unitSpace: t('unit.errors.buildingAreaExceeded', {
+          available: availableArea.toFixed(2),
+          required: unitSpace.toFixed(2)
+        })
       }));
       return false;
     }
@@ -327,39 +335,39 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     const space = parseFloat(trimmed);
     
     if (!trimmed) {
-      setErrors(prev => ({ ...prev, unitSpace: 'Unit space is required' }));
+      setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.unitSpaceRequired') }));
       return false;
     }
     
     if (isNaN(space)) {
-      setErrors(prev => ({ ...prev, unitSpace: 'Please enter a valid number' }));
+      setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.unitSpaceValid') }));
       return false;
     }
     
     if (space <= 0) {
-      setErrors(prev => ({ ...prev, unitSpace: 'Unit space must be greater than 0' }));
+      setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.unitSpaceGreaterThanZero') }));
       return false;
     }
     
     if (space < 0.1) {
-      setErrors(prev => ({ ...prev, unitSpace: 'Unit space must be at least 0.1 sqm' }));
+      setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.unitSpaceMin') }));
       return false;
     }
     
     if (space > 10000) {
-      setErrors(prev => ({ ...prev, unitSpace: 'Unit space cannot exceed 10000 sqm' }));
+      setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.unitSpaceMax') }));
       return false;
     }
     
     // Check space type constraints
     if (formData.unitType === UnitType.SPACE && formData.spaceTypeId && selectedSpaceType) {
       if (selectedSpaceType.minSpace > 0 && space < selectedSpaceType.minSpace) {
-        setErrors(prev => ({ ...prev, unitSpace: `Minimum space required: ${selectedSpaceType.minSpace} sqm` }));
+        setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.minSpaceRequired', { minSpace: selectedSpaceType.minSpace }) }));
         return false;
       }
       
       if (selectedSpaceType.maxSpace > 0 && space > selectedSpaceType.maxSpace) {
-        setErrors(prev => ({ ...prev, unitSpace: `Maximum space allowed: ${selectedSpaceType.maxSpace} sqm` }));
+        setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.maxSpaceAllowed', { maxSpace: selectedSpaceType.maxSpace }) }));
         return false;
       }
     }
@@ -367,12 +375,12 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     // Check room type constraints
     if (formData.unitType === UnitType.ROOM && formData.roomTypeId && selectedRoomType) {
       if (selectedRoomType.minSpace > 0 && space < selectedRoomType.minSpace) {
-        setErrors(prev => ({ ...prev, unitSpace: `Minimum space required: ${selectedRoomType.minSpace} sqm` }));
+        setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.minSpaceRequired', { minSpace: selectedRoomType.minSpace }) }));
         return false;
       }
       
       if (selectedRoomType.maxSpace > 0 && space > selectedRoomType.maxSpace) {
-        setErrors(prev => ({ ...prev, unitSpace: `Maximum space allowed: ${selectedRoomType.maxSpace} sqm` }));
+        setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.maxSpaceAllowed', { maxSpace: selectedRoomType.maxSpace }) }));
         return false;
       }
     }
@@ -380,12 +388,12 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     // Check hall type constraints
     if (formData.unitType === UnitType.HALL && formData.hallTypeId && selectedHallType) {
       if (selectedHallType.minSpace > 0 && space < selectedHallType.minSpace) {
-        setErrors(prev => ({ ...prev, unitSpace: `Minimum space required: ${selectedHallType.minSpace} sqm` }));
+        setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.minSpaceRequired', { minSpace: selectedHallType.minSpace }) }));
         return false;
       }
       
       if (selectedHallType.maxSpace > 0 && space > selectedHallType.maxSpace) {
-        setErrors(prev => ({ ...prev, unitSpace: `Maximum space allowed: ${selectedHallType.maxSpace} sqm` }));
+        setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.maxSpaceAllowed', { maxSpace: selectedHallType.maxSpace }) }));
         return false;
       }
     }
@@ -487,7 +495,11 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     // Check if adding new images would exceed the limit
     const totalImagesAfterAddition = selectedImages.length + newImages.length;
     if (totalImagesAfterAddition > MAX_IMAGES) {
-      alert(`You can only upload a maximum of ${MAX_IMAGES} images. You currently have ${selectedImages.length} selected.`);
+      alert(t('unit.errors.imageLimitExceeded', {
+        maxImages: MAX_IMAGES,
+        existingImages: 0,
+        selectedImages: selectedImages.length
+      }));
       e.target.value = ''; // Reset the file input
       return;
     }
@@ -521,12 +533,12 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       // Check for duplicates - only within same level
       const isDuplicate = await checkDuplicateUnitNumber(formData.unitNumber, formData.levelId);
       if (isDuplicate) {
-        newErrors.unitNumber = 'Unit number already exists on this floor';
+        newErrors.unitNumber = t('unit.errors.unitNumberDuplicateFloor');
       }
     }
 
     if (!formData.levelId) {
-      newErrors.levelId = 'Please select a floor';
+      newErrors.levelId = t('unit.errors.floorRequired');
     } else if (selectedLevel) {
       // Validate level capacity
       if (!validateLevelCapacity()) {
@@ -538,17 +550,17 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     switch (formData.unitType) {
       case UnitType.ROOM:
         if (!formData.roomTypeId) {
-          newErrors.roomTypeId = 'Please select a room type';
+          newErrors.roomTypeId = t('unit.errors.roomTypeRequired');
         }
         break;
       case UnitType.SPACE:
         if (!formData.spaceTypeId) {
-          newErrors.spaceTypeId = 'Please select a space type';
+          newErrors.spaceTypeId = t('unit.errors.spaceTypeRequired');
         }
         break;
       case UnitType.HALL:
         if (!formData.hallTypeId) {
-          newErrors.hallTypeId = 'Please select a hall type';
+          newErrors.hallTypeId = t('unit.errors.hallTypeRequired');
         }
         break;
     }
@@ -556,44 +568,44 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     // Validate unit space
     const space = parseFloat(formData.unitSpace);
     if (!formData.unitSpace) {
-      newErrors.unitSpace = 'Unit space is required';
+      newErrors.unitSpace = t('unit.errors.unitSpaceRequired');
     } else if (isNaN(space) || space <= 0) {
-      newErrors.unitSpace = 'Unit space must be greater than 0';
+      newErrors.unitSpace = t('unit.errors.unitSpaceGreaterThanZero');
     } else if (space < 0.1) {
-      newErrors.unitSpace = 'Unit space must be at least 0.1 sqm';
+      newErrors.unitSpace = t('unit.errors.unitSpaceMin');
     } else if (space > 10000) {
-      newErrors.unitSpace = 'Unit space cannot exceed 10000 sqm';
+      newErrors.unitSpace = t('unit.errors.unitSpaceMax');
     } else {
       // For SPACE type, validate against space type constraints
       if (formData.unitType === UnitType.SPACE && formData.spaceTypeId && selectedSpaceType) {
         if (selectedSpaceType.minSpace > 0 && space < selectedSpaceType.minSpace) {
-          newErrors.unitSpace = `Minimum space required: ${selectedSpaceType.minSpace} sqm`;
+          newErrors.unitSpace = t('unit.errors.minSpaceRequired', { minSpace: selectedSpaceType.minSpace });
         }
         
         if (selectedSpaceType.maxSpace > 0 && space > selectedSpaceType.maxSpace) {
-          newErrors.unitSpace = `Maximum space allowed: ${selectedSpaceType.maxSpace} sqm`;
+          newErrors.unitSpace = t('unit.errors.maxSpaceAllowed', { maxSpace: selectedSpaceType.maxSpace });
         }
       }
 
       // For ROOM type, validate against room type constraints if they exist
       if (formData.unitType === UnitType.ROOM && formData.roomTypeId && selectedRoomType) {
         if (selectedRoomType.minSpace > 0 && space < selectedRoomType.minSpace) {
-          newErrors.unitSpace = `Minimum space required: ${selectedRoomType.minSpace} sqm`;
+          newErrors.unitSpace = t('unit.errors.minSpaceRequired', { minSpace: selectedRoomType.minSpace });
         }
         
         if (selectedRoomType.maxSpace > 0 && space > selectedRoomType.maxSpace) {
-          newErrors.unitSpace = `Maximum space allowed: ${selectedRoomType.maxSpace} sqm`;
+          newErrors.unitSpace = t('unit.errors.maxSpaceAllowed', { maxSpace: selectedRoomType.maxSpace });
         }
       }
 
       // For HALL type, validate against hall type constraints if they exist
       if (formData.unitType === UnitType.HALL && formData.hallTypeId && selectedHallType) {
         if (selectedHallType.minSpace > 0 && space < selectedHallType.minSpace) {
-          newErrors.unitSpace = `Minimum space required: ${selectedHallType.minSpace} sqm`;
+          newErrors.unitSpace = t('unit.errors.minSpaceRequired', { minSpace: selectedHallType.minSpace });
         }
         
         if (selectedHallType.maxSpace > 0 && space > selectedHallType.maxSpace) {
-          newErrors.unitSpace = `Maximum space allowed: ${selectedHallType.maxSpace} sqm`;
+          newErrors.unitSpace = t('unit.errors.maxSpaceAllowed', { maxSpace: selectedHallType.maxSpace });
         }
       }
       
@@ -608,19 +620,19 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     // Validate rental fee
     const rentalFee = parseFloat(formData.rentalFee);
     if (!formData.rentalFee) {
-      newErrors.rentalFee = 'Rental fee is required';
+      newErrors.rentalFee = t('unit.errors.rentalFeeRequired');
     } else if (isNaN(rentalFee)) {
-      newErrors.rentalFee = 'Please enter a valid rental fee';
+      newErrors.rentalFee = t('unit.errors.rentalFeeValid');
     } else if (rentalFee < 0) {
-      newErrors.rentalFee = 'Rental fee cannot be negative';
+      newErrors.rentalFee = t('unit.errors.rentalFeeNegative');
     }
 
     if (!formData.branchId) {
-      newErrors.branchId = 'Please select a branch';
+      newErrors.branchId = t('unit.errors.branchRequired');
     }
 
     if (!formData.buildingId) {
-      newErrors.buildingId = 'Please select a building';
+      newErrors.buildingId = t('unit.errors.buildingRequired');
     }
 
     setErrors(newErrors);
@@ -813,13 +825,13 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         if (isDuplicate) {
           setErrors(prev => ({
             ...prev,
-            unitNumber: 'Unit number already exists on this floor'
+            unitNumber: t('unit.errors.unitNumberDuplicateFloor')
           }));
         } else {
           // Clear duplicate error if it exists
           setErrors(prev => {
             const newErrors = { ...prev };
-            if (newErrors.unitNumber === 'Unit number already exists on this floor') {
+            if (newErrors.unitNumber === t('unit.errors.unitNumberDuplicateFloor')) {
               delete newErrors.unitNumber;
             }
             return newErrors;
@@ -881,7 +893,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         return (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Room Type *
+              {t('unit.labels.roomType')} *
             </label>
             <select
               name="roomTypeId"
@@ -891,10 +903,10 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
                 errors.roomTypeId ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-              <option value="">Select Room Type</option>
+              <option value="">{t('unit.placeholders.selectRoomType')}</option>
               {roomTypes.map(type => (
                 <option key={type.id} value={type.id}>
-                  {type.typeName} {type.basePrice ? `(${type.basePrice} MMK/sqm)` : ''}
+                  {type.typeName} {type.basePrice ? `(${type.basePrice} ${t('unit.labels.mmk')}/sqm)` : ''}
                 </option>
               ))}
             </select>
@@ -910,12 +922,12 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             )}
             {selectedRoomType && selectedRoomType.basePrice && (
               <div className="mt-2 text-sm text-gray-600">
-                <p>Base Price: <span className="font-semibold">{selectedRoomType.basePrice} MMK per sqm</span></p>
+                <p>{t('unit.labels.basePrice')}: <span className="font-semibold">{selectedRoomType.basePrice} {t('unit.labels.mmkPerSqm')}</span></p>
                 {selectedRoomType.minSpace > 0 && (
-                  <p>Min Space: {selectedRoomType.minSpace} sqm</p>
+                  <p>{t('unit.labels.minSpace')}: {selectedRoomType.minSpace} {t('unit.labels.sqm')}</p>
                 )}
                 {selectedRoomType.maxSpace > 0 && (
-                  <p>Max Space: {selectedRoomType.maxSpace} sqm</p>
+                  <p>{t('unit.labels.maxSpace')}: {selectedRoomType.maxSpace} {t('unit.labels.sqm')}</p>
                 )}
               </div>
             )}
@@ -926,7 +938,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         return (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Space Type *
+              {t('unit.labels.spaceType')} *
             </label>
             <select
               name="spaceTypeId"
@@ -936,10 +948,10 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
                 errors.spaceTypeId ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-              <option value="">Select Space Type</option>
+              <option value="">{t('unit.placeholders.selectSpaceType')}</option>
               {spaceTypes.map(type => (
                 <option key={type.id} value={type.id}>
-                  {type.name} ({type.basePricePerSqm}MMK/sqm)
+                  {type.name} ({type.basePricePerSqm}{t('unit.labels.mmkPerSqm')})
                 </option>
               ))}
             </select>
@@ -955,15 +967,15 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             )}
             {selectedSpaceType && (
               <div className="mt-2 text-sm text-gray-600">
-                <p>Base Price: <span className="font-semibold">{selectedSpaceType.basePricePerSqm} MMK per sqm</span></p>
+                <p>{t('unit.labels.basePrice')}: <span className="font-semibold">{selectedSpaceType.basePricePerSqm} {t('unit.labels.mmkPerSqm')}</span></p>
                 {selectedSpaceType.minSpace > 0 && (
-                  <p>Min Space: {selectedSpaceType.minSpace} sqm</p>
+                  <p>{t('unit.labels.minSpace')}: {selectedSpaceType.minSpace} {t('unit.labels.sqm')}</p>
                 )}
                 {selectedSpaceType.maxSpace > 0 && (
-                  <p>Max Space: {selectedSpaceType.maxSpace} sqm</p>
+                  <p>{t('unit.labels.maxSpace')}: {selectedSpaceType.maxSpace} {t('unit.labels.sqm')}</p>
                 )}
                 {selectedSpaceType.hasUtilities && (
-                  <p className="text-green-600 font-medium">✓ Utilities available</p>
+                  <p className="text-green-600 font-medium">✓ {t('unit.messages.utilitiesAvailable')}</p>
                 )}
               </div>
             )}
@@ -974,7 +986,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         return (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Hall Type *
+              {t('unit.labels.hallType')} *
             </label>
             <select
               name="hallTypeId"
@@ -984,10 +996,10 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
                 errors.hallTypeId ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-              <option value="">Select Hall Type</option>
+              <option value="">{t('unit.placeholders.selectHallType')}</option>
               {hallTypes.map(type => (
                 <option key={type.id} value={type.id}>
-                  {type.name} {type.basePrice ? `(${type.basePrice} MMK/sqm)` : ''}
+                  {type.name} {type.basePrice ? `(${type.basePrice} ${t('unit.labels.mmk')}/sqm)` : ''}
                 </option>
               ))}
             </select>
@@ -1003,12 +1015,12 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             )}
             {selectedHallType && selectedHallType.basePrice && (
               <div className="mt-2 text-sm text-gray-600">
-                <p>Base Price: <span className="font-semibold">{selectedHallType.basePrice} MMK per sqm</span></p>
+                <p>{t('unit.labels.basePrice')}: <span className="font-semibold">{selectedHallType.basePrice} {t('unit.labels.mmkPerSqm')}</span></p>
                 {selectedHallType.minSpace > 0 && (
-                  <p>Min Space: {selectedHallType.minSpace} sqm</p>
+                  <p>{t('unit.labels.minSpace')}: {selectedHallType.minSpace} {t('unit.labels.sqm')}</p>
                 )}
                 {selectedHallType.maxSpace > 0 && (
-                  <p>Max Space: {selectedHallType.maxSpace} sqm</p>
+                  <p>{t('unit.labels.maxSpace')}: {selectedHallType.maxSpace} {t('unit.labels.sqm')}</p>
                 )}
               </div>
             )}
@@ -1030,15 +1042,15 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     switch (formData.unitType) {
       case UnitType.SPACE:
         basePrice = selectedSpaceType?.basePricePerSqm || 0;
-        unitTypeLabel = 'Space';
+        unitTypeLabel = t('unit.types.space');
         break;
       case UnitType.ROOM:
         basePrice = selectedRoomType?.basePrice || 0;
-        unitTypeLabel = 'Room';
+        unitTypeLabel = t('unit.types.room');
         break;
       case UnitType.HALL:
         basePrice = selectedHallType?.basePrice || 0;
-        unitTypeLabel = 'Hall';
+        unitTypeLabel = t('unit.types.hall');
         break;
     }
 
@@ -1047,17 +1059,21 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     return (
       <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
         <div className="flex justify-between items-center">
-          <span className="text-sm font-medium text-blue-800">Calculated {unitTypeLabel} Rental Fee:</span>
+          <span className="text-sm font-medium text-blue-800">{t('unit.messages.calculatedRentalFee', { unitType: unitTypeLabel })}:</span>
           <span className="text-lg font-bold text-blue-700">
-            {rentalFeePreview} MMK
+            {rentalFeePreview} {t('unit.labels.mmk')}
           </span>
         </div>
         <p className="text-xs text-blue-600 mt-1">
-          Calculation: {space} sqm × {basePrice.toFixed(2)} MMK /sqm = {rentalFeePreview} MMK
+          {t('unit.messages.calculation', {
+            space: space,
+            basePrice: basePrice.toFixed(2),
+            result: rentalFeePreview
+          })}
         </p>
         {formData.rentalFee !== rentalFeePreview && formData.rentalFee && (
           <p className="text-xs text-amber-600 mt-1">
-            Note: Manual override applied. Calculated value was {rentalFeePreview} MMK
+            {t('unit.messages.manualOverride', { calculatedValue: rentalFeePreview })}
           </p>
         )}
       </div>
@@ -1087,13 +1103,13 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
     return (
       <div className="text-sm text-gray-600 mt-1">
         <div className="flex items-center space-x-1">
-          <span>Calculation:</span>
-          <span className="font-medium">{space} sqm</span>
+          <span>{t('unit.messages.calculation')}:</span>
+          <span className="font-medium">{space} {t('unit.labels.sqm')}</span>
           <span>×</span>
-          <span className="font-medium">{basePrice.toFixed(2)}MMK/sqm</span>
+          <span className="font-medium">{basePrice.toFixed(2)}{t('unit.labels.mmkPerSqm')}</span>
           <span>=</span>
           <span className="font-bold text-green-600">
-            {(space * basePrice).toFixed(2)} MMK
+            {(space * basePrice).toFixed(2)} {t('unit.labels.mmk')}
           </span>
         </div>
       </div>
@@ -1105,7 +1121,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       {/* Branch Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Branch *
+          {t('unit.labels.branch')} *
         </label>
         <select
           name="branchId"
@@ -1115,7 +1131,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             errors.branchId ? 'border-red-500' : 'border-gray-300'
           }`}
         >
-          <option value="">Select Branch</option>
+          <option value="">{t('unit.placeholders.selectBranch')}</option>
           {branches.map(branch => (
             <option key={branch.id} value={branch.id}>
               {branch.branchName}
@@ -1137,7 +1153,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       {/* Building Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Building *
+          {t('unit.labels.building')} *
         </label>
         <select
           name="buildingId"
@@ -1148,17 +1164,17 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             errors.buildingId ? 'border-red-500' : 'border-gray-300'
           }`}
         >
-          <option value="">Select Building</option>
+          <option value="">{t('unit.placeholders.selectBuilding')}</option>
           {buildings.map(building => (
             <option key={building.id} value={building.id}>
               {building.buildingName}
               {building.totalLeasableArea !== null && building.totalLeasableArea !== undefined && 
-                ` (Total Area: ${building.totalLeasableArea} sqm)`}
+                ` (${t('unit.labels.totalArea')}: ${building.totalLeasableArea} ${t('unit.labels.sqm')})`}
             </option>
           ))}
         </select>
         {buildingsLoading && (
-          <p className="text-blue-500 text-sm mt-1">Loading buildings...</p>
+          <p className="text-blue-500 text-sm mt-1">{t('unit.messages.loadingBuildings')}</p>
         )}
         {touchedFields.buildingId && errors.buildingId && (
           <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded-md">
@@ -1175,7 +1191,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       {/* Level Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          floor *
+          {t('unit.labels.floor')} *
         </label>
         <select
           name="levelId"
@@ -1186,26 +1202,26 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             errors.levelId ? 'border-red-500' : 'border-gray-300'
           }`}
         >
-          <option value="">Select Floor</option>
+          <option value="">{t('unit.placeholders.selectFloor')}</option>
           {levels.map(level => (
             <option key={level.id} value={level.id}>
               {level.levelName} (Floor {level.levelNumber})
               {level.totalUnits !== null && level.totalUnits !== undefined && 
-                ` - Max ${level.totalUnits} units`}
+                ` - ${t('unit.labels.max')} ${level.totalUnits} ${t('unit.labels.units')}`}
             </option>
           ))}
         </select>
         {levelsLoading && (
-          <p className="text-blue-500 text-sm mt-1">Loading levels...</p>
+          <p className="text-blue-500 text-sm mt-1">{t('unit.messages.loadingLevels')}</p>
         )}
         
         {/* Level capacity info */}
         {selectedLevel && selectedLevel.totalUnits !== null && selectedLevel.totalUnits !== undefined && (
           <div className="mt-2 p-2 bg-gray-50 rounded-md">
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">Level Capacity:</span>
+              <span className="text-gray-600">{t('unit.labels.levelCapacity')}:</span>
               <div className="flex items-center space-x-2">
-                <span className="font-medium">{levelUnitsCount}/{selectedLevel.totalUnits} units</span>
+                <span className="font-medium">{levelUnitsCount}/{selectedLevel.totalUnits} {t('unit.labels.units')}</span>
                 <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-green-500 transition-all duration-300"
@@ -1215,7 +1231,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
               </div>
             </div>
             {levelUnitsCount >= selectedLevel.totalUnits && (
-              <p className="text-red-600 text-xs mt-1">Floor is at full capacity!</p>
+              <p className="text-red-600 text-xs mt-1">{t('unit.messages.floorFullCapacity')}</p>
             )}
           </div>
         )}
@@ -1235,7 +1251,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       {/* Unit Number */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Unit Number *
+          {t('unit.labels.unitNumber')} *
         </label>
         <div className="relative">
           <input
@@ -1248,7 +1264,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase ${
               errors.unitNumber ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="Enter UN-001 to UN-999"
+            placeholder={t('unit.placeholders.unitNumber')}
             style={{ textTransform: 'uppercase' }}
             maxLength={7}
             disabled={isCheckingDuplicate}
@@ -1261,7 +1277,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         </div>
         <div className="flex justify-between items-center mt-1">
           <p className="text-xs text-gray-500">
-            Format: UN-001 to UN-999 (UN- prefix is fixed)
+            {t('unit.messages.unitNumberFormat')}
           </p>
           <span className="text-xs text-gray-400">
             {formData.unitNumber.length}/7
@@ -1278,7 +1294,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
           </div>
         )}
         {!errors.unitNumber && formData.unitNumber && formData.levelId && !isCheckingDuplicate && formData.unitNumber !== 'UN-' && (
-          <p className="text-green-500 text-sm mt-1">✓ Unit number format is valid</p>
+          <p className="text-green-500 text-sm mt-1">✓ {t('unit.messages.unitNumberValid')}</p>
         )}
       </div>
 
@@ -1286,7 +1302,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         {/* Unit Type */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Unit Type *
+            {t('unit.labels.unitType')} *
           </label>
           <select
             name="unitType"
@@ -1294,9 +1310,9 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             onChange={handleChange}
             className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value={UnitType.ROOM}>Room</option>
-            <option value={UnitType.SPACE}>Space</option>
-            <option value={UnitType.HALL}>Hall</option>
+            <option value={UnitType.ROOM}>{t('unit.types.room')}</option>
+            <option value={UnitType.SPACE}>{t('unit.types.space')}</option>
+            <option value={UnitType.HALL}>{t('unit.types.hall')}</option>
           </select>
         </div>
 
@@ -1317,8 +1333,8 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
           <label htmlFor="hasMeter" className={`text-sm font-medium ${
             formData.unitType === UnitType.SPACE ? 'text-gray-400' : 'text-gray-700'
           }`}>
-            Has Meter
-            {formData.unitType === UnitType.SPACE && ' (Disabled for Spaces)'}
+            {t('unit.labels.hasMeter')}
+            {formData.unitType === UnitType.SPACE && ` (${t('unit.messages.disabledForSpaces')})`}
           </label>
         </div>
       </div>
@@ -1330,7 +1346,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         {/* Unit Space */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Unit Space (sqm) *
+            {t('unit.labels.unitSpace')} *
           </label>
           <input
             type="number"
@@ -1341,7 +1357,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.unitSpace ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="Enter unit space"
+            placeholder={t('unit.placeholders.unitSpace')}
             min="0.1"
             step="0.1"
           />
@@ -1350,15 +1366,15 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
           {selectedBuilding && selectedBuilding.totalLeasableArea !== null && selectedBuilding.totalLeasableArea !== undefined && (
             <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-100">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-blue-700">Building Leasable Area:</span>
+                <span className="text-blue-700">{t('unit.labels.buildingLeasableArea')}:</span>
                 <div className="flex items-center space-x-2">
                   <span className="font-medium">
-                    {(selectedBuilding.totalLeasableArea - buildingUsedArea).toFixed(2)}/{selectedBuilding.totalLeasableArea} sqm available
+                    {(selectedBuilding.totalLeasableArea - buildingUsedArea).toFixed(2)}/{selectedBuilding.totalLeasableArea} {t('unit.labels.sqmAvailable')}
                   </span>
                 </div>
               </div>
               <div className="mt-1 text-xs text-blue-600">
-                Currently used: {buildingUsedArea.toFixed(2)} sqm
+                {t('unit.labels.currentlyUsed')}: {buildingUsedArea.toFixed(2)} {t('unit.labels.sqm')}
               </div>
             </div>
           )}
@@ -1379,7 +1395,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         {/* Rental Fee */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Rental Fee (MMK) *
+            {t('unit.labels.rentalFee')} *
           </label>
           
           {renderCalculationPreview()}
@@ -1394,14 +1410,14 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
               className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 errors.rentalFee ? 'border-red-500' : 'border-gray-300'
               }`}
-              placeholder={rentalFeePreview ? "Auto-calculated" : "Enter rental fee"}
+              placeholder={rentalFeePreview ? t('unit.placeholders.autoCalculated') : t('unit.placeholders.rentalFee')}
               min="0"
               step="0.01"
             />
             
             {rentalFeePreview && formData.rentalFee === rentalFeePreview && (
               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <span className="text-gray-500 text-sm">Auto</span>
+                <span className="text-gray-500 text-sm">{t('unit.messages.auto')}</span>
               </div>
             )}
           </div>
@@ -1422,7 +1438,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       {/* Utility Types Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Available Utilities
+          {t('unit.labels.availableUtilities')}
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {utilities.map(utility => (
@@ -1443,7 +1459,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
                 </label>
                 <div className="flex items-center mt-1 text-xs text-gray-600">
                   <span className="font-medium">
-                    {utility.ratePerUnit?.toLocaleString() || '0'} MMK
+                    {utility.ratePerUnit?.toLocaleString() || '0'} {t('unit.labels.mmk')}
                   </span>
                   <span className="mx-2">•</span>
                   <span className="capitalize bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
@@ -1456,7 +1472,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         </div>
         {selectedUtilityIds.length > 0 && (
           <p className="text-sm text-green-600 mt-2">
-            {selectedUtilityIds.length} utility type(s) selected
+            {selectedUtilityIds.length} {t('unit.messages.utilitiesSelected')}
           </p>
         )}
       </div>
@@ -1464,9 +1480,9 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
       {/* Image Upload Section */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Unit Images
+          {t('unit.labels.unitImages')}
           <span className="ml-2 text-xs text-gray-500">
-            (Max {MAX_IMAGES} images)
+            ({t('unit.messages.maxImages', { maxImages: MAX_IMAGES })})
           </span>
         </label>
         
@@ -1474,10 +1490,10 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         {selectedImages.length > 0 && (
           <div className="mb-3 text-sm text-gray-600">
             <span className={`font-medium ${selectedImages.length >= MAX_IMAGES ? 'text-red-600' : 'text-blue-600'}`}>
-              {selectedImages.length}/{MAX_IMAGES} images selected
+              {selectedImages.length}/{MAX_IMAGES} {t('unit.labels.imagesSelected')}
             </span>
             {selectedImages.length >= MAX_IMAGES && (
-              <span className="ml-2 text-red-500 text-xs">Maximum limit reached</span>
+              <span className="ml-2 text-red-500 text-xs">{t('unit.messages.maximumLimitReached')}</span>
             )}
           </div>
         )}
@@ -1510,11 +1526,11 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
               selectedImages.length >= MAX_IMAGES ? 'text-red-600' : 'text-gray-600'
             }`}>
               {selectedImages.length >= MAX_IMAGES 
-                ? 'Maximum image limit reached' 
-                : 'Click to upload images or drag and drop'}
+                ? t('unit.messages.maximumImageLimitReached') 
+                : t('unit.messages.clickToUploadImages')}
             </p>
             <p className="text-xs text-gray-500">
-              PNG, JPG, JPEG up to 10MB each
+              {t('unit.messages.imageFormats')}
             </p>
           </label>
         </div>
@@ -1523,7 +1539,7 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
         {imagePreviews.length > 0 && (
           <div className="mt-4">
             <h4 className="text-sm font-medium text-gray-700 mb-2">
-              Selected Images
+              {t('unit.labels.selectedImages')}
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {imagePreviews.map((preview, index) => (
@@ -1544,9 +1560,9 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
               ))}
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              {selectedImages.length} image(s) selected
+              {selectedImages.length} {t('unit.messages.imagesSelectedCount')}
               {selectedImages.length >= MAX_IMAGES && (
-                <span className="ml-2 text-red-500">(Maximum limit reached)</span>
+                <span className="ml-2 text-red-500">({t('unit.messages.maximumLimitReached')})</span>
               )}
             </p>
           </div>
@@ -1561,14 +1577,14 @@ export const UnitAddForm: React.FC<UnitAddFormProps> = ({
           variant="secondary"
           disabled={isLoading}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           type="submit"
           loading={isLoading}
           disabled={isLoading || isCheckingDuplicate}
         >
-          Create Unit
+          {t('unit.buttons.create')}
         </Button>
       </div>
     </form>

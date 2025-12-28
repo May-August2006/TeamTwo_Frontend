@@ -1,22 +1,25 @@
 // src/components/homepage/FeaturesSection.tsx
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 export const FeaturesSection: React.FC = () => {
+  const { t } = useTranslation();
+
   const features = [
     {
       icon: "📍",
-      title: "Prime Location",
-      description: "High-traffic areas with excellent visibility"
+      title: t('homepage.features.primeLocation'),
+      description: t('homepage.features.primeLocationDesc')
     },
     {
       icon: "🛡️",
-      title: "Secure Environment",
-      description: "24/7 security and professional management"
+      title: t('homepage.features.secureEnvironment'),
+      description: t('homepage.features.secureEnvironmentDesc')
     },
     {
       icon: "⚡",
-      title: "Modern Facilities",
-      description: "State-of-the-art infrastructure and utilities"
+      title: t('homepage.features.modernFacilities'),
+      description: t('homepage.features.modernFacilitiesDesc')
     }
   ];
 
@@ -25,10 +28,10 @@ export const FeaturesSection: React.FC = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-8">
           <h2 className="text-2xl md:text-3xl font-bold text-[#0F172A] mb-3">
-            Why Choose Our Mall?
+            {t('homepage.features.title')}
           </h2>
           <p className="text-gray-600 max-w-xl mx-auto">
-            Premium features designed for your business success
+            {t('homepage.features.subtitle')}
           </p>
         </div>
         

@@ -21,7 +21,11 @@ import {
   Clock,
   Eye,
   EyeOff,
-  Users2, // Add this for Board of Directors icon
+  Users2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 import { userApi } from "../../api/UserAPI";
 import { buildingApi } from "../../api/BuildingAPI";
@@ -111,7 +115,7 @@ type TabType =
   | "guests"
   | "managers"
   | "accountants"
-  | "bod" // Add Board of Directors tab
+  | "bod"
   | "pending-approval"
   | "deactivated";
 
@@ -148,6 +152,10 @@ const UserManagement: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<TabType>("all");
   const notificationTimeoutsRef = useRef<{ [key: number]: NodeJS.Timeout }>({});
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   const [newUser, setNewUser] = useState<UserRequest>({
     username: "",
@@ -215,7 +223,7 @@ const UserManagement: React.FC = () => {
         return users.filter((user) => user.roleName === "ROLE_MANAGER" && user.isActive);
       case "accountants":
         return users.filter((user) => user.roleName === "ROLE_ACCOUNTANT" && user.isActive);
-      case "bod": // Add Board of Directors filter
+      case "bod":
         return users.filter((user) => user.roleName === "ROLE_BOD" && user.isActive);
       case "pending-approval":
         return users.filter(
@@ -230,6 +238,18 @@ const UserManagement: React.FC = () => {
         return users.filter(user => user.isActive);
     }
   };
+
+  // Get current users for pagination
+  const filteredUsers = getFilteredUsers();
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+
+  // Reset to first page when tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
 
   const getTabDisplayName = (tab: TabType) => {
     const tabMap: Record<TabType, string> = {
@@ -250,7 +270,7 @@ const UserManagement: React.FC = () => {
       guests: <UserCog className="w-4 h-4" />,
       managers: <Building className="w-4 h-4" />,
       accountants: <Briefcase className="w-4 h-4" />,
-      bod: <Users2 className="w-4 h-4" />, // Add Board of Directors icon
+      bod: <Users2 className="w-4 h-4" />,
       "pending-approval": <Clock className="w-4 h-4" />,
       deactivated: <XCircle className="w-4 h-4" />,
     };
@@ -268,7 +288,7 @@ const UserManagement: React.FC = () => {
       case "accountants":
         return users.filter((user) => user.roleName === "ROLE_ACCOUNTANT" && user.isActive)
           .length;
-      case "bod": // Add Board of Directors count
+      case "bod":
         return users.filter((user) => user.roleName === "ROLE_BOD" && user.isActive).length;
       case "pending-approval":
         return users.filter(
@@ -459,13 +479,13 @@ const UserManagement: React.FC = () => {
     closeConfirmation();
   };
 
- useEffect(() => {
-  fetchAllData();
-  
-  return () => {
-    Object.values(notificationTimeoutsRef.current).forEach(clearTimeout);
-  };
-}, []);
+  useEffect(() => {
+    fetchAllData();
+    
+    return () => {
+      Object.values(notificationTimeoutsRef.current).forEach(clearTimeout);
+    };
+  }, []);
 
   const fetchAllData = async () => {
     try {
@@ -485,51 +505,48 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  // In UserManagement.tsx, replace the fetchUsers function:
-const fetchUsers = async () => {
-  try {
-    setErrors({});
-    
-    let response;
-    
-    // Always fetch all users including inactive for the deactivated tab
-    response = await userApi.getAll();
-
-    let usersData: User[] = [];
-
-    if (response.data) {
-      if (Array.isArray(response.data)) {
-        usersData = response.data;
-      } else if (
-        response.data.content &&
-        Array.isArray(response.data.content)
-      ) {
-        usersData = response.data.content;
-      } else if (
-        typeof response.data === "object" &&
-        !Array.isArray(response.data)
-      ) {
-        usersData = [response.data];
-      }
-    }
-
-    const processedUsers = usersData.map((user: User) => {
-      if (user.roleName === "ROLE_GUEST") {
-        return {
-          ...user,
-          approvalStatus: user.approvalStatus || "PENDING",
-        };
-      }
-      return user;
-    });
-
-    setUsers(processedUsers);
-  } catch (error: any) {
-    setErrors({ general: t('userManagement.errors.loadUsersFailed') });
-    addNotification("error", t('userManagement.errors.loadUsersFailed'));
-  }
-};
+  const fetchUsers = async () => {
+    try {
+      setErrors({});
       
+      let response;
+      
+      response = await userApi.getAll();
+
+      let usersData: User[] = [];
+
+      if (response.data) {
+        if (Array.isArray(response.data)) {
+          usersData = response.data;
+        } else if (
+          response.data.content &&
+          Array.isArray(response.data.content)
+        ) {
+          usersData = response.data.content;
+        } else if (
+          typeof response.data === "object" &&
+          !Array.isArray(response.data)
+        ) {
+          usersData = [response.data];
+        }
+      }
+
+      const processedUsers = usersData.map((user: User) => {
+        if (user.roleName === "ROLE_GUEST") {
+          return {
+            ...user,
+            approvalStatus: user.approvalStatus || "PENDING",
+          };
+        }
+        return user;
+      });
+
+      setUsers(processedUsers);
+    } catch (error: any) {
+      setErrors({ general: t('userManagement.errors.loadUsersFailed') });
+      addNotification("error", t('userManagement.errors.loadUsersFailed'));
+    }
+  };
 
   const fetchBuildings = async () => {
     try {
@@ -784,7 +801,7 @@ const fetchUsers = async () => {
         fullName: newUser.fullName.trim(),
         roleName: newUser.roleName,
         password: undefined,
-        branchId: null, // Accountants are assigned to buildings, not branches
+        branchId: null,
         buildingId: newUser.buildingId,
         approvalStatus: newUser.approvalStatus,
       };
@@ -1303,16 +1320,64 @@ const fetchUsers = async () => {
     }
   };
 
+  // Pagination functions
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const goToFirstPage = () => {
+    setCurrentPage(1);
+  };
+
+  const goToLastPage = () => {
+    setCurrentPage(totalPages);
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      let start = Math.max(1, currentPage - 2);
+      let end = Math.min(totalPages, start + maxVisiblePages - 1);
+      
+      if (end - start < maxVisiblePages - 1) {
+        start = Math.max(1, end - maxVisiblePages + 1);
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pageNumbers.push(i);
+      }
+    }
+    
+    return pageNumbers;
+  };
+
   const tabs: TabType[] = [
     "all",
     "guests",
     "managers",
     "accountants",
-    "bod", // Add Board of Directors tab
+    "bod",
     "pending-approval",
     "deactivated",
   ];
-  const filteredUsers = getFilteredUsers();
 
   return (
     <div className="p-4 sm:p-6 bg-stone-100 min-h-screen">
@@ -1425,22 +1490,6 @@ const fetchUsers = async () => {
             </button>
           ))}
         </div>
-
-        {/* <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center gap-2">
-            <Info className="w-5 h-5 text-blue-600" />
-            <p className="text-sm text-blue-800">
-              {t('userManagement.showingCount', {
-                count: filteredUsers.length,
-                tab: getTabDisplayName(activeTab).toLowerCase()
-              })}
-              {activeTab === "guests" && ` - ${t('userManagement.guestsDescription')}`}
-              {activeTab === "bod" && ` - ${t('userManagement.bodDescription')}`}
-              {activeTab === "pending-approval" && ` - ${t('userManagement.pendingApprovalDescription')}`}
-              {activeTab === "deactivated" && ` - ${t('userManagement.deactivatedDescription')}`}
-            </p>
-          </div>
-        </div> */}
       </div>
 
       {/* Users Table */}
@@ -1495,7 +1544,7 @@ const fetchUsers = async () => {
                     </div>
                   </td>
                 </tr>
-              ) : filteredUsers.length === 0 ? (
+              ) : currentUsers.length === 0 ? (
                 <tr>
                   <td
                     colSpan={
@@ -1517,7 +1566,7 @@ const fetchUsers = async () => {
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user: User) => {
+                currentUsers.map((user: User) => {
                   const buildingName = getUserBuildingName(user);
                   const branchName = getUserBranchName(user);
                   const approvalStatus = getApprovalStatusDisplay(
@@ -1557,7 +1606,7 @@ const fetchUsers = async () => {
                               : user.roleName === "ROLE_ACCOUNTANT"
                               ? "bg-green-100 text-green-800"
                               : user.roleName === "ROLE_BOD"
-                              ? "bg-indigo-100 text-indigo-800" // Add color for BOD
+                              ? "bg-indigo-100 text-indigo-800"
                               : user.roleName === "ROLE_GUEST"
                               ? "bg-gray-100 text-gray-800"
                               : user.roleName === "ROLE_TENANT"
@@ -1771,7 +1820,7 @@ const fetchUsers = async () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1E40AF]"></div>
               <span className="ml-3 text-gray-600">{t('userManagement.loadingUsers')}</span>
             </div>
-          ) : filteredUsers.length === 0 ? (
+          ) : currentUsers.length === 0 ? (
             <div className="p-8 text-center text-stone-500">
               <div className="flex flex-col items-center justify-center">
                 <Users className="w-12 h-12 text-stone-300 mb-2" />
@@ -1782,7 +1831,7 @@ const fetchUsers = async () => {
               </div>
             </div>
           ) : (
-            filteredUsers.map((user: User) => {
+            currentUsers.map((user: User) => {
               const buildingName = getUserBuildingName(user);
               const branchName = getUserBranchName(user);
               const approvalStatus = getApprovalStatusDisplay(
@@ -2025,6 +2074,99 @@ const fetchUsers = async () => {
           )}
         </div>
       </div>
+
+      {/* Pagination Controls */}
+      {filteredUsers.length > 0 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+          <div className="text-sm text-stone-600">
+            {t('userManagement.showingUsers', {
+              start: indexOfFirstItem + 1,
+              end: Math.min(indexOfLastItem, filteredUsers.length),
+              total: filteredUsers.length
+            })}
+          </div>
+          
+          <div className="flex items-center space-x-1">
+            {/* First Page Button */}
+            <button
+              onClick={goToFirstPage}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-md ${
+                currentPage === 1
+                  ? "text-stone-400 cursor-not-allowed"
+                  : "text-stone-700 hover:bg-stone-100"
+              }`}
+              title={t('userManagement.firstPage')}
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </button>
+            
+            {/* Previous Page Button */}
+            <button
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1}
+              className={`p-2 rounded-md ${
+                currentPage === 1
+                  ? "text-stone-400 cursor-not-allowed"
+                  : "text-stone-700 hover:bg-stone-100"
+              }`}
+              title={t('userManagement.previousPage')}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            
+            {/* Page Numbers */}
+            {getPageNumbers().map((page) => (
+              <button
+                key={page}
+                onClick={() => goToPage(page)}
+                className={`w-8 h-8 flex items-center justify-center text-sm rounded-md ${
+                  currentPage === page
+                    ? "bg-[#1E40AF] text-white"
+                    : "text-stone-700 hover:bg-stone-100"
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            
+            {/* Next Page Button */}
+            <button
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+              className={`p-2 rounded-md ${
+                currentPage === totalPages
+                  ? "text-stone-400 cursor-not-allowed"
+                  : "text-stone-700 hover:bg-stone-100"
+              }`}
+              title={t('userManagement.nextPage')}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            
+            {/* Last Page Button */}
+            <button
+              onClick={goToLastPage}
+              disabled={currentPage === totalPages}
+              className={`p-2 rounded-md ${
+                currentPage === totalPages
+                  ? "text-stone-400 cursor-not-allowed"
+                  : "text-stone-700 hover:bg-stone-100"
+              }`}
+              title={t('userManagement.lastPage')}
+            >
+              <ChevronsRight className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-stone-600">{t('userManagement.page')}</span>
+            <span className="text-sm font-medium text-stone-800">
+              {currentPage} {t('userManagement.of')} {totalPages}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Add User Modal */}
       {showAddModal && (
