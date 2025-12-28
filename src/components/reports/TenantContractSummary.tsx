@@ -1,5 +1,5 @@
 // components/reports/TenantContractSummary.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { contractApi } from '../../api/ContractAPI';
 import type { Contract, ContractStatus } from '../../types/contract';
 import { Button } from '../common/ui/Button';
@@ -25,9 +25,29 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
   const [statusFilter, setStatusFilter] = useState<ContractStatus | 'ALL'>('ALL');
   const [businessTypeFilter, setBusinessTypeFilter] = useState<BusinessTypeFilter>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSticky, setIsSticky] = useState(false);
+  
+  // Create a ref for the header
+  const headerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadContracts();
+  }, []);
+
+  // Add scroll listener for sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (headerRef.current) {
+        const headerHeight = headerRef.current.offsetHeight;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Add a small threshold to prevent flickering
+        setIsSticky(scrollTop > headerHeight + 10);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
@@ -403,9 +423,16 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+      {/* Sticky Header */}
+      <div 
+        ref={headerRef}
+        className={`bg-white p-6 rounded-lg border border-gray-200 transition-all duration-300 ${
+          isSticky 
+            ? 'fixed top-0 left-0 right-0 z-50 shadow-lg rounded-none border-t-0 border-x-0' 
+            : ''
+        }`}
+      >
+        <div className={`flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 ${isSticky ? 'container mx-auto' : ''}`}>
           <div className="flex-1">
             <div className="flex items-center gap-4 mb-2">
               {onBack && (
@@ -462,6 +489,9 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
           </div>
         </div>
       </div>
+
+      {/* Add padding when header is sticky to prevent content from jumping under it */}
+      {isSticky && <div className="h-24"></div>}
 
       {/* Filters */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
@@ -548,98 +578,97 @@ export const TenantContractSummary: React.FC<TenantContractSummaryProps> = ({ on
       </div>
 
       {/* Report Table */}
-      {/* Report Table */}
-<div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-  <div className="overflow-x-auto">
-    <table className="w-full">
-      <thead className="bg-gray-50">
-        <tr>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Tenant Name
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Contract No.
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Unit No.
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Building
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Start Date
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            End Date
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Rental Fee
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Business Type
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Status
-          </th>
-        </tr>
-      </thead>
-      <tbody className="bg-white divide-y divide-gray-200">
-        {filteredContracts.length === 0 ? (
-          <tr>
-            <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
-              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No contracts found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Try adjusting your filters or search terms.
-              </p>
-            </td>
-          </tr>
-        ) : (
-          filteredContracts.map((contract) => (
-            <tr key={contract.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">
-                  {contract.tenant?.tenantName || '-'}
-                </div>
-                {contract.tenant?.contactPerson && (
-                  <div className="text-sm text-gray-500">
-                    {contract.tenant.contactPerson}
-                  </div>
-                )}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
-                {contract.contractNumber || '-'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {contract.unit?.unitNumber || '-'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {contract.unit?.level?.building?.buildingName || '-'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {formatDate(contract.startDate)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {formatDate(contract.endDate)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                {formatCurrency(contract.rentalFee)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {contract.tenant?.businessType || 'Unknown'}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                {getStatusBadge(contract.contractStatus)}
-              </td>
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
-  </div>
-</div>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Tenant Name
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Contract No.
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Unit No.
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Building
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Start Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  End Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Rental Fee
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Business Type
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredContracts.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-6 py-8 text-center text-gray-500">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No contracts found</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Try adjusting your filters or search terms.
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                filteredContracts.map((contract) => (
+                  <tr key={contract.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {contract.tenant?.tenantName || '-'}
+                      </div>
+                      {contract.tenant?.contactPerson && (
+                        <div className="text-sm text-gray-500">
+                          {contract.tenant.contactPerson}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                      {contract.contractNumber || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {contract.unit?.unitNumber || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {contract.unit?.level?.building?.buildingName || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatDate(contract.startDate)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatDate(contract.endDate)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                      {formatCurrency(contract.rentalFee)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {contract.tenant?.businessType || 'Unknown'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(contract.contractStatus)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Summary Stats */}
       {filteredContracts.length > 0 && (

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { reportApi } from '../../api/reportApi';
 import axios from 'axios';
-import { Button } from '../common/ui/Button'; // You might need to create or import this
+import { Button } from '../common/ui/Button';
 
 interface DailyCollectionReportProps {
-  onBack?: () => void; // Add onBack prop
+  onBack?: () => void;
 }
 
 const DailyCollectionReport: React.FC<DailyCollectionReportProps> = ({ onBack }) => {
@@ -13,6 +13,26 @@ const DailyCollectionReport: React.FC<DailyCollectionReportProps> = ({ onBack })
   const [loadingExcel, setLoadingExcel] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isSticky, setIsSticky] = useState(false);
+  
+  // Create a ref for the header
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  // Add scroll listener for sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (headerRef.current) {
+        const headerHeight = headerRef.current.offsetHeight;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Add a small threshold to prevent flickering
+        setIsSticky(scrollTop > headerHeight + 10);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleGeneratePdfReport = async () => {
     if (!reportDate) {
@@ -50,7 +70,6 @@ const DailyCollectionReport: React.FC<DailyCollectionReportProps> = ({ onBack })
     }
   };
 
-  // NEW: Handle Excel Report Generation
   const handleGenerateExcelReport = async () => {
     if (!reportDate) {
       setError('Please select a report date');
@@ -62,7 +81,7 @@ const DailyCollectionReport: React.FC<DailyCollectionReportProps> = ({ onBack })
     setSuccess('');
 
     try {
-      // Note: You need to add this method to your reportApi
+      // Use the existing API with format parameter if available
       const excelBlob = await reportApi.generateDailyCollectionReport(reportDate, 'excel');
       
       // Create download link
@@ -78,45 +97,27 @@ const DailyCollectionReport: React.FC<DailyCollectionReportProps> = ({ onBack })
       setSuccess('Daily collection Excel report generated successfully!');
     } catch (err) {
       console.error('Error generating Excel report:', err);
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message || 'Failed to generate Excel report');
-      } else {
-        setError('Unexpected error occurred while generating Excel report');
+      // Fallback to PDF if Excel export fails
+      try {
+        const pdfBlob = await reportApi.generateDailyCollectionReport(reportDate);
+        
+        const url = window.URL.createObjectURL(pdfBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `daily-collection-report-${reportDate}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        setSuccess('PDF report generated (Excel not available)');
+      } catch (fallbackErr) {
+        if (axios.isAxiosError(fallbackErr)) {
+          setError(fallbackErr.response?.data?.message || 'Failed to generate report');
+        } else {
+          setError('Unexpected error occurred while generating report');
+        }
       }
-    } finally {
-      setLoadingExcel(false);
-    }
-  };
-
-  // NEW: Fallback method if Excel API method doesn't exist
-  const handleGenerateExcelReportFallback = async () => {
-    if (!reportDate) {
-      setError('Please select a report date');
-      return;
-    }
-
-    setLoadingExcel(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      // Alternative: Use the existing API with format parameter
-      const excelBlob = await reportApi.generateDailyCollectionReport(reportDate);
-      
-      // Create download link
-      const url = window.URL.createObjectURL(excelBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `daily-collection-report-${reportDate}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-      setSuccess('Daily collection Excel report generated successfully!');
-    } catch (err) {
-      console.error('Error generating Excel report:', err);
-      setError('Excel export not available. Please contact support.');
     } finally {
       setLoadingExcel(false);
     }
@@ -124,20 +125,29 @@ const DailyCollectionReport: React.FC<DailyCollectionReportProps> = ({ onBack })
 
   return (
     <div className="space-y-6">
-      {/* Header with Back Button - UPDATED with dropdown */}
-      <div className="bg-white p-6 rounded-lg border border-stone-200 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      {/* Sticky Header */}
+      <div 
+        ref={headerRef}
+        className={`bg-white p-6 rounded-lg border border-stone-200 transition-all duration-300 ${
+          isSticky 
+            ? 'fixed top-0 left-0 right-0 z-50 shadow-lg rounded-none border-t-0 border-x-0' 
+            : ''
+        }`}
+      >
+        <div className={`flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 ${isSticky ? 'container mx-auto' : ''}`}>
           <div className="flex items-center gap-4">
             {onBack && (
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={onBack}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100 rounded-lg transition-colors duration-150"
+                className="flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 Back to reports
-              </button>
+              </Button>
             )}
             <div>
               <h1 className="text-2xl font-bold text-stone-900">Daily Collection Report</h1>
@@ -147,66 +157,39 @@ const DailyCollectionReport: React.FC<DailyCollectionReportProps> = ({ onBack })
             </div>
           </div>
 
-          {/* Export Dropdown */}
-          <div className="relative group">
-            <button
-              disabled={loadingPdf || loadingExcel || !reportDate}
-              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="primary"
+              onClick={handleGeneratePdfReport}
+              loading={loadingPdf}
+              disabled={loadingPdf || !reportDate}
+              className="flex items-center gap-2"
             >
-              {(loadingPdf || loadingExcel) ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  {loadingPdf ? 'Generating PDF...' : 'Generating Excel...'}
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Export Report
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </>
-              )}
-            </button>
-            
-            <div className="absolute top-full right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-stone-200 z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-              <button
-                onClick={handleGeneratePdfReport}
-                disabled={loadingPdf || !reportDate}
-                className="w-full text-left px-4 py-3 text-stone-700 hover:bg-stone-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed border-b border-stone-100"
-              >
-                <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <div>
-                  <div className="font-medium">Export as PDF</div>
-                  <div className="text-xs text-stone-500">For printing & sharing</div>
-                </div>
-              </button>
-              <button
-                onClick={handleGenerateExcelReport || handleGenerateExcelReportFallback}
-                disabled={loadingExcel || !reportDate}
-                className="w-full text-left px-4 py-3 text-stone-700 hover:bg-stone-50 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <div>
-                  <div className="font-medium">Export as Excel</div>
-                  <div className="text-xs text-stone-500">For data analysis</div>
-                </div>
-              </button>
-            </div>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export PDF
+            </Button>
+            <Button
+              variant="success"
+              onClick={handleGenerateExcelReport}
+              loading={loadingExcel}
+              disabled={loadingExcel || !reportDate}
+              className="flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Export Excel (XLSX)
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Report Generation Form - UPDATED with quick export buttons */}
+      {/* Add padding when header is sticky to prevent content from jumping under it */}
+      {isSticky && <div className="h-24"></div>}
+
+      {/* Report Generation Form */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-stone-200">
         <div className="max-w-md space-y-6">
           <div>
@@ -225,53 +208,27 @@ const DailyCollectionReport: React.FC<DailyCollectionReportProps> = ({ onBack })
             </p>
           </div>
 
-          {/* Quick Export Buttons */}
+          {/* Quick Export Buttons - Updated Colors */}
           <div className="flex gap-3">
-            <button
+            <Button
+              variant="primary"
               onClick={handleGeneratePdfReport}
+              loading={loadingPdf}
               disabled={loadingPdf || !reportDate}
-              className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+              className="flex-1"
             >
-              {loadingPdf ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Generating PDF...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Export PDF
-                </>
-              )}
-            </button>
+              Export PDF
+            </Button>
             
-            <button
-              onClick={handleGenerateExcelReport || handleGenerateExcelReportFallback}
+            <Button
+              variant="success"
+              onClick={handleGenerateExcelReport}
+              loading={loadingExcel}
               disabled={loadingExcel || !reportDate}
-              className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+              className="flex-1"
             >
-              {loadingExcel ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Generating Excel...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Export Excel
-                </>
-              )}
-            </button>
+              Export Excel
+            </Button>
           </div>
 
           {error && (
@@ -294,17 +251,17 @@ const DailyCollectionReport: React.FC<DailyCollectionReportProps> = ({ onBack })
         </div>
       </div>
 
-      {/* Report Information - UPDATED with Excel info */}
-      <div className="bg-red-50 border border-red-100 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-red-800 mb-3">About Daily Collection Report</h3>
+      {/* Report Information - Updated Colors */}
+      <div className="bg-blue-50 border border-blue-100 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-blue-800 mb-3">About Daily Collection Report</h3>
         <div className="space-y-3">
           <div className="flex items-start">
-            <svg className="w-5 h-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 text-blue-600 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
             </svg>
             <div>
-              <span className="font-medium text-red-800">PDF Report:</span>
-              <ul className="text-sm text-red-700 mt-1 ml-4 space-y-1">
+              <span className="font-medium text-blue-800">PDF Report:</span>
+              <ul className="text-sm text-blue-700 mt-1 ml-4 space-y-1">
                 <li>• Professional format suitable for accounting records</li>
                 <li>• Shows all payments collected on the selected date</li>
                 <li>• Includes payment details: tenant, room, amount, method</li>
@@ -330,12 +287,12 @@ const DailyCollectionReport: React.FC<DailyCollectionReportProps> = ({ onBack })
         </div>
       </div>
 
-      {/* Export Format Comparison */}
+      {/* Export Format Comparison - Updated Colors */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white p-5 rounded-lg border border-stone-200">
           <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 bg-red-100 rounded-lg">
-              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
@@ -343,31 +300,33 @@ const DailyCollectionReport: React.FC<DailyCollectionReportProps> = ({ onBack })
           </div>
           <ul className="text-sm text-stone-600 space-y-2">
             <li className="flex items-center">
-              <svg className="w-4 h-4 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-4 h-4 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               Best for printing and sharing
             </li>
             <li className="flex items-center">
-              <svg className="w-4 h-4 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-4 h-4 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               Professional formatting
             </li>
             <li className="flex items-center">
-              <svg className="w-4 h-4 text-red-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-4 h-4 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               Read-only format
             </li>
           </ul>
-          <button
+          <Button
+            variant="primary"
             onClick={handleGeneratePdfReport}
+            loading={loadingPdf}
             disabled={loadingPdf || !reportDate}
-            className="mt-4 w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+            className="mt-4 w-full"
           >
             {loadingPdf ? 'Generating...' : 'Download PDF'}
-          </button>
+          </Button>
         </div>
 
         <div className="bg-white p-5 rounded-lg border border-stone-200">
@@ -399,13 +358,15 @@ const DailyCollectionReport: React.FC<DailyCollectionReportProps> = ({ onBack })
               Can add formulas & charts
             </li>
           </ul>
-          <button
-            onClick={handleGenerateExcelReport || handleGenerateExcelReportFallback}
+          <Button
+            variant="success"
+            onClick={handleGenerateExcelReport}
+            loading={loadingExcel}
             disabled={loadingExcel || !reportDate}
-            className="mt-4 w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
+            className="mt-4 w-full"
           >
             {loadingExcel ? 'Generating...' : 'Download Excel'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

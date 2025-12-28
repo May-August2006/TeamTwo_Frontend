@@ -1,6 +1,6 @@
 /** @format */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { reportApi } from '../../api/reportApi';
 import { Button } from '../common/ui/Button';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
@@ -15,16 +15,39 @@ interface ReportData {
   percentage: number;
 }
 
+// Define blue color constant for visualization bars
+const VISUALIZATION_COLOR = '#3B82F6'; // Blue color for consistency
+
 export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusinessTypeReportProps> = ({ onBack }) => {
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [loading, setLoading] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [generatingExcel, setGeneratingExcel] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSticky, setIsSticky] = useState(false);
+  
+  // Create a ref for the header
+  const headerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Load initial data when component mounts
     loadReportData();
+  }, []);
+
+  // Add scroll listener for sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (headerRef.current) {
+        const headerHeight = headerRef.current.offsetHeight;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Add a small threshold to prevent flickering
+        setIsSticky(scrollTop > headerHeight + 10);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const loadReportData = async () => {
@@ -134,9 +157,16 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-lg border border-stone-200">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      {/* Sticky Header - This will stick to top when scrolling */}
+      <div 
+        ref={headerRef}
+        className={`bg-white p-6 rounded-lg border border-stone-200 transition-all duration-300 ${
+          isSticky 
+            ? 'fixed top-0 left-0 right-0 z-50 shadow-lg rounded-none border-t-0 border-x-0' 
+            : ''
+        }`}
+      >
+        <div className={`flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 ${isSticky ? 'container mx-auto' : ''}`}>
           <div>
             <div className="flex items-center gap-4">
               <Button
@@ -186,6 +216,9 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
           </div>
         </div>
       </div>
+
+      {/* Add padding when header is sticky to prevent content from jumping under it */}
+      {isSticky && <div className="h-24"></div>}
 
       {/* Error Display */}
       {error && (
@@ -276,8 +309,11 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
                     <td className="px-6 py-4">
                       <div className="w-full bg-stone-200 rounded-full h-2.5">
                         <div 
-                          className="bg-red-600 h-2.5 rounded-full" 
-                          style={{ width: `${Math.min(item.percentage || 0, 100)}%` }}
+                          className="h-2.5 rounded-full" 
+                          style={{ 
+                            width: `${Math.min(item.percentage || 0, 100)}%`,
+                            backgroundColor: VISUALIZATION_COLOR 
+                          }}
                         ></div>
                       </div>
                     </td>
@@ -289,7 +325,17 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
                   <td className="px-6 py-4 whitespace-nowrap">TOTAL</td>
                   <td className="px-6 py-4 whitespace-nowrap">{formatCurrency(calculateTotal())}</td>
                   <td className="px-6 py-4 whitespace-nowrap">100%</td>
-                  <td className="px-6 py-4"></td>
+                  <td className="px-6 py-4">
+                    <div className="w-full bg-stone-200 rounded-full h-2.5">
+                      <div 
+                        className="h-2.5 rounded-full" 
+                        style={{ 
+                          width: '100%',
+                          backgroundColor: VISUALIZATION_COLOR 
+                        }}
+                      ></div>
+                    </div>
+                  </td>
                 </tr>
               </tfoot>
             </table>
@@ -342,11 +388,7 @@ export const RentalRevenueByBusinessTypeReport: React.FC<RentalRevenueByBusiness
               {reportData.map((item, index) => (
                 <div key={index} className="flex items-center">
                   <div className="w-3 h-3 rounded-full mr-2" 
-                       style={{ backgroundColor: index === 0 ? '#dc2626' : 
-                                             index === 1 ? '#ea580c' : 
-                                             index === 2 ? '#ca8a04' : 
-                                             index === 3 ? '#16a34a' : 
-                                             '#6b7280' }}></div>
+                       style={{ backgroundColor: VISUALIZATION_COLOR }}></div>
                   <div className="flex-1 text-sm text-stone-600">{item.businessType || 'Uncategorized'}</div>
                   <div className="text-sm font-semibold">{item.percentage?.toFixed(1)}%</div>
                 </div>

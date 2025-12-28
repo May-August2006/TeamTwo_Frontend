@@ -1,10 +1,10 @@
 // components/reports/VacantOccupiedUnitsReport.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { unitApi } from '../../api/UnitAPI';
 import { contractApi } from '../../api/ContractAPI';
 import type { Unit } from '../../types/unit';
 import type { Contract } from '../../types/contract';
-import type { OccupancyStats, BuildingOccupancy, FloorOccupancy, UnitStatus } from '../../types/occupancy'; // Changed import
+import type { OccupancyStats, BuildingOccupancy, FloorOccupancy, UnitStatus } from '../../types/occupancy';
 import { Button } from '../common/ui/Button';
 import { LoadingSpinner } from '../common/ui/LoadingSpinner';
 import * as XLSX from 'xlsx';
@@ -20,10 +20,30 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'buildings' | 'floors' | 'units'>('overview'); // Changed 'rooms' to 'units'
+  const [activeTab, setActiveTab] = useState<'overview' | 'buildings' | 'floors' | 'units'>('overview');
+  
+  // Sticky header states and ref
+  const [isSticky, setIsSticky] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  // Add scroll listener for sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (headerRef.current) {
+        const headerHeight = headerRef.current.offsetHeight;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Add a small threshold to prevent flickering
+        setIsSticky(scrollTop > headerHeight + 10);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const loadData = async () => {
@@ -584,9 +604,16 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+      {/* Sticky Header */}
+      <div 
+        ref={headerRef}
+        className={`bg-white p-6 rounded-lg border border-gray-200 transition-all duration-300 ${
+          isSticky 
+            ? 'fixed top-0 left-0 right-0 z-50 shadow-lg rounded-none border-t-0 border-x-0' 
+            : ''
+        }`}
+      >
+        <div className={`flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 ${isSticky ? 'container mx-auto' : ''}`}>
           <div className="flex-1">
             <div className="flex items-center gap-4 mb-2">
               {onBack && (
@@ -620,6 +647,9 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
         </div>
       </div>
 
+      {/* Add padding when header is sticky to prevent content from jumping under it */}
+      {isSticky && <div className="h-24"></div>}
+
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-lg border border-gray-200 text-center">
@@ -647,7 +677,7 @@ export const VacantOccupiedUnitsReport: React.FC<VacantOccupiedUnitsReportProps>
             { id: 'overview' as const, label: 'Overview' },
             { id: 'buildings' as const, label: 'By Building' },
             { id: 'floors' as const, label: 'By Floor' },
-            { id: 'units' as const, label: 'Unit Details' } // Changed from 'rooms' to 'units'
+            { id: 'units' as const, label: 'Unit Details' }
           ].map(tab => (
             <button
               key={tab.id}
