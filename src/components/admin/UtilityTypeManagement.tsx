@@ -58,7 +58,7 @@ const CustomMessageModal: React.FC<{
       case 'alert':
         return t('utilityType.attention');
       case 'success':
-        return t('utilityType.success');
+        return t('utilityType.success.success');
       default:
         return '';
     }
@@ -94,7 +94,7 @@ const CustomMessageModal: React.FC<{
             {type === 'confirm' ? t('utilityType.continue') : t('utilityType.close')}
           </button>
         </div>
-      </div>
+    </div>
     </div>
   );
 };
@@ -112,8 +112,7 @@ const sanitizeUtilityName = (value: string): string => {
 };
 
 // Validation function
-const validateForm = (formData: UtilityTypeRequest): FormErrors => {
-    const { t } = useTranslation();
+const validateForm = (formData: UtilityTypeRequest, t: any): FormErrors => {
     const errors: FormErrors = {};
 
     // Utility Name validation - with word limit
@@ -168,12 +167,12 @@ const validateForm = (formData: UtilityTypeRequest): FormErrors => {
             errors.ratePerUnit = t('utilityType.validation.ratePerUnitInvalid');
         } else if (rate < 0) {
             errors.ratePerUnit = t('utilityType.validation.ratePerUnitNegative');
-        } else if (rate > 999999.9999) {
+        } else if (rate > 999999.99) {
             errors.ratePerUnit = t('utilityType.validation.ratePerUnitMax');
         } else {
             // Check decimal places
             const decimalPlaces = (rate.toString().split('.')[1] || '').length;
-            if (decimalPlaces > 4) {
+            if (decimalPlaces > 2) {
                 errors.ratePerUnit = t('utilityType.validation.ratePerUnitMaxDecimals');
             }
         }
@@ -251,7 +250,7 @@ const UtilityTypeManagement: React.FC = () => {
         };
         
         // Frontend validation
-        const errors = validateForm(sanitizedFormData);
+        const errors = validateForm(sanitizedFormData, t);
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
             return;
@@ -592,7 +591,7 @@ const UtilityTypeManagement: React.FC = () => {
                                     </label>
                                     <input
                                         type="number"
-                                        step="0.0001"
+                                        step="0.01"
                                         value={formData.ratePerUnit === 0 ? "" : formData.ratePerUnit}
                                         onChange={(e) => {
                                             const value = e.target.value;
@@ -606,7 +605,7 @@ const UtilityTypeManagement: React.FC = () => {
                                         }}
                                         className={getInputClassName('ratePerUnit')}
                                         min={0}
-                                        max={999999.9999}
+                                        max={999999.99}
                                         placeholder="0"
                                     />
                                     {formErrors.ratePerUnit && (
