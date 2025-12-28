@@ -766,10 +766,12 @@
     "updateButton": "Update Utility",
     "createButton": "Create Utility",
     "cancel": "Cancel",
+    "close":"Close",
+    "continue": "Continue",
+
     "loading": "Loading Utility Types...",
     "confirmAction": "Confirm Action",
     "attention": "Attention",
-    "success": "Success",
     "active": "Active",
     "inactive": "Inactive",
     "edit": "Edit",
@@ -836,6 +838,7 @@
       "validationErrors": "Please fix the validation errors above"
     },
     "success": {
+      "success":"Success",
       "created": "Utility type created successfully!",
       "updated": "Utility type updated successfully!",
       "deleted": "Utility type deleted successfully!",
