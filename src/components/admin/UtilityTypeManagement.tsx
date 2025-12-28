@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { utilityApi } from "../../api/UtilityAPI";
 import type { UtilityType, UtilityTypeRequest } from "../../types/unit";
-import { Zap, Plus } from "lucide-react";
+import { Zap, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 // Define validation error types inline
@@ -207,6 +207,10 @@ const UtilityTypeManagement: React.FC = () => {
         type: 'confirm' | 'alert' | 'success';
         onConfirm?: () => void;
     } | null>(null);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(10);
 
     useEffect(() => {
         fetchUtilityTypes();
@@ -432,6 +436,32 @@ const UtilityTypeManagement: React.FC = () => {
         return `${baseClass} border-stone-300 focus:ring-[#1E40AF] focus:border-[#1E40AF]`;
     };
 
+    // Pagination logic
+    const totalPages = Math.ceil(utilityTypes.length / itemsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = utilityTypes.slice(indexOfFirstItem, indexOfLastItem);
+
+    const handleFirstPage = () => {
+        setCurrentPage(1);
+    };
+
+    const handleLastPage = () => {
+        setCurrentPage(totalPages);
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
     if (loading) {
         return (
             <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
@@ -647,6 +677,21 @@ const UtilityTypeManagement: React.FC = () => {
                 </div>
             )}
 
+            {/* Results Count */}
+            <div className="mb-4 flex justify-between items-center">
+                <p className="text-sm text-stone-600">
+                    {t('common.showingXofY', 'Showing {{count}} of {{total}} utility types', { 
+                        count: Math.min(currentItems.length, itemsPerPage), 
+                        total: utilityTypes.length 
+                    })}
+                    {utilityTypes.length > itemsPerPage && (
+                        <span className="ml-2">
+                            (Page {currentPage} of {totalPages})
+                        </span>
+                    )}
+                </p>
+            </div>
+
             {/* Responsive Table */}
             <div className="bg-white shadow-xl rounded-xl overflow-hidden ring-1 ring-stone-200">
                 <div className="overflow-x-auto">
@@ -674,7 +719,7 @@ const UtilityTypeManagement: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-stone-100">
-                            {utilityTypes.map((utility) => (
+                            {currentItems.map((utility) => (
                                 <tr key={utility.id} className="hover:bg-[#1E40AF]/5 transition duration-100">
                                     <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-stone-900">
                                         <div className="font-semibold">{utility.utilityName}</div>
@@ -743,6 +788,82 @@ const UtilityTypeManagement: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+                <div className="mt-8 pt-6 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="text-sm text-stone-600">
+                        {t('common.pageInfo', 'Page {{current}} of {{total}}', {
+                            current: currentPage,
+                            total: totalPages
+                        })}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={handleFirstPage}
+                            disabled={currentPage === 1}
+                            className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={t('common.firstPage', 'First page')}
+                        >
+                            <ChevronsLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={handlePrevPage}
+                            disabled={currentPage === 1}
+                            className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={t('common.previousPage', 'Previous page')}
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        
+                        <div className="flex items-center space-x-1">
+                            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                let pageNum;
+                                if (totalPages <= 5) {
+                                    pageNum = i + 1;
+                                } else if (currentPage <= 3) {
+                                    pageNum = i + 1;
+                                } else if (currentPage >= totalPages - 2) {
+                                    pageNum = totalPages - 4 + i;
+                                } else {
+                                    pageNum = currentPage - 2 + i;
+                                }
+
+                                return (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => setCurrentPage(pageNum)}
+                                        className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors duration-150 ${
+                                            currentPage === pageNum
+                                                ? 'bg-blue-800 text-white'
+                                                : 'text-stone-600 hover:bg-blue-50 hover:text-blue-800'
+                                        }`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        
+                        <button
+                            onClick={handleNextPage}
+                            disabled={currentPage === totalPages}
+                            className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={t('common.nextPage', 'Next page')}
+                        >
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={handleLastPage}
+                            disabled={currentPage === totalPages}
+                            className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={t('common.lastPage', 'Last page')}
+                        >
+                            <ChevronsRight className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Thematic Configuration Guide */}
             <div className="mt-8 bg-stone-200 border border-stone-300 rounded-xl p-5 sm:p-6 shadow-inner">

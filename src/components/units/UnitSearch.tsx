@@ -6,6 +6,7 @@ import { buildingApi } from '../../api/BuildingAPI';
 import { levelApi } from '../../api/LevelAPI';
 import { Button } from '../common/ui/Button';
 import type { Branch, Building, Level } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 interface UnitSearchProps {
   onSearch: (params: UnitSearchParams) => void;
@@ -18,6 +19,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({
   onReset, 
   isLoading = false 
 }) => {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useState<UnitSearchParams>({});
   const [branches, setBranches] = useState<Branch[]>([]);
   const [buildings, setBuildings] = useState<Building[]>([]);
@@ -101,12 +103,12 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({
   return (
     <div className="bg-white p-6 rounded-lg shadow-md mb-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
-        <h3 className="text-lg font-medium text-gray-900 mb-2 sm:mb-0">Search Units</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-2 sm:mb-0">{t('unit.search_units')}</h3>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
         >
-          {isExpanded ? 'Show Less' : 'Show More Filters'}
+          {isExpanded ? t('unit.show_less') : t('unit.show_more_filters')}
           <svg 
             className={`w-4 h-4 ml-1 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
             fill="none" 
@@ -121,14 +123,14 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('unit.branch')}</label>
             <select
               name="branchId"
               value={searchParams.branchId || ''}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">All Branches</option>
+              <option value="">{t('unit.all_branches')}</option>
               {branches.map(branch => (
                 <option key={branch.id} value={branch.id}>{branch.branchName}</option>
               ))}
@@ -136,31 +138,31 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Unit Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('unit.unit_type')}</label>
             <select
               name="unitType"
               value={searchParams.unitType || ''}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">All Types</option>
-              <option value={UnitType.ROOM}>Room</option>
-              <option value={UnitType.SPACE}>Space</option>
-              <option value={UnitType.HALL}>Hall</option>
+              <option value="">{t('unit.all_types')}</option>
+              <option value={UnitType.ROOM}>{t('unit.room')}</option>
+              <option value={UnitType.SPACE}>{t('unit.space')}</option>
+              <option value={UnitType.HALL}>{t('unit.hall')}</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('unit.status')}</label>
             <select
               name="isAvailable"
               value={searchParams.isAvailable?.toString() || ''}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">All Status</option>
-              <option value="true">Available</option>
-              <option value="false">Occupied</option>
+              <option value="">{t('unit.all_status')}</option>
+              <option value="true">{t('unit.available')}</option>
+              <option value="false">{t('unit.occupied')}</option>
             </select>
           </div>
 
@@ -170,7 +172,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({
               loading={isLoading}
               className="w-full"
             >
-              Search
+              {t('common.search')}
             </Button>
           </div>
         </div>
@@ -178,7 +180,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({
         {isExpanded && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 pt-4 border-t border-gray-200">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Building</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('unit.building')}</label>
               <select
                 name="buildingId"
                 value={searchParams.buildingId || ''}
@@ -186,7 +188,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({
                 disabled={!searchParams.branchId}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
               >
-                <option value="">All Buildings</option>
+                <option value="">{t('unit.all_buildings')}</option>
                 {buildings.map(building => (
                   <option key={building.id} value={building.id}>{building.buildingName}</option>
                 ))}
@@ -194,7 +196,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('unit.floor')}</label>
               <select
                 name="levelId"
                 value={searchParams.levelId || ''}
@@ -202,7 +204,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({
                 disabled={!searchParams.buildingId}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
               >
-                <option value="">All Levels</option>
+                <option value="">{t('unit.all_levels')}</option>
                 {levels.map(level => (
                   <option key={level.id} value={level.id}>{level.levelName}</option>
                 ))}
@@ -210,7 +212,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Min Space (sqm)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('unit.min_space')} ({t('unit.sqm')})</label>
               <input
                 type="number"
                 name="minSpace"
@@ -222,7 +224,7 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Max Space (sqm)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('unit.max_space')} ({t('unit.sqm')})</label>
               <input
                 type="number"
                 name="maxSpace"
@@ -242,12 +244,12 @@ export const UnitSearch: React.FC<UnitSearchProps> = ({
             variant="secondary"
             className="w-full sm:w-auto"
           >
-            Reset Filters
+            {t('unit.reset_filters')}
           </Button>
           
           {isExpanded && (
             <div className="text-sm text-gray-500">
-              {Object.values(searchParams).filter(val => val !== undefined && val !== '').length} active filters
+              {Object.values(searchParams).filter(val => val !== undefined && val !== '').length} {t('unit.active_filters')}
             </div>
           )}
         </div>

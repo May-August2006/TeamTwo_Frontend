@@ -9,8 +9,10 @@ import type { Unit } from '../types/unit';
 import Homepage from '../components/homepage/Homepage';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const HomePage: React.FC = () => {
+  const { t } = useTranslation();
   const [selectedUnit, setSelectedUnit] = useState<Unit | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
@@ -61,7 +63,7 @@ const HomePage: React.FC = () => {
         });
       }
     }, 100);
-  }; // <-- Added missing closing brace here
+  };
 
   // Handle appointment request
   const handleAppointment = (unit: Unit) => {
@@ -95,7 +97,7 @@ const HomePage: React.FC = () => {
   const handleLoginCancel = () => {
     setIsLoginPromptOpen(false);
     setPendingAction(null);
-    showToast('info', 'You can login anytime to view details or book appointments.');
+    showToast('info', t('homepage.unitDetail.maybeLater'));
   };
 
   // Handle appointment submission
@@ -108,11 +110,11 @@ const HomePage: React.FC = () => {
       // const response = await appointmentApi.book(appointmentData);
       // console.log('Appointment booked:', response);
       
-      showToast('success', 'Appointment booked successfully! We will contact you soon.');
+      showToast('success', t('homepage.appointment.appointmentBooked'));
       closeModals();
     } catch (error) {
       console.error('Failed to book appointment:', error);
-      showToast('error', 'Failed to book appointment. Please try again.');
+      showToast('error', t('homepage.appointment.failedToBook'));
     }
   };
 
@@ -198,14 +200,14 @@ const HomePage: React.FC = () => {
           isOpen={isLoginPromptOpen}
           onClose={handleLoginCancel}
           onConfirm={handleLoginConfirm}
-          title={pendingAction.type === 'view' ? 'View Details' : 'Book Appointment'}
+          title={pendingAction.type === 'view' ? t('homepage.unitDetail.viewDetails') : t('homepage.unitDetail.bookAppointment')}
           message={
             pendingAction.type === 'view'
-              ? 'You need to login to view unit details and pricing.'
-              : 'You need to login to book an appointment.'
+              ? t('homepage.unitDetail.loginRequired')
+              : t('homepage.unitDetail.appointmentRequired')
           }
-          confirmText="Login Now"
-          cancelText="Maybe Later"
+          confirmText={t('homepage.unitDetail.loginNow')}
+          cancelText={t('homepage.unitDetail.maybeLater')}
         />
       )}
     </Layout>

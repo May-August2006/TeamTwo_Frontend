@@ -1,5 +1,6 @@
 // components/units/SpaceTypeForm.tsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../common/ui/Button';
 import type { SpaceType, SpaceTypeRequest } from '../../types/unit';
 
@@ -16,6 +17,7 @@ export const SpaceTypeForm: React.FC<SpaceTypeFormProps> = ({
   onCancel,
   isLoading = false
 }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<SpaceTypeRequest>({
     name: '',
     description: '',
@@ -43,37 +45,37 @@ export const SpaceTypeForm: React.FC<SpaceTypeFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Space type name is required';
+      newErrors.name = t('spaceType.errors.nameRequired');
     } else if (formData.name.length > 50) {
-      newErrors.name = 'Space type name must be less than 50 characters';
+      newErrors.name = t('spaceType.errors.nameTooLong');
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
+      newErrors.description = t('spaceType.errors.descriptionRequired');
     } else if (formData.description.length > 500) {
-      newErrors.description = 'Description must be less than 500 characters';
+      newErrors.description = t('spaceType.errors.descriptionTooLong');
     }
 
     if (formData.basePricePerSqm < 0) {
-      newErrors.basePricePerSqm = 'Base price cannot be negative';
+      newErrors.basePricePerSqm = t('spaceType.errors.basePriceNegative');
     } else if (formData.basePricePerSqm > 10000) {
-      newErrors.basePricePerSqm = 'Base price cannot exceed $10,000 per sqm';
+      newErrors.basePricePerSqm = t('spaceType.errors.basePriceTooHigh');
     }
 
     if (formData.minSpace < 0) {
-      newErrors.minSpace = 'Minimum space cannot be negative';
+      newErrors.minSpace = t('spaceType.errors.minSpaceNegative');
     } else if (formData.minSpace > 10000) {
-      newErrors.minSpace = 'Minimum space cannot exceed 10,000 sqm';
+      newErrors.minSpace = t('spaceType.errors.minSpaceTooHigh');
     }
 
     if (formData.maxSpace < 0) {
-      newErrors.maxSpace = 'Maximum space cannot be negative';
+      newErrors.maxSpace = t('spaceType.errors.maxSpaceNegative');
     } else if (formData.maxSpace > 10000) {
-      newErrors.maxSpace = 'Maximum space cannot exceed 10,000 sqm';
+      newErrors.maxSpace = t('spaceType.errors.maxSpaceTooHigh');
     }
 
     if (formData.maxSpace > 0 && formData.minSpace > 0 && formData.maxSpace < formData.minSpace) {
-      newErrors.maxSpace = 'Maximum space must be greater than minimum space';
+      newErrors.maxSpace = t('spaceType.errors.maxLessThanMin');
     }
 
     setErrors(newErrors);
@@ -135,7 +137,7 @@ export const SpaceTypeForm: React.FC<SpaceTypeFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Space Type Name *
+          {t('spaceType.labels.name')} *
         </label>
         <input
           type="text"
@@ -147,7 +149,7 @@ export const SpaceTypeForm: React.FC<SpaceTypeFormProps> = ({
           className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.name ? 'border-red-500' : 'border-gray-300'
           }`}
-          placeholder="Enter space type name (max 100 characters)"
+          placeholder={t('spaceType.placeholders.name')}
         />
         <div className="flex justify-between">
           {errors.name ? (
@@ -163,7 +165,7 @@ export const SpaceTypeForm: React.FC<SpaceTypeFormProps> = ({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Description *
+          {t('spaceType.labels.description')} *
         </label>
         <textarea
           name="description"
@@ -175,7 +177,7 @@ export const SpaceTypeForm: React.FC<SpaceTypeFormProps> = ({
           className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.description ? 'border-red-500' : 'border-gray-300'
           }`}
-          placeholder="Enter space type description (max 500 characters)"
+          placeholder={t('spaceType.placeholders.description')}
         />
         <div className="flex justify-between">
           {errors.description ? (
@@ -192,7 +194,7 @@ export const SpaceTypeForm: React.FC<SpaceTypeFormProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Base Price (per sqm) *
+            {t('spaceType.labels.basePrice')} *
           </label>
           <input
             type="number"
@@ -206,7 +208,7 @@ export const SpaceTypeForm: React.FC<SpaceTypeFormProps> = ({
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.basePricePerSqm ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="0.00 - 10,000"
+            placeholder={t('spaceType.placeholders.basePrice')}
           />
           {errors.basePricePerSqm && (
             <p className="text-red-500 text-sm mt-1">{errors.basePricePerSqm}</p>
@@ -215,7 +217,7 @@ export const SpaceTypeForm: React.FC<SpaceTypeFormProps> = ({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Min Space (sqm)
+            {t('spaceType.labels.minSpace')}
           </label>
           <input
             type="number"
@@ -228,7 +230,7 @@ export const SpaceTypeForm: React.FC<SpaceTypeFormProps> = ({
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.minSpace ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="0 - 10,000"
+            placeholder={t('spaceType.placeholders.minSpace')}
           />
           {errors.minSpace && (
             <p className="text-red-500 text-sm mt-1">{errors.minSpace}</p>
@@ -237,7 +239,7 @@ export const SpaceTypeForm: React.FC<SpaceTypeFormProps> = ({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Max Space (sqm)
+            {t('spaceType.labels.maxSpace')}
           </label>
           <input
             type="number"
@@ -250,7 +252,7 @@ export const SpaceTypeForm: React.FC<SpaceTypeFormProps> = ({
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.maxSpace ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="0 - 10,000"
+            placeholder={t('spaceType.placeholders.maxSpace')}
           />
           {errors.maxSpace && (
             <p className="text-red-500 text-sm mt-1">{errors.maxSpace}</p>
@@ -268,7 +270,7 @@ export const SpaceTypeForm: React.FC<SpaceTypeFormProps> = ({
           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
         />
         <label htmlFor="hasUtilities" className="text-sm font-medium text-gray-700">
-          Has Utilities Available
+          {t('spaceType.labels.hasUtilities')}
         </label>
       </div>
 
@@ -279,14 +281,14 @@ export const SpaceTypeForm: React.FC<SpaceTypeFormProps> = ({
           variant="secondary"
           disabled={isLoading}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           type="submit"
           loading={isLoading}
           disabled={isLoading}
         >
-          {spaceType ? 'Update Space Type' : 'Create Space Type'}
+          {spaceType ? t('spaceType.buttons.update') : t('spaceType.buttons.create')}
         </Button>
       </div>
     </form>

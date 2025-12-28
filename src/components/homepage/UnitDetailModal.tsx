@@ -7,10 +7,11 @@ import type { Unit } from "../../types/unit";
 import { Button } from "../common/ui/Button";
 import { useAuth } from "../../context/AuthContext";
 // NEW: Added imports for appointment controls
-import { LoginPromptModal } from "../common/ui/LoginPromptModal";
-import { ToastNotification } from "../common/ui/ToastNotification";
-import { appointmentApi } from "../../api/appointmentApi";
-import { userApi } from "../../api/UserAPI";
+import { LoginPromptModal } from '../common/ui/LoginPromptModal';
+import { ToastNotification } from '../common/ui/ToastNotification';
+import { appointmentApi } from '../../api/appointmentApi';
+import { userApi } from '../../api/UserAPI';
+import { useTranslation } from 'react-i18next';
 
 interface UnitDetailModalProps {
   unit: Unit;
@@ -25,6 +26,7 @@ export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
   onClose,
   onAppointment,
 }) => {
+  const { t } = useTranslation();
   const { isAuthenticated, userId } = useAuth();
   const [selectedImage, setSelectedImage] = useState(0);
 
@@ -67,11 +69,8 @@ export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
   };
 
   // NEW: Check user eligibility function (same as AvailableUnitsSection)
-  const checkUserEligibility = async (
-    unitId: number,
-    actionType: "view" | "appointment"
-  ) => {
-    if (!userId) return { canProceed: false, message: "Please login first" };
+  const checkUserEligibility = async (unitId: number, actionType: 'view' | 'appointment') => {
+    if (!userId) return { canProceed: false, message: t('common.toast.loginFirst') };
 
     try {
       const userRes = await userApi.getById(userId);
@@ -86,10 +85,9 @@ export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
 
       if (actionType === "view") {
         if (!isApproved && !isTenant) {
-          return {
-            canProceed: false,
-            message:
-              "Your account is pending approval. Only approved users or tenants can view unit details.",
+          return { 
+            canProceed: false, 
+            message: t('common.toast.accountPending')
           };
         }
         return { canProceed: true, message: "" };
@@ -97,10 +95,9 @@ export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
 
       if (actionType === "appointment") {
         if (!isApproved && !isTenant) {
-          return {
-            canProceed: false,
-            message:
-              "Your account is pending approval. Only approved users or tenants can book appointments.",
+          return { 
+            canProceed: false, 
+            message: t('common.toast.accountPendingAppointment')
           };
         }
 
@@ -114,13 +111,11 @@ export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
 
           if (existingAppointment) {
             const status = existingAppointment.status;
-
-            if (status === "SCHEDULED" || status === "CONFIRMED") {
-              return {
-                canProceed: false,
-                message:
-                  `You already have a ${status.toLowerCase()} appointment for this unit. ` +
-                  `You cannot make another appointment until this one is completed or cancelled.`,
+            
+            if (status === 'SCHEDULED' || status === 'CONFIRMED') {
+              return { 
+                canProceed: false, 
+                message: t('common.toast.existingAppointment', { status: status.toLowerCase() })
               };
             }
 
@@ -136,13 +131,9 @@ export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
 
               if (daysDiff < 3) {
                 const daysLeft = 3 - daysDiff;
-                return {
-                  canProceed: false,
-                  message:
-                    `Your previous appointment for this unit was cancelled. ` +
-                    `Please wait ${daysLeft} more day${
-                      daysLeft !== 1 ? "s" : ""
-                    } before booking again.`,
+                return { 
+                  canProceed: false, 
+                  message: t('common.toast.cancelledWait', { days: daysLeft, s: daysLeft !== 1 ? 's' : '' })
                 };
               }
             }
@@ -151,10 +142,9 @@ export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
           return { canProceed: true, message: "" };
         } catch (err) {
           console.error("Error checking appointments:", err);
-          return {
-            canProceed: true,
-            message:
-              "Unable to verify your existing appointments. Please proceed with caution.",
+          return { 
+            canProceed: true, 
+            message: t('common.toast.verifyError')
           };
         }
       }
@@ -162,10 +152,9 @@ export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
       return { canProceed: false, message: "Invalid action type" };
     } catch (err) {
       console.error("Error checking user eligibility:", err);
-      return {
-        canProceed: false,
-        message:
-          "Failed to verify your account status. Please try again later.",
+      return { 
+        canProceed: false, 
+        message: t('common.toast.failedToVerify')
       };
     }
   };
@@ -203,7 +192,7 @@ export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
     if (pendingAction) {
       sessionStorage.setItem("pendingAction", JSON.stringify(pendingAction));
       sessionStorage.setItem("redirectAfterLogin", window.location.pathname);
-      showToast("info", "Redirecting to login page...");
+      showToast('info', t('common.toast.redirecting'));
       setTimeout(() => {
         window.location.href = "/login";
       }, 1000);
@@ -342,38 +331,31 @@ export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="space-y-3">
             <div>
-              <span className="font-semibold text-gray-700">Space:</span>
-              <span className="ml-2 text-gray-600">{unit.unitSpace} sqm</span>
+              <span className="font-semibold text-gray-700">{t('homepage.unitDetail.space')}</span>
+              <span className="ml-2 text-gray-600">{unit.unitSpace} {t('homepage.units.sqm')}</span>
             </div>
             <div>
-              <span className="font-semibold text-gray-700">Rental Fee:</span>
+              <span className="font-semibold text-gray-700">{t('homepage.unitDetail.rentalFee')}</span>
               {isAuthenticated ? (
                 <span className="ml-2 text-gray-600">
                   {unit.rentalFee?.toLocaleString() || "N/A"} MMK/month
                 </span>
               ) : (
-                <span className="ml-2 text-gray-500 italic">
-                  Login to see price
-                </span>
+                <span className="ml-2 text-gray-500 italic">{t('homepage.unitDetail.loginToSeePrice')}</span>
               )}
             </div>
           </div>
           <div className="space-y-3">
             <div>
-              <span className="font-semibold text-gray-700">Building:</span>
-              <span className="ml-2 text-gray-600">
-                {unit.level?.building?.buildingName || "N/A"}
-              </span>
+              <span className="font-semibold text-gray-700">{t('homepage.unitDetail.building')}</span>
+              <span className="ml-2 text-gray-600">{unit.level?.building?.buildingName || 'N/A'}</span>
             </div>
             <div>
-              <span className="font-semibold text-gray-700">Floor:</span>
-              <span className="ml-2 text-gray-600">
-                {unit.level?.levelName || "N/A"} (Level{" "}
-                {unit.level?.levelNumber || "N/A"})
-              </span>
+              <span className="font-semibold text-gray-700">{t('homepage.unitDetail.floor')}</span>
+              <span className="ml-2 text-gray-600">{unit.level?.levelName || 'N/A'} ({t('homepage.unitDetail.level', { levelNumber: unit.level?.levelNumber || 'N/A' })})</span>
             </div>
             <div>
-              <span className="font-semibold text-gray-700">Branch:</span>
+              <span className="font-semibold text-gray-700">{t('homepage.unitDetail.branch')}</span>
               <span className="ml-2 text-gray-600">
                 {unit.level?.building?.branch?.branchName ||
                   unit.level?.building?.branchName ||
@@ -384,33 +366,28 @@ export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
         </div>
 
         {/* Utilities Section - UNCHANGED */}
-        {unit.utilities &&
-          unit.utilities.filter((util) => util.isActive).length > 0 && (
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-2">
-                Available Utilities
-              </h4>
-              <div className="grid grid-cols-2 gap-2">
-                {unit.utilities
-                  .filter((utility) => utility.isActive)
-                  .map((utility) => (
-                    <div
-                      key={utility.id}
-                      className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg"
-                    >
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-sm text-gray-700">
-                        {utility.utilityName}
-                      </span>
-                    </div>
-                  ))}
-              </div>
+        {unit.utilities && unit.utilities.filter(util => util.isActive).length > 0 && (
+          <div>
+            <h4 className="font-semibold text-gray-900 mb-2">{t('homepage.unitDetail.availableUtilities')}</h4>
+            <div className="grid grid-cols-2 gap-2">
+              {unit.utilities
+                .filter(utility => utility.isActive)
+                .map((utility) => (
+                  <div 
+                    key={utility.id}
+                    className="flex items-center space-x-2 p-2 bg-gray-50 rounded-lg"
+                  >
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-gray-700">{utility.utilityName}</span>
+                  </div>
+                ))
+              }
             </div>
           )}
 
         {/* Description - UNCHANGED */}
         <div>
-          <h4 className="font-semibold text-gray-900 mb-2">Description</h4>
+          <h4 className="font-semibold text-gray-900 mb-2">{t('homepage.unitDetail.description')}</h4>
           <p className="text-gray-600 text-sm">
             This {unit.unitSpace} sqm space is perfect for{" "}
             {getBusinessSuggestion(unit.unitSpace, unit.unitType)}. Located in{" "}
@@ -422,14 +399,18 @@ export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
 
         {/* Action Buttons - ONLY CHANGED THE BUTTON HANDLER */}
         <div className="flex space-x-3 pt-4 border-t border-gray-200">
-          <Button onClick={onClose} variant="secondary" className="flex-1">
-            Close
+          <Button
+            onClick={onClose}
+            variant="secondary"
+            className="flex-1"
+          >
+            {t('homepage.unitDetail.close')}
           </Button>
           <Button
             onClick={handleAppointment}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
           >
-            {isAuthenticated ? "Book Appointment" : "Login to Book"}
+            {isAuthenticated ? t('homepage.unitDetail.bookAppointment') : t('homepage.unitDetail.loginToBook')}
           </Button>
         </div>
       </div>
@@ -441,15 +422,17 @@ export const UnitDetailModal: React.FC<UnitDetailModalProps> = ({
           onClose={handleLoginCancel}
           onConfirm={handleLoginConfirm}
           title={
-            pendingAction.type === "view" ? "View Details" : "Book Appointment"
+            pendingAction.type === "view"
+              ? t('homepage.unitDetail.viewDetails')
+              : t('homepage.unitDetail.bookAppointment')
           }
           message={
             pendingAction.type === "view"
-              ? "You need to login to view unit details and pricing."
-              : "You need to login to book an appointment."
+              ? t('homepage.unitDetail.loginRequired')
+              : t('homepage.unitDetail.appointmentRequired')
           }
-          confirmText="Login Now"
-          cancelText="Maybe Later"
+          confirmText={t('homepage.unitDetail.loginNow')}
+          cancelText={t('homepage.unitDetail.maybeLater')}
         />
       )}
     </Modal>

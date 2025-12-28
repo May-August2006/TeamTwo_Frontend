@@ -6,6 +6,7 @@ import { LoadingSpinner } from '../common/ui/LoadingSpinner';
 import { Button } from '../common/ui/Button';
 import { formatCurrency } from '../../utils/formatUtils';
 import { useNotification } from '../../context/NotificationContext';
+import { useTranslation } from 'react-i18next';
 
 interface UnitDetailProps {
   unitId: number;
@@ -30,6 +31,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
   const [updatingUtility, setUpdatingUtility] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'utilities' | 'location'>('details');
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (isOpen && unitId) {
@@ -44,7 +46,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
       setUnit(response.data);
     } catch (error: any) {
       console.error('Error fetching unit details:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to load unit details';
+      const errorMessage = error.response?.data?.message || t('units.errors.loadFailed');
       showError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -76,7 +78,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
     const badges = {
       [UnitType.ROOM]: { 
         color: 'bg-blue-100 text-blue-800 border border-blue-200', 
-        label: 'Room',
+        label: t('units.types.room'),
         icon: (
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -85,7 +87,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
       },
       [UnitType.SPACE]: { 
         color: 'bg-green-100 text-green-800 border border-green-200', 
-        label: 'Space',
+        label: t('units.types.space'),
         icon: (
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4 4 0 003 15z" />
@@ -94,7 +96,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
       },
       [UnitType.HALL]: { 
         color: 'bg-purple-100 text-purple-800 border border-purple-200', 
-        label: 'Hall',
+        label: t('units.types.hall'),
         icon: (
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -114,14 +116,14 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
         <>
           {/* Room Type Box */}
           <div className="bg-white p-3 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 mb-1">Room Type</p>
-            <p className="font-medium text-gray-900">{unit.roomType?.typeName || 'N/A'}</p>
+            <p className="text-sm text-gray-500 mb-1">{t('units.details.roomType')}</p>
+            <p className="font-medium text-gray-900">{unit.roomType?.typeName || t('common.notAvailable')}</p>
           </div>
           
           {/* Room Description (if exists) */}
           {unit.roomType?.description && (
             <div className="bg-white p-3 rounded-lg shadow-sm">
-              <p className="text-sm text-gray-500 mb-1">Description</p>
+              <p className="text-sm text-gray-500 mb-1">{t('units.details.description')}</p>
               <p className="font-medium text-gray-900 text-sm">{unit.roomType.description}</p>
             </div>
           )}
@@ -132,13 +134,13 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
         <>
           {/* Space Type Box */}
           <div className="bg-white p-3 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 mb-1">Space Type</p>
-            <p className="font-medium text-gray-900">{unit.spaceType?.name || 'N/A'}</p>
+            <p className="text-sm text-gray-500 mb-1">{t('units.details.spaceType')}</p>
+            <p className="font-medium text-gray-900">{unit.spaceType?.name || t('common.notAvailable')}</p>
           </div>
           
           {/* Base Price per sqm Box */}
           <div className="bg-white p-3 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 mb-1">Base Price</p>
+            <p className="text-sm text-gray-500 mb-1">{t('units.details.basePrice')}</p>
             <p className="font-medium text-gray-900">
               {formatCurrency(unit.spaceType?.basePricePerSqm || 0)}/sqm
             </p>
@@ -146,7 +148,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
           
           {/* Total Price Box */}
           <div className="bg-white p-3 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 mb-1">Total Price</p>
+            <p className="text-sm text-gray-500 mb-1">{t('units.details.totalPrice')}</p>
             <p className="font-medium text-gray-900">
               {formatCurrency((unit.spaceType?.basePricePerSqm || 0) * unit.unitSpace)}
             </p>
@@ -155,7 +157,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
           {/* Space Description (if exists) */}
           {unit.spaceType?.description && (
             <div className="bg-white p-3 rounded-lg shadow-sm">
-              <p className="text-sm text-gray-500 mb-1">Description</p>
+              <p className="text-sm text-gray-500 mb-1">{t('units.details.description')}</p>
               <p className="font-medium text-gray-900 text-sm">{unit.spaceType.description}</p>
             </div>
           )}
@@ -166,20 +168,20 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
         <>
           {/* Hall Type Box */}
           <div className="bg-white p-3 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 mb-1">Hall Type</p>
-            <p className="font-medium text-gray-900">{unit.hallType?.name || 'N/A'}</p>
+            <p className="text-sm text-gray-500 mb-1">{t('units.details.hallType')}</p>
+            <p className="font-medium text-gray-900">{unit.hallType?.name || t('common.notAvailable')}</p>
           </div>
           
           {/* Capacity Box */}
           <div className="bg-white p-3 rounded-lg shadow-sm">
-            <p className="text-sm text-gray-500 mb-1">Capacity</p>
-            <p className="font-medium text-gray-900">{unit.hallType?.capacity || 0} people</p>
+            <p className="text-sm text-gray-500 mb-1">{t('units.details.capacity')}</p>
+            <p className="font-medium text-gray-900">{unit.hallType?.capacity || 0} {t('units.details.people')}</p>
           </div>
           
           {/* Base Price Box (if exists) */}
           {unit.hallType?.basePrice && (
             <div className="bg-white p-3 rounded-lg shadow-sm">
-              <p className="text-sm text-gray-500 mb-1">Base Price</p>
+              <p className="text-sm text-gray-500 mb-1">{t('units.details.basePrice')}</p>
               <p className="font-medium text-gray-900">{formatCurrency(unit.hallType.basePrice)}</p>
             </div>
           )}
@@ -187,7 +189,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
           {/* Hall Description (if exists) */}
           {unit.hallType?.description && (
             <div className="bg-white p-3 rounded-lg shadow-sm">
-              <p className="text-sm text-gray-500 mb-1">Description</p>
+              <p className="text-sm text-gray-500 mb-1">{t('units.details.description')}</p>
               <p className="font-medium text-gray-900 text-sm">{unit.hallType.description}</p>
             </div>
           )}
@@ -208,11 +210,11 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
       await fetchUnitDetails();
       
       // Show success notification
-      showSuccess(`Utility ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
+      showSuccess(t('units.utilities.toggleSuccess', { status: !currentStatus ? t('common.activated') : t('common.deactivated') }));
       
     } catch (error: any) {
       console.error('Error toggling utility status:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to update utility status';
+      const errorMessage = error.response?.data?.message || t('units.errors.toggleFailed');
       showError(errorMessage);
     } finally {
       setUpdatingUtility(null);
@@ -293,7 +295,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
             <div>
               <div className="flex items-center space-x-3">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {isLoading ? 'Loading...' : `Unit ${unit?.unitNumber}`}
+                  {isLoading ? t('common.loading') : `${t('units.title')} ${unit?.unitNumber}`}
                 </h2>
                 {!isLoading && unit && (
                   <span className={`inline-flex items-center px-3 py-1 text-sm font-semibold rounded-full ${unitTypeBadge.color}`}>
@@ -304,7 +306,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
               </div>
               {!isLoading && unit && (
                 <p className="text-gray-600 mt-1">
-                  {unit.level.building.buildingName} • {unit.level.levelName} • Floor {unit.level.levelNumber}
+                 {unit.level.building.branch.branchName || unit.level.building.branchName} • {unit.level.building.buildingName} • {unit.level.levelName} • {t('units.details.floor')} {unit.level.levelNumber}
                 </p>
               )}
             </div>
@@ -338,12 +340,12 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                         <>
                           <img
                             src={unit.imageUrls[0]}
-                            alt={`Unit ${unit.unitNumber}`}
+                            alt={`${t('units.title')} ${unit.unitNumber}`}
                             className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                           <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity duration-300 flex items-center justify-center">
                             <div className="bg-black/70 text-white px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                              Click to view gallery
+                              {t('units.gallery.clickToView')}
                             </div>
                           </div>
                         </>
@@ -353,7 +355,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                             <svg className="w-16 h-16 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            <p className="text-gray-500 mt-2">No images available</p>
+                            <p className="text-gray-500 mt-2">{t('units.gallery.noImages')}</p>
                           </div>
                         </div>
                       )}
@@ -370,7 +372,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                           >
                             <img
                               src={image}
-                              alt={`Thumbnail ${index + 1}`}
+                              alt={`${t('units.gallery.thumbnail')} ${index + 1}`}
                               className="w-full h-16 object-cover"
                             />
                             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity"></div>
@@ -382,7 +384,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                             className="relative rounded-md overflow-hidden border border-gray-200 hover:border-blue-500 transition-colors bg-gray-100 flex items-center justify-center"
                           >
                             <span className="text-gray-600 font-medium">
-                              +{unit.imageUrls.length - 4} more
+                              +{unit.imageUrls.length - 4} {t('units.gallery.more')}
                             </span>
                           </button>
                         )}
@@ -402,11 +404,11 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                         <div className={`w-2 h-2 rounded-full mr-2 ${
                           unit.isAvailable ? 'bg-gray-500' : 'bg-green-500'
                         }`}></div>
-                        {unit.isAvailable ? 'Available for Rent' : 'Currently Occupied'}
+                        {unit.isAvailable ? t('units.status.available') : t('units.status.occupied')}
                       </span>
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-blue-600">{formatCurrency(unit.rentalFee)} MMK/month</p>
-                        <p className="text-sm text-gray-500">Rental fee</p>
+                        <p className="text-2xl font-bold text-blue-600">{formatCurrency(unit.rentalFee)} {t('units.currency.perMonth')}</p>
+                        <p className="text-sm text-gray-500">{t('units.details.rentalFee')}</p>
                       </div>
                     </div>
 
@@ -421,7 +423,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                           }`}
                         >
-                          Details
+                          {t('units.tabs.details')}
                         </button>
                         <button
                           onClick={() => setActiveTab('utilities')}
@@ -431,7 +433,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                           }`}
                         >
-                          Utilities ({unit.utilities?.length || 0})
+                          {t('units.tabs.utilities')} ({unit.utilities?.length || 0})
                         </button>
                         <button
                           onClick={() => setActiveTab('location')}
@@ -441,7 +443,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                           }`}
                         >
-                          Location
+                          {t('units.tabs.location')}
                         </button>
                       </nav>
                     </div>
@@ -456,44 +458,44 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
     <svg className="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
     </svg>
-    Unit Specifications
+    {t('units.details.specifications')}
   </h3>
   <div className="grid grid-cols-2 gap-4">
     {/* Unit Number Box */}
     <div className="bg-white p-3 rounded-lg shadow-sm">
-      <p className="text-sm text-gray-500 mb-1">Unit Number</p>
+      <p className="text-sm text-gray-500 mb-1">{t('units.details.unitNumber')}</p>
       <p className="font-medium text-gray-900 text-lg font-mono">{unit.unitNumber}</p>
     </div>
     
     {/* Space Area Box */}
     <div className="bg-white p-3 rounded-lg shadow-sm">
-      <p className="text-sm text-gray-500 mb-1">Space Area</p>
+      <p className="text-sm text-gray-500 mb-1">{t('units.details.spaceArea')}</p>
       <p className="font-medium text-gray-900 text-lg">{unit.unitSpace} sqm</p>
     </div>
     
     {/* Unit Type Box */}
     <div className="bg-white p-3 rounded-lg shadow-sm">
-      <p className="text-sm text-gray-500 mb-1">Unit Type</p>
-      <p className="font-medium text-gray-900 capitalize">{unit.unitType.toLowerCase()}</p>
+      <p className="text-sm text-gray-500 mb-1">{t('units.details.unitType')}</p>
+      <p className="font-medium text-gray-900 capitalize">{t(`units.types.${unit.unitType.toLowerCase()}`)}</p>
     </div>
     
     {/* Meter Box */}
     <div className="bg-white p-3 rounded-lg shadow-sm">
-      <p className="text-sm text-gray-500 mb-1">Meter</p>
+      <p className="text-sm text-gray-500 mb-1">{t('units.details.meter')}</p>
       <p className={`font-medium text-lg ${unit.hasMeter ? 'text-green-600' : 'text-red-600'}`}>
         {unit.hasMeter ? (
           <span className="flex items-center">
             <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Has Meter
+            {t('units.details.hasMeter')}
           </span>
         ) : (
           <span className="flex items-center">
             <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            No Meter
+            {t('units.details.noMeter')}
           </span>
         )}
       </p>
@@ -504,7 +506,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
     
     {/* Created Date Box */}
     <div className="bg-white p-3 rounded-lg shadow-sm">
-      <p className="text-sm text-gray-500 mb-1">Created Date</p>
+      <p className="text-sm text-gray-500 mb-1">{t('units.details.createdDate')}</p>
       <p className="font-medium text-gray-900">
         {new Date(unit.createdAt).toLocaleDateString('en-US', {
           year: 'numeric',
@@ -516,7 +518,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
     
     {/* Last Updated Box */}
     <div className="bg-white p-3 rounded-lg shadow-sm">
-      <p className="text-sm text-gray-500 mb-1">Last Updated</p>
+      <p className="text-sm text-gray-500 mb-1">{t('units.details.lastUpdated')}</p>
       <p className="font-medium text-gray-900">
         {new Date(unit.updatedAt).toLocaleDateString('en-US', {
           year: 'numeric',
@@ -536,7 +538,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                             <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
-                            Utilities ({unit.utilities.filter(u => u.isActive).length} active / {unit.utilities.length} total)
+                            {t('units.utilities.title')} ({unit.utilities.filter(u => u.isActive).length} {t('units.utilities.active')} / {unit.utilities.length} {t('units.utilities.total')})
                           </h3>
                           <div className="space-y-3">
                             {unit.utilities.map((utility) => (
@@ -559,10 +561,10 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                                       {utility.utilityName}
                                     </p>
                                     <p className="text-sm text-gray-500 mt-1">
-                                      {formatCurrency(utility.ratePerUnit)} MMK per unit • {utility.calculationMethod}
+                                      {formatCurrency(utility.ratePerUnit)} {t('units.utilities.perUnit')} • {utility.calculationMethod}
                                     </p>
                                     {!utility.isActive && (
-                                      <p className="text-xs text-red-500 mt-1">Currently inactive</p>
+                                      <p className="text-xs text-red-500 mt-1">{t('units.utilities.inactive')}</p>
                                     )}
                                   </div>
                                 </div>
@@ -575,11 +577,11 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                                   className="min-w-[100px]"
                                 >
                                   {updatingUtility === utility.id ? (
-                                    'Updating...'
+                                    t('common.updating')
                                   ) : utility.isActive ? (
-                                    'Deactivate'
+                                    t('common.deactivate')
                                   ) : (
-                                    'Activate'
+                                    t('common.activate')
                                   )}
                                 </Button>
                               </div>
@@ -595,20 +597,20 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                            Location Information
+                            {t('units.location.title')}
                           </h3>
                           <div className="space-y-3">
                             <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                              <span className="text-gray-600">Branch</span>
+                              <span className="text-gray-600">{t('units.location.branch')}</span>
                               <span className="font-medium text-gray-900">{unit.level.building.branch.branchName || unit.level.building.branchName}</span>
                             </div>
                             <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                              <span className="text-gray-600">Building</span>
+                              <span className="text-gray-600">{t('units.location.building')}</span>
                               <span className="font-medium text-gray-900">{unit.level.building.buildingName}</span>
                             </div>
                             <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                              <span className="text-gray-600">Floor</span>
-                              <span className="font-medium text-gray-900">{unit.level.levelName} (Floor {unit.level.levelNumber})</span>
+                              <span className="text-gray-600">{t('units.location.floor')}</span>
+                              <span className="font-medium text-gray-900">{unit.level.levelName} ({t('units.details.floor')} {unit.level.levelNumber})</span>
                             </div>
                           </div>
                         </div>
@@ -624,7 +626,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                     variant="secondary"
                     className="px-6"
                   >
-                    Close
+                    {t('common.close')}
                   </Button>
                   <Button
                     onClick={handleEdit}
@@ -634,7 +636,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                    Edit Unit
+                    {t('units.actions.edit')}
                   </Button>
                   <Button
                     onClick={handleDelete}
@@ -648,21 +650,21 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     )}
-                    {isDeleting ? 'Deleting...' : 'Delete Unit'}
+                    {isDeleting ? t('common.deleting') : t('units.actions.delete')}
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="text-center py-12">
                 <div className="text-5xl mb-4">😞</div>
-                <p className="text-red-500 text-lg font-medium">Failed to load unit details</p>
-                <p className="text-gray-500 mt-2">Please try again later</p>
+                <p className="text-red-500 text-lg font-medium">{t('units.errors.loadFailed')}</p>
+                <p className="text-gray-500 mt-2">{t('units.errors.tryAgain')}</p>
                 <Button
                   onClick={onClose}
                   variant="secondary"
                   className="mt-4"
                 >
-                  Close
+                  {t('common.close')}
                 </Button>
               </div>
             )}
@@ -710,7 +712,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
             <div className="flex items-center justify-center h-full">
               <img
                 src={unit.imageUrls[selectedImageIndex]}
-                alt={`Unit ${unit.unitNumber} - Image ${selectedImageIndex + 1}`}
+                alt={`${t('units.title')} ${unit.unitNumber} - ${t('units.gallery.image')} ${selectedImageIndex + 1}`}
                 className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-2xl"
               />
             </div>
@@ -735,7 +737,7 @@ export const UnitDetail: React.FC<UnitDetailProps> = ({
                   >
                     <img
                       src={image}
-                      alt={`Thumbnail ${index + 1}`}
+                      alt={`${t('units.gallery.thumbnail')} ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
                   </button>

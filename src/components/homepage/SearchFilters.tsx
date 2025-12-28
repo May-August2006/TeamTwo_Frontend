@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { UnitSearchParams, RoomType, SpaceType, HallType, Branch, Building, Level } from '../../types/unit';
 import { Button } from '../common/ui/Button';
+import { useTranslation } from 'react-i18next';
 
 interface SearchFiltersProps {
   onSearch: (params: UnitSearchParams) => void;
@@ -17,6 +18,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
   pendingFilters = {},
   activeFilters = {}
 }) => {
+  const { t } = useTranslation();
   const [filters, setFilters] = useState<UnitSearchParams>(pendingFilters || {});
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [spaceTypes, setSpaceTypes] = useState<SpaceType[]>([]);
@@ -208,26 +210,26 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
     
     if (isNaN(numValue)) {
-      return 'Please enter a valid number';
+      return t('common.errors.enterValidNumber');
     }
     
     if (numValue < 0) {
-      return 'Value cannot be negative';
+      return t('common.errors.cannotBeNegative');
     }
     
     if (field.includes('Space') && numValue > 10000) {
-      return 'Space value is too large (max: 10,000 sqm)';
+      return t('common.errors.spaceTooLarge');
     }
     
     if (field.includes('Rent') && numValue > 100000000) {
-      return 'Rent value is too large (max: 100,000,000 MMK)';
+      return t('common.errors.rentTooLarge');
     }
     
     if (field.includes('min') && relatedField && filters[relatedField]) {
       const maxValue = filters[relatedField] as number;
       if (maxValue && !isNaN(maxValue) && maxValue > 0) {
         if (numValue > maxValue) {
-          return `Minimum cannot be greater than maximum`;
+          return t('common.errors.minGreaterThanMax');
         }
       }
     }
@@ -236,7 +238,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
       const minValue = filters[relatedField] as number;
       if (minValue && !isNaN(minValue) && minValue > 0) {
         if (numValue < minValue) {
-          return `Maximum cannot be less than minimum`;
+          return t('common.errors.maxLessThanMin');
         }
       }
     }
@@ -343,55 +345,61 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
       case 'ROOM':
         return (
           <div>
-            <label className="block text-sm font-medium text-[#0F172A] mb-3">Room Type</label>
+            <label className="block text-sm font-medium text-[#0F172A] mb-3">
+              {t('homepage.searchFilters.roomType')}
+            </label>
             <select
               value={filters.roomTypeId || ''}
               onChange={(e) => handleFilterChange('roomTypeId', e.target.value ? Number(e.target.value) : undefined)}
               className="w-full border border-[#E2E8F0] rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
               disabled={loadingRoomTypes}
             >
-              <option value="">All Room Types</option>
+              <option value="">{t('homepage.searchFilters.allRoomTypes')}</option>
               {roomTypes.map(type => (
                 <option key={type.id} value={type.id}>{type.typeName}</option>
               ))}
             </select>
-            {loadingRoomTypes && <p className="text-[#64748B] text-xs mt-2">Loading...</p>}
+            {loadingRoomTypes && <p className="text-[#64748B] text-xs mt-2">{t('homepage.searchFilters.loading')}</p>}
           </div>
         );
       case 'SPACE':
         return (
           <div>
-            <label className="block text-sm font-medium text-[#0F172A] mb-3">Space Type</label>
+            <label className="block text-sm font-medium text-[#0F172A] mb-3">
+              {t('homepage.searchFilters.spaceType')}
+            </label>
             <select
               value={filters.spaceTypeId || ''}
               onChange={(e) => handleFilterChange('spaceTypeId', e.target.value ? Number(e.target.value) : undefined)}
               className="w-full border border-[#E2E8F0] rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
               disabled={loadingSpaceTypes}
             >
-              <option value="">All Space Types</option>
+              <option value="">{t('homepage.searchFilters.allSpaceTypes')}</option>
               {spaceTypes.map(type => (
                 <option key={type.id} value={type.id}>{type.name}</option>
               ))}
             </select>
-            {loadingSpaceTypes && <p className="text-[#64748B] text-xs mt-2">Loading...</p>}
+            {loadingSpaceTypes && <p className="text-[#64748B] text-xs mt-2">{t('homepage.searchFilters.loading')}</p>}
           </div>
         );
       case 'HALL':
         return (
           <div>
-            <label className="block text-sm font-medium text-[#0F172A] mb-3">Hall Type</label>
+            <label className="block text-sm font-medium text-[#0F172A] mb-3">
+              {t('homepage.searchFilters.hallType')}
+            </label>
             <select
               value={filters.hallTypeId || ''}
               onChange={(e) => handleFilterChange('hallTypeId', e.target.value ? Number(e.target.value) : undefined)}
               className="w-full border border-[#E2E8F0] rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
               disabled={loadingHallTypes}
             >
-              <option value="">All Hall Types</option>
+              <option value="">{t('homepage.searchFilters.allHallTypes')}</option>
               {hallTypes.map(type => (
                 <option key={type.id} value={type.id}>{type.name}</option>
               ))}
             </select>
-            {loadingHallTypes && <p className="text-[#64748B] text-xs mt-2">Loading...</p>}
+            {loadingHallTypes && <p className="text-[#64748B] text-xs mt-2">{t('homepage.searchFilters.loading')}</p>}
           </div>
         );
       default:
@@ -414,94 +422,106 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
         <div className="text-sm">
           {Object.keys(activeFilters).length > 0 ? (
             <span className="text-[#1E40AF] font-medium">
-              ✓ Search filters applied
+              {t('homepage.searchFilters.filtersApplied')}
             </span>
           ) : (
             <span className="text-[#64748B]">
-              No active search filters
+              {t('homepage.searchFilters.noActiveFilters')}
             </span>
           )}
         </div>
         <div className="text-sm">
-          <span className="font-medium text-[#0F172A]">{activeFiltersCount}</span> pending filter{activeFiltersCount !== 1 ? 's' : ''}
+          <span className="font-medium text-[#0F172A]">{activeFiltersCount}</span> {t('homepage.searchFilters.pendingFilters', { count: activeFiltersCount })}
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {/* Location Filters */}
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold text-[#0F172A] border-b pb-3">Location</h3>
+          <h3 className="text-lg font-semibold text-[#0F172A] border-b pb-3">
+            {t('homepage.searchFilters.location')}
+          </h3>
           
           {/* Branch Filter */}
           <div>
-            <label className="block text-sm font-medium text-[#0F172A] mb-3">Branch</label>
+            <label className="block text-sm font-medium text-[#0F172A] mb-3">
+              {t('homepage.searchFilters.branch')}
+            </label>
             <select
               value={filters.branchId || ''}
               onChange={(e) => handleFilterChange('branchId', e.target.value ? Number(e.target.value) : undefined)}
               className="w-full border border-[#E2E8F0] rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
               disabled={loadingBranches}
             >
-              <option value="">All Branches</option>
+              <option value="">{t('homepage.searchFilters.allBranches')}</option>
               {branches.map(branch => (
                 <option key={branch.id} value={branch.id}>{branch.branchName}</option>
               ))}
             </select>
-            {loadingBranches && <p className="text-[#64748B] text-xs mt-2">Loading...</p>}
+            {loadingBranches && <p className="text-[#64748B] text-xs mt-2">{t('homepage.searchFilters.loading')}</p>}
           </div>
 
           {/* Building Filter */}
           <div>
-            <label className="block text-sm font-medium text-[#0F172A] mb-3">Building</label>
+            <label className="block text-sm font-medium text-[#0F172A] mb-3">
+              {t('homepage.searchFilters.building')}
+            </label>
             <select
               value={filters.buildingId || ''}
               onChange={(e) => handleFilterChange('buildingId', e.target.value ? Number(e.target.value) : undefined)}
               className="w-full border border-[#E2E8F0] rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
               disabled={loadingBuildings || !filters.branchId}
             >
-              <option value="">All Buildings</option>
+              <option value="">{t('homepage.searchFilters.allBuildings')}</option>
               {buildings.map(building => (
                 <option key={building.id} value={building.id}>{building.buildingName}</option>
               ))}
             </select>
-            {loadingBuildings && <p className="text-[#64748B] text-xs mt-2">Loading...</p>}
-            {!filters.branchId && <p className="text-[#64748B] text-xs mt-2">Select a branch first</p>}
+            {loadingBuildings && <p className="text-[#64748B] text-xs mt-2">{t('homepage.searchFilters.loading')}</p>}
+            {!filters.branchId && <p className="text-[#64748B] text-xs mt-2">{t('homepage.searchFilters.selectBranchFirst')}</p>}
           </div>
 
           {/* Level/Floor Filter */}
           <div>
-            <label className="block text-sm font-medium text-[#0F172A] mb-3">Floor</label>
+            <label className="block text-sm font-medium text-[#0F172A] mb-3">
+              {t('homepage.searchFilters.floor')}
+            </label>
             <select
               value={filters.levelId || ''}
               onChange={(e) => handleFilterChange('levelId', e.target.value ? Number(e.target.value) : undefined)}
               className="w-full border border-[#E2E8F0] rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
               disabled={loadingLevels || !filters.buildingId}
             >
-              <option value="">All Floors</option>
+              <option value="">{t('homepage.searchFilters.allFloors')}</option>
               {levels.map(level => (
-                <option key={level.id} value={level.id}>{level.levelName} (Level {level.levelNumber})</option>
+                <option key={level.id} value={level.id}>{level.levelName} ({t('homepage.unitDetail.level', { levelNumber: level.levelNumber || 'N/A' })})</option>
               ))}
             </select>
-            {loadingLevels && <p className="text-[#64748B] text-xs mt-2">Loading...</p>}
-            {!filters.buildingId && <p className="text-[#64748B] text-xs mt-2">Select a building first</p>}
+            {loadingLevels && <p className="text-[#64748B] text-xs mt-2">{t('homepage.searchFilters.loading')}</p>}
+            {!filters.buildingId && <p className="text-[#64748B] text-xs mt-2">{t('homepage.searchFilters.selectBuildingFirst')}</p>}
           </div>
         </div>
 
         {/* Unit Type Filters */}
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold text-[#0F172A] border-b pb-3">Unit Type</h3>
+          <h3 className="text-lg font-semibold text-[#0F172A] border-b pb-3">
+            {t('homepage.searchFilters.unitType')}
+          </h3>
           
           {/* Unit Type Filter */}
           <div>
-            <label className="block text-sm font-medium text-[#0F172A] mb-3">Unit Type</label>
+            <label className="block text-sm font-medium text-[#0F172A] mb-3">
+              {t('homepage.searchFilters.unitType')}
+            </label>
             <select
               value={filters.unitType || ''}
               onChange={(e) => handleFilterChange('unitType', e.target.value || undefined)}
               className="w-full border border-[#E2E8F0] rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
             >
-              <option value="">All Unit Types</option>
-              <option value="ROOM">Room</option>
-              <option value="SPACE">Space</option>
-              <option value="HALL">Hall</option>
+              <option value="">{t('homepage.searchFilters.allUnitTypes')}</option>
+              <option value="ROOM">{t('homepage.searchFilters.room')}</option>
+              <option value="SPACE">{t('homepage.searchFilters.space')}</option>
+              <option value="HALL">{t('homepage.searchFilters.hall')}</option>
             </select>
           </div>
 
@@ -511,12 +531,16 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
 
         {/* Space & Price Filters */}
         <div className="space-y-6">
-          <h3 className="text-lg font-semibold text-[#0F172A] border-b pb-3">Space & Price</h3>
+          <h3 className="text-lg font-semibold text-[#0F172A] border-b pb-3">
+            {t('homepage.searchFilters.spaceAndPrice')}
+          </h3>
           
           <div className="grid grid-cols-2 gap-4">
             {/* Min Space */}
             <div>
-              <label className="block text-sm font-medium text-[#0F172A] mb-3">Min Space (sqm)</label>
+              <label className="block text-sm font-medium text-[#0F172A] mb-3">
+                {t('homepage.searchFilters.minSpace')}
+              </label>
               <input
                 type="number"
                 value={filters.minSpace || ''}
@@ -538,7 +562,9 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
 
             {/* Max Space */}
             <div>
-              <label className="block text-sm font-medium text-[#0F172A] mb-3">Max Space (sqm)</label>
+              <label className="block text-sm font-medium text-[#0F172A] mb-3">
+                {t('homepage.searchFilters.maxSpace')}
+              </label>
               <input
                 type="number"
                 value={filters.maxSpace || ''}
@@ -562,7 +588,9 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
           {/* <div className="grid grid-cols-2 gap-4"> */}
             {/* Min Rent */}
             {/* <div>
-              <label className="block text-sm font-medium text-[#0F172A] mb-3">Min Rent (MMK)</label>
+              <label className="block text-sm font-medium text-[#0F172A] mb-3">
+                {t('homepage.searchFilters.minRent')}
+              </label>
               <input
                 type="number"
                 value={filters.minRent || ''}
@@ -584,7 +612,9 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
 
             {/* Max Rent */}
             {/* <div>
-              <label className="block text-sm font-medium text-[#0F172A] mb-3">Max Rent (MMK)</label>
+              <label className="block text-sm font-medium text-[#0F172A] mb-3">
+                {t('homepage.searchFilters.maxRent')}
+              </label>
               <input
                 type="number"
                 value={filters.maxRent || ''}
@@ -614,42 +644,42 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
             <div className="flex flex-wrap gap-2">
               {filters.branchId && (
                 <span className="bg-gradient-to-r from-[#1E40AF]/10 to-[#3B82F6]/10 text-[#1E40AF] text-xs px-3 py-1.5 rounded-full border border-[#1E40AF]/20">
-                  Branch: {branches.find(b => b.id === filters.branchId)?.branchName || filters.branchId}
+                  {t('homepage.searchFilters.branch')}: {branches.find(b => b.id === filters.branchId)?.branchName || filters.branchId}
                 </span>
               )}
               {filters.buildingId && (
                 <span className="bg-gradient-to-r from-[#1E40AF]/10 to-[#3B82F6]/10 text-[#1E40AF] text-xs px-3 py-1.5 rounded-full border border-[#1E40AF]/20">
-                  Building: {buildings.find(b => b.id === filters.buildingId)?.buildingName || filters.buildingId}
+                  {t('homepage.searchFilters.building')}: {buildings.find(b => b.id === filters.buildingId)?.buildingName || filters.buildingId}
                 </span>
               )}
               {filters.levelId && (
                 <span className="bg-gradient-to-r from-[#1E40AF]/10 to-[#3B82F6]/10 text-[#1E40AF] text-xs px-3 py-1.5 rounded-full border border-[#1E40AF]/20">
-                  Floor: {levels.find(l => l.id === filters.levelId)?.levelName || filters.levelId}
+                  {t('homepage.searchFilters.floor')}: {levels.find(l => l.id === filters.levelId)?.levelName || filters.levelId}
                 </span>
               )}
               {filters.unitType && (
                 <span className="bg-gradient-to-r from-[#10B981]/10 to-[#34D399]/10 text-[#059669] text-xs px-3 py-1.5 rounded-full border border-[#10B981]/20">
-                  Type: {filters.unitType}
+                  {t('homepage.searchFilters.unitType')}: {filters.unitType}
                 </span>
               )}
               {filters.minSpace && filters.minSpace !== 0 && (
                 <span className="bg-gradient-to-r from-[#F59E0B]/10 to-[#FBBF24]/10 text-[#D97706] text-xs px-3 py-1.5 rounded-full border border-[#F59E0B]/20">
-                  Min Space: {filters.minSpace} sqm
+                  {t('homepage.searchFilters.minSpace')}: {filters.minSpace} {t('homepage.units.sqm')}
                 </span>
               )}
               {filters.maxSpace && filters.maxSpace !== 0 && (
                 <span className="bg-gradient-to-r from-[#F59E0B]/10 to-[#FBBF24]/10 text-[#D97706] text-xs px-3 py-1.5 rounded-full border border-[#F59E0B]/20">
-                  Max Space: {filters.maxSpace} sqm
+                  {t('homepage.searchFilters.maxSpace')}: {filters.maxSpace} {t('homepage.units.sqm')}
                 </span>
               )}
               {filters.minRent && filters.minRent !== 0 && (
                 <span className="bg-gradient-to-r from-[#8B5CF6]/10 to-[#A78BFA]/10 text-[#7C3AED] text-xs px-3 py-1.5 rounded-full border border-[#8B5CF6]/20">
-                  Min Rent: {filters.minRent.toLocaleString()} MMK
+                  {t('homepage.searchFilters.minRent')}: {filters.minRent.toLocaleString()} MMK
                 </span>
               )}
               {filters.maxRent && filters.maxRent !== 0 && (
                 <span className="bg-gradient-to-r from-[#8B5CF6]/10 to-[#A78BFA]/10 text-[#7C3AED] text-xs px-3 py-1.5 rounded-full border border-[#8B5CF6]/20">
-                  Max Rent: {filters.maxRent.toLocaleString()} MMK
+                  {t('homepage.searchFilters.maxRent')}: {filters.maxRent.toLocaleString()} MMK
                 </span>
               )}
             </div>
@@ -662,7 +692,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
             size="md"
             className="border-[#1E40AF] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white transition-all duration-300"
           >
-            Reset Filters
+            {t('homepage.searchFilters.resetFilters')}
           </Button>
           <Button 
             onClick={handleApply} 
@@ -671,7 +701,7 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
             className="bg-gradient-to-r from-[#1E40AF] to-[#3B82F6] hover:from-[#1E3A8A] hover:to-[#2563EB] text-white shadow-lg hover:shadow-xl transition-all duration-300"
             disabled={Object.keys(validationErrors).filter(key => validationErrors[key as keyof typeof validationErrors]).length > 0}
           >
-            Apply Filters
+            {t('homepage.searchFilters.applyFilters')}
           </Button>
         </div>
       </div>
