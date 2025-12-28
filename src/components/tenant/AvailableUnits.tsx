@@ -17,14 +17,14 @@ import { userApi } from "../../api/UserAPI";
 import { useAuth } from "../../context/AuthContext";
 import { saveSearch, getSavedSearches } from "../../utils/searchStorage";
 
-interface AvailableUnitsSectionProps {
-  onUnitDetail?: (unit: Unit) => void;
-  onAppointment?: (unit: Unit) => void;
+import { Pagination } from "../Pagination"; // 👈 REUSABLE PAGINATION
+
+interface AvailableUnitsProps {
+  onUnitDetail?: (unit: any) => void;
 }
 
-export const AvailableUnits: React.FC<AvailableUnitsSectionProps> = ({
+export const AvailableUnits: React.FC<AvailableUnitsProps> = ({
   onUnitDetail,
-  onAppointment,
 }) => {
   const [availableUnits, setAvailableUnits] = useState<Unit[]>([]);
   const [activeSearchParams, setActiveSearchParams] =
@@ -52,13 +52,20 @@ export const AvailableUnits: React.FC<AvailableUnitsSectionProps> = ({
 
   const { isAuthenticated, userId } = useAuth();
 
-  /* -------------------------------- Effects -------------------------------- */
+  /* ---------------- Pagination ---------------- */
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 3;
+
+  const pagedUnits = availableUnits.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   useEffect(() => {
     setSavedSearches(getSavedSearches());
     loadAvailableUnits();
   }, []);
 
-  /* ----------------------------- Public Fetch ------------------------------- */
   const publicFetch = async (url: string) => {
     const res = await fetch(url, {
       headers: { "Content-Type": "application/json" },
@@ -67,7 +74,6 @@ export const AvailableUnits: React.FC<AvailableUnitsSectionProps> = ({
     return { data: await res.json() };
   };
 
-  /* ----------------------------- Load Units --------------------------------- */
   const loadAvailableUnits = async (params?: UnitSearchParams) => {
     try {
       setError(null);
@@ -94,7 +100,8 @@ export const AvailableUnits: React.FC<AvailableUnitsSectionProps> = ({
         : response.data;
 
       setAvailableUnits(data || []);
-    } catch (err: any) {
+      setCurrentPage(1); // 👈 reset page when loading new results
+    } catch (err) {
       setError("Failed to load available units");
       setAvailableUnits([]);
     } finally {
@@ -103,7 +110,7 @@ export const AvailableUnits: React.FC<AvailableUnitsSectionProps> = ({
     }
   };
 
-  /* ---------------------------- Event Handlers ------------------------------- */
+  /* ---------------- event handlers ---------------- */
   const handleUnitDetail = async (unit: Unit) => {
     if (!isAuthenticated) {
       setPendingAction({ type: "view", unit });
@@ -112,14 +119,15 @@ export const AvailableUnits: React.FC<AvailableUnitsSectionProps> = ({
     }
 
     const res = await userApi.getById(userId!);
-    if (res.data.approvalStatus !== "APPROVED") {
+
+    console.log("User fetched:", res.data);
+    if (res.data.approvalStatus?.toUpperCase().trim() !== "APPROVED") {
       alert("Your account is pending approval.");
       return;
     }
 
     setDetailUnit(unit);
     setIsDetailOpen(true);
-    onUnitDetail?.(unit);
   };
 
   const handleAppointment = (unit: Unit) => {
@@ -129,7 +137,6 @@ export const AvailableUnits: React.FC<AvailableUnitsSectionProps> = ({
       return;
     }
 
-    onAppointment?.(unit);
     setSelectedUnit(unit);
     setIsAppointmentOpen(true);
   };
@@ -142,7 +149,7 @@ export const AvailableUnits: React.FC<AvailableUnitsSectionProps> = ({
     setIsAppointmentOpen(false);
   };
 
-  /* --------------------------------- UI ------------------------------------ */
+  /* ---------------- UI ---------------- */
   return (
     <div className="p-6">
       <Breadcrumb
@@ -152,12 +159,12 @@ export const AvailableUnits: React.FC<AvailableUnitsSectionProps> = ({
         ]}
       />
 
-      <h1 className="text-2xl font-bold text-stone-900 mb-6">
+      <h1 className="text-2xl font-bold text-stone-900 mb-4">
         Available Units
       </h1>
 
-      {/* Filters */}
-      <div className="bg-white border border-stone-200 rounded-lg p-5 mb-6">
+      {/* Filters — smaller + compact */}
+      <div className="bg-white border border-stone-200 rounded-lg p-3 mb-4 max-w-5xl mx-auto">
         <SearchFilters
           pendingFilters={pendingSearchParams}
           activeFilters={activeSearchParams}
@@ -169,7 +176,7 @@ export const AvailableUnits: React.FC<AvailableUnitsSectionProps> = ({
 
       {/* Recent Searches */}
       {savedSearches.length > 0 && (
-        <div className="mb-6">
+        <div className="mb-4">
           <h3 className="text-sm font-semibold text-stone-700 mb-2">
             Recent Searches
           </h3>
@@ -188,7 +195,7 @@ export const AvailableUnits: React.FC<AvailableUnitsSectionProps> = ({
         </div>
       )}
 
-      {/* Grid */}
+      {/* Cards */}
       {loading || searching ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -198,16 +205,28 @@ export const AvailableUnits: React.FC<AvailableUnitsSectionProps> = ({
       ) : error ? (
         <div className="text-center py-12 text-red-600">{error}</div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {availableUnits.map((unit) => (
-            <UnitCard
-              key={unit.id}
-              unit={unit}
-              onViewDetails={handleUnitDetail}
-              onAppointment={handleAppointment}
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {pagedUnits.map((unit) => (
+              <UnitCard
+                key={unit.id}
+                unit={unit}
+                onViewDetails={handleUnitDetail}
+                onAppointment={handleAppointment}
+              />
+            ))}
+          </div>
+
+          {/* 👇 Pagination always visible */}
+          <div className="mt-6 flex justify-center">
+            <Pagination
+              currentPage={currentPage}
+              totalItems={availableUnits.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
             />
-          ))}
-        </div>
+          </div>
+        </>
       )}
 
       {/* Modals */}
