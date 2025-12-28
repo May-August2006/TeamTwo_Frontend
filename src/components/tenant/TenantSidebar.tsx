@@ -116,7 +116,7 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
         >
           {!isCollapsed && (
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-gradient-to-br from-red-600 to-red-700 rounded-lg shadow-md">
+              <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md">
                 <Home className="w-6 h-6 text-white font-bold" />
               </div>
               <div>
@@ -127,7 +127,7 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
             </div>
           )}
           {isCollapsed && (
-            <div className="p-2 bg-gradient-to-br from-red-600 to-red-700 rounded-lg shadow-md mx-auto">
+            <div className="p-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md mx-auto">
               <Home className="w-6 h-6 text-white font-bold" />
             </div>
           )}
@@ -166,7 +166,7 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
                   flex items-center space-x-3 w-full p-3 text-left rounded-lg transition-colors duration-150 group
                   ${
                     isActivePath(item.path)
-                      ? "bg-red-50 text-red-700 border-l-2 border-red-600 font-medium"
+                      ? "bg-blue-50 text-blue-700 border-l-2 border-blue-600 font-medium"
                       : "text-stone-700 hover:bg-stone-100 hover:text-stone-900"
                   }
                   ${isCollapsed ? "justify-center relative" : ""}
@@ -174,14 +174,14 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
                 title={isCollapsed ? item.name : ""}
               >
                 <div
-                  className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-red-50 group-hover:to-red-100 transition-all duration-200 ${
-                    isActivePath(item.path) ? "from-red-100 to-red-50" : ""
+                  className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-200 ${
+                    isActivePath(item.path) ? "from-blue-100 to-blue-50" : ""
                   } ${isCollapsed ? "" : "mr-2"}`}
                 >
                   {React.cloneElement(item.icon, {
                     className: `w-4 h-4 ${
                       isActivePath(item.path)
-                        ? "text-red-600 font-bold"
+                        ? "text-blue-600 font-bold"
                         : "text-stone-600"
                     }`,
                   })}
@@ -224,9 +224,10 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
       </div>
 
       {/* Mobile Overlay */}
+
       {isOpen && (
         <div
-          className="fixed inset-0 bg-stone-900 bg-opacity-70 z-20 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-40 z-20 lg:hidden"
           onClick={onClose}
         />
       )}

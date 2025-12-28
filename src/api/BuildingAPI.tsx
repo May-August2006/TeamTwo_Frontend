@@ -112,20 +112,15 @@ export const buildingApi = {
   getAvailableBuildingsForAccountants: () =>
     API.get<Building[]>("/api/buildings/available-for-accountants"),
 
-  // Add these methods to buildingApi object:
+  // Get assigned building for current user
   getMyAssignedBuilding: () =>
     API.get<Building>("/api/buildings/my-assigned-building"),
 
+  // Get occupied units for a building
   getOccupiedUnitsByBuilding: (buildingId: number) =>
     API.get<Unit[]>(`/api/units/occupied/by-building/${buildingId}`),
 
-  // getMyAssignedBuilding: () => 
-  //   API.get<{success: boolean, data: Building, message?: string}>('/api/buildings/my-assigned-building'),
- getMyAssignedBuilding: () => API.get<Building>('/api/buildings/my-assigned-building'),
-getOccupiedUnitsByBuilding: (buildingId: number) => 
-    API.get<Unit[]>(`/api/units/occupied/by-building/${buildingId}`),
-
-// Add these new methods
+  // Add these new methods
   getTenantsByBuilding: (buildingId: number) => 
     API.get<Tenant[]>(`/api/buildings/${buildingId}/tenants`),
     
@@ -141,7 +136,6 @@ getOccupiedUnitsByBuilding: (buildingId: number) =>
   // Get building ID for current manager
   getMyBuildingId: () => 
     API.get<{ buildingId: number }>('/api/buildings/my-building-id'),
-  
     
   getBuildingInfo: (buildingId: number) => 
     API.get<{ id: number; buildingName: string; branchName: string }>(`/api/buildings/${buildingId}/info`),

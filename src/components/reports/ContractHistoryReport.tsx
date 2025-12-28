@@ -1,5 +1,5 @@
-// components/reports/ContractHistoryReport.tsx - UPDATED WITH EXCEL SUPPORT
-import React, { useState, useEffect } from 'react';
+// components/reports/ContractHistoryReport.tsx - UPDATED WITH EXCEL SUPPORT AND STICKY HEADER
+import React, { useState, useEffect, useRef } from 'react'; // ADDED useRef
 import { contractHistoryApi } from '../../api/ContractHistoryAPI';
 import { tenantApi } from '../../api/TenantAPI';
 import { contractApi } from '../../api/ContractAPI';
@@ -27,8 +27,14 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
   const [filteredHistory, setFilteredHistory] = useState<ContractHistoryDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
-  const [generatingExcel, setGeneratingExcel] = useState(false); // NEW: Excel loading state
+  const [generatingExcel, setGeneratingExcel] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // ADDED: Sticky header state
+  const [isSticky, setIsSticky] = useState(false);
+  
+  // ADDED: Ref for the header
+  const headerRef = useRef<HTMLDivElement>(null);
   
   // Filter states
   const [filters, setFilters] = useState<ContractHistoryFilters>({});
@@ -48,6 +54,22 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
   useEffect(() => {
     applyFilters();
   }, [history, filters, searchTerm, selectedActionType]);
+
+  // ADDED: Scroll listener for sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      if (headerRef.current) {
+        const headerHeight = headerRef.current.offsetHeight;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        // Add a small threshold to prevent flickering
+        setIsSticky(scrollTop > headerHeight + 10);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const loadInitialData = async () => {
     try {
@@ -190,7 +212,7 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
     }
   };
 
-  // NEW: Generate Excel Report
+  // Generate Excel Report
   const generateExcelReport = async () => {
     try {
       setGeneratingExcel(true);
@@ -249,71 +271,95 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
     }
   };
 
-  // NEW: Combined export function that shows options
-  const handleExportReport = () => {
-    if (filteredHistory.length === 0) {
-      setError('No data to export');
-      return;
-    }
-
-    // Show export options modal or implement a dropdown
-    // For simplicity, we'll create a simple dropdown UI
+  // Helper function to render JSON data in a nice format
+ const renderFormattedJSON = (jsonString: string, isOldValues?: boolean) => {
+  try {
+    const parsed = JSON.parse(jsonString);
+    
+    // Create array of entries
+    const entries = Object.entries(parsed);
+    
     return (
-      <div className="relative">
-        <Button
-          variant="primary"
-          onClick={generatePdfReport}
-          disabled={generatingPdf || generatingExcel || filteredHistory.length === 0}
-          className="flex items-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          Export Report
-        </Button>
-        <div className="absolute top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10 hidden hover:block group-hover:block">
-          <button
-            onClick={generatePdfReport}
-            disabled={generatingPdf}
-            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-          >
-            {generatingPdf ? (
-              <>
-                <LoadingSpinner size="sm" />
-                Generating PDF...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Export as PDF
-              </>
-            )}
-          </button>
-          <button
-            onClick={generateExcelReport}
-            disabled={generatingExcel}
-            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-          >
-            {generatingExcel ? (
-              <>
-                <LoadingSpinner size="sm" />
-                Generating Excel...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Export as Excel
-              </>
-            )}
-          </button>
-        </div>
+      <div className="space-y-1">
+        {entries.map(([key, value]) => {
+          let displayValue = String(value);
+          let valueColor = "text-gray-800";
+          
+          // Format based on value type
+          if (typeof value === 'boolean') {
+            displayValue = value ? 'Yes' : 'No';
+            valueColor = value ? 'text-green-600' : 'text-red-600';
+          } else if (typeof value === 'number') {
+            // Check if it's currency or regular number
+            if (key.toLowerCase().includes('fee') || 
+                key.toLowerCase().includes('price') || 
+                key.toLowerCase().includes('amount') ||
+                key.toLowerCase().includes('rent')) {
+              displayValue = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0
+              }).format(value);
+              valueColor = 'text-blue-600';
+            } else {
+              displayValue = value.toLocaleString();
+              valueColor = 'text-blue-600';
+            }
+          } else if (typeof value === 'string') {
+            // Check if it's a date
+            const datePattern = /\d{4}-\d{2}-\d{2}/;
+            if (datePattern.test(value) || key.toLowerCase().includes('date')) {
+              try {
+                displayValue = new Date(value).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                });
+                valueColor = 'text-purple-600';
+              } catch (e) {
+                // Keep original if not a valid date
+              }
+            }
+          }
+          
+          // Format key to be more readable
+          const formattedKey = key
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, char => char.toUpperCase());
+          
+          return (
+            <div key={key} className="grid grid-cols-4 gap-2">
+              <div className="col-span-1">
+                <span className="text-xs font-medium text-gray-700 truncate block">
+                  {formattedKey}
+                </span>
+              </div>
+              <div className="col-span-3">
+                <span className={`text-xs ${valueColor} font-medium truncate block`}>
+                  {displayValue}
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
-  };
+  } catch (error) {
+    // If it's not valid JSON, show as plain text
+    if (jsonString && jsonString.trim()) {
+      return (
+        <div className="text-gray-600 text-xs">
+          <span className="font-mono whitespace-pre-wrap break-all">{jsonString.substring(0, 200)}</span>
+        </div>
+      );
+    }
+    return (
+      <div className="text-gray-400 text-xs italic">
+        No data
+      </div>
+    );
+  }
+};
 
   const getActionTypeBadge = (actionType: string) => {
     const config = {
@@ -362,9 +408,16 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
 
   return (
     <div className="space-y-6">
-      {/* Header - UPDATED with Excel button */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      {/* Header - UPDATED with sticky functionality */}
+      <div 
+        ref={headerRef}
+        className={`bg-white p-6 rounded-lg border border-gray-200 transition-all duration-300 ${
+          isSticky 
+            ? 'fixed top-0 left-0 right-0 z-50 shadow-lg rounded-none border-t-0 border-x-0' 
+            : ''
+        }`}
+      >
+        <div className={`flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 ${isSticky ? 'container mx-auto' : ''}`}>
           <div>
             <div className="flex items-center gap-4">
               <Button
@@ -448,55 +501,15 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
         </div>
       </div>
 
+      {/* Add padding when header is sticky to prevent content from jumping under it */}
+      {isSticky && <div className="h-24"></div>}
+
       {/* Filters - REMOVED DATE RANGE, KEPT ACTION TYPE */}
-      {/* ... (filters section remains exactly the same) */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Filter History</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Tenant Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Filter by Tenant
-            </label>
-            <select
-              value={filters.tenantId || ''}
-              onChange={(e) => {
-                const tenantId = e.target.value ? parseInt(e.target.value) : undefined;
-                handleFilterChange({ ...filters, tenantId, contractId: undefined });
-              }}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Tenants</option>
-              {tenants.map(tenant => (
-                <option key={tenant.id} value={tenant.id}>
-                  {tenant.tenantName}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Contract Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Filter by Contract
-            </label>
-            <select
-              value={filters.contractId || ''}
-              onChange={(e) => {
-                const contractId = e.target.value ? parseInt(e.target.value) : undefined;
-                handleFilterChange({ ...filters, contractId, tenantId: undefined });
-              }}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Contracts</option>
-              {contracts.map(contract => (
-                <option key={contract.id} value={contract.id}>
-                  {contract.contractNumber} - {contract.tenant?.tenantName}
-                </option>
-              ))}
-            </select>
-          </div>
+          
 
           {/* Action Type Filter */}
           <div>
@@ -602,36 +615,8 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
             {hasActiveFilters && ' (filtered)'}
           </div>
           
-          {filteredHistory.length > 0 && (
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={generateExcelReport}
-                loading={generatingExcel}
-                disabled={generatingExcel || generatingPdf}
-                className="flex items-center gap-2"
-              >
-                <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Excel
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={generatePdfReport}
-                loading={generatingPdf}
-                disabled={generatingPdf || generatingExcel}
-                className="flex items-center gap-2"
-              >
-                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                PDF
-              </Button>
-            </div>
-          )}
+          
+          
         </div>
       </div>
 
@@ -720,31 +705,169 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
                       <div className="text-sm text-gray-900 max-w-md">
                         {record.description}
                       </div>
-                      {(record.oldValues || record.newValues) && (
-                        <details className="mt-2 text-xs">
-                          <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
-                            View Changes
-                          </summary>
-                          <div className="mt-2 space-y-2">
-                            {record.oldValues && (
-                              <div>
-                                <span className="font-medium text-red-600">Old:</span>
-                                <pre className="text-xs mt-1 whitespace-pre-wrap">
-                                  {JSON.stringify(JSON.parse(record.oldValues), null, 2)}
-                                </pre>
-                              </div>
+                     {(record.oldValues || record.newValues) && (
+  <details className="mt-2 text-xs">
+    <summary className="cursor-pointer text-blue-600 hover:text-blue-800 flex items-center gap-1">
+      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+      View Changes
+    </summary>
+    <div className="mt-3 space-y-3">
+      <div className="grid grid-cols-2 gap-4">
+        {record.oldValues && (
+          <div className="p-3 bg-red-50 rounded border border-red-100">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span className="text-xs font-semibold text-red-700">Previous Values</span>
+            </div>
+            {renderFormattedJSON(record.oldValues, true)}
+          </div>
+        )}
+        {record.newValues && (
+          <div className="p-3 bg-green-50 rounded border border-green-100">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-xs font-semibold text-green-700">New Values</span>
+            </div>
+            {renderFormattedJSON(record.newValues, false)}
+          </div>
+        )}
+      </div>
+      
+      {/* Side-by-side comparison - NEW */}
+      {record.oldValues && record.newValues && (
+        <div className="p-3 bg-blue-50 rounded border border-blue-100">
+          <div className="flex items-center gap-2 mb-3">
+            <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span className="text-xs font-semibold text-blue-700">Side-by-Side Comparison</span>
+          </div>
+          
+          {(() => {
+            try {
+              const oldData = JSON.parse(record.oldValues);
+              const newData = JSON.parse(record.newValues);
+              
+              // Get all unique keys from both objects
+              const allKeys = [...new Set([
+                ...Object.keys(oldData),
+                ...Object.keys(newData)
+              ])];
+              
+              return (
+                <div className="space-y-2">
+                  {/* Header */}
+                  <div className="grid grid-cols-12 gap-2 mb-2">
+                    <div className="col-span-4">
+                      <span className="text-xs font-semibold text-gray-700">Field</span>
+                    </div>
+                    <div className="col-span-4">
+                      <span className="text-xs font-semibold text-red-700">Old Value</span>
+                    </div>
+                    <div className="col-span-4">
+                      <span className="text-xs font-semibold text-green-700">New Value</span>
+                    </div>
+                  </div>
+                  
+                  {/* Rows */}
+                  {allKeys.map(key => {
+                    const oldValue = oldData[key];
+                    const newValue = newData[key];
+                    const hasChanged = oldValue !== newValue;
+                    
+                    // Format values for display
+                    const formatValue = (value: any) => {
+                      if (value === undefined || value === null) return '—';
+                      
+                      if (typeof value === 'boolean') {
+                        return value ? 'Yes' : 'No';
+                      } else if (typeof value === 'number') {
+                        if (key.toLowerCase().includes('fee') || 
+                            key.toLowerCase().includes('price') || 
+                            key.toLowerCase().includes('amount') ||
+                            key.toLowerCase().includes('rent')) {
+                          return new Intl.NumberFormat('en-US', {
+                            style: 'currency',
+                            currency: 'USD',
+                            minimumFractionDigits: 0
+                          }).format(value);
+                        }
+                        return value.toLocaleString();
+                      } else if (typeof value === 'string') {
+                        const datePattern = /\d{4}-\d{2}-\d{2}/;
+                        if (datePattern.test(value) || key.toLowerCase().includes('date')) {
+                          try {
+                            return new Date(value).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            });
+                          } catch (e) {
+                            return value;
+                          }
+                        }
+                        return value;
+                      }
+                      return String(value);
+                    };
+                    
+                    const formattedKey = key
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, char => char.toUpperCase());
+                    
+                    const oldDisplay = formatValue(oldValue);
+                    const newDisplay = formatValue(newValue);
+                    
+                    return (
+                      <div 
+                        key={key} 
+                        className={`grid grid-cols-12 gap-2 py-1 px-2 rounded ${hasChanged ? 'bg-yellow-50' : ''}`}
+                      >
+                        <div className="col-span-4">
+                          <span className="text-xs font-medium text-gray-700">
+                            {formattedKey}
+                            {hasChanged && (
+                              <svg className="w-3 h-3 inline-block ml-1 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                              </svg>
                             )}
-                            {record.newValues && (
-                              <div>
-                                <span className="font-medium text-green-600">New:</span>
-                                <pre className="text-xs mt-1 whitespace-pre-wrap">
-                                  {JSON.stringify(JSON.parse(record.newValues), null, 2)}
-                                </pre>
-                              </div>
-                            )}
-                          </div>
-                        </details>
-                      )}
+                          </span>
+                        </div>
+                        <div className="col-span-4">
+                          <span className={`text-xs ${hasChanged ? 'font-semibold line-through text-red-600' : 'text-gray-600'}`}>
+                            {oldDisplay}
+                          </span>
+                        </div>
+                        <div className="col-span-4">
+                          <span className={`text-xs ${hasChanged ? 'font-semibold text-green-600' : 'text-gray-600'}`}>
+                            {newDisplay}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            } catch (error) {
+              return (
+                <div className="text-gray-500 text-xs italic">
+                  Unable to generate side-by-side comparison
+                </div>
+              );
+            }
+          })()}
+        </div>
+      )}
+    </div>
+  </details>
+)}
+                      
                     </td>
                   </tr>
                 ))}

@@ -1,104 +1,75 @@
 /** @format */
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   FileText,
   CreditCard,
   Calendar,
   Wrench,
-  TrendingDown,
   CheckCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { tenantApi } from "../../api/TenantAPI"; // your API module
+import { jwtDecode } from "jwt-decode";
+
 const TenantHome: React.FC = () => {
   const { t } = useTranslation();
-  
-  // Current lease information
-  const leaseInfo = {
-    property: "Main Mall - Unit A-102",
-    rent: "$2,500",
-    dueDate: "15th of each month",
-    nextPayment: "Jan 15, 2024",
-    leaseEnd: "Dec 31, 2024",
-    space: "1,200 sq ft",
-    businessType: "Retail - Fashion",
-  };
 
-  // Quick stats
-  const quickStats = [
-    {
-      title: "currentBalance",
-      value: "$2,500",
-      status: t('tenant.due'),
-      color: "text-red-600",
-      icon: <CreditCard className="w-6 h-6" />,
-    },
-    {
-      title: "lastPayment",
-      value: "$2,500",
-      status: t('tenant.paid') + " Dec 15",
-      color: "text-green-600",
-      icon: <CheckCircle className="w-6 h-6" />,
-    },
-    {
-      title: "openInvoices",
-      value: "1",
-      status: t('tenant.unpaid'),
-      color: "text-orange-600",
-      icon: <FileText className="w-6 h-6" />,
-    },
-    {
-      title: "maintenance",
-      value: "0",
-      status: t('tenant.noOpenRequests'),
-      color: "text-stone-600",
-      icon: <Wrench className="w-6 h-6" />,
-    },
-  ];
+  const [leaseInfo, setLeaseInfo] = useState<any>(null);
+  const [quickStats, setQuickStats] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [upcomingDates, setUpcomingDates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const jwtToken = localStorage.getItem("accessToken") || "";
 
-  // Recent activity
-  const recentActivity = [
-    {
-      id: 1,
-      type: "invoice",
-      message: "January rent invoice generated",
-      date: "2 days ago",
-      amount: "$2,500",
-      status: "unpaid",
-    },
-    {
-      id: 2,
-      type: "payment",
-      message: "December rent payment received",
-      date: "3 weeks ago",
-      amount: "$2,500",
-      status: "paid",
-    },
-    {
-      id: 3,
-      type: "maintenance",
-      message: "AC repair request completed",
-      date: "1 month ago",
-      status: "resolved",
-    },
-  ];
+  let tenantId: number | null = null;
 
-  // Upcoming dates
-  const upcomingDates = [
-    { event: t('tenant.rentDue'), date: "Jan 15, 2024", important: true },
-    { event: t('tenant.leaseRenewal'), date: "Nov 30, 2024", important: false },
-    { event: t('tenant.annualInspection'), date: "Mar 15, 2024", important: false },
-  ];
+  console.log(jwtDecode(localStorage.getItem("accessToken")!));
+
+  try {
+    const decoded: any = jwtDecode(jwtToken);
+    tenantId = decoded.tenantId; // MUST exist in JWT
+  } catch (_) {}
+
+  useEffect(() => {
+    if (!tenantId) return;
+
+    const loadTenantData = async () => {
+      try {
+        setLoading(true);
+        const res = await tenantApi.getTenantHome(tenantId); // backend endpoint
+        const data = res.data;
+
+        setLeaseInfo(data.leaseInfo);
+        setQuickStats(data.quickStats);
+        setRecentActivity(data.recentActivity);
+        setUpcomingDates(data.upcomingDates);
+      } catch (err) {
+        console.error("Failed to load tenant home data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTenantData();
+  }, [tenantId]);
+
+  if (loading) {
+    return (
+      <div className="p-6 min-h-screen flex items-center justify-center">
+        <span className="text-stone-500">Loading...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 space-y-6 min-h-screen bg-stone-50">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-xl shadow-lg p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">{t('tenant.welcome')}, John!</h2>
-        <p className="text-red-100">
-          Here's your current rental account overview and important updates.
-        </p>
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-lg p-6 text-white">
+        <h2 className="text-2xl font-bold mb-2">
+          {t("tenant.welcome")}, {leaseInfo?.tenantName || "Tenant"}!
+        </h2>
       </div>
 
       {/* Quick Stats */}
@@ -117,9 +88,6 @@ const TenantHome: React.FC = () => {
                   {stat.value}
                 </p>
               </div>
-              <div className="p-3 bg-stone-50 rounded-lg text-stone-600">
-                {stat.icon}
-              </div>
             </div>
             <p className="text-sm text-stone-500">{stat.status}</p>
           </div>
@@ -132,53 +100,33 @@ const TenantHome: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
             <h3 className="text-lg font-semibold text-stone-900 mb-4 border-b border-stone-200 pb-2">
-              {t('tenant.currentLeaseInformation')}
+              {t("tenant.currentLeaseInformation")}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-stone-600">{t('tenant.property')}</p>
-                <p className="font-semibold text-stone-900">
-                  {leaseInfo.property}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-stone-600">{t('tenant.monthlyRent')}</p>
-                <p className="font-semibold text-stone-900">{leaseInfo.rent}</p>
-              </div>
-              <div>
-                <p className="text-sm text-stone-600">{t('tenant.nextPaymentDue')}</p>
-                <p className="font-semibold text-stone-900">
-                  {leaseInfo.nextPayment}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-stone-600">{t('tenant.leaseEndDate')}</p>
-                <p className="font-semibold text-stone-900">
-                  {leaseInfo.leaseEnd}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-stone-600">{t('tenant.space')}</p>
-                <p className="font-semibold text-stone-900">{leaseInfo.space}</p>
-              </div>
-              <div>
-                <p className="text-sm text-stone-600">{t('tenant.businessType')}</p>
-                <p className="font-semibold text-stone-900">
-                  {leaseInfo.businessType}
-                </p>
-              </div>
+              {leaseInfo &&
+                Object.entries(leaseInfo).map(([key, value]) => (
+                  <div key={key}>
+                    <p className="text-sm text-stone-600">
+                      {t(`tenant.${key}`)}
+                    </p>
+                    <p className="font-semibold text-stone-900">
+                      {" "}
+                      {String(value)}
+                    </p>
+                  </div>
+                ))}
             </div>
           </div>
 
           {/* Recent Activity */}
           <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
             <h3 className="text-lg font-semibold text-stone-900 mb-4 border-b border-stone-200 pb-2">
-              {t('tenant.recentActivity')}
+              {t("tenant.recentActivity")}
             </h3>
             <div className="space-y-4">
               {recentActivity.map((activity) => (
                 <div
-                  key={activity.id}
+                  key={activity.contractNumber} // or another unique field
                   className="flex items-start space-x-3 p-3 bg-stone-50 rounded-lg hover:bg-stone-100 transition duration-150"
                 >
                   <div
@@ -200,21 +148,13 @@ const TenantHome: React.FC = () => {
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-stone-900">
-                      {activity.message}
+                      {/* Use contractNumber and status for now */}
+                      {activity.contractNumber} ({activity.status})
                     </p>
                     <div className="flex items-center justify-between mt-1">
-                      <p className="text-xs text-stone-500">{activity.date}</p>
-                      {activity.amount && (
-                        <span
-                          className={`text-xs font-medium ${
-                            activity.status === "paid"
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }`}
-                        >
-                          {activity.amount}
-                        </span>
-                      )}
+                      <p className="text-xs text-stone-500">
+                        {activity.updatedAt}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -228,7 +168,7 @@ const TenantHome: React.FC = () => {
           {/* Upcoming Dates */}
           <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
             <h3 className="text-lg font-semibold text-stone-900 mb-4 border-b border-stone-200 pb-2">
-              {t('tenant.upcomingDates')}
+              {t("tenant.upcomingDates")}
             </h3>
             <div className="space-y-3">
               {upcomingDates.map((date, index) => (
@@ -269,21 +209,34 @@ const TenantHome: React.FC = () => {
           {/* Quick Actions */}
           <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6">
             <h3 className="text-lg font-semibold text-stone-900 mb-4 border-b border-stone-200 pb-2">
-              {t('tenant.quickActions')}
+              {t("tenant.quickActions")}
             </h3>
             <div className="space-y-3">
-              <button className="w-full flex items-center space-x-3 p-3 text-left bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors duration-150">
-                <FileText className="w-5 h-5" />
-                <span>{t('tenant.viewCurrentInvoice')}</span>
-              </button>
-              <button className="w-full flex items-center space-x-3 p-3 text-left bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors duration-150">
-                <CreditCard className="w-5 h-5" />
-                <span>{t('tenant.makePayment')}</span>
-              </button>
-              <button className="w-full flex items-center space-x-3 p-3 text-left bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors duration-150">
-                <Wrench className="w-5 h-5" />
-                <span>{t('tenant.submitMaintenanceRequest')}</span>
-              </button>
+              {[
+                {
+                  icon: <FileText className="w-5 h-5" />,
+                  label: t("tenant.viewCurrentInvoice"),
+                  color: "bg-blue-50 text-blue-700 hover:bg-blue-100",
+                },
+                {
+                  icon: <CreditCard className="w-5 h-5" />,
+                  label: t("tenant.makePayment"),
+                  color: "bg-green-50 text-green-700 hover:bg-green-100",
+                },
+                {
+                  icon: <Wrench className="w-5 h-5" />,
+                  label: t("tenant.submitMaintenanceRequest"),
+                  color: "bg-orange-50 text-orange-700 hover:bg-orange-100",
+                },
+              ].map((action, idx) => (
+                <button
+                  key={idx}
+                  className={`w-full flex items-center space-x-3 p-3 text-left rounded-lg transition-colors duration-150 ${action.color}`}
+                >
+                  {action.icon}
+                  <span>{action.label}</span>
+                </button>
+              ))}
             </div>
           </div>
         </div>

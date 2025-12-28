@@ -1,16 +1,11 @@
 /** @format */
 import React, { useEffect, useState } from "react";
-import {
-  FileText,
-  Download,
-  Calendar,
-  DollarSign,
-  Building2,
-} from "lucide-react";
+import { Download, Calendar, DollarSign, Building2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { jwtDecode } from "jwt-decode";
 import API from "../../api/api";
 import type { ContractDTO } from "../../types/contract";
+import { Pagination } from "../Pagination"; // ⬅️ adjust path if needed
 
 interface LoginTokenPayload {
   roles: string[];
@@ -22,16 +17,21 @@ interface LoginTokenPayload {
 
 const MyContract: React.FC = () => {
   const { t } = useTranslation();
+
   const [contracts, setContracts] = useState<ContractDTO[]>([]);
   const [selectedContract, setSelectedContract] = useState<ContractDTO | null>(
     null
   );
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Extract tenantId from JWT stored in localStorage
+  // 🔹 Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6; // cards per page
+
   const getTenantIdFromToken = (): number | null => {
     const token = localStorage.getItem("accessToken");
     if (!token) return null;
+
     try {
       const decoded: LoginTokenPayload = jwtDecode(token);
       return decoded.tenantId;
@@ -54,6 +54,7 @@ const MyContract: React.FC = () => {
           `/api/contracts/tenant/${tenantId}`
         );
         setContracts(response.data);
+        setCurrentPage(1); // reset to first page
       } catch (err) {
         console.error("Failed to fetch contracts:", err);
       } finally {
@@ -68,27 +69,30 @@ const MyContract: React.FC = () => {
     return <div className="p-6 text-center">{t("loading")}...</div>;
   }
 
+  // 🔹 Slice contracts for the current page
+  const paginatedContracts = contracts.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   // ---------------------- Self-contained Modal ----------------------
   const Modal: React.FC<{
     onClose: () => void;
     children: React.ReactNode;
-  }> = ({ onClose, children }) => {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-        <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl p-6 relative">
-          {/* Close button inside modal */}
-          <button
-            className="absolute top-4 right-4 text-stone-500 hover:text-stone-900 text-2xl font-bold"
-            onClick={onClose}
-          >
-            ×
-          </button>
+  }> = ({ onClose, children }) => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl p-6 relative">
+        <button
+          className="absolute top-4 right-4 text-stone-500 hover:text-stone-900 text-2xl font-bold"
+          onClick={onClose}
+        >
+          ×
+        </button>
 
-          {children}
-        </div>
+        {children}
       </div>
-    );
-  };
+    </div>
+  );
 
   return (
     <div className="p-4 sm:p-6 space-y-6 min-h-screen bg-stone-50">
@@ -98,7 +102,7 @@ const MyContract: React.FC = () => {
 
       {/* Contract Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {contracts.map((contract) => (
+        {paginatedContracts.map((contract) => (
           <div
             key={contract.id}
             className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 cursor-pointer hover:shadow-xl transition duration-150"
@@ -108,6 +112,7 @@ const MyContract: React.FC = () => {
               <h3 className="text-lg font-semibold text-stone-900">
                 {contract.contractNumber}
               </h3>
+
               <div
                 className={`px-3 py-1 rounded-full text-sm font-semibold ${
                   contract.contractStatus === "ACTIVE"
@@ -120,14 +125,17 @@ const MyContract: React.FC = () => {
                 {contract.contractStatus}
               </div>
             </div>
+
             <p className="text-stone-600 text-sm">
               <Calendar className="inline w-4 h-4 mr-1" />
               {contract.startDate} - {contract.endDate}
             </p>
+
             <p className="text-stone-600 text-sm mt-1">
-              <DollarSign className="inline w-4 h-4 mr-1" />
-              {contract.rentalFee} / month
+              <Calendar className="inline w-4 h-4 mr-1" />
+              {contract.rentalFee} / month MMK
             </p>
+
             <p className="text-stone-600 text-sm mt-1">
               <Building2 className="inline w-4 h-4 mr-1" />
               {contract.unit?.unitNumber}
@@ -136,33 +144,43 @@ const MyContract: React.FC = () => {
         ))}
       </div>
 
+      {/* 🔹 ALWAYS visible pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalItems={contracts.length}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+      />
+
       {/* Contract Details Modal */}
       {selectedContract && (
         <Modal onClose={() => setSelectedContract(null)}>
           <div className="space-y-4">
-            {/* Header */}
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-bold">
                 {selectedContract.contractNumber}
               </h3>
             </div>
 
-            {/* Contract Summary */}
+            {/* Summary */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-stone-600">Start Date</p>
                 <p className="font-semibold">{selectedContract.startDate}</p>
               </div>
+
               <div>
                 <p className="text-sm text-stone-600">End Date</p>
                 <p className="font-semibold">{selectedContract.endDate}</p>
               </div>
+
               <div>
                 <p className="text-sm text-stone-600">
                   {t("tenant.monthlyRent")}
                 </p>
                 <p className="font-semibold">{selectedContract.rentalFee}</p>
               </div>
+
               <div>
                 <p className="text-sm text-stone-600">
                   {t("tenant.securityDeposit")}
@@ -171,12 +189,14 @@ const MyContract: React.FC = () => {
                   {selectedContract.securityDeposit}
                 </p>
               </div>
+
               <div>
                 <p className="text-sm text-stone-600">{t("tenant.space")}</p>
                 <p className="font-semibold">
                   {selectedContract.unit?.unitNumber}
                 </p>
               </div>
+
               <div>
                 <p className="text-sm text-stone-600">
                   {t("tenant.businessType")}
@@ -185,45 +205,52 @@ const MyContract: React.FC = () => {
                   {selectedContract.unit?.unitTypeDisplay}
                 </p>
               </div>
+
               <div>
                 <p className="text-sm text-stone-600">Contact Person</p>
                 <p className="font-semibold">
                   {selectedContract.tenant.tenantName}
                 </p>
               </div>
+
               <div>
                 <p className="text-sm text-stone-600">Contact Email</p>
                 <p>{selectedContract.tenant.email}</p>
               </div>
+
               <div>
                 <p className="text-sm text-stone-600">Contact Phone</p>
                 <p>{selectedContract.tenant.phone}</p>
               </div>
             </div>
 
-            {/* Key Contract Terms */}
+            {/* Key Terms */}
             <div className="mt-6">
               <h4 className="text-lg font-semibold mb-4">
                 {t("tenant.keyContractTerms")}
               </h4>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="flex justify-between items-center p-3 bg-stone-50 rounded-lg border border-stone-200">
+                <div className="flex justify-between p-3 bg-stone-50 rounded-lg border">
                   <span>{t("tenant.leaseDuration")}</span>
                   <span className="font-semibold">
                     {selectedContract.contractDurationType}
                   </span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-stone-50 rounded-lg border border-stone-200">
+
+                <div className="flex justify-between p-3 bg-stone-50 rounded-lg border">
                   <span>{t("tenant.rentDueDate")}</span>
                   <span className="font-semibold">15th of each month</span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-stone-50 rounded-lg border border-stone-200">
+
+                <div className="flex justify-between p-3 bg-stone-50 rounded-lg border">
                   <span>{t("tenant.lateFee")}</span>
                   <span className="font-semibold">
                     {selectedContract.gracePeriodDays} days grace
                   </span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-stone-50 rounded-lg border border-stone-200">
+
+                <div className="flex justify-between p-3 bg-stone-50 rounded-lg border">
                   <span>{t("tenant.utilities")}</span>
                   <span className="font-semibold">
                     {selectedContract.includedUtilities
@@ -231,7 +258,8 @@ const MyContract: React.FC = () => {
                       .join(", ")}
                   </span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-stone-50 rounded-lg border border-stone-200">
+
+                <div className="flex justify-between p-3 bg-stone-50 rounded-lg border">
                   <span>{t("tenant.renewalOption")}</span>
                   <span className="font-semibold">
                     {selectedContract.renewalNoticeDays} days notice
@@ -240,7 +268,7 @@ const MyContract: React.FC = () => {
               </div>
             </div>
 
-            {/* Download Button */}
+            {/* Download */}
             {selectedContract.fileUrl && (
               <div className="flex justify-end mt-6">
                 <a
