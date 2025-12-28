@@ -24,6 +24,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   onViewSpaces,
 }) => {
   const [availableUnits, setAvailableUnits] = useState<Unit[]>([]);
+  const [allUnits, setAllUnits] = useState<Unit[]>([]); // Store all units for pagination
   const [activeSearchParams, setActiveSearchParams] = useState<UnitSearchParams>({});
   const [pendingSearchParams, setPendingSearchParams] = useState<UnitSearchParams>({});
   const [loading, setLoading] = useState(true);
@@ -45,9 +46,14 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
   // Toast state
   const [toast, setToast] = useState<{
     show: boolean;
-    type: 'success' | 'error' | 'info';
+    type: 'success' | 'warning' | 'error' | 'info';
     message: string;
   }>({ show: false, type: 'info', message: '' });
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(9); // Show 9 units per page (3x3 grid)
+  const [totalPages, setTotalPages] = useState(1);
 
   const { isAuthenticated, userId } = useAuth();
 
@@ -56,8 +62,22 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     loadAvailableUnits();
   }, []);
 
+  // Update displayed units when allUnits or currentPage changes
+  useEffect(() => {
+    updateDisplayUnits();
+  }, [allUnits, currentPage]);
+
+  const updateDisplayUnits = () => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    
+    const pageUnits = allUnits.slice(startIndex, endIndex);
+    setAvailableUnits(pageUnits);
+    setTotalPages(Math.ceil(allUnits.length / itemsPerPage));
+  };
+
   // Show toast function
-  const showToast = (type: 'success' | 'error' | 'info', message: string) => {
+  const showToast = (type: 'success'| 'warning' | 'error' | 'info', message: string) => {
     setToast({ show: true, type, message });
   };
 
@@ -107,6 +127,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       }
 
       setError(null);
+      setCurrentPage(1); // Reset to first page on new search
 
       console.log("📋 Original params:", params);
       
@@ -174,7 +195,8 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       }));
       
       console.log("✨ Transformed data:", transformedData);
-      setAvailableUnits(transformedData);
+      setAllUnits(transformedData); // Store all units
+      // updateDisplayUnits will be called via useEffect
 
       if (params && Object.keys(params).length > 0) {
         setActiveSearchParams(params);
@@ -184,6 +206,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     } catch (err: any) {
       console.error("❌ Error loading units:", err);
       setError(err.message || "Failed to load units");
+      setAllUnits([]);
       setAvailableUnits([]);
       showToast('error', 'Failed to load available spaces. Please try again.');
     } finally {
@@ -212,6 +235,155 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     setPendingSearchParams(params);
   };
 
+  // Pagination functions
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      // Scroll to units grid section when changing pages
+      setTimeout(() => {
+        const unitsGrid = document.querySelector('#units-grid-section');
+        if (unitsGrid) {
+          unitsGrid.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100);
+    }
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      let startPage = Math.max(1, currentPage - 2);
+      let endPage = Math.min(totalPages, currentPage + 2);
+      
+      if (currentPage <= 3) {
+        endPage = 5;
+      }
+      
+      if (currentPage >= totalPages - 2) {
+        startPage = totalPages - 4;
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+      
+      if (startPage > 1) {
+        pages.unshift("...");
+        pages.unshift(1);
+      }
+      
+      if (endPage < totalPages) {
+        pages.push("...");
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  // New function to check if user can view details or make appointment
+  const checkUserEligibility = async (unitId: number, actionType: 'view' | 'appointment') => {
+    if (!userId) return { canProceed: false, message: 'Please login first' };
+
+    try {
+      // Get user info to check approval status and role
+      const userRes = await userApi.getById(userId);
+      const user = userRes.data;
+      
+      // Check if user is approved or has ROLE_TENANT
+      const isApproved = user.approvalStatus === "APPROVED";
+      const isTenant = user.roles?.some((role: any) => role.name === "ROLE_TENANT");
+      
+      // For viewing details: Approved users and tenants can always see
+      if (actionType === 'view') {
+        if (!isApproved && !isTenant) {
+          return { 
+            canProceed: false, 
+            message: 'Your account is pending approval. Only approved users or tenants can view unit details.' 
+          };
+        }
+        return { canProceed: true, message: '' };
+      }
+      
+      // For appointments: Check appointment-specific restrictions
+      if (actionType === 'appointment') {
+        if (!isApproved && !isTenant) {
+          return { 
+            canProceed: false, 
+            message: 'Your account is pending approval. Only approved users or tenants can book appointments.' 
+          };
+        }
+
+        // Get user's existing appointments for this unit
+        try {
+          const appointmentsRes = await appointmentApi.getByUser(userId);
+          const userAppointments = appointmentsRes.data || [];
+          
+          // Find existing appointment for this unit
+          const existingAppointment = userAppointments.find(
+            (appt: any) => appt.roomId === unitId
+          );
+          
+          if (existingAppointment) {
+            const status = existingAppointment.status;
+            
+            // Check if appointment is active (SCHEDULED or CONFIRMED)
+            if (status === 'SCHEDULED' || status === 'CONFIRMED') {
+              return { 
+                canProceed: false, 
+                message: `You already have a ${status.toLowerCase()} appointment for this unit. ` +
+                        `You cannot make another appointment until this one is completed or cancelled.` 
+              };
+            }
+            
+            // Check if appointment was cancelled recently (within 3 days)
+            if (status === 'CANCELLED') {
+              const cancelledDate = new Date(existingAppointment.updatedAt || existingAppointment.createdAt);
+              const now = new Date();
+              const daysDiff = Math.floor((now.getTime() - cancelledDate.getTime()) / (1000 * 60 * 60 * 24));
+              
+              if (daysDiff < 3) {
+                const daysLeft = 3 - daysDiff;
+                return { 
+                  canProceed: false, 
+                  message: `Your previous appointment for this unit was cancelled. ` +
+                          `Please wait ${daysLeft} more day${daysLeft !== 1 ? 's' : ''} before booking again.` 
+                };
+              }
+            }
+          }
+          
+          return { canProceed: true, message: '' };
+        } catch (err) {
+          console.error("Error checking appointments:", err);
+          // If we can't check appointments, allow proceeding but with a warning
+          return { 
+            canProceed: true, 
+            message: 'Unable to verify your existing appointments. Please proceed with caution.' 
+          };
+        }
+      }
+      
+      return { canProceed: false, message: 'Invalid action type' };
+    } catch (err) {
+      console.error("Error checking user eligibility:", err);
+      return { 
+        canProceed: false, 
+        message: 'Failed to verify your account status. Please try again later.' 
+      };
+    }
+  };
+
   const handleUnitDetail = async (unit: Unit) => {
     console.log("👁️ Viewing unit details:", unit.unitNumber);
     
@@ -222,36 +394,28 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       return;
     }
 
-    try {
-      setIsCheckingApproval(true);
-      const res = await userApi.getById(userId!);
-      if (res.data.approvalStatus !== "APPROVED") {
-        showToast('warning', 'Your account is pending approval. Redirecting to home page.');
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 2000);
-        return;
-      }
-      
-      if (onUnitDetail) {
-        onUnitDetail(unit);
-      } else {
-        console.log("ℹ️ No onUnitDetail handler provided");
-        showToast('info', `Unit ${unit.unitNumber} details:\nSpace: ${unit.unitSpace} sqm\nType: ${unit.roomType?.typeName || 'N/A'}`);
-      }
-    } catch (err) {
-      console.error("Failed to verify approval:", err);
-      showToast('error', 'Failed to verify your account. Redirecting to home page.');
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 2000);
+    // Check user eligibility for VIEWING details only
+    const eligibility = await checkUserEligibility(unit.id, 'view');
+    if (!eligibility.canProceed) {
+      showToast('warning', eligibility.message);
       return;
-    } finally {
-      setIsCheckingApproval(false);
+    }
+
+    // If there was a warning message but we can proceed, show it as info
+    if (eligibility.message && eligibility.canProceed) {
+      showToast('info', eligibility.message);
+    }
+
+    // Proceed with viewing details
+    if (onUnitDetail) {
+      onUnitDetail(unit);
+    } else {
+      console.log("ℹ️ No onUnitDetail handler provided");
+      showToast('info', `Unit ${unit.unitNumber} details:\nSpace: ${unit.unitSpace} sqm\nType: ${unit.roomType?.typeName || 'N/A'}`);
     }
   };
 
-  const handleAppointment = (unit: Unit) => {
+  const handleAppointment = async (unit: Unit) => {
     console.log("📅 Opening appointment for unit:", unit.unitNumber);
     
     if (!isAuthenticated) {
@@ -259,6 +423,18 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
       setPendingAction({ type: "appointment", unit });
       setIsLoginPromptOpen(true);
       return;
+    }
+
+    // Check user eligibility for APPOINTMENT
+    const eligibility = await checkUserEligibility(unit.id, 'appointment');
+    if (!eligibility.canProceed) {
+      showToast('warning', eligibility.message);
+      return;
+    }
+
+    // If there was a warning message but we can proceed, show it as info
+    if (eligibility.message && eligibility.canProceed) {
+      showToast('info', eligibility.message);
     }
 
     if (onAppointment) {
@@ -312,6 +488,15 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
     try {
       setIsBooking(true);
       console.log("📤 Submitting appointment:", data);
+      
+      // Double-check eligibility before submitting
+      const eligibility = await checkUserEligibility(data.roomId, 'appointment');
+      if (!eligibility.canProceed) {
+        showToast('warning', eligibility.message);
+        setIsBooking(false);
+        return;
+      }
+      
       const response = await appointmentApi.book(userId, data);
       console.log("✅ Appointment booked:", response);
       
@@ -431,7 +616,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                 <h3 className="text-xl font-bold text-[#0F172A]">Available Spaces</h3>
                 <div className="flex items-center space-x-2 mt-1">
                   <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#1E40AF]/10 text-[#1E40AF] text-sm">
-                    {availableUnits.length} Available Spaces
+                    {allUnits.length} Available Spaces {/* Show total count */}
                   </span>
                   {activeFiltersCount > 0 && (
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[#F59E0B]/10 text-[#D97706] text-sm">
@@ -520,7 +705,7 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
           )}
 
           {/* No Results State */}
-          {!loading && !searching && !error && availableUnits.length === 0 && (
+          {!loading && !searching && !error && allUnits.length === 0 && (
             <div className="py-12 px-6 text-center">
               <div className="w-16 h-16 mx-auto rounded-full bg-[#F8FAFC] flex items-center justify-center mb-4">
                 <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -573,6 +758,79 @@ export const AvailableUnitsSection: React.FC<AvailableUnitsSectionProps> = ({
                   />
                 ))}
               </div>
+
+              {/* Pagination Controls - Only show if we have more than one page */}
+              {allUnits.length > itemsPerPage && (
+                <div className="mt-8 px-4 py-4 bg-white border-t border-gray-200">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    {/* Results summary */}
+                    <div className="text-sm text-gray-600">
+                      Showing{" "}
+                      <span className="font-medium text-gray-900">
+                        {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, allUnits.length)}
+                      </span>
+                      {/* {" "}of{" "}
+                      <span className="font-medium text-gray-900">{allUnits.length}</span>{" "}
+                      spaces */}
+                    </div>
+
+                    {/* Navigation buttons */}
+                    <div className="flex items-center space-x-2">
+                      {/* Previous button */}
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="inline-flex items-center px-2 sm:px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span className="hidden sm:inline">Previous</span>
+                        <span className="sm:hidden">Prev</span>
+                      </button>
+
+                      {/* Page numbers - Hidden on mobile */}
+                      <div className="hidden sm:flex items-center space-x-1">
+                        {getPageNumbers().map((page, index) => (
+                          page === "..." ? (
+                            <span key={`ellipsis-${index}`} className="px-2 py-1 text-sm text-gray-500">•••</span>
+                          ) : (
+                            <button
+                              key={page}
+                              onClick={() => handlePageChange(page as number)}
+                              className={`w-8 h-8 text-sm rounded ${
+                                currentPage === page
+                                  ? "bg-blue-600 text-white"
+                                  : "text-gray-700 hover:bg-gray-100"
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          )
+                        ))}
+                      </div>
+
+                      {/* Mobile page indicator */}
+                      <div className="sm:hidden text-sm font-medium text-gray-700">
+                        {currentPage}/{totalPages}
+                      </div>
+
+                      {/* Next button */}
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="inline-flex items-center px-2 sm:px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span className="hidden sm:inline">Next</span>
+                        <span className="sm:hidden">Next</span>
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

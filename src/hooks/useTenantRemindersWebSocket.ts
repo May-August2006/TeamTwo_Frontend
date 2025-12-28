@@ -10,6 +10,10 @@ export function useTenantRemindersWebSocket(jwtToken: string) {
   const [reminders, setReminders] = useState<ReminderDTO[]>([]);
   const [connected, setConnected] = useState(false);
 
+  //const unreadCount = reminders.filter((r) => !r.isRead).length;
+
+  const unreadCount = reminders.filter((r) => !r.isRead && !r.hidden).length;
+
   // ⬅️ Extract tenantId from JWT
   let tenantId: number | null = null;
   try {
@@ -63,5 +67,5 @@ export function useTenantRemindersWebSocket(jwtToken: string) {
     };
   }, [jwtToken, tenantId]);
 
-  return { reminders, setReminders, connected };
+  return { reminders, setReminders, unreadCount, connected };
 }

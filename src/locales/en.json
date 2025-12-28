@@ -7,7 +7,7 @@
     "operations": "Manage your mall operations and configurations",
     "totalBranches": "Total Branches",
     "totalBuildings": "Total Buildings",
-    "totalLevels": "Total Levels",
+    "totalLevels": "Total Floors",
     "activeUsers": "Active Users",
     "fromLastMonth": "from last month",
     "quickActions": "Quick Actions",
@@ -28,8 +28,13 @@
     "availableUnits": "Available Units",
     "unitAdded": "Unit {unitNumber} added"
   },
-  
-  "sidebar": {
+
+  "adminsidebar": {
+
+    "userManagement": "User Management",
+    "adminDashboard": "Admin Dashboard",
+    "adminUser": "Admin User",
+    "administrator": "Administrator",
     "dashboard": "Dashboard",
     "masterData": "Master Data Management",
     "branchManagement": "Branch Management",
@@ -49,56 +54,38 @@
     "managerPortal": "Manager Portal"
   },
   "header": {
-    "logout": "Logout"
-  },
-  "userManagement": {
-    "title": "User Management",
-    "subtitle": "Manage system users and their permissions",
-    "addUser": "Add New User",
+    "profile": "My Profile",
+    "settings": "Settings",
+    "changePassword": "Change Password",
+    "logout": "Logout",
+    "menu": "Menu",
     "user": "User",
-    "role": "Role",
-    "assignment": "Assignment",
-    "status": "Status",
-    "actions": "Actions",
-    "active": "Active",
-    "inactive": "Inactive",
-    "notAssigned": "Not assigned",
-    "removeFromBuilding": "Remove from Building",
-    "assignToBuilding": "Assign to Building",
-    "removeFromBranch": "Remove from Branch",
-    "assignToBranch": "Assign to Branch",
-    "editUser": "Edit User",
-    "deleteUser": "Delete User",
-    "addNewUser": "Add New User",
-    "fullName": "Full Name",
-    "email": "Email",
-    "username": "Username",
-    "roleName": "Role",
-    "password": "Password",
-    "assignToBuildingLabel": "Assign to Building",
-    "assignToBranchLabel": "Assign to Branch",
-    "noAvailableBuildings": "No available buildings",
-    "noAvailableBranches": "No available branches",
-    "onlyWithoutManagers": "Only buildings without managers are shown",
-    "onlyWithoutAccountants": "Only branches without accountants are shown",
-    "selectBuilding": "Select a building (optional)",
-    "selectBranch": "Select a branch (optional)",
-    "cancel": "Cancel",
-    "createUser": "Create User",
-    "creating": "Creating...",
-    "editUserTitle": "Edit User",
-    "updateUser": "Update User",
-    "updating": "Updating...",
-    "assignUser": "Assign User",
-    "assignAsManager": "Assign as Building Manager",
-    "assignAsAccountant": "Assign as Branch Accountant",
-    "chooseBuilding": "Choose a building...",
-    "chooseBranch": "Choose a branch...",
-    "assigning": "Assigning...",
-    "confirmDelete": "Are you sure you want to delete this user?",
-    "confirmRemoveAssignment": "Are you sure you want to remove {{name}} from their assignment?"
+    "version": "Version",
+    "copyright": "Copyright",
+    "language": "Language"
   },
+
   "branchManagement": {
+    "subtitle": "Manage all branches and their locations.",
+    "addNewBranch": "Add New Branch",
+
+    "accountant": "Accountant",
+    "editBranch": "Edit branch",
+    "deleteBranch": "Delete branch",
+    "noBranchesYet": "No Branches Yet",
+    "tryAdjustingSearch": "Try adjusting your search terms to find what you're looking for.",
+    "startByAdding": "Start by clicking 'Add New Branch' to define your first branch.",
+
+    "deleteConfirmation": "Are you sure you want to delete this branch? This action cannot be undone.",
+    "deleting": "Deleting...",
+    "loading": "Loading Branch Management...",
+    "errors": {
+      "loadFailed": "Failed to load branches",
+      "deleteFailed": "Failed to delete branch"
+    },
+    "success": {
+      "deleted": "Branch deleted successfully"
+    },
     "title": "Branch Management",
     "searchPlaceholder": "Search branches by name or address...",
     "addBranch": "Add Branch",
@@ -114,6 +101,7 @@
     "confirmDelete": "Are you sure you want to delete this branch?"
   },
   "buildingManagement": {
+
     "title": "Building Management",
     "searchPlaceholder": "Search buildings by name or code...",
     "addBuilding": "Add Building",
@@ -125,11 +113,25 @@
     "noBuildings": "No buildings yet",
     "noBuildingsFound": "No buildings found",
     "addFirstBuilding": "Add Your First Building",
-    "confirmDelete": "Are you sure you want to delete this building?"
+    "confirmDelete": "Are you sure you want to delete this building?",
+
+    "subtitle": "Manage all buildings within your branches",
+    "allBranches": "All Branches",
+    "clearFilters": "Clear Filters",
+    "noResults": "No Buildings Found"
   },
+
   "levelManagement": {
-    "title": "Level Management",
-    "searchPlaceholder": "Search levels by name or building...",
+    "subtitle": "Manage all floors within your buildings",
+    "addFloor": "Add New Floor",
+    "allBranches": "All Branches",
+    "allBuildings": "All Buildings",
+    "clearFilters": "Clear Filters",
+    "noFloors": "No Floors Yet",
+    "noResults": "No Floors Found",
+
+    "title": "Floor Management",
+    "searchPlaceholder": "Search floors by name or building...",
     "addLevel": "Add Level",
     "levelNumber": "Level Number",
     "floor": "Floor",
@@ -139,7 +141,18 @@
     "addFirstLevel": "Add Your First Level",
     "confirmDelete": "Are you sure you want to delete this level?"
   },
+
+  
   "unitManagement": {
+    "subtitle": "Manage all units and their types in your properties",
+    "addUnit": "Add Unit",
+    "addSpaceType": "Add Space Type",
+    "addHallType": "Add Hall Type",
+    "units": "Units",
+    "spaceTypes": "Space Types",
+    "hallTypes": "Hall Types",
+    "noSpaceTypes": "No Space Types Found",
+    "noHallTypes": "No Hall Types Found",
     "title": "Unit Management",
     "rooms": "Units",
     "roomTypes": "Room Types",
@@ -164,36 +177,6 @@
     "saveChanges": "Save Changes",
     "dueDatePlaceholder": "e.g., 1 for 1st of the month",
     "lateFeePlaceholder": "Enter late fee policy details..."
-  },
-  "common": {
-    "save": "Save",
-    "cancel": "Cancel",
-    "delete": "Delete",
-    "edit": "Edit",
-    "create": "Create",
-    "update": "Update",
-    "search": "Search",
-    "loading": "Loading...",
-    "error": "Error",
-    "success": "Success",
-    "confirm": "Confirm",
-    "yes": "Yes",
-    "no": "No",
-    "manager": "Manager",
-    "managerUser": "Manager User",
-    "myProfile": "My Profile",
-    "changePassword": "Change Password",
-    "welcome": "Welcome",
-    "loginRequired": "Login Required",
-    "goToLogin": "Go to Login",
-
-    "refreshing": "Refreshing...",
-    "refreshData": "Refresh Data",
-    "goBack": "Go Back",
-    "close": "Close",
-    "backToList": "Back to List",
-    "thisTenant": "this tenant",
-    "thisCategory": "this category"
   },
   
   "tenant": {
@@ -549,6 +532,1467 @@
     "deleteFailed": "Failed to delete category",
     "deleteTitle": "Delete Category",
     "deleteMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone."
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "subtitle": "Update your account password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "passwordStrength": "Strength",
+    "passwordStrong": "Strong ✓",
+    "passwordGood": "Good",
+    "passwordWeak": "Weak",
+    "passwordVeryWeak": "Very Weak",
+    "requirementsTitle": "Password must contain:",
+    "requirements": "• 6-20 characters • Uppercase letter • Lowercase letter • Number • Special character (@#$%^&+=) • No spaces",
+    "passwordChanged": "Password changed successfully!",
+    "changing": "Changing Password...",
+    "cancel": "Cancel",
+    "stayLoggedIn": "You will remain logged in after changing your password.",
+    "errors": {
+      "currentRequired": "Current password is required",
+      "newRequired": "New password is required",
+      "confirmRequired": "Please confirm your password",
+      "passwordsMatch": "Passwords do not match",
+      "differentPassword": "New password must be different from current password",
+      "invalidPassword": "Password must contain uppercase, lowercase, number, and special character (@#$%^&+=)",
+      "sessionExpired": "Session expired. Please login again.",
+      "serverError": "Server error. Please try again later.",
+      "networkError": "Network error. Please check your connection.",
+      "loginRequired": "Please login to change your password"
+    }
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "rememberMe": "Remember me"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "accountant": "Accountant",
+    "manager": "Manager",
+    "user": "User"
+  },
+  "utilities": {
+    "title": "Utility Types",
+    "create": "Create Utility Type",
+    "edit": "Edit Utility Type",
+    "list": "Utility Types List",
+    "name": "Utility Name",
+    "code": "Utility Code",
+    "unit": "Unit",
+    "rate": "Rate",
+    "type": "Type",
+    "actions": "Actions",
+    "addNew": "Add New Utility Type",
+    "search": "Search utilities...",
+    "noResults": "No utility types found",
+    "confirmDelete": "Are you sure you want to delete this utility type?",
+    "deleteSuccess": "Utility type deleted successfully",
+    "createSuccess": "Utility type created successfully",
+    "updateSuccess": "Utility type updated successfully",
+    "types": {
+      "electricity": "Electricity",
+      "water": "Water",
+      "gas": "Gas",
+      "internet": "Internet",
+      "maintenance": "Maintenance",
+      "trash": "Trash Collection",
+      "parking": "Parking",
+      "security": "Security",
+      "common_area": "Common Area",
+      "other": "Other"
+    },
+    "units": {
+      "kwh": "kWh",
+      "cubic_meter": "m³",
+      "liter": "Liter",
+      "mbps": "Mbps",
+      "month": "Month",
+      "unit": "Unit",
+      "slot": "Slot",
+      "person": "Person",
+      "square_meter": "m²",
+      "other": "Other"
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Enter utility name",
+      "code": "Code",
+      "codePlaceholder": "Enter unique code",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter description",
+      "unit": "Unit",
+      "unitPlaceholder": "Select unit",
+      "rate": "Rate",
+      "ratePlaceholder": "Enter rate per unit",
+      "isActive": "Active",
+      "isBillable": "Billable",
+      "save": "Save",
+      "cancel": "Cancel",
+      "update": "Update"
+    },
+    "validation": {
+      "nameRequired": "Name is required",
+      "codeRequired": "Code is required",
+      "unitRequired": "Unit is required",
+      "rateRequired": "Rate is required",
+      "ratePositive": "Rate must be positive"
+    }
+  },
+  "common": {
+
+    "active": "Active",
+    "inactive": "Inactive",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+
+    "view": "View",
+    "add": "Add",
+    "filter": "Filter",
+    "noData": "No data available",
+    "show": "Show",
+    "hide": "Hide",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "yes": "Yes",
+    "no": "No",
+    "manager": "Manager",
+    "managerUser": "Manager User",
+    "myProfile": "My Profile",
+    "changePassword": "Change Password",
+    "welcome": "Welcome",
+    "loginRequired": "Login Required",
+    "goToLogin": "Go to Login",
+
+    "refreshing": "Refreshing...",
+    "refreshData": "Refresh Data",
+    "goBack": "Go Back",
+    "backToList": "Back to List",
+    "thisTenant": "this tenant",
+    "thisCategory": "this category",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "continue": "Continue",
+    "fieldRequired": "This field is required",
+    "fieldTooLong": "Cannot exceed {{max}} characters",
+    "characters": "characters",
+    "words": "words",
+    "tooLong": "(Too long!)",
+    "charactersRemaining": "characters remaining"
+  },
+  
+  "utilityType": {
+    "title": "Utility Type Management",
+    "subtitle": "Manage utility types and calculation methods for billing configuration.",
+    "addButton": "Add Utility Type",
+    "editTitle": "Edit Utility Type",
+    "createTitle": "Add New Utility Type",
+    "updateButton": "Update Utility",
+    "createButton": "Create Utility",
+    "cancel": "Cancel",
+    "loading": "Loading Utility Types...",
+    "confirmAction": "Confirm Action",
+    "attention": "Attention",
+    "success": "Success",
+    "active": "Active",
+    "inactive": "Inactive",
+    "edit": "Edit",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "delete": "Delete",
+    "noDescription": "No description provided.",
+    "noUtilityTypes": "No Utility Types Found",
+    "startByAdding": "Start by clicking 'Add Utility Type' to define your first utility configuration.",
+    "configurationGuide": "Utility Type Configuration Guide",
+    "form": {
+      "utilityName": "Utility Name",
+      "utilityNamePlaceholder": "e.g., Electricity, Water, CAM",
+      "calculationMethod": "Calculation Method",
+      "fixedRate": "Fixed Rate",
+      "metered": "Metered (Consumption-based)",
+      "allocated": "Allocated",
+      "ratePerUnit": "Rate Per Unit",
+      "baseRate": "base rate for calculations",
+      "rateDescription": "Enter a value between 0 and 999,999.9999 with up to 4 decimal places",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe this utility type and how it should be calculated..."
+    },
+    "validation": {
+      "utilityNameRequired": "Utility name is required",
+      "utilityNameMinLength": "Utility name must be at least 2 characters",
+      "utilityNameMaxLength": "Utility name cannot exceed 50 characters",
+      "utilityNameInvalidChars": "Utility name can only contain letters, numbers, spaces, hyphens, and dots",
+      "utilityNameMaxWords": "Utility name should be maximum 5 words",
+      "utilityNameConsecutiveSpaces": "Utility name should not have consecutive spaces",
+      "utilityNameTrimSpaces": "Utility name should not start or end with spaces",
+      "utilityNameRestrictedWord": "Utility name cannot contain \"{{word}}\"",
+      "calculationMethodRequired": "Calculation method is required",
+      "ratePerUnitRequired": "Rate per unit is required",
+      "ratePerUnitInvalid": "Rate must be a valid number",
+      "ratePerUnitNegative": "Rate cannot be negative",
+      "ratePerUnitMax": "Rate cannot exceed 999,999.9999",
+      "ratePerUnitMaxDecimals": "Rate can have maximum 4 decimal places",
+      "descriptionMaxLength": "Description cannot exceed 500 characters"
+    },
+    "calculationMethods": {
+      "fixed": "Fixed rate per billing period",
+      "metered": "Based on actual consumption (meter reading)",
+      "allocated": "Allocated based on usage or area"
+    },
+    "table": {
+      "utilityName": "Utility Name",
+      "calculationMethod": "Calculation Method",
+      "rate": "Rate",
+      "status": "Status",
+      "description": "Description",
+      "actions": "Actions"
+    },
+    "confirm": {
+      "delete": "Are you sure you want to delete this utility type? This action cannot be undone.",
+      "toggleActive": "Are you sure you want to {{action}} this utility type?"
+    },
+    "errors": {
+      "fetchFailed": "Failed to fetch utility types",
+      "saveFailed": "Failed to save utility type",
+      "deleteFailed": "Failed to delete utility type",
+      "updateFailed": "Failed to update utility type",
+      "notFound": "Utility type not found.",
+      "validationErrors": "Please fix the validation errors above"
+    },
+    "success": {
+      "created": "Utility type created successfully!",
+      "updated": "Utility type updated successfully!",
+      "deleted": "Utility type deleted successfully!",
+      "activated": "Utility type activated successfully!",
+      "deactivated": "Utility type deactivated successfully!"
+    },
+    "guide": {
+      "fixedMethod": "FIXED Method",
+      "fixedDescription": "Use for utilities with consistent monthly charges like internet, cable TV, or basic service fees that don't vary with usage.",
+      "meteredMethod": "METERED Method",
+      "meteredDescription": "Use for consumption-based utilities like electricity, water, or gas that are measured by meters and vary monthly.",
+      "allocatedMethod": "ALLOCATED Method",
+      "allocatedDescription": "Use for shared expenses like Common Area Maintenance (CAM), trash collection, or security that are divided among tenants.",
+      "ratePerUnit": "Rate Per Unit",
+      "rateDescription": "Set the base rate that will be used in billing fee calculations. This serves as the default rate for this utility type."
+    }
+  },
+  "userManagement": {
+    "title": "User Management",
+    "subtitle": "Manage system users and their assigned roles and permissions",
+    "addUser": "Add New User",
+    "addNewUser": "Add New User",
+    "loadingUsers": "Loading users...",
+    "noUsersFound": "No users found",
+    "tryChangingFilter": "Try changing your filter or add a new user",
+    "deactivated": "Deactivated",
+    "unknownBuilding": "Unknown Building",
+    "unknownBranch": "Unknown Branch",
+    "notAssigned": "Not assigned",
+    "active": "Active",
+    "inactive": "Inactive",
+    "manager": "Manager",
+    "accountant": "Accountant",
+    "approve": "Approve",
+    "reject": "Reject",
+    "setToPending": "Set to Pending",
+    "restore": "Restore",
+    "removeFromBuilding": "Remove from Building",
+    "assignToBuilding": "Assign to Building",
+    "deactivate": "Deactivate",
+    "edit": "Edit",
+    "buildingManager": "Building Manager",
+    "buildingAccountant": "Building Accountant",
+    "assign": "Assign",
+    "creating": "Creating...",
+    "updating": "Updating...",
+    "assigning": "Assigning...",
+    "createUser": "Create User",
+    "updateUser": "Update User",
+    "editUser": "Edit User: {{name}}",
+    "assignUser": "Assign {{name}} as {{type}}",
+    "role": "Role:",
+    "defaultPasswordMessage": "A default password will be auto-generated. User will need to reset it on first login.",
+    "checkingEmail": "Checking email availability...",
+    "checkingUsername": "Checking username availability...",
+    "emailAvailable": "✓ Email is available",
+    "emailTaken": "✗ Email is already taken",
+    "usernameAvailable": "✓ Username is available",
+    "usernameTaken": "✗ Username is already taken",
+    
+    "tabs": {
+      "all": "All Users",
+      "guests": "Guests",
+      "managers": "Managers",
+      "accountants": "Accountants",
+      "bod": "Board of Directors",
+      "pendingApproval": "Pending Approval",
+      "deactivated": "Deactivated Users"
+    },
+    
+    "approvalStatus": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    
+    "roles": {
+      "admin": "Administrator",
+      "manager": "Manager",
+      "accountant": "Accountant",
+      "bod": "Board of Directors",
+      "tenant": "Tenant",
+      "guest": "Guest"
+    },
+    
+    "validation": {
+      "usernameRequired": "Username is required",
+      "usernameInvalid": "Username must be 3-20 characters (letters, numbers, underscores only)",
+      "usernameTooLong": "Username cannot exceed {{max}} characters",
+      "usernameExists": "Username already exists",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email address",
+      "emailTooLong": "Email cannot exceed {{max}} characters",
+      "emailExists": "Email already exists",
+      "fullNameRequired": "Full name is required",
+      "fullNameInvalid": "Full name must be 2-30 characters (letters, spaces, dots, apostrophes, hyphens only)",
+      "fullNameTooLong": "Full name cannot exceed {{max}} characters"
+    },
+    
+    "form": {
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "John Doe",
+      "email": "Email",
+      "emailPlaceholder": "john@example.com",
+      "username": "Username",
+      "usernamePlaceholder": "johndoe123",
+      "role": "Role",
+      "initialApprovalStatus": "Initial Approval Status",
+      "pendingRequiresApproval": "Pending (Requires Approval)",
+      "approvedAutoAccess": "Approved (Auto Access)",
+      "rejectedNoAccess": "Rejected (No Access)",
+      "guestApprovalNote": "Guest users require approval before they can access the system",
+      "assignManagerToBuilding": "Assign to Building (as Manager)",
+      "assignAccountantToBuilding": "Assign to Building (as Accountant)",
+      "selectBuildingOptional": "Select a building (optional)",
+      "onlyBuildingsWithoutManagers": "Only buildings without managers are shown",
+      "onlyBuildingsWithoutAccountants": "Only buildings without accountants are shown",
+      "selectBuilding": "Select Building",
+      "chooseBuilding": "Choose a building...",
+      "noAvailableBuildingsWithoutManagers": "No available buildings without managers",
+      "noAvailableBuildingsWithoutAccountants": "No available buildings without accountants"
+    },
+    
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "approvalStatus": "Approval Status",
+      "assignment": "Assignment",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    
+    "tooltips": {
+      "reApprove": "User is approved - Click to re-approve",
+      "approve": "Approve User",
+      "reReject": "User is rejected - Click to reject again",
+      "reject": "Reject User",
+      "rePending": "User is pending - Click to set pending again",
+      "setPending": "Set User to Pending",
+      "restore": "Restore User",
+      "removeFromBuilding": "Remove from Building",
+      "assignToBuilding": "Assign to Building",
+      "edit": "Edit User",
+      "deactivate": "Deactivate User"
+    },
+    
+    "confirm": {
+      "approveTitle": "Approve User",
+      "approve": "Approve",
+      "reApprove": "Are you sure you want to re-approve {{name}}? This will grant them access to the system.",
+      "rejectTitle": "Reject User",
+      "reject": "Reject",
+      "reReject": "Are you sure you want to keep {{name}} rejected? This will deny them access to the system.",
+      "pendingTitle": "Set User to Pending",
+      "setPending": "Set to Pending",
+      "rePending": "Are you sure you want to keep {{name}} in pending status?",
+      "setPendingMessage": "Are you sure you want to set {{name}} to pending status?",
+      "removeAssignmentTitle": "Remove Assignment",
+      "remove": "Remove",
+      "removeAssignment": "Are you sure you want to remove {{name}} from their building assignment?",
+      "deactivateTitle": "Deactivate User",
+      "deactivate": "Deactivate",
+      "deactivateMessage": "Are you sure you want to deactivate {{name}}? They will no longer have access to the system and will be removed from any building assignments.",
+      "restoreTitle": "Restore User",
+      "restore": "Restore",
+      "restoreMessage": "Are you sure you want to restore {{name}}? They will regain access to the system."
+    },
+    
+    "notifications": {
+      "statusUpdated": "User status updated to {{status}} successfully!",
+      "userCreated": "User \"{{name}}\" created successfully! A default password has been generated.",
+      "managerAssigned": "Manager assigned to building successfully.",
+      "managerAssignmentFailed": "User created but manager assignment failed.",
+      "accountantAssigned": "Accountant assigned to building successfully.",
+      "accountantAssignmentFailed": "User created but accountant assignment failed.",
+      "userUpdated": "User updated successfully!",
+      "managerAssignmentSuccess": "Manager assigned to building successfully!",
+      "accountantAssignmentSuccess": "Accountant assigned to building successfully!",
+      "managerRemoved": "Manager removed from building successfully!",
+      "accountantRemoved": "Accountant removed from building successfully!",
+      "userDeactivated": "User deactivated successfully!",
+      "userRestored": "User restored successfully!"
+    },
+    
+    "errors": {
+      "loadDataFailed": "Failed to load data. Please refresh the page.",
+      "loadUsersFailed": "Failed to load users",
+      "statusUpdateFailed": "Failed to update user status to {{status}}",
+      "unauthorized": "Unauthorized. Please check your login.",
+      "forbidden": "Forbidden. You don't have permission to create users.",
+      "badRequest": "Bad request. Please check the form data.",
+      "serverError": "Server error ({{status}}). Please try again.",
+      "networkError": "No response from server. Check your network connection.",
+      "createUserError": "Error creating user: {{error}}",
+      "updateUserFailed": "Failed to update user. Please try again.",
+      "assignmentFailed": "Failed to assign user",
+      "noAssignmentFound": "No building assignment found",
+      "removeAssignmentFailed": "Failed to remove assignment",
+      "deactivateFailed": "Failed to deactivate user",
+      "restoreFailed": "Failed to restore user"
+    },
+    
+    "showingCount": "Showing <1>{{count}}</1> {{tab}}",
+    "guestsDescription": "Users with limited access permissions",
+    "bodDescription": "Board of Directors with system-wide access",
+    "pendingApprovalDescription": "Guest users awaiting approval",
+    "deactivatedDescription": "Users who have been deactivated"
+  }
+  ,
+
+  
+  "overview": {
+    "title": "Welcome back, Accountant!",
+    "loading": "Loading dashboard data...",
+    "error": "Failed to load dashboard",
+    "retry": "Retry",
+    "kpis": {
+      "totalRentToday": "Total Rent Collected (Today)",
+      "outstandingInvoices": "Total Outstanding Invoices",
+      "paymentsRecordedToday": "Payments Recorded (Today)",
+      "collectionEfficiency": "Collection Efficiency",
+      "avgPaymentTime": "Average Payment Time",
+      "disputedPayments": "Disputed Payments"
+    },
+    "kpiSubtitles": {
+      "todayCollection": "Today's collection",
+      "totalAmount": "{{amount}} MMK total",
+      "successPending": "{{success}} successful, {{pending}} pending",
+      "monthAverage": "This month average",
+      "fromDueDate": "From due date",
+      "requireAttention": "Requiring attention"
+    },
+    "recentPayments": {
+      "title": "Recent Payments",
+      "subtitleLatest": "Latest 4 payments recorded today",
+      "subtitleAll": "All payments recorded today",
+      "viewAll": "View all ({{count}})",
+      "showLess": "Show less",
+      "noPayments": "No recent payments today",
+      "tableHeaders": {
+        "tenantRoom": "Tenant & Room",
+        "amount": "Amount",
+        "method": "Method",
+        "time": "Time",
+        "status": "Status"
+      },
+      "roomLabel": "Room {{room}}",
+      "amountLabel": "{{amount}} MMK",
+      "methodLabel": "{{method}}",
+      "status": {
+        "completed": "Completed",
+        "pending": "Pending",
+        "failed": "Failed"
+      }
+    },
+    "actions": {
+      "viewDetails": "View Details",
+      "refresh": "Refresh"
+    },
+    "currency": {
+      "mmk": "MMK",
+      "days": "days"
+    }
+  
+  },
+
+  
+  "paymentList": {
+    "title": "Payment Management",
+    "subtitle": "View and manage all payment transactions",
+    "loading": "Loading payments...",
+    "error": {
+      "failedToLoad": "Failed to load payments",
+      "unexpected": "Unexpected error occurred",
+      "voidFailed": "Failed to void payment",
+      "receiptFailed": "Failed to generate receipt"
+    },
+    "stats": {
+      "totalPayments": "Total Payments",
+      "completed": "Completed",
+      "voided": "Voided",
+      "totalCollected": "Total Collected"
+    },
+    "filters": {
+      "title": "Filters",
+      "showFilters": "Show Filters",
+      "hideFilters": "Hide Filters",
+      "search": "Search",
+      "searchPlaceholder": "Search tenant name...",
+      "paymentDate": "Payment Date",
+      "status": "Status",
+      "allStatus": "All Status",
+      "paymentMethod": "Payment Method",
+      "allMethods": "All Methods",
+      "paymentsFound": "{{count}} payments found",
+      "clearFilters": "Clear Filters",
+      "noPayments": {
+        "title": "No payments found",
+        "filterMessage": "Try adjusting your filters",
+        "defaultMessage": "No payments have been recorded yet"
+      }
+    },
+    "table": {
+      "paymentDetails": "Payment Details",
+      "tenantInvoice": "Tenant & Invoice",
+      "amount": "Amount",
+      "methodStatus": "Method & Status",
+      "created": "Created",
+      "actions": "Actions",
+      "room": "Room {{room}}",
+      "ref": "Ref: {{ref}}",
+      "showDetails": "Show Details",
+      "hideDetails": "Hide Details",
+      "referenceNumber": "Reference Number:",
+      "receivedBy": "Received By:",
+      "notes": "Notes:",
+      "paymentInformation": "Payment Information",
+      "paymentId": "Payment ID:",
+      "date": "Date:",
+      "method": "Method:",
+      "tenantInformation": "Tenant Information",
+      "tenantName": "Tenant Name:",
+      "roomNumber": "Room Number:",
+      "invoice": "Invoice:",
+      "transactionDetails": "Transaction Details",
+      "status": "Status:",
+      "notAvailable": "N/A"
+    },
+    "actions": {
+      "recordPayment": "Record Payment",
+      "refresh": "Refresh",
+      "downloadReceipt": "Download Receipt",
+      "receipt": "Receipt",
+      "details": "Details",
+      "void": "Void",
+      "voidPayment": "Void Payment",
+      "previous": "Previous",
+      "next": "Next",
+      "refreshList": "Refresh List",
+      "clearFilters": "Clear Filters"
+    },
+    "pagination": {
+      "showing": "Showing {{from}} - {{to}} of {{total}} payments",
+      "itemsPerPage": "Items per page:",
+      "page": "Page {{current}} of {{total}}",
+      "lastUpdated": "Last updated: {{time}}"
+    },
+    "status": {
+      "completed": "Completed",
+      "pending": "Pending",
+      "voided": "Voided",
+      "failed": "Failed"
+    },
+    "methods": {
+      "cash": "Cash",
+      "check": "Check",
+      "bankTransfer": "Bank Transfer",
+      "creditCard": "Credit Card",
+      "debitCard": "Debit Card",
+      "mobilePayment": "Mobile Payment"
+    },
+    "confirm": {
+      "void": "Are you sure you want to void this payment? This action cannot be undone."
+    },
+    "currency": {
+      "mmk": "MMK"
+    }
+  }
+,
+
+ "auditLog": {
+    "title": "Payment Audit Log",
+    "subtitle": "Track all payment-related activities and changes",
+    "loading": "Loading audit logs...",
+    "error": "Failed to load audit logs",
+    "filters": {
+      "title": "Filters",
+      "showFilters": "Show Filters",
+      "hideFilters": "Hide Filters",
+      "search": "Search",
+      "searchPlaceholder": "Search by payment, tenant, or user...",
+      "actionType": "Action Type",
+      "allActions": "All Actions",
+      "date": "Date",
+      "paymentNumber": "Payment Number",
+      "paymentNumberPlaceholder": "Enter payment number",
+      "foundLogs": "Found {{count}} audit logs",
+      "clearFilters": "Clear Filters"
+    },
+    "stats": {
+      "totalLogs": "Total Logs",
+      "created": "Created",
+      "edited": "Edited",
+      "voided": "Voided"
+    },
+    "table": {
+      "timestamp": "Timestamp",
+      "action": "Action",
+      "paymentDetails": "Payment Details",
+      "tenant": "Tenant",
+      "changedBy": "Changed By",
+      "reason": "Reason",
+      "amount": "{{amount}} MMK",
+      "invoice": "Invoice: {{invoice}}",
+      "room": "Room: {{room}}",
+      "userId": "ID: {{id}}",
+      "noReason": "No reason provided",
+      "noData": "—"
+    },
+    "actions": {
+      "CREATED": "Payment Recorded",
+      "EDITED": "Payment Edited",
+      "VOIDED": "Payment Voided"
+    },
+    "pagination": {
+      "showing": "Showing {{from}} to {{to}} of {{total}} entries",
+      "itemsPerPage": "Items per page:",
+      "firstPage": "First Page",
+      "lastPage": "Last Page",
+      "previous": "Previous",
+      "next": "Next",
+      "lastUpdated": "Last updated: {{time}}"
+    },
+    "emptyState": {
+      "title": "No audit logs found",
+      "filterMessage": "Try adjusting your filters to see more results.",
+      "defaultMessage": "Payment audit logs will appear here once activities are recorded.",
+      "clearFilters": "Clear Filters"
+    },
+    "export": {
+      "csv": "Export to CSV",
+      "filename": "audit-logs-{{date}}.csv"
+    },
+    "refresh": "Refresh"
+  },
+
+  "UsageEntryPage": {
+    "title": "Building Utility Billing Management",
+    "restrictedMode": "(Restricted Mode - Your assigned building only)",
+    "subtitle": "Manage meter readings and generate utility bills for entire buildings",
+    "refresh": "Refresh",
+    "assignedBuilding": "Assigned Building:",
+    "assignedBuildingNote": "You can only access your assigned building.",
+    "statistics": {
+      "totalReadings": "Total Readings",
+      "electricity": "Electricity",
+      "water": "Water",
+      "thisMonth": "This Month"
+    },
+    "generateBills": {
+      "title": "Generate Building Utility Bills",
+      "selectBuilding": "Select Building",
+      "yourAssignedBuilding": "(Your assigned building)",
+      "periodStart": "Period Start *",
+      "periodEnd": "Period End *",
+      "dueDate": "Due Date *",
+      "calculate": "Calculate All Utility Bills (Including CAM)",
+      "calculating": "Calculating...",
+      "noPermission": "You can only access your assigned building",
+      "buildingDetails": "Selected Building Details",
+      "totalUnits": "Total Units:",
+      "occupied": "Occupied:",
+      "vacant": "Vacant:",
+      "leasableArea": "Leasable Area:",
+      "sqFt": "sq.ft",
+      "totalCAMCosts": "Total CAM Costs:",
+      "contractNote": "Note: Only units with active contracts covering {start} to {end} will be included in calculations."
+    },
+    "buildingInfo": {
+      "name": "Building Name",
+      "branch": "Branch",
+      "totalArea": "Total Leasable Area",
+      "generatorFee": "Generator Fee",
+      "transformerFee": "Transformer Fee"
+    },
+    "billingResults": {
+      "title": "Building Utility Bill Calculation",
+      "yourBuilding": "(Your assigned building)",
+      "cancel": "Cancel",
+      "generate": "Generate {count} Bill{s}",
+      "generating": "Generating...",
+      "allGenerated": "All Invoices Generated",
+      "building": "Building",
+      "billingPeriod": "Billing Period",
+      "dueDate": "Due Date",
+      "totalUnits": "Total Units:",
+      "readyToGenerate": "Ready to Generate:",
+      "totalCAM": "Total CAM:",
+      "grandTotal": "Grand Total:",
+      "allInvoicesExist": "All units already have invoices for this period. No invoices to generate.",
+      "notes": "Notes (Optional)",
+      "notesPlaceholder": "Add any notes for these bills..."
+    },
+    "unitTable": {
+      "unitTenant": "Unit & Tenant",
+      "meteredUtilities": "Metered Utilities",
+      "camFees": "CAM Fees (Shared)",
+      "totalAmount": "Total Amount",
+      "status": "Status",
+      "invoiceExists": "Invoice Exists",
+      "noMeteredUtilities": "No metered utilities",
+      "subtotal": "Subtotal:",
+      "generator": "Generator:",
+      "transformer": "Transformer:",
+      "totalCAM": "Total CAM:",
+      "metered": "Metered:",
+      "readyToGenerate": "Ready to Generate",
+      "invoiceExistsStatus": "Invoice Exists",
+      "totalMetered": "Total Metered Utilities:",
+      "totalGenerator": "Total Generator Fees:",
+      "totalTransformer": "Total Transformer Fees:"
+    },
+    "alerts": {
+      "error": "Error",
+      "contractDateWarning": "Check the contract dates for each unit. Units will only be billed for periods covered by their active contracts.",
+      "success": "Success"
+    },
+    "permission": {
+      "accessDenied": "You can only access your assigned building"
+    }
+  },
+
+  "BulkMeterReadingPage": {
+    "title": "Bulk Meter Reading Entry",
+    "subtitle": "Enter meter readings for ROOM and HALL type units. Units are only available during their active contract period.",
+    "assignedTo": "You are assigned to:",
+    "refresh": "Refresh",
+    "controls": {
+      "selectBuilding": "Select Building",
+      "readingDate": "Reading Date *",
+      "dateNote": "Only units with active contracts covering this date will be available.",
+      "downloadTemplate": "Download Excel Template",
+      "importExcel": "Import Excel",
+      "selectBuildingPlaceholder": "Select building...",
+      "noBuildingAssigned": "No building assigned",
+      "myAssignedBuilding": "My Assigned Building"
+    },
+    "buildingInfo": {
+      "building": "Building:",
+      "readingDate": "Reading Date:",
+      "validUnits": "Valid Units:",
+      "pending": "Pending:",
+      "unitsCannotRead": "unit(s) cannot have readings for",
+      "unitsStartLater": "start later",
+      "unitsEndedEarlier": "ended earlier",
+      "noActiveContract": "no active contract",
+      "allUnitsHaveReadings": "All valid units have readings for",
+      "noFurtherEntries": "No further entries needed."
+    },
+    "table": {
+      "title": "Meter Readings for",
+      "date": "Date:",
+      "units": "Units:",
+      "validForDate": "valid for this date",
+      "invalid": "invalid",
+      "validUnitsPending": "Valid Units Pending:",
+      "unitDetails": "Unit Details",
+      "electricity": "Electricity (kWh)",
+      "water": "Water (gal)",
+      "previousReadings": "Previous Readings",
+      "consumption": "Consumption",
+      "status": "Status",
+      "room": "ROOM",
+      "hall": "HALL",
+      "notAvailable": "Not Available",
+      "alreadyRead": "Already Read",
+      "contract": "Contract:",
+      "to": "to",
+      "enterCurrentReading": "Enter current reading",
+      "previous": "Previous:",
+      "electricityConsumption": "Electricity:",
+      "waterConsumption": "Water:",
+      "submitted": "Submitted",
+      "pending": "Pending",
+      "readyForEntry": "Ready for Entry",
+      "totalUnits": "Total Units:",
+      "validForDateCount": "Valid for date:",
+      "unitsCount": "units",
+      "pendingCount": "Pending:",
+      "completed": "Completed:",
+      "invalidReasons": "Invalid reasons:",
+      "clearValues": "Clear Values",
+      "submit": "Submit",
+      "submitting": "Submitting...",
+      "allReadingsSubmitted": "All Readings Submitted",
+      "submitPending": "Submit {count} Pending Readings"
+    },
+    "statusMessages": {
+      "success": "Success",
+      "error": "Error",
+      "warning": "Warning",
+      "noPermission": "You can only access meter readings for your assigned building",
+      "refreshData": "Failed to load data. Please refresh the page.",
+      "loadError": "Error loading building units. Please try again.",
+      "selectBuildingFirst": "Please select a building first",
+      "allReadingsComplete": "All units in this building already have readings for this month. Excel template download is disabled.",
+      "selectDateFirst": "Please select a building and reading date first",
+      "excelOnly": "Please upload an Excel (.xlsx) file",
+      "invalidFormat": "Invalid Excel format. Please use the provided template.",
+      "noValidReadings": "No valid readings found in Excel file",
+      "noValidForDate": "No valid readings found for the selected date. Some units may have contracts starting later or ending earlier.",
+      "excelError": "Failed to read Excel file. Please check the format.",
+      "fileError": "Error processing Excel file",
+      "utilitiesNotConfigured": "Utilities not configured. Please contact administrator.",
+      "noValidToSubmit": "No valid readings to submit. They may already exist or units cannot have readings for this date.",
+      "successSubmit": "Successfully submitted {count} readings from {source}!",
+      "apiError": "Error submitting readings. Please try again.",
+      "selectDate": "Please select a building and reading date",
+      "noValidUnits": "No valid units available for submission. Either all units already have readings or no units can have readings for this date.",
+      "negativeConsumption": "Found {count} readings where current reading is less than previous reading. Please check the values.",
+      "electricityLow": "Electricity reading for unit {unit} cannot be less than previous reading ({previous})",
+      "waterLow": "Water reading for unit {unit} cannot be less than previous reading ({previous})"
+    },
+    "loading": "Loading data...",
+    "emptyState": {
+      "selectBuilding": "Select a Building",
+      "noBuildingAssigned": "No Building Assigned",
+      "adminMessage": "Choose a building from the dropdown above to start entering meter readings. Only units with active contracts covering the selected date will be available.",
+      "userMessage": "You have not been assigned to any building. Please contact your administrator."
+    }
+  },
+
+
+  "meterReadingPage": {
+    "title": "Meter Readings",
+    "subtitle": "Manage all meter readings in one place",
+    "adminSubtitle": "(Your assigned building only)",
+    
+    "buttons": {
+      "addNewReading": "Add New Reading",
+      "refresh": "Refresh"
+    },
+    
+    "assignedBuilding": {
+      "label": "Assigned Building:",
+      "description": "You can only access meter readings from your assigned building."
+    },
+    
+    "alerts": {
+      "readingSaved": "Meter reading saved successfully",
+      "readingDeleted": "Meter reading deleted successfully",
+      "deleteConfirm": "Are you sure you want to delete this meter reading?"
+    },
+    
+    "buildingErrors": {
+      "noBuildingAssigned": "No building assigned to your account. Please contact administrator.",
+      "failedToLoadBuilding": "Failed to load your assigned building. Please contact administrator."
+    },
+    
+    "loadingErrors": {
+      "failedToLoadReadings": "Failed to load meter readings",
+      "failedToDeleteReading": "Failed to delete meter reading"
+    },
+    
+    "statistics": {
+      "totalReadings": "Total Readings",
+      "electricity": "Electricity",
+      "water": "Water",
+      "thisMonth": "This Month"
+    },
+    
+    "tableInfo": {
+      "showingReadings": "Showing {count} meter readings",
+      "lastUpdated": "Last updated: {time}",
+      "noReadings": "No meter readings found"
+    },
+    
+    "error": "Error"
+  },
+
+
+  "buildingUtilityInvoicePage": {
+    "title": "Mall Owner Expense Calculator",
+    "subtitle": "Calculate and track mall owner's utility expenses for vacant and unallocated areas",
+    "assignedBuildingInfo": "You are assigned to: {buildingName}",
+    
+    "buttons": {
+      "refresh": "Refresh",
+      "viewHistory": "View History",
+      "hideHistory": "Hide History",
+      "calculateExpenses": "Calculate Mall Owner Expenses",
+      "calculating": "Calculating...",
+      "hidePreview": "Hide Preview",
+      "saveExpenseRecord": "Save Expense Record",
+      "markAsPending": "Mark as Pending",
+      "markAsPaid": "Mark as Paid",
+      "markAsCancelled": "Mark as Cancelled"
+    },
+    
+    "statistics": {
+      "totalExpenses": "Total Expenses",
+      "totalAmount": "Total Amount",
+      "pending": "Pending",
+      "paid": "Paid"
+    },
+    
+    "form": {
+      "selectBuilding": "Select Building *",
+      "periodStart": "Period Start *",
+      "periodEnd": "Period End *",
+      "selectBuildingPlaceholder": "Select building...",
+      "noBuildingAssigned": "No building assigned",
+      "expenseDescription": "Expense Description",
+      "descriptionPlaceholder": "Enter description for this expense..."
+    },
+    
+    "alerts": {
+      "duplicateExpense": "An expense record already exists for {buildingName} for period {periodStart} to {periodEnd}. Please select a different period.",
+      "expenseSaved": "Mall owner expense of {amount} saved successfully!",
+      "statusUpdated": "Expense status updated to {status}",
+      "expenseDeleted": "Expense record deleted successfully",
+      "exportSuccess": "Expenses exported as {format} successfully!",
+      "noExpensesExport": "No expenses to export"
+    },
+    
+    "errors": {
+      "selectBuilding": "Please select a building",
+      "periodDates": "Period start date must be before period end date",
+      "futureDate": "Period start date cannot be in the future",
+      "buildingNotFound": "Selected building not found",
+      "noUnits": "No units found in this building",
+      "leasableArea": "Total leasable area is not set for this building",
+      "calculateFirst": "Please calculate CAM distribution first",
+      "selectPeriod": "Please select period dates",
+      "noExpenses": "No expenses recorded",
+      "failedLoad": "Failed to load data: {error}",
+      "failedSave": "Failed to save mall owner expense: {error}",
+      "failedUpdate": "Failed to update expense status: {error}",
+      "failedDelete": "Failed to delete expense: {error}",
+      "serverFallback": "Failed to load expenses from server. Using local storage as fallback.",
+      "noAccess": "You can only access CAM calculations for your assigned building",
+      "noAccessCalculate": "You can only calculate CAM for your assigned building"
+    },
+    
+    "camPreview": {
+      "title": "Mall Owner Expense Calculation for {buildingName}",
+      "period": "Period: {startDate} to {endDate}",
+      "mallOwnerShare": "Mall Owner's Share:"
+    },
+    
+    "areaBreakdown": {
+      "title": "Building Area",
+      "totalLeasableArea": "Total Leasable Area:",
+      "occupiedArea": "Occupied Area:",
+      "vacantArea": "Vacant Area:",
+      "unallocatedArea": "Unallocated Area:"
+    },
+    
+    "costBreakdown": {
+      "title": "CAM Cost Breakdown",
+      "generatorFee": "Generator Fee:",
+      "transformerFee": "Transformer Fee:",
+      "otherCAMCosts": "Other CAM Costs:",
+      "totalCAMCosts": "Total CAM Costs:"
+    },
+    
+    "distribution": {
+      "title": "Distribution",
+      "tenantsPay": "Tenants Pay:",
+      "mallOwnerPays": "Mall Owner Pays:",
+      "occupiedUnits": "For {count} occupied units ({percentage}% of area)",
+      "vacantUnits": "For {vacantCount} vacant units + unallocated area ({percentage}% of area)"
+    },
+    
+    "saveExpense": {
+      "title": "Save Expense Record",
+      "mallOwnerShare": "Mall Owner's Share:"
+    },
+    
+    "expenseHistory": {
+      "title": "{role} Mall Owner Expenses",
+      "allExpenses": "All Mall Owner Expenses",
+      "yourHistory": "Your Expense History",
+      "records": "({count} records)",
+      "buildingPeriod": "Building & Period",
+      "amountDetails": "Amount Details",
+      "status": "Status",
+      "dateRecorded": "Date Recorded",
+      "description": "Description",
+      "generator": "Generator:",
+      "transformer": "Transformer:",
+      "otherCAM": "Other CAM:",
+      "totalRecords": "Total Records:",
+      "pendingAmount": "Pending:",
+      "paidAmount": "Paid:",
+      "totalAmount": "Total:",
+      "noExpensesTitle": "No expenses recorded",
+      "noExpensesDescription": "Calculate and save mall owner expenses to see them here."
+    },
+    
+    "howItWorks": {
+      "title": "How It Works - Correct Calculation",
+      "keyPrinciple": "Key Principle:",
+      "keyPrincipleText": "Mall owner pays for ALL areas that are NOT occupied by tenants. This includes both vacant units AND any unallocated space in the building.",
+      
+      "steps": {
+        "calculateTotal": "1. Calculate Total CAM",
+        "calculateTotalText": "Generator + Transformer + Other CAM costs.",
+        "determineOccupied": "2. Determine Occupied Area",
+        "determineOccupiedText": "Sum of all units with active tenants.",
+        "calculateOwnerShare": "3. Calculate Mall Owner Share",
+        "calculateOwnerShareText": "Total CAM - Tenants' portion for occupied area."
+      },
+      
+      "example": {
+        "title": "Example (5000 sq.ft building):",
+        "totalLeasable": "• Total leasable area: {area}",
+        "occupied": "• Occupied by tenants: {area} ({percentage})",
+        "vacant": "• Vacant units: {area} ({percentage})",
+        "unallocated": "• Unallocated area: {area} ({percentage})",
+        "totalCAM": "• Total CAM costs: {amount}",
+        "tenantsPay": "→ Tenants pay: {area} × ({totalCost} ÷ {totalArea}) = {amount}",
+        "ownerPays": "→ Mall owner pays: {totalCost} - {tenantsPay} = {amount}"
+      },
+      
+      "note": "Note: All expense records are now stored in the database. {roleInfo} The system prevents duplicate entries for the same building and period.",
+      "nonAdminNote": "You can only view expenses for your assigned building.",
+      "adminNote": "As an administrator, you can view all expenses."
+    },
+    
+    "status": {
+      "pending": "PENDING",
+      "paid": "PAID",
+      "approved": "APPROVED",
+      "cancelled": "CANCELLED"
+    },
+    
+    "deleteConfirm": "Are you sure you want to delete this expense record?",
+    "success": "Success",
+    "error": "Error"
+  },
+
+
+  "sidebar": {
+    "dashboard": "Accountant Dashboard",
+    
+    "sections": {
+      "overview": "Overview",
+      "payment": "Payment",
+      "reports": "Reports",
+      "auditLog": "Audit Log",
+      "billingUtilities": "Billing & Utilities"
+    },
+    
+    "billingUtilities": {
+      "utilityCalculation": "Utility Calculation",
+      "bulkReadings": "Bulk Readings",
+      "meterReadings": "Meter Readings",
+      "utilityExpenses": "Utility Expenses",
+      "invoiceManagement": "Invoice Management",
+      "lateFee": "Late Fee",
+      "overdueOutstanding": "Overdue & Outstanding"
+    },
+    
+    "user": {
+      "name": "Accountant User",
+      "role": "Accountant"
+    }
+  }
+,
+  "bod_home": {
+    "loading": "Loading dashboard...",
+    "error": "Failed to load dashboard data",
+    "retry": "Retry",
+    
+    "header": {
+      "welcome": "Welcome to Dashboard",
+      "subtitle": "Board of Directors Overview"
+    },
+    
+    "kpis": {
+      "total_units": "Total Units",
+      "occupied": "occupied",
+      "vacant": "vacant",
+      "occupied_rate": "occupied",
+      "occupancy_rate": "Occupancy Rate",
+      "target": "Target: 90%",
+      "total_revenue": "Total Revenue",
+      "lifetime": "Lifetime",
+      "this_month": "This month:",
+      "no_monthly_data": "No monthly data",
+      "collection_efficiency": "Collection Efficiency",
+      "collection_target": "Target: 95%"
+    },
+    
+    "units_distribution": {
+      "title": "Units Distribution",
+      "subtitle": "Vacant vs Occupied Units",
+      "total_units": "Total Units",
+      "occupied_units": "Occupied Units",
+      "vacant_units": "Vacant Units",
+      "of_total": "of total"
+    },
+    
+    "additional_stats": {
+      "active_tenants": "Active Tenants",
+      "currently_occupying": "Currently occupying units",
+      "active_contracts": "Active Contracts",
+      "expiring_soon": "expiring soon",
+      "overdue_invoices": "Overdue Invoices",
+      "outstanding": "outstanding"
+    },
+    
+    "revenue_overview": {
+      "title": "Revenue Overview",
+      "subtitle": "Monthly and total performance",
+      "total_revenue": "Total Revenue",
+      "this_month": "This Month",
+      "this_year": "This Year",
+      "collection_efficiency": "Collection Efficiency:",
+      "active_contracts": "Active Contracts:"
+    },
+    
+    "footer": {
+      "data_updated": "Data last updated:"
+    }
+  },
+
+  "financialSummary": {
+    "title": "Financial Dashboard",
+    "subtitle": "Real-time financial metrics and performance analysis",
+    "loading": "Loading financial data...",
+    "error": {
+      "title": "Partial Data Loaded",
+      "retry": "Retry"
+    },
+    "period": {
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "yearly": "Yearly"
+    },
+    "cards": {
+      "totalRevenue": {
+        "title": "Total Revenue",
+        "period": {
+          "year": "Annual",
+          "quarter": "Quarterly",
+          "month": "Monthly"
+        },
+        "margin": "Margin: {{margin}}"
+      },
+      "totalExpenses": {
+        "title": "Total Expenses",
+        "subtitle": "Mall Owner CAM & Utilities",
+        "ratio": "Expense Ratio: {{ratio}}"
+      },
+      "netProfit": {
+        "title": "Net Profit",
+        "subtitle": "Revenue - Expenses",
+        "margin": "Profit Margin: {{margin}}"
+      },
+      "performanceMetrics": {
+        "title": "Performance Metrics",
+        "occupancy": "Occupancy",
+        "collection": "Collection",
+        "units": "{{occupied}}/{{total}} Units Occupied"
+      }
+    },
+    "profitabilityAnalysis": {
+      "title": "Profitability Analysis",
+      "subtitle": "Revenue breakdown and margins",
+      "grossRevenue": "Gross Revenue",
+      "totalExpenses": "Total Expenses",
+      "netProfit": "Net Profit",
+      "profitMargin": "Profit Margin"
+    },
+    "operationalMetrics": {
+      "title": "Operational Metrics",
+      "subtitle": "Property utilization and efficiency",
+      "totalUnits": "Total Units",
+      "occupiedUnits": "Occupied Units",
+      "occupancyRate": "Occupancy Rate",
+      "collectionEfficiency": "Collection Efficiency"
+    }
+  },
+
+  "occupancyLease": {
+    "loading": "Loading occupancy data...",
+    "error": {
+      "failed": "Failed to load occupancy data: {{message}}",
+      "retry": "Retry"
+    },
+    "summaryCards": {
+      "totalUnits": "Total Units",
+      "occupied": "occupied",
+      "vacant": "vacant",
+      "overallOccupancyRate": "Overall Occupancy Rate",
+      "buildings": "Buildings",
+      "activeProperties": "Active properties in portfolio",
+      "industryAvg": "Industry avg: 88%"
+    },
+    "buildingTable": {
+      "title": "Building Occupancy Details",
+      "subtitle": "Performance across all properties",
+      "columns": {
+        "buildingName": "Building Name",
+        "branch": "Branch",
+        "totalUnits": "Total Units",
+        "unitsOccupied": "Units Occupied",
+        "unitsVacant": "Units Vacant",
+        "occupancyRate": "Occupancy Rate",
+        "status": "Status"
+      },
+      "noData": "No building data available",
+      "total": "TOTAL"
+    },
+    "status": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "needsAttention": "Needs Attention",
+      "unknown": "Unknown"
+    },
+    "dataUpdated": "Data last updated: {{date}}"
+  },
+
+  "performanceMetrics": {
+    "title": "Performance Metrics",
+    "subtitle": "Key performance indicators for rent collection and utility cost management",
+    "loading": {
+      "title": "Loading key performance indicators...",
+      "spinnerText": "Calculating performance metrics...",
+      "fetchingData": "Fetching data from invoices, contracts, and utility records"
+    },
+    "error": {
+      "title": "Unable to Load Metrics",
+      "possibleReasons": "This could be because:",
+      "reasons": {
+        "noInvoices": "No invoice data exists in the system",
+        "noUtilityCosts": "Utility costs haven't been recorded yet",
+        "missingContracts": "Contract data is missing or incomplete",
+        "backendIssue": "The backend service is not properly configured"
+      },
+      "buttons": {
+        "retry": "Retry",
+        "refreshPage": "Refresh Page"
+      }
+    },
+    "noData": {
+      "title": "No Performance Data Available",
+      "description": "Performance metrics require paid invoices with utility items and contract data. Once you have paid invoices for rent and utilities, these metrics will be automatically calculated.",
+      "howToSee": "To see performance metrics:",
+      "requirements": {
+        "rentInvoices": "Create and mark invoices with <strong>RENT</strong> items as <strong>PAID</strong>",
+        "utilityInvoices": "Add utility invoices (<strong>ELECTRICITY</strong>, <strong>WATER</strong>) and mark as <strong>PAID</strong>",
+        "contracts": "Ensure contracts are associated with units and buildings",
+        "dates": "Use issue dates in current or previous year"
+      },
+      "buttons": {
+        "goToInvoices": "Go to Invoices",
+        "goToContracts": "Go to Contracts",
+        "refreshData": "Refresh Data",
+        "refreshing": "Refreshing..."
+      }
+    },
+    "cards": {
+      "rentCollectionRate": {
+        "title": "Rent Collection Rate",
+        "progress": "Progress",
+        "target": "Target",
+        "industryAvg": "Industry Avg",
+        "fromLast": "from last {timeRange}"
+      },
+      "utilityCostChange": {
+        "title": "Utility Cost Change",
+        "costReduction": "Cost reduction achieved",
+        "costIncrease": "Cost increase detected",
+        "industryAverage": "Industry Average",
+        "yourPerformance": "Your Performance",
+        "betterThanIndustry": "Better than industry",
+        "worseThanIndustry": "Worse than industry"
+      },
+      "totalUtilityCost": {
+        "title": "Total Utility Cost",
+        "currentYearTotal": "Current Year Total",
+        "averageBuildingChange": "Average Building Change",
+        "buildings": "Buildings",
+        "status": "Status",
+        "attention": "Attention",
+        "best": "Best",
+        "worst": "Worst"
+      }
+    },
+    "charts": {
+      "utilityTrend": {
+        "title": "Utility Cost Trend",
+        "description": "Annual utility costs in lakhs MMK",
+        "tooltip": {
+          "cost": "{value}L MMK",
+          "year": "Year: {label}"
+        },
+        "note": "Shows year-over-year utility cost changes across all properties",
+        "legend": {
+          "totalCost": "Total Cost"
+        }
+      },
+      "buildingComparison": {
+        "title": "Building Comparison",
+        "description": "Previous vs Current Year (Lakhs MMK)",
+        "tooltip": {
+          "change": "{value}%",
+          "lastYear": "Last Year",
+          "currentYear": "Current Year"
+        },
+        "note": "Utility cost comparison between previous and current year",
+        "legend": {
+          "previous": "Previous",
+          "current": "Current"
+        }
+      }
+    },
+    "table": {
+      "title": "Building Utility Cost Analysis",
+      "subtitle": "Detailed cost comparison and performance analysis by property",
+      "columns": {
+        "propertyName": "Property Name",
+        "lastYear": "Last Year",
+        "currentYear": "Current Year",
+        "change": "Change %",
+        "amount": "Amount",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "noData": "No building utility data available",
+      "noDataDescription": "Add invoices with utility items to see performance metrics",
+      "total": "TOTAL",
+      "summary": "Summary",
+      "detailsButton": "Details →"
+    },
+    "legend": {
+      "dataInterpretation": {
+        "title": "Data Interpretation",
+        "description": "Data shows utility cost changes year-over-year. Negative percentages indicate cost reductions (good), positive percentages indicate cost increases (requires attention).",
+        "excellent": {
+          "label": "EXCELLENT",
+          "description": "– Cost reduction of 5% or more"
+        },
+        "good": {
+          "label": "GOOD",
+          "description": "– Cost increase of less than 5%"
+        },
+        "needsAttention": {
+          "label": "NEEDS ATTENTION",
+          "description": "– Cost increase of more than 5%"
+        }
+      },
+      "currencyInformation": {
+        "title": "Currency Information",
+        "description": "All monetary values are displayed in Myanmar Kyat (MMK). The values are shown in lakhs (1 Lakh = 100,000 MMK).",
+        "example": "Example: 5.20L = 520,000 MMK",
+        "note": "Note:",
+        "noteDescription": "All currency values are automatically converted to lakhs format. 1 Lakh = 100,000 Myanmar Kyats."
+      }
+    },
+    "buttons": {
+      "refresh": "Refresh",
+      "updating": "Updating...",
+      "retry": "Retry",
+      "viewDetails": "View Details"
+    },
+    "status": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "needsAttention": "Needs Attention",
+      "unknown": "Unknown"
+    },
+    "timeRange": {
+      "year": "Year",
+      "quarter": "Quarter",
+      "month": "Month"
+    },
+    "general": {
+      "lastUpdated": "Last updated: {date}",
+      "dataLastFetched": "Data last fetched: {date}",
+      "realData": "Real Data",
+      "properties": "Properties"
+    }
+  },
+
+  "bodSidebar": {
+    "title": "Board of Directors",
+    "subtitle": "Strategic Dashboard",
+    "menu": {
+      "dashboard": {
+        "name": "Dashboard",
+        "description": "Overview"
+      },
+      "occupancy": {
+        "name": "Occupancy & Lease",
+        "description": "Reviews"
+      },
+      "performance": {
+        "name": "Performance",
+        "description": "Metrics"
+      },
+      "financialSummary": {
+        "name": "Financial Summary",
+        "description": "Quarterly/Yearly"
+      },
+      "reports": {
+        "name": "Reports",
+        "description": "Download"
+      }
+    },
+    "user": {
+      "role": "Board Member",
+      "access": "Read-Only Access"
+    }
   }
 
+
+
+
+
+
+
+
+
+
+
+  
 }
+

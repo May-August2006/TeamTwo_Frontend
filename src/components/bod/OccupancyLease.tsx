@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from "react";
 import { Building2, Home, TrendingUp, Download, Loader2, Calendar } from "lucide-react";
 import { dashboardApi, type BuildingOccupancyDTO, type OccupancySummary } from "../../api/dashboardApi";
+import { useTranslation } from "react-i18next";
 
 const OccupancyLease: React.FC = () => {
+  const { t } = useTranslation();
   const [occupancyData, setOccupancyData] = useState<OccupancySummary | null>(null);
   const [buildingData, setBuildingData] = useState<BuildingOccupancyDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,32 +16,33 @@ const OccupancyLease: React.FC = () => {
     fetchOccupancyData();
   }, []);
 
-const fetchOccupancyData = async () => {
-  try {
-    setLoading(true);
-    console.log('Fetching occupancy data...');
-    
-    const [summary, buildings] = await Promise.all([
-      dashboardApi.getOccupancySummary(),
-      dashboardApi.getBuildingOccupancyStats()
-    ]);
-    
-    console.log('Occupancy data fetched:', { summary, buildings });
-    setOccupancyData(summary);
-    setBuildingData(buildings);
-  } catch (err: any) {
-    console.error('Detailed error:', {
-      message: err.message,
-      response: err.response?.data,
-      status: err.response?.status,
-      headers: err.response?.headers
-    });
-    
-    setError(`Failed to load occupancy data: ${err.response?.data?.message || err.message}`);
-  } finally {
-    setLoading(false);
-  }
-};
+  const fetchOccupancyData = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching occupancy data...');
+      
+      const [summary, buildings] = await Promise.all([
+        dashboardApi.getOccupancySummary(),
+        dashboardApi.getBuildingOccupancyStats()
+      ]);
+      
+      console.log('Occupancy data fetched:', { summary, buildings });
+      setOccupancyData(summary);
+      setBuildingData(buildings);
+    } catch (err: any) {
+      console.error('Detailed error:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        headers: err.response?.headers
+      });
+      
+      const errorMessage = err.response?.data?.message || err.message;
+      setError(t('occupancyLease.error.failed', { message: errorMessage }));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatPercentage = (value: number | undefined) => {
     if (value === undefined) return "0%";
@@ -62,13 +65,13 @@ const fetchOccupancyData = async () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'EXCELLENT':
-        return 'Excellent';
+        return t('occupancyLease.status.excellent');
       case 'GOOD':
-        return 'Good';
+        return t('occupancyLease.status.good');
       case 'NEEDS_ATTENTION':
-        return 'Needs Attention';
+        return t('occupancyLease.status.needsAttention');
       default:
-        return 'Unknown';
+        return t('occupancyLease.status.unknown');
     }
   };
 
@@ -76,7 +79,7 @@ const fetchOccupancyData = async () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-        <span className="ml-2 text-lg text-gray-600">Loading occupancy data...</span>
+        <span className="ml-2 text-lg text-gray-600">{t('occupancyLease.loading')}</span>
       </div>
     );
   }
@@ -90,7 +93,7 @@ const fetchOccupancyData = async () => {
             onClick={fetchOccupancyData}
             className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all duration-200"
           >
-            Retry
+            {t('occupancyLease.error.retry')}
           </button>
         </div>
       </div>
@@ -105,15 +108,14 @@ const fetchOccupancyData = async () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-     
-
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white rounded-xl shadow-lg border border-blue-100 p-6 hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Units</p>
+              <p className="text-sm font-medium text-gray-600">
+                {t('occupancyLease.summaryCards.totalUnits')}
+              </p>
               <p className="text-3xl font-bold text-gray-900 mt-1">{totalShops}</p>
             </div>
             <div className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
@@ -122,8 +124,8 @@ const fetchOccupancyData = async () => {
           </div>
           <div className="mt-2">
             <p className="text-sm text-gray-600">
-              <span className="font-bold text-green-600">{totalOccupied}</span> occupied •{" "}
-              <span className="font-bold text-gray-600">{totalVacant}</span> vacant
+              <span className="font-bold text-green-600">{totalOccupied}</span> {t('occupancyLease.summaryCards.occupied')} •{" "}
+              <span className="font-bold text-gray-600">{totalVacant}</span> {t('occupancyLease.summaryCards.vacant')}
             </p>
           </div>
         </div>
@@ -131,7 +133,9 @@ const fetchOccupancyData = async () => {
         <div className="bg-white rounded-xl shadow-lg border border-blue-100 p-6 hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-medium text-gray-600">Overall Occupancy Rate</p>
+              <p className="text-sm font-medium text-gray-600">
+                {t('occupancyLease.summaryCards.overallOccupancyRate')}
+              </p>
               <p className="text-3xl font-bold text-gray-900 mt-1">
                 {formatPercentage(overallOccupancyRate)}
               </p>
@@ -147,21 +151,27 @@ const fetchOccupancyData = async () => {
                 style={{ width: `${overallOccupancyRate}%` }}
               ></div>
             </div>
-            <span className="text-sm text-gray-500 ml-2">Industry avg: 88%</span>
+            <span className="text-sm text-gray-500 ml-2">
+              {t('occupancyLease.summaryCards.industryAvg')}
+            </span>
           </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-lg border border-blue-100 p-6 hover:shadow-xl transition-shadow duration-300">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-medium text-gray-600">Buildings</p>
+              <p className="text-sm font-medium text-gray-600">
+                {t('occupancyLease.summaryCards.buildings')}
+              </p>
               <p className="text-3xl font-bold text-gray-900 mt-1">{totalBuildings}</p>
             </div>
             <div className="p-3 bg-gradient-to-br from-sky-50 to-cyan-50 rounded-xl border border-sky-200">
               <Building2 className="w-6 h-6 text-sky-700" />
             </div>
           </div>
-          <p className="text-sm text-gray-600 mt-2">Active properties in portfolio</p>
+          <p className="text-sm text-gray-600 mt-2">
+            {t('occupancyLease.summaryCards.activeProperties')}
+          </p>
         </div>
       </div>
 
@@ -170,32 +180,46 @@ const fetchOccupancyData = async () => {
         <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
           <div className="flex justify-between items-center">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Building Occupancy Details</h3>
-              <p className="text-sm text-gray-600 mt-1">Performance across all properties</p>
+              <h3 className="text-lg font-bold text-gray-900">
+                {t('occupancyLease.buildingTable.title')}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {t('occupancyLease.buildingTable.subtitle')}
+              </p>
             </div>
-            <button className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg hover:from-blue-700 hover:to-blue-900 transition-all duration-200 text-sm flex items-center">
-              <Download className="w-4 h-4 mr-2" />
-              Export Report
-            </button>
           </div>
         </div>
         
         {buildingData.length === 0 ? (
           <div className="p-8 text-center text-gray-500">
-            No building data available
+            {t('occupancyLease.buildingTable.noData')}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Building Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Branch</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Units</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Units Occupied</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Units Vacant</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Occupancy Rate</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    {t('occupancyLease.buildingTable.columns.buildingName')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    {t('occupancyLease.buildingTable.columns.branch')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    {t('occupancyLease.buildingTable.columns.totalUnits')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    {t('occupancyLease.buildingTable.columns.unitsOccupied')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    {t('occupancyLease.buildingTable.columns.unitsVacant')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    {t('occupancyLease.buildingTable.columns.occupancyRate')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    {t('occupancyLease.buildingTable.columns.status')}
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -252,7 +276,9 @@ const fetchOccupancyData = async () => {
               </tbody>
               <tfoot className="bg-gray-50">
                 <tr>
-                  <td className="px-6 py-4 font-bold text-gray-900">TOTAL</td>
+                  <td className="px-6 py-4 font-bold text-gray-900">
+                    {t('occupancyLease.buildingTable.total')}
+                  </td>
                   <td className="px-6 py-4 font-bold text-gray-900">-</td>
                   <td className="px-6 py-4 font-bold text-gray-900">{totalShops}</td>
                   <td className="px-6 py-4 font-bold text-green-600">{totalOccupied}</td>
@@ -268,7 +294,11 @@ const fetchOccupancyData = async () => {
                         ? 'bg-amber-100 text-amber-800' 
                         : 'bg-red-100 text-red-800'
                     }`}>
-                      {overallOccupancyRate >= 95 ? 'Excellent' : overallOccupancyRate >= 90 ? 'Good' : 'Needs Attention'}
+                      {overallOccupancyRate >= 95 
+                        ? t('occupancyLease.status.excellent') 
+                        : overallOccupancyRate >= 90 
+                        ? t('occupancyLease.status.good') 
+                        : t('occupancyLease.status.needsAttention')}
                     </span>
                   </td>
                 </tr>
@@ -281,9 +311,11 @@ const fetchOccupancyData = async () => {
       {/* Data Last Updated */}
       <div className="text-center text-sm text-gray-500 pt-4 border-t border-gray-200">
         <Calendar className="w-4 h-4 inline mr-2" />
-        Data last updated: {new Date().toLocaleString('en-US', { 
-          dateStyle: 'medium', 
-          timeStyle: 'short' 
+        {t('occupancyLease.dataUpdated', {
+          date: new Date().toLocaleString('en-US', { 
+            dateStyle: 'medium', 
+            timeStyle: 'short' 
+          })
         })}
       </div>
     </div>

@@ -67,6 +67,7 @@ export interface UtilityBillingDTO {
 }
 
 export interface UtilityFeeDetail {
+  isCAM: any;
   utilityTypeId?: number;
   utilityName: string;
   calculationMethod: string;

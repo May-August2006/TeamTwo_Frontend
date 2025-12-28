@@ -14,12 +14,23 @@ export const announcementApi = {
   getAll: () => API.get<Announcement[]>("/api/announcements"),
   getRecent: (limit = 10) =>
     API.get<Announcement[]>("/api/announcements/recent", { params: { limit } }),
-  
-  // Manager endpoints
- sendToMyBuilding: (data: AnnouncementRequest) =>
-    API.post<ApiResponse<AnnouncementRequest>>("/api/announcements/manager/send", data),
-  
-  getMyBuildingAnnouncements: () =>
-    API.get<ApiResponse<Announcement[]>>("/api/announcements/manager/my-building"),
 
+  // Manager endpoints
+  sendToMyBuilding: (data: AnnouncementRequest) =>
+    API.post<ApiResponse<AnnouncementRequest>>(
+      "/api/announcements/manager/send",
+      data
+    ),
+
+  getMyBuildingAnnouncements: () =>
+    API.get<ApiResponse<Announcement[]>>(
+      "/api/announcements/manager/my-building"
+    ),
+  getAnnouncementsByBuilding: (buildingId: number) =>
+    API.get<Announcement[]>(
+      `/api/announcements/building/${buildingId}/announcements`
+    ),
+
+  getBuildingIdForLoggedInUser: () =>
+    API.get<Number>(`/api/announcements/getBuildingId`),
 };

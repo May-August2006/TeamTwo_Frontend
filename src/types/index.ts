@@ -22,6 +22,7 @@ export interface BranchRequest {
 }
 
 export interface Building {
+  totalCAMCosts: number;
   buildingId: number;
   success: any;
   branch?: Branch;
@@ -262,6 +263,8 @@ export interface AppointmentRequest {
 }
 
 export interface AppointmentDTO {
+  createdAt: any;
+  updatedAt: any;
   unitNumber: number;
   levelId: any;
   branchId: any;
@@ -315,6 +318,9 @@ export interface ReminderDTO {
   amount: number; // BigDecimal → number
   message: string;
   invoiceNumber: string;
+  isRead: boolean;
+  hidden: boolean;
+  type: string;
 }
 
 export interface PaymentStatusDTO {
@@ -366,4 +372,14 @@ export interface LateFeePolicyRequest {
   amountPerDay: string; // "12.50"
   gracePeriodDays: number;
   dailyInterestPercent: string; // "0.5"
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
