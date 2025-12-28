@@ -5,26 +5,30 @@ import { announcementApi } from "../../api/announcementApi";
 import { useAnnouncementsWebSocket } from "../../hooks/useAnnouncementsWebSocket";
 import type { Announcement } from "../../types";
 import { toast } from "react-hot-toast";
+import { Pagination } from "../../components/Pagination";
 
 export function TenantAnnouncements() {
   const { t } = useTranslation();
   const jwtToken = localStorage.getItem("accessToken") || "";
 
-  const [buildingId, setBuildingId] = useState<number | undefined>(undefined);
+  const [buildingId, setBuildingId] = useState<number | undefined>();
   const { announcements: wsAnnouncements, connected } =
-    useAnnouncementsWebSocket(jwtToken, buildingId ?? undefined);
+    useAnnouncementsWebSocket(jwtToken, buildingId);
+
   const [localAnnouncements, setLocalAnnouncements] = useState<Announcement[]>(
     []
   );
+
+  // 🔹 pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 3;
 
   // 🔹 fetch building id
   const loadBuildingId = async () => {
     try {
       const res = await announcementApi.getBuildingIdForLoggedInUser();
       setBuildingId(Number(res.data));
-      console.log("buildingId: ", res.data);
-    } catch (err) {
-      console.error("Failed to fetch building id", err);
+    } catch {
       toast.error("Unable to determine your building");
     }
   };
@@ -33,7 +37,7 @@ export function TenantAnnouncements() {
     loadBuildingId();
   }, []);
 
-  // initial load
+  // 🔹 initial announcements load
   useEffect(() => {
     if (!buildingId) return;
 
@@ -43,27 +47,32 @@ export function TenantAnnouncements() {
           buildingId
         );
         setLocalAnnouncements(res.data);
-        console.log("announcements: ", res.data);
-      } catch (err) {
-        console.error("Failed to load announcements", err);
+      } catch {
+        toast.error("Failed to load announcements");
       }
     })();
   }, [buildingId]);
 
-  // merge WS announcements (no duplicates)
+  // 🔹 merge WS announcements (avoid duplicates)
   useEffect(() => {
-    if (!wsAnnouncements || wsAnnouncements.length === 0) return;
+    if (!wsAnnouncements?.length) return;
 
     setLocalAnnouncements((prev) => {
       const ids = new Set(prev.map((p) => p.id));
       const newOnes = wsAnnouncements.filter((a) => !ids.has(a.id));
+
       if (newOnes.length > 0) {
-        // show toast for newest
         toast.success(`📢 New announcement: ${newOnes[0].title}`);
       }
-      return [...newOnes, ...prev].slice(0, 50); // cap to 50
+
+      return [...newOnes, ...prev].slice(0, 50);
     });
   }, [wsAnnouncements]);
+
+  // 🔹 pagination slice
+  const totalItems = localAnnouncements.length;
+  const start = (currentPage - 1) * pageSize;
+  const pagedAnnouncements = localAnnouncements.slice(start, start + pageSize);
 
   return (
     <div className="p-4 sm:p-6 space-y-6 min-h-screen bg-stone-50">
@@ -71,6 +80,7 @@ export function TenantAnnouncements() {
         <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
           {t("tenant.announcementsTitle")}
         </h2>
+
         <p
           className={`px-3 py-1 rounded-full text-sm font-semibold ${
             connected
@@ -83,8 +93,8 @@ export function TenantAnnouncements() {
       </div>
 
       <div className="space-y-4">
-        {localAnnouncements.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-8 text-center">
+        {totalItems === 0 ? (
+          <div className="bg-white rounded-xl shadow-lg border p-8 text-center">
             <div className="text-5xl mb-3">📢</div>
             <div className="text-xl font-semibold text-stone-700">
               {t("tenant.noAnnouncements")}
@@ -94,10 +104,10 @@ export function TenantAnnouncements() {
             </p>
           </div>
         ) : (
-          localAnnouncements.map((ann) => (
+          pagedAnnouncements.map((ann) => (
             <div
               key={ann.id}
-              className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 hover:shadow-xl transition duration-150"
+              className="bg-white rounded-xl shadow-lg border p-6 hover:shadow-xl transition"
             >
               <div className="flex justify-between items-start">
                 <h3 className="font-semibold text-stone-900 text-lg">
@@ -107,6 +117,7 @@ export function TenantAnnouncements() {
                   {new Date(ann.createdAt).toLocaleString()}
                 </span>
               </div>
+
               <p className="mt-3 text-sm text-stone-700 whitespace-pre-wrap bg-stone-50 p-3 rounded-lg">
                 {ann.message}
               </p>
@@ -114,6 +125,14 @@ export function TenantAnnouncements() {
           ))
         )}
       </div>
+
+      {/* 🔹 Pagination — always visible */}
+      <Pagination
+        currentPage={currentPage}
+        totalItems={totalItems}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

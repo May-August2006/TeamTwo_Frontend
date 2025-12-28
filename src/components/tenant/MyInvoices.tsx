@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useTenantInvoicesWebSocket } from "../../hooks/useTenantInvoicesWebSocket";
 import type { InvoiceDTO } from "../../types";
 import { tenantInvoiceApi } from "../../api/tenantInvoiceApi";
+import { Pagination } from "../Pagination"; // <-- adjust if needed
 
 export default function MyInvoices() {
   const { t } = useTranslation();
@@ -17,12 +18,18 @@ export default function MyInvoices() {
   const [loading, setLoading] = useState(true);
   const seenInvoiceIds = useRef<Set<number>>(new Set());
 
+  // 🔹 Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 4;
+
   const fetchInvoices = async () => {
     try {
       const res = await tenantInvoiceApi.getAll();
-      setInvoices(res.data);
-      console.log("invoices for tenant: " + res.data);
-      res.data.forEach((inv) => seenInvoiceIds.current.add(inv.id));
+      const data = res.data ?? [];
+      setInvoices(data);
+      setCurrentPage(1);
+
+      data.forEach((inv: InvoiceDTO) => seenInvoiceIds.current.add(inv.id));
     } catch {
       toast.error("Failed to load invoices");
       setInvoices([]);
@@ -43,6 +50,12 @@ export default function MyInvoices() {
       }
     });
   }, [invoices]);
+
+  // 🔹 Pagination logic
+  const paginatedInvoices = invoices.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   const viewPdf = async (invoice: InvoiceDTO) => {
     try {
@@ -75,7 +88,7 @@ export default function MyInvoices() {
     return (
       <div className="p-6 flex justify-center items-center min-h-screen bg-stone-50">
         <div className="text-xl font-medium text-stone-700 animate-pulse">
-          {t('tenant.loadingInvoices')}
+          {t("tenant.loadingInvoices")}
         </div>
       </div>
     );
@@ -86,8 +99,9 @@ export default function MyInvoices() {
 
       <div className="flex justify-between items-center">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
-          {t('tenant.invoices')}
+          {t("tenant.invoices")}
         </h2>
+
         <span
           className={`px-3 py-1 rounded-full text-sm font-semibold ${
             connected
@@ -95,56 +109,66 @@ export default function MyInvoices() {
               : "bg-red-100 text-red-800"
           }`}
         >
-          {connected ? `🟢 ${t('tenant.online')}` : `🔴 ${t('tenant.offline')}`}
+          {connected ? `🟢 ${t("tenant.online")}` : `🔴 ${t("tenant.offline")}`}
         </span>
       </div>
 
       <div className="bg-white rounded-xl shadow-lg border border-stone-200 overflow-hidden">
-        {invoices.length === 0 && (
+        {paginatedInvoices.length === 0 ? (
           <div className="p-8 text-center text-stone-500 bg-stone-50">
             <div className="text-5xl mb-3">📄</div>
             <div className="text-xl font-semibold text-stone-700">
-              {t('tenant.noInvoices')}
+              {t("tenant.noInvoices")}
             </div>
-            <p className="text-sm mt-1">{t('tenant.noInvoicesMessage')}</p>
+            <p className="text-sm mt-1">{t("tenant.noInvoicesMessage")}</p>
           </div>
+        ) : (
+          paginatedInvoices.map((inv) => (
+            <div
+              key={inv.id}
+              className="flex justify-between items-center px-6 py-4 hover:bg-red-50/50 transition duration-150 border-b border-stone-100 last:border-b-0"
+            >
+              <div>
+                <p className="font-semibold text-stone-900">
+                  {inv.invoiceNumber}
+                </p>
+
+                <p className="text-sm text-stone-500 mt-1">
+                  Issue: {inv.issueDate} • Due: {inv.dueDate}
+                </p>
+
+                <p className="text-sm font-semibold text-red-600 mt-1">
+                  {inv.totalAmount} MMK
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => viewPdf(inv)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition duration-150 font-semibold"
+                >
+                  {t("tenant.view")}
+                </button>
+
+                <button
+                  onClick={() => downloadPdf(inv)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition duration-150 font-semibold"
+                >
+                  {t("tenant.download")}
+                </button>
+              </div>
+            </div>
+          ))
         )}
-
-        {invoices.map((inv) => (
-          <div
-            key={inv.id}
-            className="flex justify-between items-center px-6 py-4 hover:bg-red-50/50 transition duration-150 border-b border-stone-100 last:border-b-0"
-          >
-            <div>
-              <p className="font-semibold text-stone-900">
-                {inv.invoiceNumber}
-              </p>
-              <p className="text-sm text-stone-500 mt-1">
-                Issue: {inv.issueDate} • Due: {inv.dueDate}
-              </p>
-              <p className="text-sm font-semibold text-red-600 mt-1">
-                {inv.totalAmount} MMK
-              </p>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => viewPdf(inv)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition duration-150 font-semibold transform active:scale-95"
-              >
-                {t('tenant.view')}
-              </button>
-
-              <button
-                onClick={() => downloadPdf(inv)}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition duration-150 font-semibold transform active:scale-95"
-              >
-                {t('tenant.download')}
-              </button>
-            </div>
-          </div>
-        ))}
       </div>
+
+      {/* 🔹 Reusable Pagination (always visible) */}
+      <Pagination
+        currentPage={currentPage}
+        totalItems={invoices.length}
+        pageSize={pageSize}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

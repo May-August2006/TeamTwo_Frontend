@@ -1,84 +1,121 @@
-import API from './api';
-import type { 
-  Tenant, 
-  TenantCategory, 
-  CreateTenantRequest, 
-  UpdateTenantRequest,
-  TenantSearchParams 
-} from '../types/tenant';
-import type { Unit } from '../types/unit';
+/** @format */
 
-const BASE_URL = '/api/tenants';
-const CATEGORY_BASE_URL = '/api/tenant-categories';
+import API from "./api";
+import type {
+  Tenant,
+  TenantCategory,
+  CreateTenantRequest,
+  UpdateTenantRequest,
+  TenantSearchParams,
+} from "../types/tenant";
+import type { Unit } from "../types/unit";
+
+const BASE_URL = "/api/tenants";
+const CATEGORY_BASE_URL = "/api/tenant-categories";
 
 export const tenantApi = {
   // ============ EXISTING: Tenant endpoints (unchanged) ============
   // This returns ALL tenants (active + inactive) - used by admin and contract form
-  getAll: (): Promise<Tenant[]> => 
-    API.get<Tenant[]>(BASE_URL).then(response => response.data),
+  getAll: (): Promise<Tenant[]> =>
+    API.get<Tenant[]>(BASE_URL).then((response) => response.data),
 
-  getById: (id: number): Promise<Tenant> => 
-    API.get<Tenant>(`${BASE_URL}/${id}`).then(response => response.data),
+  getById: (id: number): Promise<Tenant> =>
+    API.get<Tenant>(`${BASE_URL}/${id}`).then((response) => response.data),
 
-  create: (tenant: CreateTenantRequest): Promise<Tenant> => 
-    API.post<Tenant>(BASE_URL, tenant).then(response => response.data),
+  create: (tenant: CreateTenantRequest): Promise<Tenant> =>
+    API.post<Tenant>(BASE_URL, tenant).then((response) => response.data),
 
-  update: (id: number, tenant: UpdateTenantRequest): Promise<Tenant> => 
-    API.put<Tenant>(`${BASE_URL}/${id}`, tenant).then(response => response.data),
+  update: (id: number, tenant: UpdateTenantRequest): Promise<Tenant> =>
+    API.put<Tenant>(`${BASE_URL}/${id}`, tenant).then(
+      (response) => response.data
+    ),
 
-  delete: (id: number): Promise<void> => 
-    API.delete<void>(`${BASE_URL}/${id}`).then(response => response.data),
+  delete: (id: number): Promise<void> =>
+    API.delete<void>(`${BASE_URL}/${id}`).then((response) => response.data),
 
   // Admin search (all tenants)
-  search: (params: TenantSearchParams): Promise<Tenant[]> => 
-    API.get<Tenant[]>(`${BASE_URL}/search`, { params }).then(response => response.data),
+  search: (params: TenantSearchParams): Promise<Tenant[]> =>
+    API.get<Tenant[]>(`${BASE_URL}/search`, { params }).then(
+      (response) => response.data
+    ),
 
   // ============ NEW: For Manager Tenant Management Page ============
   // Get tenants for manager view (their building tenants + tenants without leases)
-  getForManagerView: (): Promise<Tenant[]> => 
-    API.get<Tenant[]>(`${BASE_URL}/manager-view`).then(response => response.data),
+  getForManagerView: (): Promise<Tenant[]> =>
+    API.get<Tenant[]>(`${BASE_URL}/manager-view`).then(
+      (response) => response.data
+    ),
 
   // Search tenants for manager view
-  searchForManagerView: (params: TenantSearchParams): Promise<Tenant[]> => 
-    API.get<Tenant[]>(`${BASE_URL}/manager-view/search`, { params }).then(response => response.data),
+  searchForManagerView: (params: TenantSearchParams): Promise<Tenant[]> =>
+    API.get<Tenant[]>(`${BASE_URL}/manager-view/search`, { params }).then(
+      (response) => response.data
+    ),
 
   // ============ NEW: For Maintenance Requests ============
-  getAvailableUnits: (tenantId: number): Promise<Unit[]> => 
-    API.get<Unit[]>(`${BASE_URL}/${tenantId}/available-units`).then(response => response.data),
+  getAvailableUnits: (tenantId: number): Promise<Unit[]> =>
+    API.get<Unit[]>(`${BASE_URL}/${tenantId}/available-units`).then(
+      (response) => response.data
+    ),
 
-  getActiveContracts: (tenantId: number): Promise<any[]> => 
-    API.get<any[]>(`${BASE_URL}/${tenantId}/active-contracts`).then(response => response.data),
+  getActiveContracts: (tenantId: number): Promise<any[]> =>
+    API.get<any[]>(`${BASE_URL}/${tenantId}/active-contracts`).then(
+      (response) => response.data
+    ),
 
   // ============ NEW: For Contract Creation ============
   // Get ALL active tenants for contract creation
-  getActiveForContract: (): Promise<Tenant[]> => 
-    API.get<Tenant[]>(`${BASE_URL}/active-for-contract`).then(response => response.data),
+  getActiveForContract: (): Promise<Tenant[]> =>
+    API.get<Tenant[]>(`${BASE_URL}/active-for-contract`).then(
+      (response) => response.data
+    ),
 
   // ============ Inactive tenants endpoints (admin only) ============
-  getInactive: (): Promise<Tenant[]> => 
-    API.get<Tenant[]>(`${BASE_URL}/inactive`).then(response => response.data),
+  getInactive: (): Promise<Tenant[]> =>
+    API.get<Tenant[]>(`${BASE_URL}/inactive`).then((response) => response.data),
 
-  searchInactive: (name: string): Promise<Tenant[]> => 
-    API.get<Tenant[]>(`${BASE_URL}/inactive/search`, { params: { name } }).then(response => response.data),
+  searchInactive: (name: string): Promise<Tenant[]> =>
+    API.get<Tenant[]>(`${BASE_URL}/inactive/search`, { params: { name } }).then(
+      (response) => response.data
+    ),
 
-  reactivate: (id: number): Promise<void> => 
-    API.put<void>(`${BASE_URL}/${id}/reactivate`).then(response => response.data),
+  reactivate: (id: number): Promise<void> =>
+    API.put<void>(`${BASE_URL}/${id}/reactivate`).then(
+      (response) => response.data
+    ),
+
+  getTenantHome: (tenantId: number) => API.get(`/api/tenants/${tenantId}/home`),
 
   // ============ Category endpoints (unchanged) ============
   category: {
-    getAll: (): Promise<TenantCategory[]> => 
-      API.get<TenantCategory[]>(CATEGORY_BASE_URL).then(response => response.data),
+    getAll: (): Promise<TenantCategory[]> =>
+      API.get<TenantCategory[]>(CATEGORY_BASE_URL).then(
+        (response) => response.data
+      ),
 
-    getById: (id: number): Promise<TenantCategory> => 
-      API.get<TenantCategory>(`${CATEGORY_BASE_URL}/${id}`).then(response => response.data),
+    getById: (id: number): Promise<TenantCategory> =>
+      API.get<TenantCategory>(`${CATEGORY_BASE_URL}/${id}`).then(
+        (response) => response.data
+      ),
 
-    create: (category: Omit<TenantCategory, 'id' | 'createdAt' | 'updatedAt'>): Promise<TenantCategory> => 
-      API.post<TenantCategory>(CATEGORY_BASE_URL, category).then(response => response.data),
+    create: (
+      category: Omit<TenantCategory, "id" | "createdAt" | "updatedAt">
+    ): Promise<TenantCategory> =>
+      API.post<TenantCategory>(CATEGORY_BASE_URL, category).then(
+        (response) => response.data
+      ),
 
-    update: (id: number, category: Partial<TenantCategory>): Promise<TenantCategory> => 
-      API.put<TenantCategory>(`${CATEGORY_BASE_URL}/${id}`, category).then(response => response.data),
+    update: (
+      id: number,
+      category: Partial<TenantCategory>
+    ): Promise<TenantCategory> =>
+      API.put<TenantCategory>(`${CATEGORY_BASE_URL}/${id}`, category).then(
+        (response) => response.data
+      ),
 
-    delete: (id: number): Promise<void> => 
-      API.delete<void>(`${CATEGORY_BASE_URL}/${id}`).then(response => response.data),
-  }
+    delete: (id: number): Promise<void> =>
+      API.delete<void>(`${CATEGORY_BASE_URL}/${id}`).then(
+        (response) => response.data
+      ),
+  },
 };
