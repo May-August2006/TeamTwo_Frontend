@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import { Modal } from "../common/ui/Modal";
 import type { Unit } from "../../types/unit";
 import { Button } from "../common/ui/Button";
+import { useTranslation } from "react-i18next";
 
 interface AppointmentFormProps {
   unit: Unit;
@@ -30,6 +31,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
   isLoading = false,
   isLoggedIn,
 }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     guestPhone: "",
     appointmentDate: "",
@@ -57,18 +59,23 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
   };
 
   const today = new Date().toISOString().split("T")[0];
+  
+  // Format rental fee with thousand separator
+  const formatRentalFee = (amount: number) => {
+    return amount.toLocaleString();
+  };
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`Book Appointment – ${unit.unitNumber}`}
+      title={`${t('appointmentForm.title')} – ${unit.unitNumber}`}
       size="md"
     >
       {!isLoggedIn && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
           <p className="text-yellow-800 text-sm">
-            Please login to book an appointment.
+            {t('appointmentForm.loginMessage')}
           </p>
         </div>
       )}
@@ -76,23 +83,27 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Room Info */}
         <div className="bg-gray-50 p-4 rounded-lg mb-4">
-          <h4 className="font-semibold text-gray-900 mb-2">Selected Space</h4>
+          <h4 className="font-semibold text-gray-900 mb-2">
+            {t('appointmentForm.selectedSpace')}
+          </h4>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>
-              <span className="text-gray-600">Unit:</span>
+              <span className="text-gray-600">{t('appointmentForm.unit')}:</span>
               <span className="ml-2 font-medium">{unit.unitNumber}</span>
             </div>
             <div>
-              <span className="text-gray-600">Space:</span>
-              <span className="ml-2 font-medium">{unit.unitSpace} sqm</span>
+              <span className="text-gray-600">{t('appointmentForm.space')}:</span>
+              <span className="ml-2 font-medium">{unit.unitSpace} {t('appointmentForm.sqm')}</span>
             </div>
             <div>
-              <span className="text-gray-600">Type:</span>
+              <span className="text-gray-600">{t('appointmentForm.type')}:</span>
               <span className="ml-2 font-medium">{unit.unitType}</span>
             </div>
             <div>
-              <span className="text-gray-600">Rent:</span>
-              <span className="ml-2 font-medium">${unit.rentalFee}/month</span>
+              <span className="text-gray-600">{t('appointmentForm.rent')}:</span>
+              <span className="ml-2 font-medium">
+               {formatRentalFee(unit.rentalFee)}  MMK /{t('appointmentForm.month')}
+              </span>
             </div>
           </div>
         </div>
@@ -100,7 +111,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
         {/* Phone */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Phone Number *
+            {t('appointmentForm.phoneNumber')} *
           </label>
           <input
             type="tel"
@@ -109,7 +120,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
             onChange={handleChange}
             required
             className="w-full border border-gray-300 rounded-md px-3 py-2"
-            placeholder="Enter your phone number"
+            placeholder={t('appointmentForm.phonePlaceholder')}
           />
         </div>
 
@@ -117,7 +128,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Preferred Date *
+              {t('appointmentForm.preferredDate')} *
             </label>
             <input
               type="date"
@@ -132,7 +143,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Preferred Time *
+              {t('appointmentForm.preferredTime')} *
             </label>
             <input
               type="time"
@@ -148,7 +159,7 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
         {/* Purpose */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Purpose of Appointment *
+            {t('appointmentForm.purpose')} *
           </label>
           <input
             type="text"
@@ -157,14 +168,14 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
             onChange={handleChange}
             required
             className="w-full border border-gray-300 rounded-md px-3 py-2"
-            placeholder="Ex: Business inquiry, room viewing..."
+            placeholder={t('appointmentForm.purposePlaceholder')}
           />
         </div>
 
         {/* Notes */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Additional Notes
+            {t('appointmentForm.additionalNotes')}
           </label>
           <textarea
             name="notes"
@@ -172,21 +183,21 @@ export const AppointmentForm: React.FC<AppointmentFormProps> = ({
             onChange={handleChange}
             rows={3}
             className="w-full border border-gray-300 rounded-md px-3 py-2"
-            placeholder="Any extra details..."
+            placeholder={t('appointmentForm.notesPlaceholder')}
           />
         </div>
 
         {/* Buttons */}
         <div className="flex justify-end space-x-3 pt-4">
           <Button type="button" onClick={onClose} variant="secondary">
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             type="submit"
             loading={isLoading}
             disabled={!isLoggedIn || isLoading}
           >
-            {isLoggedIn ? "Book Appointment" : "Login Required"}
+            {isLoggedIn ? t('appointmentForm.bookAppointment') : t('appointmentForm.loginRequired')}
           </Button>
         </div>
       </form>

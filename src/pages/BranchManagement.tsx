@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Building2, Calendar, Trash2, Edit2, X, Check } from "lucide-react";
+import { Building2, Calendar, Trash2, Edit2, X, Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import type { Branch } from "../types";
 import { branchApi } from "../api/BranchAPI.tsx";
 import BranchForm from "../components/BranchForm";
@@ -17,10 +17,18 @@ const BranchManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const { showSuccess, showError } = useNotification();
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     loadBranches();
   }, []);
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const loadBranches = async () => {
     try {
@@ -51,30 +59,44 @@ const BranchManagement: React.FC = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!branchToDelete) return;
+  if (!branchToDelete) return;
 
-    try {
-      setDeleting(true);
-      const response = await branchApi.delete(branchToDelete.id);
-      if (response.data.success) {
-        showSuccess(t('branchManagement.success.deleted'));
-        loadBranches();
-      } else {
-        showError(response.data.message || t('branchManagement.errors.deleteFailed'));
-      }
-    } catch (error: any) {
-      console.error("Error deleting branch:", error);
-      if (error.response?.data?.message) {
-        showError(error.response.data.message);
-      } else {
-        showError(t('branchManagement.errors.deleteFailed'));
-      }
-    } finally {
-      setDeleting(false);
-      setShowDeleteConfirm(false);
-      setBranchToDelete(null);
+  try {
+    setDeleting(true);
+    const response = await branchApi.delete(branchToDelete.id);
+    if (response.data.success) {
+      showSuccess(t('branchManagement.success.deleted'));
+      loadBranches();
+    } else {
+      // Handle server-side error messages
+      showError(response.data.message || t('branchManagement.errors.deleteFailed'));
     }
-  };
+  } catch (error: any) {
+    console.error("Error deleting branch:", error);
+    
+    // Handle foreign key constraint error specifically
+    if (error.response?.data?.message?.includes('foreign key constraint') || 
+        error.message?.includes('foreign key constraint') ||
+        error.response?.data?.message?.includes('Cannot delete or update a parent row')) {
+      
+      showError(t('branchManagement.errors.cannotDeleteHasBuildings'));
+      
+    } else if (error.response?.data?.message) {
+      // Show backend error message if available
+      showError(error.response.data.message);
+    } else if (error.message?.includes('Network Error')) {
+      // Handle network errors
+      showError(t('branchManagement.errors.networkError'));
+    } else {
+      // Generic error fallback
+      showError(t('branchManagement.errors.deleteFailed'));
+    }
+  } finally {
+    setDeleting(false);
+    setShowDeleteConfirm(false);
+    setBranchToDelete(null);
+  }
+};
 
   const handleDeleteCancel = () => {
     setShowDeleteConfirm(false);
@@ -91,6 +113,32 @@ const BranchManagement: React.FC = () => {
       branch.branchName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       branch.address.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredBranches.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredBranches.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handleFirstPage = () => {
+    setCurrentPage(1);
+  };
+
+  const handleLastPage = () => {
+    setCurrentPage(totalPages);
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
 
   if (loading) {
     return (
@@ -146,9 +194,32 @@ const BranchManagement: React.FC = () => {
       {/* Content Section */}
       <div className="bg-white shadow-lg sm:shadow-xl rounded-lg sm:rounded-xl overflow-hidden ring-1 ring-stone-200">
         <div className="p-4 sm:p-6">
+          {/* Results Count */}
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm text-stone-600">
+              {t('common.showingXofY', 'Showing {{count}} of {{total}} branches', { 
+                count: Math.min(currentItems.length, itemsPerPage), 
+                total: filteredBranches.length 
+              })}
+              {filteredBranches.length > itemsPerPage && (
+                <span className="ml-2">
+                  (Page {currentPage} of {totalPages})
+                </span>
+              )}
+            </p>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="text-sm text-blue-800 hover:text-blue-900 font-medium"
+              >
+                {t('common.clearSearch', 'Clear search')}
+              </button>
+            )}
+          </div>
+
           {/* Branches Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {filteredBranches.map((branch) => (
+            {currentItems.map((branch) => (
               <div
                 key={branch.id}
                 className="bg-stone-50 rounded-lg sm:rounded-xl shadow-sm border border-stone-200 p-4 sm:p-6 hover:shadow-md transition-shadow duration-150"
@@ -220,6 +291,82 @@ const BranchManagement: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="mt-8 pt-6 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-sm text-stone-600">
+                {t('common.pageInfo', 'Page {{current}} of {{total}}', {
+                  current: currentPage,
+                  total: totalPages
+                })}
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handleFirstPage}
+                  disabled={currentPage === 1}
+                  className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('common.firstPage', 'First page')}
+                >
+                  <ChevronsLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                  className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('common.previousPage', 'Previous page')}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors duration-150 ${
+                          currentPage === pageNum
+                            ? 'bg-blue-800 text-white'
+                            : 'text-stone-600 hover:bg-blue-50 hover:text-blue-800'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+                
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('common.nextPage', 'Next page')}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleLastPage}
+                  disabled={currentPage === totalPages}
+                  className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('common.lastPage', 'Last page')}
+                >
+                  <ChevronsRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Empty State */}
           {filteredBranches.length === 0 && (

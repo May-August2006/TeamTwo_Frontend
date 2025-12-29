@@ -53,6 +53,21 @@
     "managerPortal": "Manager Portal"
   },
   "header": {
+
+
+    "mallName": "Sein Gay Har Mall",
+    "tagline": "Premium Retail Spaces",
+    "home": "Home",
+    "availableSpaces": "Available Spaces",
+    "contact": "Contact",
+    "admin": "Admin",
+    "welcomeBack": "Welcome back",
+    "login": "Login",
+    "register": "Register",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+  
+
     "profile": "My Profile",
     "settings": "Settings",
     "changePassword": "Change Password",
@@ -78,9 +93,12 @@
     "deleteConfirmation": "Are you sure you want to delete this branch? This action cannot be undone.",
     "deleting": "Deleting...",
     "loading": "Loading Branch Management...",
+    
     "errors": {
       "loadFailed": "Failed to load branches",
-      "deleteFailed": "Failed to delete branch"
+      "deleteFailed": "Failed to delete branch",
+      "cannotDeleteHasBuildings": "Cannot delete branch because it has buildings associated with it. Please delete all buildings, levels, and units under this branch first.",
+      "networkError": "Network error. Please check your connection and try again."
     },
     "success": {
       "deleted": "Branch deleted successfully"
@@ -116,29 +134,107 @@
     "subtitle": "Manage all buildings within your branches",
     "allBranches": "All Branches",
     "clearFilters": "Clear Filters",
-    "noResults": "No Buildings Found"
+    "noResults": "No Buildings Found",
+          "generator": "Generator",
+      "transformer": "Transformer",
+
+    
+  "error": {
+    "loadBranchesFailed": "Failed to load branches. Please try again.",
+    "loadBuildingsFailed": "Failed to load buildings. Please try again.",
+    "deleteBuildingFailed": "Failed to delete building. Please try again.",
+    "cannotDeleteBuilding": "Cannot delete building because it has floors, shops, or tenants associated with it. Please delete all floors, shops, and tenants under this building first.",
+    "buildingNotFound": "Building not found. It may have been deleted already.",
+    "networkError": "Network error. Please check your connection and try again."
+  },
+  "notification": {
+    "buildingDeleted": "Building \"{{name}}\" deleted successfully!"
+  },
+  "warning": {
+    "deleteBuilding": "Deleting this building will also remove all associated floors, shops, and tenant information. This action may affect financial records and reporting."
+  },
+  "confirmation": {
+    "deleteBuildingTitle": "Delete Building",
+    "deleteBuilding": "Are you sure you want to delete the building \"{{name}}\"? This action cannot be undone."
+  },
+  "tooltip": {
+    "editBuilding": "Edit building",
+    "deleteBuilding": "Delete building"
+  }
+
   },
 
+
+  "error": {
+    "loadBranchesFailed": "Failed to load branches. Please try again.",
+    "loadBuildingsFailed": "Failed to load buildings. Please try again.",
+    "loadFloorsFailed": "Failed to load floors. Please try again.",
+    "deleteFloorFailed": "Failed to delete floor. Please try again.",
+    "cannotDeleteFloor": "Cannot delete floor because it has units or tenants associated with it. Please delete all units and tenants under this floor first.",
+    "floorNotFound": "Floor not found. It may have been deleted already.",
+    "networkError": "Network error. Please check your connection and try again.",
+    "deleteFailed": "Delete Failed"
+  },
+  "notification": {
+    "floorDeleted": "Floor \"{{name}}\" deleted successfully!",
+    "floorCreatedTitle": "Floor Created",
+    "floorUpdatedTitle": "Floor Updated"
+  },
+  "warning": {
+    "deleteFloor": "Deleting a floor will also remove all units and related information associated with this floor."
+  },
+  "confirmation": {
+    "deleteFloorTitle": "Delete Floor",
+    "deleteFloor": "Are you sure you want to delete the floor \"{{name}}\"? This action cannot be undone and will remove all associated data."
+  },
+  "tooltip": {
+    "editFloor": "Edit floor",
+    "deleteFloor": "Delete floor"
+  },
   "levelManagement": {
+    "title": "Floor Management",
     "subtitle": "Manage all floors within your buildings",
     "addFloor": "Add New Floor",
+    "searchPlaceholder": "Search floors by name or building...",
     "allBranches": "All Branches",
     "allBuildings": "All Buildings",
     "clearFilters": "Clear Filters",
+    "floorNumber": "Floor Number",
+    "totalUnits": "Total Units",
     "noFloors": "No Floors Yet",
     "noResults": "No Floors Found",
-
-    "title": "Floor Management",
-    "searchPlaceholder": "Search floors by name or building...",
-    "addLevel": "Add Level",
-    "levelNumber": "Level Number",
-    "floor": "Floor",
-    "totalRooms": "Total Rooms",
-    "noLevels": "No levels yet",
-    "noLevelsFound": "No levels found",
-    "addFirstLevel": "Add Your First Level",
     "confirmDelete": "Are you sure you want to delete this level?"
   },
+  "common": {
+    "loadingFloorManagement": "Loading Floor Management...",
+    "showingXofY": "Showing {{count}} of {{total}} floors",
+    "clearSearch": "Clear search",
+    "pageInfo": "Page {{current}} of {{total}}",
+    "firstPage": "First page",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "lastPage": "Last page",
+    "cancel": "Cancel",
+    "deleting": "Deleting...",
+    "created": "Created",
+    "success": "Success",
+    "error": "Error",
+    "deleted": "Deleted",
+    "groundFloor": "Ground Floor",
+    "firstFloor": "1st Floor",
+    "secondFloor": "2nd Floor",
+    "thirdFloor": "3rd Floor",
+    "nthFloor": "{{n}}th Floor",
+    "unit": "unit",
+    "units": "units",
+    "note": "Note",
+    "tip": "Tip",
+    "deleteFloor": "Delete Floor",
+    "addYourFirst": "Add Your First Floor",
+    "noMatchesFilters": "No floors match your filters",
+    "clearFiltersShowAll": "Clear filters and show all floors"
+  
+},
 
   "unitManagement": {
     "subtitle": "Manage all units and their types in your properties",
@@ -847,6 +943,34 @@
     }
   },
   "common": {
+
+    "toast": {
+      "redirecting": "Redirecting to login page...",
+      "accountPending": "Your account is pending approval. Only approved users or tenants can view unit details.",
+      "accountPendingAppointment": "Your account is pending approval. Only approved users or tenants can book appointments.",
+      "existingAppointment": "You already have a {{status}} appointment for this unit. You cannot make another appointment until this one is completed or cancelled.",
+      "cancelledWait": "Your previous appointment for this unit was cancelled. Please wait {{days}} more day{{s}} before booking again.",
+      "verifyError": "Unable to verify your existing appointments. Please proceed with caution.",
+      "failedToVerify": "Failed to verify your account status. Please try again later.",
+      "loginFirst": "Please login first"
+    },
+    "errors": {
+      "enterValidNumber": "Please enter a valid number",
+      "cannotBeNegative": "Value cannot be negative",
+      "spaceTooLarge": "Space value is too large (max: 10,000 sqm)",
+      "rentTooLarge": "Rent value is too large (max: 100,000,000 MMK)",
+      "minGreaterThanMax": "Minimum cannot be greater than maximum",
+      "maxLessThanMin": "Maximum cannot be less than minimum"
+    },
+
+    "deleting": "Deleting...",
+    "notAvailable": "N/A",
+    "activated": "activated",
+    "deactivated": "deactivated",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+  
+
     "active": "Active",
     "inactive": "Inactive",
     "pending": "Pending",
@@ -862,6 +986,7 @@
     "save": "Save",
     "delete": "Delete",
     "edit": "Edit",
+    "created":"Created",
     "create": "Create",
     "update": "Update",
     "search": "Search",
@@ -893,7 +1018,24 @@
     "characters": "characters",
     "words": "words",
     "tooLong": "(Too long!)",
-    "charactersRemaining": "characters remaining"
+    "charactersRemaining": "characters remaining",
+
+    "max": "Max",
+    "limit": "limit",
+    "reached": "reached",
+    "up_to": "up to",
+    "each": "each",
+    "selected": "selected",
+    "available": "available",
+    "full": "full",
+    "positive_required": "Must be positive",
+    "try_adjusting_search": "Try adjusting your search filters",
+    "error_loading_unit": "Failed to load unit details",
+    "error_updating_utility": "Failed to update utility status",
+    "updating": "Updating...",
+    "currently_inactive": "Currently inactive",
+    "try_again_later": "Please try again later",
+    "more": "more"
   },
 
   "utilityType": {
@@ -905,10 +1047,12 @@
     "updateButton": "Update Utility",
     "createButton": "Create Utility",
     "cancel": "Cancel",
+    "close":"Close",
+    "continue": "Continue",
+
     "loading": "Loading Utility Types...",
     "confirmAction": "Confirm Action",
     "attention": "Attention",
-    "success": "Success",
     "active": "Active",
     "inactive": "Inactive",
     "edit": "Edit",
@@ -975,6 +1119,7 @@
       "validationErrors": "Please fix the validation errors above"
     },
     "success": {
+      "success":"Success",
       "created": "Utility type created successfully!",
       "updated": "Utility type updated successfully!",
       "deleted": "Utility type deleted successfully!",
@@ -992,39 +1137,41 @@
       "rateDescription": "Set the base rate that will be used in billing fee calculations. This serves as the default rate for this utility type."
     }
   },
+
   "userManagement": {
     "title": "User Management",
-    "subtitle": "Manage system users and their assigned roles and permissions",
+    "subtitle": "Manage, edit, and delete users",
     "addUser": "Add New User",
     "addNewUser": "Add New User",
+    "editUser": "Edit {{name}}",
+    "defaultPasswordMessage": "Password will be automatically generated",
+    "showingCount": "Showing {{count}} {{tab}}",
+    "showingUsers": "Showing {{start}} to {{end}} of {{total}}",
+    "guestsDescription": "Guests waiting for approval",
+    "bodDescription": "Board of Directors members",
+    "pendingApprovalDescription": "Guests waiting for approval",
+    "deactivatedDescription": "Deactivated users",
     "loadingUsers": "Loading users...",
     "noUsersFound": "No users found",
-    "tryChangingFilter": "Try changing your filter or add a new user",
-    "deactivated": "Deactivated",
+    "tryChangingFilter": "Try changing the filter",
     "unknownBuilding": "Unknown Building",
     "unknownBranch": "Unknown Branch",
-    "notAssigned": "Not assigned",
-    "active": "Active",
-    "inactive": "Inactive",
     "manager": "Manager",
     "accountant": "Accountant",
+    "notAssigned": "Not Assigned",
+    "active": "Active",
+    "inactive": "Inactive",
+    "deactivated": "Deactivated",
     "approve": "Approve",
     "reject": "Reject",
     "setToPending": "Set to Pending",
     "restore": "Restore",
     "removeFromBuilding": "Remove from Building",
     "assignToBuilding": "Assign to Building",
-    "deactivate": "Deactivate",
     "edit": "Edit",
+    "deactivate": "Deactivate",
     "buildingManager": "Building Manager",
     "buildingAccountant": "Building Accountant",
-    "assign": "Assign",
-    "creating": "Creating...",
-    "updating": "Updating...",
-    "assigning": "Assigning...",
-    "createUser": "Create User",
-    "updateUser": "Update User",
-    "editUser": "Edit User: {{name}}",
     "assignUser": "Assign {{name}} as {{type}}",
     "role": "Role:",
     "defaultPasswordMessage": "A default password will be auto-generated. User will need to reset it on first login.",
@@ -1035,8 +1182,15 @@
     "usernameAvailable": "✓ Username is available",
     "usernameTaken": "✗ Username is already taken",
 
+    "firstPage": "First Page",
+    "previousPage": "Previous Page",
+    "nextPage": "Next Page",
+    "lastPage": "Last Page",
+    "page": "Page",
+    "of": "of",
+    
     "tabs": {
-      "all": "All Users",
+      "all": "All",
       "guests": "Guests",
       "managers": "Managers",
       "accountants": "Accountants",
@@ -1049,10 +1203,11 @@
       "pending": "Pending",
       "approved": "Approved",
       "rejected": "Rejected"
+      "deactivated": "Deactivated"
     },
 
     "roles": {
-      "admin": "Administrator",
+      "admin": "Admin",
       "manager": "Manager",
       "accountant": "Accountant",
       "bod": "Board of Directors",
@@ -1072,28 +1227,42 @@
       "fullNameRequired": "Full name is required",
       "fullNameInvalid": "Full name must be 2-30 characters (letters, spaces, dots, apostrophes, hyphens only)",
       "fullNameTooLong": "Full name cannot exceed {{max}} characters"
+    
+    "approvalStatus": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "approvalStatus": "Approval Status",
+      "assignment": "Assignment",
+      "status": "Status",
+      "actions": "Actions"
     },
 
     "form": {
       "fullName": "Full Name",
-      "fullNamePlaceholder": "John Doe",
+      "fullNamePlaceholder": "Enter full name",
       "email": "Email",
-      "emailPlaceholder": "john@example.com",
+      "emailPlaceholder": "Enter email",
       "username": "Username",
-      "usernamePlaceholder": "johndoe123",
+      "usernamePlaceholder": "Enter username",
       "role": "Role",
       "initialApprovalStatus": "Initial Approval Status",
-      "pendingRequiresApproval": "Pending (Requires Approval)",
-      "approvedAutoAccess": "Approved (Auto Access)",
-      "rejectedNoAccess": "Rejected (No Access)",
-      "guestApprovalNote": "Guest users require approval before they can access the system",
-      "assignManagerToBuilding": "Assign to Building (as Manager)",
-      "assignAccountantToBuilding": "Assign to Building (as Accountant)",
-      "selectBuildingOptional": "Select a building (optional)",
+      "pendingRequiresApproval": "Pending - Requires Approval",
+      "approvedAutoAccess": "Approved - Auto Access",
+      "rejectedNoAccess": "Rejected - No Access",
+      "guestApprovalNote": "Note: Guests require approval to access the system",
+      "assignManagerToBuilding": "Assign Manager to Building",
+      "assignAccountantToBuilding": "Assign Accountant to Building",
+      "selectBuildingOptional": "Select Building (Optional)",
       "onlyBuildingsWithoutManagers": "Only buildings without managers are shown",
       "onlyBuildingsWithoutAccountants": "Only buildings without accountants are shown",
       "selectBuilding": "Select Building",
-      "chooseBuilding": "Choose a building...",
+      "chooseBuilding": "Choose a building",
       "noAvailableBuildingsWithoutManagers": "No available buildings without managers",
       "noAvailableBuildingsWithoutAccountants": "No available buildings without accountants"
     },
@@ -1143,35 +1312,64 @@
       "restoreMessage": "Are you sure you want to restore {{name}}? They will regain access to the system."
     },
 
+    
+    "validation": {
+      "usernameRequired": "Username is required",
+      "usernameInvalid": "Username must contain only letters, numbers, and _, between 3-20 characters",
+      "usernameTooLong": "Username must not exceed {{max}} characters",
+      "usernameExists": "Username already exists",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Email must be a valid format",
+      "emailTooLong": "Email must not exceed {{max}} characters",
+      "emailExists": "Email already exists",
+      "fullNameRequired": "Full name is required",
+      "fullNameInvalid": "Full name must contain only letters, spaces, and . ' - characters, between 2-30 characters",
+      "fullNameTooLong": "Full name must not exceed {{max}} characters"
+    },
+    
+    "checkingEmail": "Checking email availability...",
+    "emailAvailable": "This email is available",
+    "emailTaken": "This email is already taken",
+    "checkingUsername": "Checking username availability...",
+    "usernameAvailable": "This username is available",
+    "usernameTaken": "This username is already taken",
+    
+    "creating": "Creating...",
+    "createUser": "Create User",
+    "updating": "Updating...",
+    "updateUser": "Update User",
+    "assigning": "Assigning...",
+    "assign": "Assign",
+    
     "notifications": {
-      "statusUpdated": "User status updated to {{status}} successfully!",
-      "userCreated": "User \"{{name}}\" created successfully! A default password has been generated.",
-      "managerAssigned": "Manager assigned to building successfully.",
-      "managerAssignmentFailed": "User created but manager assignment failed.",
-      "accountantAssigned": "Accountant assigned to building successfully.",
-      "accountantAssignmentFailed": "User created but accountant assignment failed.",
-      "userUpdated": "User updated successfully!",
-      "managerAssignmentSuccess": "Manager assigned to building successfully!",
-      "accountantAssignmentSuccess": "Accountant assigned to building successfully!",
-      "managerRemoved": "Manager removed from building successfully!",
-      "accountantRemoved": "Accountant removed from building successfully!",
-      "userDeactivated": "User deactivated successfully!",
-      "userRestored": "User restored successfully!"
+      "statusUpdated": "Status updated to {{status}}",
+      "userCreated": "Successfully created {{name}}",
+      "managerAssigned": "Manager successfully assigned",
+      "accountantAssigned": "Accountant successfully assigned",
+      "managerAssignmentFailed": "Failed to assign manager to building",
+      "accountantAssignmentFailed": "Failed to assign accountant to building",
+      "userUpdated": "User updated successfully",
+      "managerAssignmentSuccess": "Manager assigned successfully",
+      "accountantAssignmentSuccess": "Accountant assigned successfully",
+      "managerRemoved": "Manager removed successfully",
+      "accountantRemoved": "Accountant removed successfully",
+      "userDeactivated": "User deactivated successfully",
+      "userRestored": "User restored successfully"
     },
 
     "errors": {
-      "loadDataFailed": "Failed to load data. Please refresh the page.",
+      "loadDataFailed": "Failed to load data",
       "loadUsersFailed": "Failed to load users",
-      "statusUpdateFailed": "Failed to update user status to {{status}}",
-      "unauthorized": "Unauthorized. Please check your login.",
-      "forbidden": "Forbidden. You don't have permission to create users.",
-      "badRequest": "Bad request. Please check the form data.",
-      "serverError": "Server error ({{status}}). Please try again.",
-      "networkError": "No response from server. Check your network connection.",
-      "createUserError": "Error creating user: {{error}}",
-      "updateUserFailed": "Failed to update user. Please try again.",
+      "statusUpdateFailed": "Failed to update status to {{status}}",
+      "unauthorized": "Unauthorized",
+      "forbidden": "Access forbidden",
+      "badRequest": "Bad request",
+      "serverError": "Server error ({{status}})",
+      "networkError": "Network error",
+      "createUserError": "Failed to create user: {{error}}",
+      "updateUserFailed": "Failed to update user",
       "assignmentFailed": "Failed to assign user",
-      "noAssignmentFound": "No building assignment found",
+      "noAssignmentFound": "No assignment found",
       "removeAssignmentFailed": "Failed to remove assignment",
       "deactivateFailed": "Failed to deactivate user",
       "restoreFailed": "Failed to restore user"
@@ -1183,6 +1381,349 @@
     "pendingApprovalDescription": "Guest users awaiting approval",
     "deactivatedDescription": "Users who have been deactivated"
   },
+    
+    "confirm": {
+      "approveTitle": "Confirm Approval",
+      "reApprove": "Re-approve {{name}}?",
+      "approve": "Approve {{name}}?",
+      "rejectTitle": "Confirm Rejection",
+      "reReject": "Re-reject {{name}}?",
+      "reject": "Reject {{name}}?",
+      "pendingTitle": "Confirm Pending Status",
+      "rePending": "Set {{name}} back to pending?",
+      "setPendingMessage": "Set {{name}} to pending?",
+      "setPending": "Set to Pending",
+      "removeAssignmentTitle": "Confirm Removal",
+      "removeAssignment": "Remove assignment from {{name}}?",
+      "remove": "Remove",
+      "deactivateTitle": "Confirm Deactivation",
+      "deactivateMessage": "Deactivate {{name}}?",
+      "deactivate": "Deactivate",
+      "restoreTitle": "Confirm Restoration",
+      "restoreMessage": "Restore {{name}}?",
+      "restore": "Restore"
+    },
+    
+    "tooltips": {
+      "reApprove": "Re-approve",
+      "approve": "Approve",
+      "reReject": "Re-reject",
+      "reject": "Reject",
+      "rePending": "Set back to pending",
+      "setPending": "Set to pending",
+      "restore": "Restore",
+      "removeFromBuilding": "Remove from building",
+      "assignToBuilding": "Assign to building",
+      "edit": "Edit",
+      "deactivate": "Deactivate"
+    }
+  },
+
+  "units": {
+    "title": "Unit",
+    "errors": {
+      "loadFailed": "Failed to load unit details",
+      "toggleFailed": "Failed to update utility status",
+      "tryAgain": "Please try again later"
+    },
+    "types": {
+      "room": "Room",
+      "space": "Space",
+      "hall": "Hall"
+    },
+    "status": {
+      "available": "Available for Rent",
+      "occupied": "Currently Occupied"
+    },
+    "details": {
+      "floor": "Floor",
+      "roomType": "Room Type",
+      "spaceType": "Space Type",
+      "hallType": "Hall Type",
+      "description": "Description",
+      "basePrice": "Base Price",
+      "totalPrice": "Total Price",
+      "capacity": "Capacity",
+      "people": "people",
+      "unitNumber": "Unit Number",
+      "spaceArea": "Space Area",
+      "unitType": "Unit Type",
+      "meter": "Meter",
+      "hasMeter": "Has Meter",
+      "noMeter": "No Meter",
+      "createdDate": "Created Date",
+      "lastUpdated": "Last Updated",
+      "rentalFee": "Rental fee",
+      "specifications": "Unit Specifications"
+    },
+    "tabs": {
+      "details": "Details",
+      "utilities": "Utilities",
+      "location": "Location"
+    },
+    "utilities": {
+      "title": "Utilities",
+      "active": "active",
+      "total": "total",
+      "perUnit": "MMK per unit",
+      "inactive": "Currently inactive",
+      "toggleSuccess": "Utility {{status}} successfully"
+    },
+    "location": {
+      "title": "Location Information",
+      "branch": "Branch",
+      "building": "Building",
+      "floor": "Floor"
+    },
+    "gallery": {
+      "clickToView": "Click to view gallery",
+      "noImages": "No images available",
+      "thumbnail": "Thumbnail",
+      "more": "more",
+      "image": "Image"
+    },
+    "actions": {
+      "edit": "Edit Unit",
+      "delete": "Delete Unit"
+    },
+    "currency": {
+      "perMonth": "MMK/month"
+    }
+  },
+
+  "forms": {
+    "common": {
+      "required": "Required",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving...",
+      "update": "Update",
+      "updating": "Updating...",
+      "create": "Create",
+      "creating": "Creating...",
+      "close": "Close",
+      "select": "Select",
+      "loading": "Loading...",
+      "characterCount": "{{count}}/{{max}} characters",
+      "autoCapitalized": "Auto-capitalized"
+    },
+    "branch": {
+      "add": "Add New Branch",
+      "edit": "Edit Branch",
+      "name": "Branch Name",
+      "address": "Address",
+      "contactPhone": "Contact Phone",
+      "contactEmail": "Contact Email",
+      "validation": {
+        "nameRequired": "Branch name is required",
+        "nameLength": "Branch name must be at least 2 characters",
+        "nameMax": "Branch name cannot exceed 100 characters",
+        "addressRequired": "Address is required",
+        "addressMax": "Address cannot exceed 250 characters",
+        "phoneRequired": "Contact phone is required",
+        "phoneStart": "Phone number must start with 09",
+        "phoneDigits": "Phone number must be exactly 11 digits",
+        "phoneFormat": "Invalid phone number format. Must be 09 followed by 9 digits",
+        "emailRequired": "Contact email is required",
+        "emailFormat": "Invalid email format",
+        "emailMax": "Email cannot exceed 100 characters"
+      },
+      "hints": {
+        "name": "Enter branch name (2-100 characters)",
+        "address": "Enter branch address (max 250 characters)",
+        "phone": "Enter phone number (09XXXXXXXXX)",
+        "phoneFormat": "Must start with 09 and be exactly 11 digits (09XXXXXXXXX)",
+        "email": "Enter contact email"
+      }
+    },
+    "building": {
+      "add": "Add New Building",
+      "edit": "Edit Building",
+      "branch": "Branch",
+      "name": "Building Name",
+      "code": "Building Code",
+      "totalFloors": "Total Floors",
+      "totalLeasableArea": "Total Leasable Area",
+      "transformerFee": "Transformer Fee",
+      "generatorFee": "Generator Fee",
+      "totalAdditionalFees": "Total Additional Fees",
+      "validation": {
+        "branchRequired": "Please select a branch",
+        "nameRequired": "Building name is required",
+        "nameLength": "Building name must be at least 2 characters",
+        "nameMax": "Building name must be less than 50 characters",
+        "nameChars": "Building name can only contain letters, numbers, spaces, hyphens, dots, and ampersands",
+        "codeRequired": "Building code is required",
+        "codeMax": "Building code must be less than 20 characters",
+        "codeChars": "Building code can only contain uppercase letters, numbers, and hyphens",
+        "floorsRequired": "Total floors is required",
+        "floorsNegative": "Total floors cannot be negative",
+        "floorsMax": "Total floors cannot exceed 25",
+        "areaRequired": "Total leasable area is required",
+        "areaNegative": "Total leasable area cannot be negative",
+        "areaMax": "Total leasable area cannot exceed 5,000,000 sqft",
+        "areaDecimals": "Total leasable area can only have up to 2 decimal places",
+        "transformerRequired": "Transformer fee is required",
+        "transformerNegative": "Transformer fee cannot be negative",
+        "transformerMax": "Transformer fee cannot exceed 10,000,000 MMK",
+        "transformerDecimals": "Transformer fee can only have up to 2 decimal places",
+        "generatorRequired": "Generator fee is required",
+        "generatorNegative": "Generator fee cannot be negative",
+        "generatorMax": "Generator fee cannot exceed 10,000,000 MMK",
+        "generatorDecimals": "Generator fee can only have up to 2 decimal places"
+      },
+      "hints": {
+        "branch": "Select a branch *",
+        "name": "Enter building name (2-50 characters) *",
+        "code": "Enter building code (uppercase letters, numbers, hyphens only) *",
+        "codeUnique": "Building code must be unique within the selected branch.",
+        "floors": "0-25 allowed *",
+        "area": "sqft *",
+        "transformer": "MMK *",
+        "generator": "MMK *",
+        "noBranches": "No branches available. Please create a branch first."
+      }
+    },
+    "level": {
+      "add": "Add New Floor",
+      "edit": "Edit Floor",
+      "building": "Building",
+      "floorName": "Floor Name",
+      "floorNumber": "Floor Number",
+      "totalUnits": "Total Units",
+      "capacity": "Capacity",
+      "used": "Used",
+      "remaining": "Remaining",
+      "full": "Full",
+      "selected": "Selected",
+      "totalAllowed": "Total Allowed",
+      "validation": {
+        "buildingRequired": "Please select a building",
+        "nameRequired": "Floor name is required",
+        "nameMax": "Floor name cannot exceed 20 characters",
+        "nameDuplicate": "\"{{name}}\" already exists in this building",
+        "numberNegative": "Floor number cannot be negative",
+        "numberMax": "Floor number cannot exceed 99",
+        "numberTooLarge": "Floor number is too large",
+        "numberDuplicate": "Floor number {{number}} already exists in this building",
+        "unitsNegative": "Total units cannot be negative",
+        "unitsMax": "Total units cannot exceed 9999",
+        "unitsTooLarge": "Total units is too large",
+        "unitsRequired": "Total units is required",
+        "buildingFull": "This building has reached its maximum capacity ({{floors}} floors)"
+      },
+      "hints": {
+        "floorName": "e.g., Ground Floor, First Floor",
+        "floorNumber": "Floor number (0 for Ground, 1 for First, etc.)",
+        "totalUnits": "Enter number of units (required)",
+        "unitsDescription": "Number of rooms, shops, or units on this floor",
+        "capacityFull": "Cannot add more floors - building is at full capacity",
+        "description": "Floor names are automatically capitalized for consistency. Each floor number must be unique within a building. Buildings have a maximum floor capacity."
+      }
+    }
+  },
+
+  "spaceType": {
+    "labels": {
+      "name": "Space Type Name",
+      "description": "Description",
+      "basePrice": "Base Price (per sqm)",
+      "minSpace": "Min Space (sqm)",
+      "maxSpace": "Max Space (sqm)",
+      "hasUtilities": "Has Utilities Available"
+    },
+    "placeholders": {
+      "name": "Enter space type name (max 50 characters)",
+      "description": "Enter space type description (max 500 characters)",
+      "basePrice": "0.00 - 10,000",
+      "minSpace": "0 - 10,000",
+      "maxSpace": "0 - 10,000"
+    },
+    "errors": {
+      "nameRequired": "Space type name is required",
+      "nameTooLong": "Space type name must be less than 50 characters",
+      "descriptionRequired": "Description is required",
+      "descriptionTooLong": "Description must be less than 500 characters",
+      "basePriceNegative": "Base price cannot be negative",
+      "basePriceTooHigh": "Base price cannot exceed $10,000 per sqm",
+      "minSpaceNegative": "Minimum space cannot be negative",
+      "minSpaceTooHigh": "Minimum space cannot exceed 10,000 sqm",
+      "maxSpaceNegative": "Maximum space cannot be negative",
+      "maxSpaceTooHigh": "Maximum space cannot exceed 10,000 sqm",
+      "maxLessThanMin": "Maximum space must be greater than minimum space"
+    },
+    "buttons": {
+      "create": "Create Space Type",
+      "update": "Update Space Type"
+    }
+  },
+  "hallType": {
+    "labels": {
+      "name": "Hall Type Name",
+      "description": "Description",
+      "basePrice": "Base Price",
+      "capacity": "Capacity (people)",
+      "minBookingHours": "Min Booking Hours",
+      "maxBookingHours": "Max Booking Hours",
+      "amenities": "Amenities"
+    },
+    "placeholders": {
+      "name": "Enter hall type name (max 50 characters)",
+      "description": "Enter hall type description (max 500 characters)",
+      "basePrice": "0 - 100,000",
+      "capacity": "0 - 10,000",
+      "minBookingHours": "0 - 24",
+      "maxBookingHours": "0 - 720 (30 days)"
+    },
+    "errors": {
+      "nameRequired": "Hall type name is required",
+      "nameTooLong": "Hall type name must be less than 50 characters",
+      "descriptionRequired": "Description is required",
+      "descriptionTooLong": "Description must be less than 500 characters",
+      "basePriceNegative": "Base price cannot be negative",
+      "basePriceTooHigh": "Base price cannot exceed $100,000",
+      "capacityNegative": "Capacity cannot be negative",
+      "capacityTooHigh": "Capacity cannot exceed 10,000 people",
+      "minHoursNegative": "Minimum booking hours cannot be negative",
+      "minHoursTooHigh": "Minimum booking hours cannot exceed 24 hours",
+      "maxHoursNegative": "Maximum booking hours cannot be negative",
+      "maxHoursTooHigh": "Maximum booking hours cannot exceed 720 hours (30 days)",
+      "maxLessThanMin": "Maximum hours must be greater than minimum hours"
+    },
+    "amenities": {
+      "audioEquipment": "Audio Equipment",
+      "videoEquipment": "Video Equipment",
+      "catering": "Catering Service"
+    },
+    "buttons": {
+      "create": "Create Hall Type",
+      "update": "Update Hall Type"
+    }
+  },
+  "roomType": {
+    "labels": {
+      "name": "Room Type Name",
+      "description": "Description"
+    },
+    "placeholders": {
+      "name": "Enter room type name (max 50 characters)",
+      "description": "Enter room type description (max 500 characters)"
+    },
+    "errors": {
+      "nameRequired": "Room type name is required",
+      "nameTooLong": "Room type name must be less than 50 characters",
+      "descriptionRequired": "Description is required",
+      "descriptionTooLong": "Description must be less than 500 characters"
+    },
+    "buttons": {
+      "create": "Create Room Type",
+      "update": "Update Room Type"
+    }
+  },
+
+
+
+  
   "overview": {
     "title": "Welcome back, Accountant!",
     "loading": "Loading dashboard data...",
@@ -2171,5 +2712,389 @@
       "role": "Board Member",
       "access": "Read-Only Access"
     }
+  },
+   "unit": {
+
+    "labels": {
+      "unitNumber": "Unit Number",
+      "unitType": "Unit Type",
+      "hasMeter": "Has Meter",
+      "roomType": "Room Type",
+      "spaceType": "Space Type",
+      "hallType": "Hall Type",
+      "unitSpace": "Unit Space",
+      "rentalFee": "Rental Fee",
+      "branch": "Branch",
+      "building": "Building",
+      "floor": "Floor",
+      "level": "Level",
+      "availableUtilities": "Available Utilities",
+      "unitImages": "Unit Images",
+      "currentImages": "Current Images",
+      "newImagesToAdd": "New Images to Add",
+      "imagesToRemove": "Images to be removed ({{count}})",
+      "selectedImages": "Selected Images",
+      "images": "images",
+      "imagesSelected": "images selected",
+      "sqm": "sqm",
+      "sqmAvailable": "sqm available",
+      "currentlyUsed": "Currently used",
+      "currentUnit": "Current unit",
+      "max": "Max",
+      "units": "units",
+      "levelCapacity": "Level Capacity",
+      "buildingLeasableArea": "Building Leasable Area",
+      "totalArea": "Total Area",
+      "minSpace": "Min Space",
+      "maxSpace": "Max Space",
+      "basePrice": "Base Price",
+      "mmk": "MMK",
+      "mmkPerSqm": "MMK/sqm",
+      "currentLocation": "Current Location",
+      "currentType": "Current Type",
+      "cannotChangeLevel": "Cannot change level"
+    },
+    "placeholders": {
+      "unitNumber": "Enter UN-001 to UN-999",
+      "unitSpace": "Enter unit space",
+      "rentalFee": "Enter rental fee",
+      "autoCalculated": "Auto-calculated",
+      "selectBranch": "Select Branch",
+      "selectBuilding": "Select Building",
+      "selectFloor": "Select Floor",
+      "selectRoomType": "Select Room Type",
+      "selectSpaceType": "Select Space Type",
+      "selectHallType": "Select Hall Type"
+    },
+    "types": {
+      "room": "Room",
+      "space": "Space",
+      "hall": "Hall"
+    },
+    "buttons": {
+      "create": "Create Unit",
+      "update": "Update Unit"
+    },
+    "errors": {
+      "unitNumberRequired": "Unit number is required",
+      "unitNumberPrefix": "Unit number must start with UN-",
+      "unitNumberFormat": "Unit number must be in format UN- followed by 1-3 digits",
+      "unitNumberBetween": "Please enter a number between 001 and 999",
+      "unitNumberRange": "Unit number must be between UN-001 and UN-999",
+      "unitNumberDuplicate": "Unit number already exists on this level",
+      "unitNumberDuplicateFloor": "Unit number already exists on this floor",
+      "unitSpaceRequired": "Unit space is required",
+      "unitSpaceValid": "Please enter a valid number",
+      "unitSpaceGreaterThanZero": "Unit space must be greater than 0",
+      "unitSpaceMin": "Unit space must be at least 0.1 sqm",
+      "unitSpaceMax": "Unit space cannot exceed 10000 sqm",
+      "rentalFeeRequired": "Rental fee is required",
+      "rentalFeeValid": "Please enter a valid rental fee",
+      "rentalFeeNegative": "Rental fee cannot be negative",
+      "branchRequired": "Please select a branch",
+      "buildingRequired": "Please select a building",
+      "floorRequired": "Please select a floor",
+      "levelRequired": "Please select a level",
+      "roomTypeRequired": "Please select a room type",
+      "spaceTypeRequired": "Please select a space type",
+      "hallTypeRequired": "Please select a hall type",
+      "minSpaceRequired": "Minimum space required: {{minSpace}} sqm",
+      "maxSpaceAllowed": "Maximum space allowed: {{maxSpace}} sqm",
+      "levelFullCapacity": "Level is at full capacity. Maximum {{maxUnits}} units allowed. Current: {{currentUnits}} units.",
+      "buildingAreaExceeded": "Exceeds building's leasable area. Available: {{available}} sqm, Required: {{required}} sqm",
+      "imageLimitExceeded": "You can only have a maximum of {{maxImages}} images. You currently have {{existingImages}} existing images and {{selectedImages}} new images selected."
+    },
+    "messages": {
+      "unsavedChanges": "You have unsaved changes",
+      "utilitiesAdded": "utility(s) added",
+      "utilitiesRemoved": "utility(s) removed",
+      "utilitiesSelected": "utility type(s) selected",
+      "noUtilitiesAvailable": "No utilities available",
+      "added": "Added",
+      "removed": "Removed",
+      "unitNumberFormat": "Format: UN-001 to UN-999 (UN- prefix is fixed)",
+      "unitNumberValid": "Unit number format is valid",
+      "levelFull": "Level is at full capacity!",
+      "floorFullCapacity": "Floor is at full capacity!",
+      "disabledForSpaces": "Disabled for Spaces",
+      "utilitiesAvailable": "Utilities available",
+      "calculatedRentalFee": "Calculated {{unitType}} Rental Fee",
+      "calculation": "Calculation: {{space}} sqm × {{basePrice}} MMK/sqm = {{result}} MMK",
+      "manualOverride": "Note: Manual override applied. Calculated value was {{calculatedValue}} MMK",
+      "auto": "Auto",
+      "maxImages": "Max {{maxImages}} images total",
+      "maximumLimitReached": "Maximum limit reached",
+      "maximumImageLimitReached": "Maximum image limit reached",
+      "clickToAddImages": "Click to add more images",
+      "clickToUploadImages": "Click to upload images or drag and drop",
+      "imageFormats": "PNG, JPG, JPEG up to 10MB each",
+      "imagesWillBeDeleted": "These images will be permanently deleted when you click \"Update Unit\"",
+      "imagesSelectedCount": "image(s) selected",
+      "loadingBuildings": "Loading buildings...",
+      "loadingLevels": "Loading levels..."
+    },
+  
+    "room": "Room",
+    "space": "Space",
+    "hall": "Hall",
+    "available": "Available",
+    "occupied": "Occupied",
+    "rental_fee": "Rental Fee",
+    "utilities": "Utilities",
+    "active": "active",
+    "meter": "Meter",
+    "has_meter": "Has meter",
+    "sqm": "sqm",
+    "quick_view": "Quick view",
+    "edit_unit": "Edit unit",
+    "delete_unit": "Delete unit",
+    "no_image": "No Image",
+    "branch": "Branch",
+    "floor": "Floor",
+    "unit_type": "Unit Type",
+    "status": "Status",
+    "unit_number": "Unit Number",
+    "building": "Building",
+    "month": "/mo",
+    "no_meter": "No meter",
+    "current_location": "Current Location",
+    "unit_specifications": "Unit Specifications",
+    "space_area": "Space Area",
+    "created_date": "Created Date",
+    "last_updated": "Last Updated",
+    "unit_capacity": "Unit Capacity",
+    "images": "Images",
+    "add_more_images": "Add more images",
+    "new_images_to_add": "New Images to Add",
+    "images_to_be_removed": "Images to be Removed",
+    "current_images": "Current Images",
+    "search_units": "Search Units",
+    "show_more_filters": "Show More Filters",
+    "show_less": "Show Less",
+    "all_branches": "All Branches",
+    "all_types": "All Types",
+    "all_status": "All Status",
+    "all_buildings": "All Buildings",
+    "all_levels": "All Levels",
+    "min_space": "Min Space",
+    "max_space": "Max Space",
+    "reset_filters": "Reset Filters",
+    "active_filters": "active filters",
+    "no_units_found": "No units found",
+    "unit_details": "Unit Details",
+    "location_information": "Location Information",
+    "utility_status": "Utility Status",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "close": "Close",
+    "unsaved_changes": "Unsaved Changes",
+    "calculation": "Calculation",
+    "manual_override": "Manual override",
+    "auto": "Auto",
+    "cannot_change_level": "Cannot change level",
+    "level_capacity": "Level Capacity",
+    "building_leasable_area": "Building Leasable Area",
+    "available_sqm": "Available sqm",
+    "currently_used": "Currently used",
+    "changes_indicator": "Changes Indicator",
+    "added": "Added",
+    "removed": "Removed",
+    "create_unit": "Create Unit",
+    "update_unit": "Update Unit",
+    "format_hint": "Format",
+    "duplicate_check": "Duplicate check",
+    "capacity_info": "Capacity Info",
+    "area_info": "Area Info",
+    
+    "description": "Description",
+    "total": "Total",
+    "people": "people",
+    "per_unit": "per unit",
+    "n_a": "N/A",
+    "thumbnail": "Thumbnail"
+    
+  },
+
+  "homepage": {
+    "hero": {
+      "premiumSpaces": "Premium Spaces",
+      "title": "Find Your Perfect",
+      "retailSpace": "Retail Space",
+      "subtitle": "Premium retail spaces in our modern shopping mall",
+      "viewSpaces": "View Available Spaces",
+      "contactUs": "Contact Us"
+    },
+    "units": {
+      "availableRetailSpaces": "Available Retail Spaces",
+      "browseDescription": "Browse our premium retail spaces - all shown are currently available",
+      "searchFilter": "Search & Filter Spaces",
+      "active": "active",
+      "hideFilters": "Hide filters",
+      "showFilters": "Show filters",
+      "available":"Available for Rent",
+      "recentSearches": "Recent Searches",
+      "reapplySearch": "Reapply Search",
+      "availableSpaces": "Available Spaces",
+      "availableSpacesCount": "{{count}} Available Spaces",
+      "filtersApplied": "{{count}} Filter{{s}} Applied",
+      "clearFilters": "Clear Filters",
+      "pendingFiltersAlert": "You have {{count}} filter{{s}} set but not applied. Click \"Apply Filters\" to see results.",
+      "loadingSpaces": "Loading available spaces...",
+      "searchingSpaces": "Searching spaces...",
+      "errorSearching": "Unable to Search Spaces",
+      "errorLoading": "Unable to Load Spaces",
+      "tryAgain": "Try Again",
+      "noResults": "No available spaces match your search",
+      "noAvailable": "No available spaces at the moment",
+      "adjustFilters": "Try adjusting your filters or browse all available spaces.",
+      "checkBack": "Check back soon for new retail space opportunities.",
+      "showAll": "Show All Available Spaces",
+      "showing": "Showing",
+      "of": "of",
+      "previous": "Previous",
+      "next": "Next",
+      "space": "Space",
+      "sqm": "sqm",
+      "type": "Type",
+      "viewDetails": "View Details",
+      "bookNow": "Book Now",
+      "perfectFor": "Perfect for"
+    },
+    "features": {
+      "title": "Why Choose Our Mall?",
+      "subtitle": "Premium features designed for your business success",
+      "primeLocation": "Prime Location",
+      "primeLocationDesc": "High-traffic areas with excellent visibility",
+      "secureEnvironment": "Secure Environment",
+      "secureEnvironmentDesc": "24/7 security and professional management",
+      "modernFacilities": "Modern Facilities",
+      "modernFacilitiesDesc": "State-of-the-art infrastructure and utilities"
+    },
+    "contact": {
+      "title": "Get In Touch",
+      "subtitle": "Ready to find your perfect retail space? Contact our team today.",
+      "callUs": "Call Us",
+      "monFri": "Mon-Fri 9AM-6PM",
+      "emailUs": "Email Us",
+      "responseWithin": "Response within 24 hours",
+      "visitUs": "Visit Us",
+      "getDirections": "Get directions",
+      "businessHours": "Business Hours",
+      "mondayFriday": "Monday - Friday",
+      "saturdaySunday": "Saturday - Sunday",
+      "businessHoursNote": "Visit our leasing office during business hours for personalized assistance."
+    },
+    "unitDetail": {
+      "comingSoon": "Coming Soon",
+      "imageNotAvailable": "Image Not Available",
+      "space": "Space:",
+      "rentalFee": "Rental Fee:",
+      "loginToSeePrice": "Login to see price",
+      "building": "Building:",
+      "floor": "Floor:",
+      "branch": "Branch:",
+      "level": "Level {{levelNumber}}",
+      "availableUtilities": "Available Utilities",
+      "description": "Description",
+      "close": "Close",
+      "bookAppointment": "Book Appointment",
+      "loginToBook": "Login to Book",
+      "viewDetails": "View Details",
+      "loginRequired": "You need to login to view unit details and pricing.",
+      "appointmentRequired": "You need to login to book an appointment.",
+      "loginNow": "Login Now",
+      "maybeLater": "Maybe Later"
+    },
+    "appointment": {
+      "title": "Book Appointment – {{unitNumber}}",
+      "loginRequired": "Please login to book an appointment.",
+      "selectedSpace": "Selected Space",
+      "unit": "Unit:",
+      "space": "Space:",
+      "type": "Type:",
+      "rent": "Rent:",
+      "phoneNumber": "Phone Number *",
+      "phonePlaceholder": "Enter your phone number",
+      "preferredDate": "Preferred Date *",
+      "preferredTime": "Preferred Time *",
+      "purpose": "Purpose of Appointment *",
+      "purposePlaceholder": "Ex: Business inquiry, room viewing...",
+      "additionalNotes": "Additional Notes",
+      "notesPlaceholder": "Any extra details...",
+      "cancel": "Cancel",
+      "bookAppointment": "Book Appointment",
+      "loginRequiredBtn": "Login Required",
+      "appointmentBooked": "Appointment booked successfully!",
+      "failedToBook": "Failed to book appointment. Please try again."
+    },
+    "searchFilters": {
+      "searchFilter": "Search & Filter Spaces",
+      "filtersApplied": "✓ Search filters applied",
+      "noActiveFilters": "No active search filters",
+      "pendingFilters": "{{count}} pending filter{{s}}",
+      "location": "Location",
+      "branch": "Branch",
+      "allBranches": "All Branches",
+      "loading": "Loading...",
+      "building": "Building",
+      "allBuildings": "All Buildings",
+      "selectBranchFirst": "Select a branch first",
+      "floor": "Floor",
+      "allFloors": "All Floors",
+      "selectBuildingFirst": "Select a building first",
+      "unitType": "Unit Type",
+      "allUnitTypes": "All Unit Types",
+      "room": "Room",
+      "space": "Space",
+      "hall": "Hall",
+      "roomType": "Room Type",
+      "allRoomTypes": "All Room Types",
+      "spaceType": "Space Type",
+      "allSpaceTypes": "All Space Types",
+      "hallType": "Hall Type",
+      "allHallTypes": "All Hall Types",
+      "spaceAndPrice": "Space & Price",
+      "minSpace": "Min Space (sqm)",
+      "maxSpace": "Max Space (sqm)",
+      "minRent": "Min Rent (MMK)",
+      "maxRent": "Max Rent (MMK)",
+      "resetFilters": "Reset Filters",
+      "applyFilters": "Apply Filters"
+    }
+  },
+
+  "appointmentForm": {
+    "title": "Book Appointment",
+    "loginMessage": "Please login to book an appointment.",
+    "selectedSpace": "Selected Space",
+    "unit": "Unit",
+    "space": "Space",
+    "sqm": "sqm",
+    "type": "Type",
+    "rent": "Rent",
+    "month": "month",
+    "phoneNumber": "Phone Number",
+    "phonePlaceholder": "Enter your phone number",
+    "preferredDate": "Preferred Date",
+    "preferredTime": "Preferred Time",
+    "purpose": "Purpose of Appointment",
+    "purposePlaceholder": "Ex: Business inquiry, room viewing...",
+    "additionalNotes": "Additional Notes",
+    "notesPlaceholder": "Any extra details...",
+    "bookAppointment": "Book Appointment",
+    "loginRequired": "Login Required"
   }
+
+
+
+
+
+
+
+
+
+
+
+
+  
 }

@@ -10,6 +10,7 @@ import { ToastNotification } from '../common/ui/ToastNotification';
 import { appointmentApi } from '../../api/appointmentApi';
 import { useAuth } from '../../context/AuthContext';
 import type { Unit } from '../../types/unit';
+import { useTranslation } from 'react-i18next';
 
 interface HomepageProps {
   onUnitDetail?: (unit: any) => void;
@@ -20,6 +21,7 @@ export const Homepage: React.FC<HomepageProps> = ({
   onUnitDetail,
   onViewSpaces
 }) => {
+  const { t } = useTranslation();
   console.log('🏠 Homepage rendered with props:', {
     hasOnUnitDetail: !!onUnitDetail,
     hasOnViewSpaces: !!onViewSpaces
@@ -71,7 +73,7 @@ export const Homepage: React.FC<HomepageProps> = ({
     guestPhone: string;
   }) => {
     if (!userId) {
-      showToast('warning', 'Please login to book an appointment');
+      showToast('warning', t('homepage.appointment.loginRequired'));
       return;
     }
 
@@ -82,12 +84,12 @@ export const Homepage: React.FC<HomepageProps> = ({
       const response = await appointmentApi.book(userId, data);
       console.log("✅ Appointment booked:", response);
       
-      showToast('success', '✅ Appointment booked successfully! The manager will review your request.');
+      showToast('success', t('homepage.appointment.appointmentBooked'));
       closeAppointmentModal();
     } catch (err: any) {
       console.error("❌ Failed to book appointment:", err);
       
-      let errorMessage = "Failed to book appointment. Please try again.";
+      let errorMessage = t('homepage.appointment.failedToBook');
       
       if (err.response?.data?.message) {
         errorMessage = err.response.data.message;

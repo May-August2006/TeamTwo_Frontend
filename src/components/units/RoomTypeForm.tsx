@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../common/ui/Button';
 import type { RoomType, RoomTypeRequest } from '../../types/unit';
 
@@ -15,6 +16,7 @@ export const RoomTypeForm: React.FC<RoomTypeFormProps> = ({
   onCancel,
   isLoading = false
 }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<RoomTypeRequest>({
     typeName: '',
     description: ''
@@ -34,15 +36,15 @@ export const RoomTypeForm: React.FC<RoomTypeFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.typeName.trim()) {
-      newErrors.typeName = 'Room type name is required';
+      newErrors.typeName = t('roomType.errors.nameRequired');
     } else if (formData.typeName.length > 50) {
-      newErrors.typeName = 'Room type name must be less than 50 characters';
+      newErrors.typeName = t('roomType.errors.nameTooLong');
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
+      newErrors.description = t('roomType.errors.descriptionRequired');
     } else if (formData.description.length > 500) {
-      newErrors.description = 'Description must be less than 500 characters';
+      newErrors.description = t('roomType.errors.descriptionTooLong');
     }
 
     setErrors(newErrors);
@@ -82,7 +84,7 @@ export const RoomTypeForm: React.FC<RoomTypeFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Room Type Name *
+          {t('roomType.labels.name')} *
         </label>
         <input
           type="text"
@@ -94,7 +96,7 @@ export const RoomTypeForm: React.FC<RoomTypeFormProps> = ({
           className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.typeName ? 'border-red-500' : 'border-gray-300'
           }`}
-          placeholder="Enter room type name (max 100 characters)"
+          placeholder={t('roomType.placeholders.name')}
         />
         <div className="flex justify-between">
           {errors.typeName ? (
@@ -110,7 +112,7 @@ export const RoomTypeForm: React.FC<RoomTypeFormProps> = ({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Description *
+          {t('roomType.labels.description')} *
         </label>
         <textarea
           name="description"
@@ -122,7 +124,7 @@ export const RoomTypeForm: React.FC<RoomTypeFormProps> = ({
           className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.description ? 'border-red-500' : 'border-gray-300'
           }`}
-          placeholder="Enter room type description (max 500 characters)"
+          placeholder={t('roomType.placeholders.description')}
         />
         <div className="flex justify-between">
           {errors.description ? (
@@ -143,14 +145,14 @@ export const RoomTypeForm: React.FC<RoomTypeFormProps> = ({
           variant="secondary"
           disabled={isLoading}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           type="submit"
           loading={isLoading}
           disabled={isLoading}
         >
-          {roomType ? 'Update Room Type' : 'Create Room Type'}
+          {roomType ? t('roomType.buttons.update') : t('roomType.buttons.create')}
         </Button>
       </div>
     </form>

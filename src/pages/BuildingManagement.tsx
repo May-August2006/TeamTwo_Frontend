@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Building, Search, Plus, Edit, Trash2, Zap, Battery, Filter, X, ChevronDown } from "lucide-react";
+import { Building, Search, Plus, Edit, Trash2, Zap, Battery, Filter, X, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import type { Building as BuildingType } from "../types";
 import { buildingApi } from "../api/BuildingAPI";
 import BuildingForm from "../components/BuildingForm";
@@ -23,6 +23,9 @@ const BuildingManagement: React.FC = () => {
   const [deleting, setDeleting] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null);
   const [loadingBranches, setLoadingBranches] = useState(false);
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   const loadBranches = useCallback(async () => {
     try {
@@ -56,6 +59,11 @@ const BuildingManagement: React.FC = () => {
     loadBuildings();
   }, [loadBranches, loadBuildings]);
 
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedBranchId]);
+
   useEffect(() => {
     let filtered = buildings;
     
@@ -75,6 +83,32 @@ const BuildingManagement: React.FC = () => {
     setFilteredBuildings(filtered);
   }, [searchTerm, selectedBranchId, buildings]);
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredBuildings.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredBuildings.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handleFirstPage = () => {
+    setCurrentPage(1);
+  };
+
+  const handleLastPage = () => {
+    setCurrentPage(totalPages);
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
   const handleCreate = () => {
     setEditingBuilding(null);
     setShowForm(true);
@@ -91,33 +125,42 @@ const BuildingManagement: React.FC = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!buildingToDelete) return;
+  if (!buildingToDelete) return;
 
-    try {
-      setDeleting(true);
-      await buildingApi.delete(buildingToDelete.id);
-      showSuccess(t('notification.buildingDeleted', 'Building "{{name}}" deleted successfully!', { name: buildingToDelete.buildingName }));
-      loadBuildings();
-    } catch (error: any) {
-      console.error("Error deleting building:", error);
+  try {
+    setDeleting(true);
+    await buildingApi.delete(buildingToDelete.id);
+    showSuccess(t('notification.buildingDeleted', 'Building "{{name}}" deleted successfully!', { name: buildingToDelete.buildingName }));
+    loadBuildings();
+  } catch (error: any) {
+    console.error("Error deleting building:", error);
+    
+    // Handle foreign key constraint error specifically for buildings
+    if (error.response?.data?.message?.includes('foreign key constraint') || 
+        error.message?.includes('foreign key constraint') ||
+        error.response?.data?.message?.includes('Cannot delete or update a parent row') ||
+        error.response?.status === 409) {
       
-      if (error.response?.status === 409) {
-        showError(t('error.cannotDeleteBuilding', 'Cannot delete building. It may have associated shops or tenants.'));
-      } else if (error.response?.status === 404) {
-        showError(t('error.buildingNotFound', 'Building not found. It may have been deleted already.'));
-      } else if (error.response?.data?.message) {
-        showError(error.response.data.message);
-      } else if (error.message?.includes('Network Error')) {
-        showError(t('error.networkError', 'Network error. Please check your connection and try again.'));
-      } else {
-        showError(t('error.deleteBuildingFailed', 'Failed to delete building. Please try again.'));
-      }
-    } finally {
-      setDeleting(false);
-      setShowDeleteConfirm(false);
-      setBuildingToDelete(null);
+      showError(t('error.cannotDeleteBuilding', 'Cannot delete building because it has floors, shops, or tenants associated with it. Please delete all floors, shops, and tenants under this building first.'));
+      
+    } else if (error.response?.status === 404) {
+      showError(t('error.buildingNotFound', 'Building not found. It may have been deleted already.'));
+    } else if (error.response?.data?.message) {
+      // Show backend error message if available
+      showError(error.response.data.message);
+    } else if (error.message?.includes('Network Error')) {
+      // Handle network errors
+      showError(t('error.networkError', 'Network error. Please check your connection and try again.'));
+    } else {
+      // Generic error fallback
+      showError(t('error.deleteBuildingFailed', 'Failed to delete building. Please try again.'));
     }
-  };
+  } finally {
+    setDeleting(false);
+    setShowDeleteConfirm(false);
+    setBuildingToDelete(null);
+  }
+};
 
   const handleDeleteCancel = () => {
     setShowDeleteConfirm(false);
@@ -132,6 +175,7 @@ const BuildingManagement: React.FC = () => {
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedBranchId(null);
+    setCurrentPage(1);
   };
 
   const formatCurrency = (amount: number) => {
@@ -235,9 +279,32 @@ const BuildingManagement: React.FC = () => {
       {/* Content Section */}
       <div className="bg-white shadow-xl rounded-xl overflow-hidden ring-1 ring-stone-200">
         <div className="p-3 sm:p-4 lg:p-6">
+          {/* Results Count */}
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm text-stone-600">
+              {t('common.showingXofY', 'Showing {{count}} of {{total}} buildings', { 
+                count: Math.min(currentItems.length, itemsPerPage), 
+                total: filteredBuildings.length 
+              })}
+              {filteredBuildings.length > itemsPerPage && (
+                <span className="ml-2">
+                  (Page {currentPage} of {totalPages})
+                </span>
+              )}
+            </p>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="text-sm text-blue-800 hover:text-blue-900 font-medium"
+              >
+                {t('common.clearSearch', 'Clear search')}
+              </button>
+            )}
+          </div>
+
           {/* Buildings Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-            {filteredBuildings.map((building) => (
+            {currentItems.map((building) => (
               <div
                 key={building.id}
                 className="bg-stone-50 rounded-xl shadow-sm border border-stone-200 p-4 sm:p-6 hover:shadow-md transition-shadow duration-150 relative group"
@@ -281,7 +348,7 @@ const BuildingManagement: React.FC = () => {
                 <div className="space-y-2 sm:space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-xs sm:text-sm font-medium text-stone-600">
-                      {t('common.buildingCode', 'Building Code')}:
+                      {t('buildingManagement.buildingCode', 'Building Code')}:
                     </span>
                     <span className="text-xs sm:text-sm text-stone-900">
                       {building.buildingCode || t('common.notAvailable', 'N/A')}
@@ -289,20 +356,20 @@ const BuildingManagement: React.FC = () => {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-xs sm:text-sm font-medium text-stone-600">
-                      {t('common.totalFloors', 'Total Floors')}:
+                      {t('buildingManagement.totalFloors', 'Total Floors')}:
                     </span>
                     <span className="text-xs sm:text-sm text-stone-900">
-                      {building.totalFloors || t('common.notAvailable', 'N/A')}
+                      {building.totalFloors || t('buildingManagement.notAvailable', 'N/A')}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-xs sm:text-sm font-medium text-stone-600">
-                      {t('common.leasableArea', 'Leasable Area')}:
+                      {t('buildingManagement.leasableArea', 'Leasable Area')}:
                     </span>
                     <span className="text-xs sm:text-sm text-stone-900">
                       {building.totalLeasableArea
                         ? `${building.totalLeasableArea.toLocaleString()} sqft`
-                        : t('common.notAvailable', 'N/A')}
+                        : t('buildingManagement.notAvailable', 'N/A')}
                     </span>
                   </div>
 
@@ -311,7 +378,7 @@ const BuildingManagement: React.FC = () => {
                     <div className="flex items-center space-x-1 sm:space-x-2">
                       <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" />
                       <span className="text-xs sm:text-sm font-medium text-stone-600">
-                        {t('common.transformer', 'Transformer')}:
+                        {t('buildingManagement.transformer', 'Transformer')}:
                       </span>
                     </div>
                     <span className="text-xs sm:text-sm text-stone-900 font-medium">
@@ -324,7 +391,7 @@ const BuildingManagement: React.FC = () => {
                     <div className="flex items-center space-x-1 sm:space-x-2">
                       <Battery className="w-3 h-3 sm:w-4 sm:h-4 text-green-500" />
                       <span className="text-xs sm:text-sm font-medium text-stone-600">
-                        {t('common.generator', 'Generator')}:
+                        {t('buildingManagement.generator', 'Generator')}:
                       </span>
                     </div>
                     <span className="text-xs sm:text-sm text-stone-900 font-medium">
@@ -396,6 +463,82 @@ const BuildingManagement: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="mt-8 pt-6 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-sm text-stone-600">
+                {t('common.pageInfo', 'Page {{current}} of {{total}}', {
+                  current: currentPage,
+                  total: totalPages
+                })}
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handleFirstPage}
+                  disabled={currentPage === 1}
+                  className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('common.firstPage', 'First page')}
+                >
+                  <ChevronsLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handlePrevPage}
+                  disabled={currentPage === 1}
+                  className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('common.previousPage', 'Previous page')}
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors duration-150 ${
+                          currentPage === pageNum
+                            ? 'bg-blue-800 text-white'
+                            : 'text-stone-600 hover:bg-blue-50 hover:text-blue-800'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+                
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('common.nextPage', 'Next page')}
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleLastPage}
+                  disabled={currentPage === totalPages}
+                  className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={t('common.lastPage', 'Last page')}
+                >
+                  <ChevronsRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Empty State */}
           {filteredBuildings.length === 0 && (

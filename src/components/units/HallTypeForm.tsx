@@ -1,5 +1,6 @@
 // components/units/HallTypeForm.tsx
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../common/ui/Button';
 import type { HallType, HallTypeRequest } from '../../types/unit';
 
@@ -16,6 +17,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
   onCancel,
   isLoading = false
 }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<HallTypeRequest>({
     name: '',
     description: '',
@@ -49,44 +51,44 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Hall type name is required';
+      newErrors.name = t('hallType.errors.nameRequired');
     } else if (formData.name.length > 50) {
-      newErrors.name = 'Hall type name must be less than 50 characters';
+      newErrors.name = t('hallType.errors.nameTooLong');
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
+      newErrors.description = t('hallType.errors.descriptionRequired');
     } else if (formData.description.length > 500) {
-      newErrors.description = 'Description must be less than 500 characters';
+      newErrors.description = t('hallType.errors.descriptionTooLong');
     }
 
     if (formData.basePrice < 0) {
-      newErrors.basePrice = 'Base price cannot be negative';
+      newErrors.basePrice = t('hallType.errors.basePriceNegative');
     } else if (formData.basePrice > 100000) {
-      newErrors.basePrice = 'Base price cannot exceed $100,000';
+      newErrors.basePrice = t('hallType.errors.basePriceTooHigh');
     }
 
     if (formData.capacity < 0) {
-      newErrors.capacity = 'Capacity cannot be negative';
+      newErrors.capacity = t('hallType.errors.capacityNegative');
     } else if (formData.capacity > 10000) {
-      newErrors.capacity = 'Capacity cannot exceed 10,000 people';
+      newErrors.capacity = t('hallType.errors.capacityTooHigh');
     }
 
     if (formData.minBookingHours < 0) {
-      newErrors.minBookingHours = 'Minimum booking hours cannot be negative';
+      newErrors.minBookingHours = t('hallType.errors.minHoursNegative');
     } else if (formData.minBookingHours > 24) {
-      newErrors.minBookingHours = 'Minimum booking hours cannot exceed 24 hours';
+      newErrors.minBookingHours = t('hallType.errors.minHoursTooHigh');
     }
 
     if (formData.maxBookingHours < 0) {
-      newErrors.maxBookingHours = 'Maximum booking hours cannot be negative';
+      newErrors.maxBookingHours = t('hallType.errors.maxHoursNegative');
     } else if (formData.maxBookingHours > 720) { // 30 days
-      newErrors.maxBookingHours = 'Maximum booking hours cannot exceed 720 hours (30 days)';
+      newErrors.maxBookingHours = t('hallType.errors.maxHoursTooHigh');
     }
 
     if (formData.maxBookingHours > 0 && formData.minBookingHours > 0 && 
         formData.maxBookingHours < formData.minBookingHours) {
-      newErrors.maxBookingHours = 'Maximum hours must be greater than minimum hours';
+      newErrors.maxBookingHours = t('hallType.errors.maxLessThanMin');
     }
 
     setErrors(newErrors);
@@ -152,7 +154,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Hall Type Name *
+          {t('hallType.labels.name')} *
         </label>
         <input
           type="text"
@@ -164,7 +166,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
           className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.name ? 'border-red-500' : 'border-gray-300'
           }`}
-          placeholder="Enter hall type name (max 100 characters)"
+          placeholder={t('hallType.placeholders.name')}
         />
         <div className="flex justify-between">
           {errors.name ? (
@@ -180,7 +182,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Description *
+          {t('hallType.labels.description')} *
         </label>
         <textarea
           name="description"
@@ -192,7 +194,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
           className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.description ? 'border-red-500' : 'border-gray-300'
           }`}
-          placeholder="Enter hall type description (max 500 characters)"
+          placeholder={t('hallType.placeholders.description')}
         />
         <div className="flex justify-between">
           {errors.description ? (
@@ -209,7 +211,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Base Price *
+            {t('hallType.labels.basePrice')} *
           </label>
           <input
             type="number"
@@ -223,7 +225,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.basePrice ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="0 - 100,000"
+            placeholder={t('hallType.placeholders.basePrice')}
           />
           {errors.basePrice && (
             <p className="text-red-500 text-sm mt-1">{errors.basePrice}</p>
@@ -232,7 +234,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Capacity (people) *
+            {t('hallType.labels.capacity')} *
           </label>
           <input
             type="number"
@@ -245,7 +247,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.capacity ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="0 - 10,000"
+            placeholder={t('hallType.placeholders.capacity')}
           />
           {errors.capacity && (
             <p className="text-red-500 text-sm mt-1">{errors.capacity}</p>
@@ -256,7 +258,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Min Booking Hours
+            {t('hallType.labels.minBookingHours')}
           </label>
           <input
             type="number"
@@ -268,7 +270,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.minBookingHours ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="0 - 24"
+            placeholder={t('hallType.placeholders.minBookingHours')}
           />
           {errors.minBookingHours && (
             <p className="text-red-500 text-sm mt-1">{errors.minBookingHours}</p>
@@ -277,7 +279,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Max Booking Hours
+            {t('hallType.labels.maxBookingHours')}
           </label>
           <input
             type="number"
@@ -289,7 +291,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.maxBookingHours ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="0 - 720 (30 days)"
+            placeholder={t('hallType.placeholders.maxBookingHours')}
           />
           {errors.maxBookingHours && (
             <p className="text-red-500 text-sm mt-1">{errors.maxBookingHours}</p>
@@ -298,7 +300,9 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
       </div>
 
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-gray-700">Amenities</h4>
+        <h4 className="text-sm font-medium text-gray-700">
+          {t('hallType.labels.amenities')}
+        </h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex items-center space-x-3">
             <input
@@ -310,7 +314,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <label htmlFor="hasAudioEquipment" className="text-sm font-medium text-gray-700">
-              Audio Equipment
+              {t('hallType.amenities.audioEquipment')}
             </label>
           </div>
 
@@ -324,7 +328,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <label htmlFor="hasVideoEquipment" className="text-sm font-medium text-gray-700">
-              Video Equipment
+              {t('hallType.amenities.videoEquipment')}
             </label>
           </div>
 
@@ -338,7 +342,7 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
             <label htmlFor="hasCatering" className="text-sm font-medium text-gray-700">
-              Catering Service
+              {t('hallType.amenities.catering')}
             </label>
           </div>
         </div>
@@ -351,14 +355,14 @@ export const HallTypeForm: React.FC<HallTypeFormProps> = ({
           variant="secondary"
           disabled={isLoading}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           type="submit"
           loading={isLoading}
           disabled={isLoading}
         >
-          {hallType ? 'Update Hall Type' : 'Create Hall Type'}
+          {hallType ? t('hallType.buttons.update') : t('hallType.buttons.create')}
         </Button>
       </div>
     </form>

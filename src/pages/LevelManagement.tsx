@@ -1,7 +1,7 @@
 /** @format */
 
 import React, { useState, useEffect } from "react";
-import { Layers, Calendar, Trash2, Edit2, X, ChevronDown } from "lucide-react";
+import { Layers, Calendar, Trash2, Edit2, X, ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import type { Level, Building } from "../types";
 import { levelApi } from "../api/LevelAPI";
 import LevelForm from "../components/LevelForm";
@@ -32,6 +32,9 @@ const LevelManagement: React.FC = () => {
     message: string;
     title?: string;
   } | null>(null);
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     loadBranches();
@@ -46,6 +49,11 @@ const LevelManagement: React.FC = () => {
       setSelectedBuildingId(null);
     }
   }, [selectedBranchId]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedBranchId, selectedBuildingId]);
 
   const showNotification = (type: NotificationType, message: string, title?: string) => {
     setNotification({ type, message, title });
@@ -109,25 +117,57 @@ const LevelManagement: React.FC = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!levelToDelete) return;
+  if (!levelToDelete) return;
 
-    try {
-      setDeleting(true);
-      await levelApi.delete(levelToDelete.id);
-      showNotification('success', t('notification.floorDeleted', 'Floor "{{name}}" deleted successfully!', { name: levelToDelete.levelName }), t('common.deleted', "Deleted"));
-      loadLevels();
-    } catch (error: any) {
-      console.error("Error deleting level:", error);
+  try {
+    setDeleting(true);
+    await levelApi.delete(levelToDelete.id);
+    showNotification('success', t('notification.floorDeleted', 'Floor "{{name}}" deleted successfully!', { name: levelToDelete.levelName }), t('common.deleted', "Deleted"));
+    loadLevels();
+  } catch (error: any) {
+    console.error("Error deleting level:", error);
+    
+    // Handle foreign key constraint error specifically for levels
+    if (error.response?.data?.message?.includes('foreign key constraint') || 
+        error.message?.includes('foreign key constraint') ||
+        error.response?.data?.message?.includes('Cannot delete or update a parent row') ||
+        error.response?.status === 409) {
+      
       showNotification('error', 
-        error.response?.data?.message || t('error.deleteFloorFailed', "Failed to delete floor. Please try again."), 
+        t('error.cannotDeleteFloor', 'Cannot delete floor because it has units or tenants associated with it. Please delete all units and tenants under this floor first.'), 
         t('error.deleteFailed', "Delete Failed")
       );
-    } finally {
-      setDeleting(false);
-      setShowDeleteConfirm(false);
-      setLevelToDelete(null);
+      
+    } else if (error.response?.status === 404) {
+      showNotification('error', 
+        t('error.floorNotFound', 'Floor not found. It may have been deleted already.'), 
+        t('error.deleteFailed', "Delete Failed")
+      );
+    } else if (error.response?.data?.message) {
+      // Show backend error message if available
+      showNotification('error', 
+        error.response.data.message, 
+        t('error.deleteFailed', "Delete Failed")
+      );
+    } else if (error.message?.includes('Network Error')) {
+      // Handle network errors
+      showNotification('error', 
+        t('error.networkError', 'Network error. Please check your connection and try again.'), 
+        t('error.deleteFailed', "Delete Failed")
+      );
+    } else {
+      // Generic error fallback
+      showNotification('error', 
+        t('error.deleteFloorFailed', "Failed to delete floor. Please try again."), 
+        t('error.deleteFailed', "Delete Failed")
+      );
     }
-  };
+  } finally {
+    setDeleting(false);
+    setShowDeleteConfirm(false);
+    setLevelToDelete(null);
+  }
+};
 
   const handleDeleteCancel = () => {
     setShowDeleteConfirm(false);
@@ -152,6 +192,7 @@ const LevelManagement: React.FC = () => {
     setSearchTerm("");
     setSelectedBranchId(null);
     setSelectedBuildingId(null);
+    setCurrentPage(1);
   };
 
   const filteredLevels = levels.filter((level) => {
@@ -169,6 +210,32 @@ const LevelManagement: React.FC = () => {
 
     return matchesSearch && matchesBranch && matchesBuilding;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredLevels.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredLevels.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handleFirstPage = () => {
+    setCurrentPage(1);
+  };
+
+  const handleLastPage = () => {
+    setCurrentPage(totalPages);
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
 
   const getFloorLabel = (levelNumber: number) => {
     if (levelNumber === 0) return t('common.groundFloor', 'Ground Floor');
@@ -305,9 +372,14 @@ const LevelManagement: React.FC = () => {
               <div className="flex justify-between items-center mb-4">
                 <p className="text-sm text-stone-600">
                   {t('common.showingXofY', 'Showing {{count}} of {{total}} floors', { 
-                    count: filteredLevels.length, 
-                    total: levels.length 
+                    count: Math.min(currentItems.length, itemsPerPage), 
+                    total: filteredLevels.length 
                   })}
+                  {filteredLevels.length > itemsPerPage && (
+                    <span className="ml-2">
+                      (Page {currentPage} of {totalPages})
+                    </span>
+                  )}
                 </p>
                 {searchTerm && (
                   <button
@@ -321,7 +393,7 @@ const LevelManagement: React.FC = () => {
 
               {/* Levels Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredLevels.map((level) => (
+                {currentItems.map((level) => (
                   <div
                     key={level.id}
                     className="bg-stone-50 rounded-xl shadow-sm border border-stone-200 p-6 hover:shadow-md transition-shadow duration-150 hover:border-blue-200"
@@ -359,7 +431,7 @@ const LevelManagement: React.FC = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-stone-600">
-                          {t('common.floorNumber', 'Floor Number')}:
+                          {t('levelManagement.floorNumber', 'Floor Number')}:
                         </span>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {getFloorLabel(level.levelNumber)}
@@ -367,7 +439,7 @@ const LevelManagement: React.FC = () => {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-stone-600">
-                          {t('common.totalUnits', 'Total Units')}:
+                          {t('levelManagement.totalUnits', 'Total Units')}:
                         </span>
                         <span className="text-sm text-stone-900 font-medium">
                           {level.totalUnits || 0} {level.totalUnits === 1 ? t('common.unit', 'unit') : t('common.units', 'units')}
@@ -387,6 +459,82 @@ const LevelManagement: React.FC = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="mt-8 pt-6 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-sm text-stone-600">
+                    {t('common.pageInfo', 'Page {{current}} of {{total}}', {
+                      current: currentPage,
+                      total: totalPages
+                    })}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={handleFirstPage}
+                      disabled={currentPage === 1}
+                      className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={t('common.firstPage', 'First page')}
+                    >
+                      <ChevronsLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={handlePrevPage}
+                      disabled={currentPage === 1}
+                      className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={t('common.previousPage', 'Previous page')}
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    
+                    <div className="flex items-center space-x-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors duration-150 ${
+                              currentPage === pageNum
+                                ? 'bg-blue-800 text-white'
+                                : 'text-stone-600 hover:bg-blue-50 hover:text-blue-800'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    
+                    <button
+                      onClick={handleNextPage}
+                      disabled={currentPage === totalPages}
+                      className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={t('common.nextPage', 'Next page')}
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={handleLastPage}
+                      disabled={currentPage === totalPages}
+                      className="p-2 text-stone-400 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={t('common.lastPage', 'Last page')}
+                    >
+                      <ChevronsRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             // Empty State - No floors at all

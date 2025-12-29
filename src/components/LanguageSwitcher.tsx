@@ -30,7 +30,8 @@ export const LanguageSwitcher: React.FC = () => {
       >
         <Globe className="w-5 h-5 text-stone-600" />
         <span className="hidden md:inline text-sm font-medium text-stone-700">
-          {currentLanguage.flag} {currentLanguage.name}
+          {currentLanguage.code} 
+          {/* {currentLanguage.name} */}
         </span>
         <span className="md:hidden text-sm font-medium text-stone-700">
           {currentLanguage.flag}

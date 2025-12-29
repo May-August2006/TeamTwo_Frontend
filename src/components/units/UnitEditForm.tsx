@@ -1,5 +1,6 @@
 // components/units/UnitEditForm.tsx
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { roomTypeApi, spaceTypeApi, hallTypeApi, unitApi } from '../../api/UnitAPI';
 import { utilityApi } from '../../api/UtilityAPI';
 import { buildingApi } from '../../api/BuildingAPI';
@@ -21,6 +22,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
   onCancel, 
   isLoading = false,
 }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     unitNumber: '',
     unitType: UnitType.ROOM,
@@ -70,31 +72,31 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     const trimmed = value.trim().toUpperCase();
     
     if (!trimmed) {
-      return 'Unit number is required';
+      return t('unit.errors.unitNumberRequired');
     }
     
     // Check for UN- prefix
     if (!trimmed.startsWith('UN-')) {
-      return 'Unit number must start with UN-';
+      return t('unit.errors.unitNumberPrefix');
     }
     
     // Check for UN- prefix and number format
     const isValidFormat = /^UN-\d{1,3}$/.test(trimmed);
     if (!isValidFormat) {
-      return 'Unit number must be in format UN- followed by 1-3 digits';
+      return t('unit.errors.unitNumberFormat');
     }
     
     // Extract the number part
     const numberPart = trimmed.substring(3);
     if (numberPart === '') {
-      return 'Please enter a number between 001 and 999';
+      return t('unit.errors.unitNumberBetween');
     }
     
     const number = parseInt(numberPart, 10);
     
     // Check if number is between 1 and 999
     if (number < 1 || number > 999) {
-      return 'Unit number must be between UN-001 and UN-999';
+      return t('unit.errors.unitNumberRange');
     }
     
     return '';
@@ -114,7 +116,10 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     if (adjustedCount >= selectedLevel.totalUnits) {
       setErrors(prev => ({
         ...prev,
-        levelId: `Level is at full capacity. Maximum ${selectedLevel.totalUnits} units allowed. Current: ${adjustedCount} units.`
+        levelId: t('unit.errors.levelFullCapacity', {
+          maxUnits: selectedLevel.totalUnits,
+          currentUnits: adjustedCount
+        })
       }));
       return false;
     }
@@ -143,7 +148,10 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
       const availableArea = selectedBuilding.totalLeasableArea - buildingUsedArea;
       setErrors(prev => ({
         ...prev,
-        unitSpace: `Exceeds building's leasable area. Available: ${availableArea.toFixed(2)} sqm, Required: ${unitSpace.toFixed(2)} sqm`
+        unitSpace: t('unit.errors.buildingAreaExceeded', {
+          available: availableArea.toFixed(2),
+          required: unitSpace.toFixed(2)
+        })
       }));
       return false;
     }
@@ -333,27 +341,27 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     const space = parseFloat(trimmed);
     
     if (!trimmed) {
-      setErrors(prev => ({ ...prev, unitSpace: 'Unit space is required' }));
+      setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.unitSpaceRequired') }));
       return false;
     }
     
     if (isNaN(space)) {
-      setErrors(prev => ({ ...prev, unitSpace: 'Please enter a valid number' }));
+      setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.unitSpaceValid') }));
       return false;
     }
     
     if (space <= 0) {
-      setErrors(prev => ({ ...prev, unitSpace: 'Unit space must be greater than 0' }));
+      setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.unitSpaceGreaterThanZero') }));
       return false;
     }
     
     if (space < 0.1) {
-      setErrors(prev => ({ ...prev, unitSpace: 'Unit space must be at least 0.1 sqm' }));
+      setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.unitSpaceMin') }));
       return false;
     }
     
     if (space > 10000) {
-      setErrors(prev => ({ ...prev, unitSpace: 'Unit space cannot exceed 10000 sqm' }));
+      setErrors(prev => ({ ...prev, unitSpace: t('unit.errors.unitSpaceMax') }));
       return false;
     }
     
@@ -404,7 +412,11 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     // Check if adding new images would exceed the limit when combined with existing images
     const totalImagesAfterAddition = existingImages.length + selectedImages.length + newImages.length - imagesToRemove.length;
     if (totalImagesAfterAddition > MAX_IMAGES) {
-      alert(`You can only have a maximum of ${MAX_IMAGES} images. You currently have ${existingImages.length} existing images and ${selectedImages.length} new images selected.`);
+      alert(t('unit.errors.imageLimitExceeded', {
+        maxImages: MAX_IMAGES,
+        existingImages: existingImages.length,
+        selectedImages: selectedImages.length
+      }));
       e.target.value = ''; // Reset the file input
       return;
     }
@@ -453,13 +465,13 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
       // Check for duplicates
       const isDuplicate = await checkDuplicateUnitNumber(formData.unitNumber, formData.levelId);
       if (isDuplicate) {
-        newErrors.unitNumber = 'Unit number already exists on this level';
+        newErrors.unitNumber = t('unit.errors.unitNumberDuplicate');
       }
     }
 
     // Validate level capacity
     if (!formData.levelId) {
-      newErrors.levelId = 'Please select a level';
+      newErrors.levelId = t('unit.errors.levelRequired');
     } else if (selectedLevel) {
       // Validate level capacity
       if (!validateLevelCapacity()) {
@@ -471,17 +483,17 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     switch (formData.unitType) {
       case UnitType.ROOM:
         if (!formData.roomTypeId) {
-          newErrors.roomTypeId = 'Please select a room type';
+          newErrors.roomTypeId = t('unit.errors.roomTypeRequired');
         }
         break;
       case UnitType.SPACE:
         if (!formData.spaceTypeId) {
-          newErrors.spaceTypeId = 'Please select a space type';
+          newErrors.spaceTypeId = t('unit.errors.spaceTypeRequired');
         }
         break;
       case UnitType.HALL:
         if (!formData.hallTypeId) {
-          newErrors.hallTypeId = 'Please select a hall type';
+          newErrors.hallTypeId = t('unit.errors.hallTypeRequired');
         }
         break;
     }
@@ -489,13 +501,13 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     // Validate unit space
     const space = parseFloat(formData.unitSpace);
     if (!formData.unitSpace) {
-      newErrors.unitSpace = 'Unit space is required';
+      newErrors.unitSpace = t('unit.errors.unitSpaceRequired');
     } else if (isNaN(space) || space <= 0) {
-      newErrors.unitSpace = 'Unit space must be greater than 0';
+      newErrors.unitSpace = t('unit.errors.unitSpaceGreaterThanZero');
     } else if (space < 0.1) {
-      newErrors.unitSpace = 'Unit space must be at least 0.1 sqm';
+      newErrors.unitSpace = t('unit.errors.unitSpaceMin');
     } else if (space > 10000) {
-      newErrors.unitSpace = 'Unit space cannot exceed 10000 sqm';
+      newErrors.unitSpace = t('unit.errors.unitSpaceMax');
     } else {
       // Validate building area capacity
       if (selectedBuilding && selectedBuilding.totalLeasableArea !== null && selectedBuilding.totalLeasableArea !== undefined) {
@@ -508,11 +520,11 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
     // Validate rental fee
     const rentalFee = parseFloat(formData.rentalFee);
     if (!formData.rentalFee) {
-      newErrors.rentalFee = 'Rental fee is required';
+      newErrors.rentalFee = t('unit.errors.rentalFeeRequired');
     } else if (isNaN(rentalFee)) {
-      newErrors.rentalFee = 'Please enter a valid rental fee';
+      newErrors.rentalFee = t('unit.errors.rentalFeeValid');
     } else if (rentalFee < 0) {
-      newErrors.rentalFee = 'Rental fee cannot be negative';
+      newErrors.rentalFee = t('unit.errors.rentalFeeNegative');
     }
 
     setErrors(newErrors);
@@ -731,13 +743,13 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         if (isDuplicate) {
           setErrors(prev => ({
             ...prev,
-            unitNumber: 'Unit number already exists on this level'
+            unitNumber: t('unit.errors.unitNumberDuplicate')
           }));
         } else {
           // Clear duplicate error if it exists
           setErrors(prev => {
             const newErrors = { ...prev };
-            if (newErrors.unitNumber === 'Unit number already exists on this level') {
+            if (newErrors.unitNumber === t('unit.errors.unitNumberDuplicate')) {
               delete newErrors.unitNumber;
             }
             return newErrors;
@@ -819,7 +831,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         return (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Room Type *
+              {t('unit.labels.roomType')} *
             </label>
             <select
               name="roomTypeId"
@@ -830,7 +842,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
                 errors.roomTypeId ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-              <option value="">Select Room Type</option>
+              <option value="">{t('unit.placeholders.selectRoomType')}</option>
               {roomTypes.map(type => (
                 <option key={type.id} value={type.id}>{type.typeName}</option>
               ))}
@@ -845,7 +857,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         return (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Space Type *
+              {t('unit.labels.spaceType')} *
             </label>
             <select
               name="spaceTypeId"
@@ -856,7 +868,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
                 errors.spaceTypeId ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-              <option value="">Select Space Type</option>
+              <option value="">{t('unit.placeholders.selectSpaceType')}</option>
               {spaceTypes.map(type => (
                 <option key={type.id} value={type.id}>{type.name}</option>
               ))}
@@ -871,7 +883,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         return (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Hall Type *
+              {t('unit.labels.hallType')} *
             </label>
             <select
               name="hallTypeId"
@@ -882,7 +894,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
                 errors.hallTypeId ? 'border-red-500' : 'border-gray-300'
               }`}
             >
-              <option value="">Select Hall Type</option>
+              <option value="">{t('unit.placeholders.selectHallType')}</option>
               {hallTypes.map(type => (
                 <option key={type.id} value={type.id}>{type.name}</option>
               ))}
@@ -917,12 +929,12 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
             <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
-            <span className="text-blue-700 font-medium">You have unsaved changes</span>
+            <span className="text-blue-700 font-medium">{t('unit.messages.unsavedChanges')}</span>
           </div>
           {(added.length > 0 || removed.length > 0) && (
             <div className="mt-2 text-sm text-blue-600">
-              {added.length > 0 && <span>{added.length} utility(s) added </span>}
-              {removed.length > 0 && <span>{removed.length} utility(s) removed</span>}
+              {added.length > 0 && <span>{added.length} {t('unit.messages.utilitiesAdded')} </span>}
+              {removed.length > 0 && <span>{removed.length} {t('unit.messages.utilitiesRemoved')}</span>}
             </div>
           )}
         </div>
@@ -930,26 +942,26 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
 
       {/* Location Info (Read-only) */}
       <div className="bg-gray-50 p-4 rounded-lg">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Current Location</h3>
+        <h3 className="text-sm font-medium text-gray-700 mb-2">{t('unit.labels.currentLocation')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
           <div>
-            <span className="text-gray-500">Branch:</span>
+            <span className="text-gray-500">{t('unit.labels.branch')}:</span>
             <span className="ml-2 font-medium">{unit.level?.building?.branchName}</span>
           </div>
           <div>
-            <span className="text-gray-500">Building:</span>
+            <span className="text-gray-500">{t('unit.labels.building')}:</span>
             <span className="ml-2 font-medium">{unit.level?.building?.buildingName}</span>
           </div>
           <div>
-            <span className="text-gray-500">Floor:</span>
+            <span className="text-gray-500">{t('unit.labels.floor')}:</span>
             <span className="ml-2 font-medium">{unit.level?.levelName} (Floor {unit.level?.levelNumber})</span>
           </div>
           <div>
-            <span className="text-gray-500">Current Unit:</span>
+            <span className="text-gray-500">{t('unit.labels.currentUnit')}:</span>
             <span className="ml-2 font-medium">{unit.unitNumber.toUpperCase()}</span>
           </div>
           <div>
-            <span className="text-gray-500">Current Type:</span>
+            <span className="text-gray-500">{t('unit.labels.currentType')}:</span>
             <span className="ml-2 font-medium capitalize">{unit.unitType.toLowerCase()}</span>
           </div>
         </div>
@@ -958,7 +970,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
       {/* Level Selection with Capacity Info */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Level *
+          {t('unit.labels.level')} *
         </label>
         <div className="relative">
           <input
@@ -968,7 +980,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
             className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50 text-gray-700 cursor-not-allowed"
           />
           <div className="absolute inset-0 flex items-center justify-end pr-3 pointer-events-none">
-            <span className="text-gray-500 text-sm">Cannot change level</span>
+            <span className="text-gray-500 text-sm">{t('unit.messages.cannotChangeLevel')}</span>
           </div>
         </div>
         <input type="hidden" name="levelId" value={formData.levelId} />
@@ -977,9 +989,9 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         {selectedLevel && selectedLevel.totalUnits !== null && selectedLevel.totalUnits !== undefined && (
           <div className="mt-2 p-2 bg-gray-50 rounded-md">
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">Level Capacity:</span>
+              <span className="text-gray-600">{t('unit.labels.levelCapacity')}:</span>
               <div className="flex items-center space-x-2">
-                <span className="font-medium">{levelUnitsCount}/{selectedLevel.totalUnits} units</span>
+                <span className="font-medium">{levelUnitsCount}/{selectedLevel.totalUnits} {t('unit.labels.units')}</span>
                 <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-green-500 transition-all duration-300"
@@ -989,7 +1001,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
               </div>
             </div>
             {levelUnitsCount >= selectedLevel.totalUnits && (
-              <p className="text-red-600 text-xs mt-1">Level is at full capacity!</p>
+              <p className="text-red-600 text-xs mt-1">{t('unit.messages.levelFull')}</p>
             )}
           </div>
         )}
@@ -1002,7 +1014,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
       {/* Unit Number */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Unit Number *
+          {t('unit.labels.unitNumber')} *
         </label>
         <div className="relative">
           <input
@@ -1015,7 +1027,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase ${
               errors.unitNumber ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="Enter UN-001 to UN-999"
+            placeholder={t('unit.placeholders.unitNumber')}
             style={{ textTransform: 'uppercase' }}
             maxLength={7}
             disabled={isCheckingDuplicate}
@@ -1028,7 +1040,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         </div>
         <div className="flex justify-between items-center mt-1">
           <p className="text-xs text-gray-500">
-            Format: UN-001 to UN-999 (UN- prefix is fixed)
+            {t('unit.messages.unitNumberFormat')}
           </p>
           <span className="text-xs text-gray-400">
             {formData.unitNumber.length}/7
@@ -1045,7 +1057,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
           </div>
         )}
         {!errors.unitNumber && formData.unitNumber && formData.levelId && !isCheckingDuplicate && formData.unitNumber !== 'UN-' && (
-          <p className="text-green-500 text-sm mt-1">✓ Unit number format is valid</p>
+          <p className="text-green-500 text-sm mt-1">✓ {t('unit.messages.unitNumberValid')}</p>
         )}
       </div>
 
@@ -1053,7 +1065,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         {/* Unit Type */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Unit Type *
+            {t('unit.labels.unitType')} *
           </label>
           <select
             name="unitType"
@@ -1062,9 +1074,9 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
             required
             className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value={UnitType.ROOM}>Room</option>
-            <option value={UnitType.SPACE}>Space</option>
-            <option value={UnitType.HALL}>Hall</option>
+            <option value={UnitType.ROOM}>{t('unit.types.room')}</option>
+            <option value={UnitType.SPACE}>{t('unit.types.space')}</option>
+            <option value={UnitType.HALL}>{t('unit.types.hall')}</option>
           </select>
         </div>
 
@@ -1082,8 +1094,8 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
           <label htmlFor="hasMeter" className={`text-sm font-medium ${
             formData.unitType === UnitType.SPACE ? 'text-gray-400' : 'text-gray-700'
           }`}>
-            Has Meter
-            {formData.unitType === UnitType.SPACE && ' (Disabled for Spaces)'}
+            {t('unit.labels.hasMeter')}
+            {formData.unitType === UnitType.SPACE && ` (${t('unit.messages.disabledForSpaces')})`}
           </label>
         </div>
       </div>
@@ -1095,7 +1107,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         {/* Unit Space */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Unit Space (sqm) *
+            {t('unit.labels.unitSpace')} *
           </label>
           <input
             type="number"
@@ -1107,7 +1119,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.unitSpace ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="Enter unit space"
+            placeholder={t('unit.placeholders.unitSpace')}
             min="0.1"
             step="0.1"
           />
@@ -1116,17 +1128,17 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
           {selectedBuilding && selectedBuilding.totalLeasableArea !== null && selectedBuilding.totalLeasableArea !== undefined && (
             <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-100">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-blue-700">Building Leasable Area:</span>
+                <span className="text-blue-700">{t('unit.labels.buildingLeasableArea')}:</span>
                 <div className="flex items-center space-x-2">
                   <span className="font-medium">
-                    {(selectedBuilding.totalLeasableArea - buildingUsedArea).toFixed(2)}/{selectedBuilding.totalLeasableArea} sqm available
+                    {(selectedBuilding.totalLeasableArea - buildingUsedArea).toFixed(2)}/{selectedBuilding.totalLeasableArea} {t('unit.labels.sqmAvailable')}
                   </span>
                 </div>
               </div>
               <div className="mt-1 text-xs text-blue-600">
-                Currently used: {buildingUsedArea.toFixed(2)} sqm
+                {t('unit.labels.currentlyUsed')}: {buildingUsedArea.toFixed(2)} {t('unit.labels.sqm')}
                 {originalUnitSpace > 0 && (
-                  <span className="ml-2">(Current unit: {originalUnitSpace.toFixed(2)} sqm)</span>
+                  <span className="ml-2">({t('unit.labels.currentUnit')}: {originalUnitSpace.toFixed(2)} {t('unit.labels.sqm')})</span>
                 )}
               </div>
             </div>
@@ -1147,7 +1159,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         {/* Rental Fee */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Rental Fee (MMK) *
+            {t('unit.labels.rentalFee')} *
           </label>
           <input
             type="number"
@@ -1158,7 +1170,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
             className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
               errors.rentalFee ? 'border-red-500' : 'border-gray-300'
             }`}
-            placeholder="Enter rental fee"
+            placeholder={t('unit.placeholders.rentalFee')}
             min="0"
             step="0.01"
           />
@@ -1178,16 +1190,16 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
       {/* Utility Types Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Available Utilities
+          {t('unit.labels.availableUtilities')}
           {added.length > 0 || removed.length > 0 ? (
             <span className="ml-2 text-sm font-normal text-blue-600">
-              ({added.length} added, {removed.length} removed)
+              ({added.length} {t('unit.messages.added')}, {removed.length} {t('unit.messages.removed')})
             </span>
           ) : null}
         </label>
         {utilities.length === 0 ? (
           <div className="text-center py-4 bg-gray-50 rounded-lg">
-            <p className="text-gray-500">No utilities available</p>
+            <p className="text-gray-500">{t('unit.messages.noUtilitiesAvailable')}</p>
           </div>
         ) : (
           <>
@@ -1225,12 +1237,12 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
                         </label>
                         {isAdded && (
                           <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
-                            Added
+                            {t('unit.messages.added')}
                           </span>
                         )}
                         {isRemoved && (
                           <span className="ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
-                            Removed
+                            {t('unit.messages.removed')}
                           </span>
                         )}
                       </div>
@@ -1239,7 +1251,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
                       </p>
                       <div className="flex items-center mt-1 text-xs text-gray-600">
                         <span className="font-medium">
-                          {utility.ratePerUnit?.toLocaleString() || '0'} MMK
+                          {utility.ratePerUnit?.toLocaleString() || '0'} {t('unit.labels.mmk')}
                         </span>
                         <span className="mx-2">•</span>
                         <span className="capitalize bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
@@ -1253,7 +1265,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
             </div>
             {currentUtilityIds.size > 0 && (
               <p className="text-sm text-green-600 mt-2">
-                {currentUtilityIds.size} utility type(s) selected
+                {currentUtilityIds.size} {t('unit.messages.utilitiesSelected')}
               </p>
             )}
           </>
@@ -1263,9 +1275,9 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
       {/* Image Upload Section */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Unit Images
+          {t('unit.labels.unitImages')}
           <span className="ml-2 text-xs text-gray-500">
-            (Max {MAX_IMAGES} images total)
+            ({t('unit.messages.maxImages', { maxImages: MAX_IMAGES })})
           </span>
         </label>
         
@@ -1276,17 +1288,17 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
               ? 'text-red-600' 
               : 'text-blue-600'
           }`}>
-            {existingImages.length + selectedImages.length - imagesToRemove.length}/{MAX_IMAGES} images
+            {existingImages.length + selectedImages.length - imagesToRemove.length}/{MAX_IMAGES} {t('unit.labels.images')}
           </span>
           {(existingImages.length + selectedImages.length - imagesToRemove.length) >= MAX_IMAGES && (
-            <span className="ml-2 text-red-500 text-xs">Maximum limit reached</span>
+            <span className="ml-2 text-red-500 text-xs">{t('unit.messages.maximumLimitReached')}</span>
           )}
         </div>
         
         {/* Existing Images */}
         {existingImages.length > 0 && (
           <div className="mb-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Current Images</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">{t('unit.labels.currentImages')}</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {existingImages.map((imageUrl, index) => (
                 <div key={`existing-${index}`} className="relative group">
@@ -1312,7 +1324,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         {imagesToRemove.length > 0 && (
           <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <h4 className="text-sm font-medium text-yellow-800 mb-2">
-              Images to be removed ({imagesToRemove.length})
+              {t('unit.labels.imagesToRemove', { count: imagesToRemove.length })}
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {imagesToRemove.map((imageUrl, index) => (
@@ -1333,7 +1345,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
               ))}
             </div>
             <p className="text-xs text-yellow-700 mt-2">
-              These images will be permanently deleted when you click "Update Unit"
+              {t('unit.messages.imagesWillBeDeleted')}
             </p>
           </div>
         )}
@@ -1374,11 +1386,11 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
                 : 'text-gray-600'
             }`}>
               {(existingImages.length + selectedImages.length - imagesToRemove.length) >= MAX_IMAGES
-                ? 'Maximum image limit reached'
-                : 'Click to add more images'}
+                ? t('unit.messages.maximumImageLimitReached')
+                : t('unit.messages.clickToAddImages')}
             </p>
             <p className="text-xs text-gray-500">
-              PNG, JPG, JPEG up to 10MB each
+              {t('unit.messages.imageFormats')}
             </p>
           </label>
         </div>
@@ -1386,7 +1398,7 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
         {/* New Image Previews */}
         {imagePreviews.length > 0 && (
           <div className="mt-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">New Images to Add</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">{t('unit.labels.newImagesToAdd')}</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {imagePreviews.map((preview, index) => (
                 <div key={`preview-${index}`} className="relative group">
@@ -1417,14 +1429,14 @@ export const UnitEditForm: React.FC<UnitEditFormProps> = ({
           variant="secondary"
           disabled={isLoading}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           type="submit"
           loading={isLoading}
           disabled={isLoading || !hasChanges() || isCheckingDuplicate}
         >
-          Update Unit
+          {t('unit.buttons.update')}
         </Button>
       </div>
     </form>

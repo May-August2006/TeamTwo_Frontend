@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../ui/Button';
 import Logo from '../../../assets/SeinGayHarLogo.png';
+import { LanguageSwitcher } from '../../LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 interface HeaderProps {
   isLoggedIn?: boolean;
@@ -19,6 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   onRegister
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -71,9 +74,11 @@ export const Header: React.FC<HeaderProps> = ({
               />
               <div>
                 <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">
-                  Sein Gay Har Mall
+                  {t('header.mallName', 'Sein Gay Har Mall')}
                 </h1>
-                <p className="text-sm text-[#64748B]">Premium Retail Spaces</p>
+                <p className="text-sm text-[#64748B]">
+                  {t('header.tagline', 'Premium Retail Spaces')}
+                </p>
               </div>
             </Link>
 
@@ -83,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({
                 to="/"
                 className="text-[#475569] font-medium text-lg hover:text-[#1E40AF] transition-colors duration-300 relative group"
               >
-                Home
+                {t('header.home', 'Home')}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#1E40AF] group-hover:w-full transition-all duration-300"></span>
               </Link>
 
@@ -91,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => scrollToSection('available-units')}
                 className="text-[#475569] font-medium text-lg hover:text-[#1E40AF] transition-colors duration-300 relative group"
               >
-                Available Spaces
+                {t('header.availableSpaces', 'Available Spaces')}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#1E40AF] group-hover:w-full transition-all duration-300"></span>
               </button>
 
@@ -99,7 +104,7 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => scrollToSection('contact')}
                 className="text-[#475569] font-medium text-lg hover:text-[#1E40AF] transition-colors duration-300 relative group"
               >
-                Contact
+                {t('header.contact', 'Contact')}
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#1E40AF] group-hover:w-full transition-all duration-300"></span>
               </button>
 
@@ -108,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({
                   to="/admin/rooms"
                   className="text-[#475569] font-medium text-lg hover:text-[#1E40AF] transition-colors duration-300 relative group"
                 >
-                  Admin
+                  {t('header.admin', 'Admin')}
                   <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#1E40AF] group-hover:w-full transition-all duration-300"></span>
                 </Link>
               )} */}
@@ -116,6 +121,11 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Desktop Auth Buttons */}
             <div className="hidden lg:flex items-center space-x-6">
+              {/* Language Switcher */}
+              <div className="mr-2">
+                <LanguageSwitcher />
+              </div>
+              
               {isLoggedIn ? (
                 <div className="flex items-center space-x-6">
                   <div className="flex items-center space-x-3">
@@ -123,7 +133,9 @@ export const Header: React.FC<HeaderProps> = ({
                       {userName?.[0]?.toUpperCase() || 'U'}
                     </div>
                     <div>
-                      <p className="text-sm text-[#64748B]">Welcome back</p>
+                      <p className="text-sm text-[#64748B]">
+                        {t('header.welcomeBack', 'Welcome back')}
+                      </p>
                       <p className="font-medium text-[#0F172A]">{userName}</p>
                     </div>
                   </div>
@@ -133,7 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
                     size="md"
                     className="border-[#1E40AF] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white transition-all duration-300"
                   >
-                    Logout
+                    {t('header.logout', 'Logout')}
                   </Button>
                 </div>
               ) : (
@@ -144,14 +156,14 @@ export const Header: React.FC<HeaderProps> = ({
                     size="md"
                     className="border-[#1E40AF] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white transition-all duration-300"
                   >
-                    Login
+                    {t('header.login', 'Login')}
                   </Button>
                   <Button
                     onClick={handleRegister}
                     size="md"
                     className="bg-gradient-to-r from-[#1E40AF] to-[#3B82F6] hover:from-[#1E3A8A] hover:to-[#2563EB] text-white shadow-lg hover:shadow-xl transition-all duration-300"
                   >
-                    Register
+                    {t('header.register', 'Register')}
                   </Button>
                 </div>
               )}
@@ -161,6 +173,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="lg:hidden w-10 h-10 flex flex-col justify-center items-center space-y-1.5"
+              aria-label={isMobileMenuOpen ? t('header.closeMenu', 'Close menu') : t('header.openMenu', 'Open menu')}
             >
               <span className={`w-6 h-0.5 bg-[#475569] transition-all duration-300 ${isMobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
               <span className={`w-6 h-0.5 bg-[#475569] transition-all duration-300 ${isMobileMenuOpen ? 'opacity-0' : ''}`}></span>
@@ -179,21 +192,21 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setIsMobileMenuOpen(false)}
               className="block text-lg font-medium text-[#475569] hover:text-[#1E40AF] transition-colors duration-300 py-2"
             >
-              Home
+              {t('header.home', 'Home')}
             </Link>
 
             <button
               onClick={() => scrollToSection('available-units')}
               className="block w-full text-left text-lg font-medium text-[#475569] hover:text-[#1E40AF] transition-colors duration-300 py-2"
             >
-              Available Spaces
+              {t('header.availableSpaces', 'Available Spaces')}
             </button>
 
             <button
               onClick={() => scrollToSection('contact')}
               className="block w-full text-left text-lg font-medium text-[#475569] hover:text-[#1E40AF] transition-colors duration-300 py-2"
             >
-              Contact
+              {t('header.contact', 'Contact')}
             </button>
 
             {/* {isLoggedIn && (
@@ -202,11 +215,18 @@ export const Header: React.FC<HeaderProps> = ({
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="block text-lg font-medium text-[#475569] hover:text-[#1E40AF] transition-colors duration-300 py-2"
               >
-                Admin
+                {t('header.admin', 'Admin')}
               </Link>
             )} */}
 
-            <div className="pt-6 border-t border-[#E2E8F0]">
+            {/* Mobile Language Switcher */}
+            <div className="pt-4 border-t border-[#E2E8F0]">
+              <div className="flex justify-center">
+                <LanguageSwitcher />
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-[#E2E8F0]">
               {isLoggedIn ? (
                 <div className="space-y-4">
                   <div className="flex items-center space-x-3">
@@ -214,7 +234,9 @@ export const Header: React.FC<HeaderProps> = ({
                       {userName?.[0]?.toUpperCase() || 'U'}
                     </div>
                     <div>
-                      <p className="text-sm text-[#64748B]">Welcome back</p>
+                      <p className="text-sm text-[#64748B]">
+                        {t('header.welcomeBack', 'Welcome back')}
+                      </p>
                       <p className="font-medium text-[#0F172A] text-lg">{userName}</p>
                     </div>
                   </div>
@@ -224,7 +246,7 @@ export const Header: React.FC<HeaderProps> = ({
                     size="lg"
                     className="w-full border-[#1E40AF] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white transition-all duration-300"
                   >
-                    Logout
+                    {t('header.logout', 'Logout')}
                   </Button>
                 </div>
               ) : (
@@ -235,14 +257,14 @@ export const Header: React.FC<HeaderProps> = ({
                     size="lg"
                     className="w-full border-[#1E40AF] text-[#1E40AF] hover:bg-[#1E40AF] hover:text-white transition-all duration-300"
                   >
-                    Login
+                    {t('header.login', 'Login')}
                   </Button>
                   <Button
                     onClick={handleRegister}
                     size="lg"
                     className="w-full bg-gradient-to-r from-[#1E40AF] to-[#3B82F6] hover:from-[#1E3A8A] hover:to-[#2563EB] text-white shadow-lg hover:shadow-xl transition-all duration-300"
                   >
-                    Register
+                    {t('header.register', 'Register')}
                   </Button>
                 </div>
               )}

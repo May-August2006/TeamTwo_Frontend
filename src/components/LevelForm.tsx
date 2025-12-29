@@ -4,6 +4,7 @@ import type { Level, Building, LevelRequest } from '../types';
 import { levelApi } from '../api/LevelAPI';
 import { buildingApi } from '../api/BuildingAPI';
 import { useNotification } from '../context/NotificationContext';
+import { useTranslation } from 'react-i18next';
 
 interface LevelFormProps {
   level?: Level | null;
@@ -42,6 +43,7 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
   });
   
   const { showSuccess, showError, showWarning } = useNotification();
+  const { t } = useTranslation();
 
   useEffect(() => {
     loadBuildings();
@@ -94,7 +96,7 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
       
       // Show warning if building is full (only for new level creation)
       if (isFull && !level) {
-        showWarning(`This building has reached its maximum capacity (${selectedBuilding.totalFloors} floors)`);
+        showWarning(t('forms.level.validation.buildingFull', { floors: selectedBuilding.totalFloors }));
       }
     }
   }, [selectedBuilding, existingLevels]);
@@ -133,19 +135,19 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
 
     // Building ID validation
     if (!formData.buildingId || formData.buildingId <= 0) {
-      newErrors.buildingId = 'Please select a building';
+      newErrors.buildingId = t('forms.level.validation.buildingRequired');
     }
 
     // Check if building is full (only for new level creation)
     if (!level && selectedBuilding && buildingStats.isFull) {
-      newErrors.buildingId = `This building has reached its maximum capacity (${selectedBuilding.totalFloors} floors)`;
+      newErrors.buildingId = t('forms.level.validation.buildingFull', { floors: selectedBuilding.totalFloors });
     }
 
     // Level Name validation (matches DTO)
     if (!formData.levelName.trim()) {
-      newErrors.levelName = 'Floor name is required';
+      newErrors.levelName = t('forms.level.validation.nameRequired');
     } else if (formData.levelName.length > 20) {
-      newErrors.levelName = 'Floor name cannot exceed 20 characters';
+      newErrors.levelName = t('forms.level.validation.nameMax');
     }
 
     // Check for duplicate level name (frontend validation)
@@ -155,19 +157,19 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
              (!level || l.id !== level.id)
       );
       if (isDuplicateName) {
-        newErrors.levelName = `"${formData.levelName}" already exists in this building`;
+        newErrors.levelName = t('forms.level.validation.nameDuplicate', { name: formData.levelName });
       }
     }
 
     // Level Number validation (matches DTO) - Max 2 digits (99)
     if (formData.levelNumber < 0) {
-      newErrors.levelNumber = 'Floor number cannot be negative';
+      newErrors.levelNumber = t('forms.level.validation.numberNegative');
     } else if (formData.levelNumber > 99) {
-      newErrors.levelNumber = 'Floor number cannot exceed 99';
+      newErrors.levelNumber = t('forms.level.validation.numberMax');
     } else if (formData.levelNumber > 2147483647) { // Max int value
-      newErrors.levelNumber = 'Floor number is too large';
+      newErrors.levelNumber = t('forms.level.validation.numberTooLarge');
     } else if (formData.levelNumber < -2147483648) { // Min int value
-      newErrors.levelNumber = 'Floor number cannot be negative';
+      newErrors.levelNumber = t('forms.level.validation.numberNegative');
     }
 
     // Check for duplicate level number (frontend validation)
@@ -177,22 +179,22 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
              (!level || l.id !== level.id)
       );
       if (isDuplicateNumber) {
-        newErrors.levelNumber = `Floor number ${formData.levelNumber} already exists in this building`;
+        newErrors.levelNumber = t('forms.level.validation.numberDuplicate', { number: formData.levelNumber });
       }
     }
 
     // Total Units validation (matches DTO) - Max 4 digits (9999)
     if (formData.totalUnits < 0) {
-      newErrors.totalUnits = 'Total units cannot be negative';
+      newErrors.totalUnits = t('forms.level.validation.unitsNegative');
     } else if (formData.totalUnits > 9999) {
-      newErrors.totalUnits = 'Total units cannot exceed 9999';
+      newErrors.totalUnits = t('forms.level.validation.unitsMax');
     } else if (formData.totalUnits > 2147483647) { // Max int value
-      newErrors.totalUnits = 'Total units is too large';
+      newErrors.totalUnits = t('forms.level.validation.unitsTooLarge');
     }
 
     // Check if totalUnits is 0 or empty (now required)
     if (formData.totalUnits === 0) {
-      newErrors.totalUnits = 'Total units is required';
+      newErrors.totalUnits = t('forms.level.validation.unitsRequired');
     }
 
     setErrors(newErrors);
@@ -387,7 +389,7 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
           <div className="flex justify-between items-center p-6 sm:p-8">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-stone-900">
-                {level ? 'Edit Floor' : 'Add New Floor'}
+                {level ? t('forms.level.edit') : t('forms.level.add')}
               </h2>
               <p className="text-sm text-stone-500 mt-1">
                 {level ? 'Update floor details' : 'Create a new floor for your building'}
@@ -408,7 +410,7 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
           <form onSubmit={handleSubmit} className="space-y-5 p-6 sm:p-8 pt-4">
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1">
-                Building *
+                {t('forms.level.building')} *
               </label>
               <select
                 name="buildingId"
@@ -419,7 +421,7 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
                   errors.buildingId ? 'border-red-500' : 'border-stone-300'
                 }`}
               >
-                <option value={0}>Select a building</option>
+                <option value={0}>{t('forms.common.select')} {t('forms.level.building').toLowerCase()}</option>
                 {buildings.map((building) => (
                   <option key={building.id} value={building.id}>
                     {building.buildingName} - {building.branchName} (Max: {building.totalFloors})
@@ -433,7 +435,7 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
                 <div className="flex items-center justify-between mt-1">
                   <div className="flex flex-col">
                     <p className="text-xs text-stone-500">
-                      Selected: {selectedBuilding.buildingName}
+                      {t('forms.level.selected')}: {selectedBuilding.buildingName}
                     </p>
                     <p className={`text-xs font-medium ${
                       buildingStats.isFull ? 'text-red-600' : 'text-green-600'
@@ -443,15 +445,15 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                           </svg>
-                          Full ({buildingStats.usedFloors}/{selectedBuilding.totalFloors})
+                          {t('forms.level.full')} ({buildingStats.usedFloors}/{selectedBuilding.totalFloors})
                         </span>
                       ) : (
-                        `Capacity: ${buildingStats.usedFloors}/${selectedBuilding.totalFloors} (${buildingStats.remainingFloors} remaining)`
+                        `${t('forms.level.capacity')}: ${buildingStats.usedFloors}/${selectedBuilding.totalFloors} (${buildingStats.remainingFloors} ${t('forms.level.remaining')})`
                       )}
                     </p>
                   </div>
                   <p className="text-xs font-medium text-blue-600">
-                    Total Allowed: {selectedBuilding.totalFloors}
+                    {t('forms.level.totalAllowed')}: {selectedBuilding.totalFloors}
                   </p>
                 </div>
               )}
@@ -460,10 +462,10 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-medium text-stone-700">
-                  Floor Name *
+                  {t('forms.level.floorName')} *
                 </label>
                 <span className="text-xs text-stone-500">
-                  Auto-capitalized
+                  {t('forms.common.autoCapitalized')}
                 </span>
               </div>
               <input
@@ -476,23 +478,23 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
                 className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm sm:text-base transition duration-150 shadow-sm disabled:bg-stone-100 disabled:cursor-not-allowed ${
                   errors.levelName ? 'border-red-500' : 'border-stone-300'
                 }`}
-                placeholder="e.g., Ground Floor, First Floor"
+                placeholder={t('forms.level.hints.floorName')}
               />
               {errors.levelName && (
                 <p className="mt-1 text-xs text-red-600">{errors.levelName}</p>
               )}
               <p className="text-xs text-stone-500 mt-1">
-                {formData.levelName.length}/20 characters
+                {t('forms.common.characterCount', { count: formData.levelName.length, max: 20 })}
               </p>
             </div>
 
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-medium text-stone-700">
-                  Floor Number *
+                  {t('forms.level.floorNumber')} *
                 </label>
                 <span className="text-xs text-stone-500">
-                  0-99 allowed
+                  0-99 {t('forms.common.allowed')}
                 </span>
               </div>
               <div className="flex items-center space-x-3">
@@ -516,12 +518,12 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
                   )}
                   {!errors.levelNumber && (
                     <p className="text-xs text-stone-500">
-                      Floor number (0 for Ground, 1 for First, etc.)
+                      {t('forms.level.hints.floorNumber')}
                     </p>
                   )}
                   {!level && selectedBuilding && buildingStats.isFull && !errors.levelNumber && (
                     <p className="text-xs text-red-600 mt-1">
-                      Cannot add more floors - building is at full capacity
+                      {t('forms.level.hints.capacityFull')}
                     </p>
                   )}
                 </div>
@@ -531,10 +533,10 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-medium text-stone-700">
-                  Total Units *
+                  {t('forms.level.totalUnits')} *
                 </label>
                 <span className="text-xs text-red-500 font-medium">
-                  Required
+                  {t('forms.common.required')}
                 </span>
               </div>
               <input
@@ -549,13 +551,13 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
                 className={`w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] text-sm sm:text-base transition duration-150 shadow-sm disabled:bg-stone-100 disabled:cursor-not-allowed ${
                   errors.totalUnits ? 'border-red-500' : 'border-stone-300'
                 }`}
-                placeholder="Enter number of units (required)"
+                placeholder={t('forms.level.hints.totalUnits')}
               />
               {errors.totalUnits && (
                 <p className="mt-1 text-xs text-red-600">{errors.totalUnits}</p>
               )}
               <p className="text-xs text-stone-500 mt-1">
-                Number of rooms, shops, or units on this floor
+                {t('forms.level.hints.unitsDescription')}
               </p>
             </div>
 
@@ -566,7 +568,7 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
                 disabled={loading}
                 className="px-6 py-3 text-stone-600 border border-stone-300 rounded-lg hover:bg-stone-100 transition duration-150 font-medium text-sm sm:text-base shadow-sm w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Cancel
+                {t('forms.common.cancel')}
               </button>
               <button
                 type="submit"
@@ -579,9 +581,9 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Saving...
+                    {t('forms.common.saving')}
                   </>
-                ) : level ? 'Update Floor' : 'Create Floor'}
+                ) : level ? t('forms.common.update') : t('forms.common.create')}
               </button>
             </div>
 
@@ -590,7 +592,7 @@ const LevelForm: React.FC<LevelFormProps> = ({ level, onClose, onSubmit }) => {
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
-                <span>Floor names are automatically capitalized for consistency. Each floor number must be unique within a building. Buildings have a maximum floor capacity.</span>
+                <span>{t('forms.level.hints.description')}</span>
               </p>
             </div>
           </form>
