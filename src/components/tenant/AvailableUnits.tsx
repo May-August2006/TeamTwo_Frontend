@@ -1,6 +1,6 @@
 /** @format */
-
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Unit, UnitSearchParams } from "../../types/unit";
 import { UnitCard } from "./UnitCard";
 import { UnitCardSkeleton } from "../common/skeletons/UnitCardSkeleton";
@@ -26,6 +26,7 @@ interface AvailableUnitsProps {
 export const AvailableUnits: React.FC<AvailableUnitsProps> = ({
   onUnitDetail,
 }) => {
+  const { t } = useTranslation();
   const [availableUnits, setAvailableUnits] = useState<Unit[]>([]);
   const [activeSearchParams, setActiveSearchParams] =
     useState<UnitSearchParams>({});
@@ -102,7 +103,7 @@ export const AvailableUnits: React.FC<AvailableUnitsProps> = ({
       setAvailableUnits(data || []);
       setCurrentPage(1); // 👈 reset page when loading new results
     } catch (err) {
-      setError("Failed to load available units");
+      setError(t("units.messages.loading"));
       setAvailableUnits([]);
     } finally {
       setLoading(false);
@@ -122,7 +123,7 @@ export const AvailableUnits: React.FC<AvailableUnitsProps> = ({
 
     console.log("User fetched:", res.data);
     if (res.data.approvalStatus?.toUpperCase().trim() !== "APPROVED") {
-      alert("Your account is pending approval.");
+      alert(t("units.messages.accountPending"));
       return;
     }
 
@@ -154,13 +155,13 @@ export const AvailableUnits: React.FC<AvailableUnitsProps> = ({
     <div className="p-6">
       <Breadcrumb
         items={[
-          { label: "Tenant", path: "/tenant" },
-          { label: "Available Units" },
+          { label: t("units.breadcrumb.tenant"), path: "/tenant" },
+          { label: t("units.breadcrumb.availableUnits") },
         ]}
       />
 
       <h1 className="text-2xl font-bold text-stone-900 mb-4">
-        Available Units
+        {t("units.title")}
       </h1>
 
       {/* Filters — smaller + compact */}
@@ -178,7 +179,7 @@ export const AvailableUnits: React.FC<AvailableUnitsProps> = ({
       {savedSearches.length > 0 && (
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-stone-700 mb-2">
-            Recent Searches
+            {t("units.recentSearches")}
           </h3>
           <div className="flex gap-2 flex-wrap">
             {savedSearches.map((s, i) => (
@@ -188,7 +189,7 @@ export const AvailableUnits: React.FC<AvailableUnitsProps> = ({
                 variant="secondary"
                 onClick={() => loadAvailableUnits(s)}
               >
-                Reapply Search #{i + 1}
+                {t("units.reapplySearch", { number: i + 1 })}
               </Button>
             ))}
           </div>
@@ -255,8 +256,8 @@ export const AvailableUnits: React.FC<AvailableUnitsProps> = ({
           isOpen={isLoginPromptOpen}
           onClose={() => setIsLoginPromptOpen(false)}
           onConfirm={() => (window.location.href = "/login")}
-          title="Login Required"
-          message="Please login to continue."
+          title={t("units.loginPrompt.title")}
+          message={t("units.loginPrompt.message")}
         />
       )}
     </div>

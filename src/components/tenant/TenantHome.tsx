@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 
 import { tenantApi } from "../../api/TenantAPI"; // your API module
 import { jwtDecode } from "jwt-decode";
+import { useNavigate } from "react-router-dom";
 
 const TenantHome: React.FC = () => {
   const { t } = useTranslation();
@@ -22,6 +23,7 @@ const TenantHome: React.FC = () => {
   const [upcomingDates, setUpcomingDates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const jwtToken = localStorage.getItem("accessToken") || "";
+  const navigate = useNavigate();
 
   let tenantId: number | null = null;
 
@@ -217,21 +219,25 @@ const TenantHome: React.FC = () => {
                   icon: <FileText className="w-5 h-5" />,
                   label: t("tenant.viewCurrentInvoice"),
                   color: "bg-blue-50 text-blue-700 hover:bg-blue-100",
+                  path: "/tenant/invoices",
                 },
                 {
                   icon: <CreditCard className="w-5 h-5" />,
                   label: t("tenant.makePayment"),
                   color: "bg-green-50 text-green-700 hover:bg-green-100",
+                  path: "/tenant/payment-history",
                 },
                 {
                   icon: <Wrench className="w-5 h-5" />,
                   label: t("tenant.submitMaintenanceRequest"),
                   color: "bg-orange-50 text-orange-700 hover:bg-orange-100",
+                  path: "/tenant/maintenance",
                 },
               ].map((action, idx) => (
                 <button
                   key={idx}
                   className={`w-full flex items-center space-x-3 p-3 text-left rounded-lg transition-colors duration-150 ${action.color}`}
+                  onClick={() => navigate(action.path)}
                 >
                   {action.icon}
                   <span>{action.label}</span>

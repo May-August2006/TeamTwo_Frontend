@@ -16,7 +16,7 @@ interface LoginTokenPayload {
 }
 
 const MyContract: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [contracts, setContracts] = useState<ContractDTO[]>([]);
   const [selectedContract, setSelectedContract] = useState<ContractDTO | null>(
@@ -65,8 +65,17 @@ const MyContract: React.FC = () => {
     fetchContracts();
   }, []);
 
+  const formatCurrency = (amount: number) => {
+    const currency = i18n.language === "mm" ? "MMK" : "USD";
+    return new Intl.NumberFormat(i18n.language === "mm" ? "my-MM" : "en-US", {
+      style: "currency",
+      currency: currency,
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
   if (loading) {
-    return <div className="p-6 text-center">{t("loading")}...</div>;
+    return <div className="p-6 text-center">{t("contract.loading")}</div>;
   }
 
   // 🔹 Slice contracts for the current page
@@ -94,10 +103,21 @@ const MyContract: React.FC = () => {
     </div>
   );
 
+  const getStatusTranslation = (status: string) => {
+    const statusMap: Record<string, string> = {
+      ACTIVE: t("contract.status.active"),
+      EXPIRED: t("contract.status.expired"),
+      TERMINATED: t("contract.status.terminated"),
+      PENDING: t("contract.status.pending"),
+      DRAFT: t("contract.status.draft"),
+    };
+    return statusMap[status] || status;
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-6 min-h-screen bg-stone-50">
       <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
-        Contracts
+        {t("contract.title")}
       </h2>
 
       {/* Contract Cards */}
@@ -122,7 +142,7 @@ const MyContract: React.FC = () => {
                     : "bg-yellow-100 text-yellow-800"
                 }`}
               >
-                {contract.contractStatus}
+                {getStatusTranslation(contract.contractStatus)}
               </div>
             </div>
 
@@ -132,8 +152,9 @@ const MyContract: React.FC = () => {
             </p>
 
             <p className="text-stone-600 text-sm mt-1">
-              <Calendar className="inline w-4 h-4 mr-1" />
-              {contract.rentalFee} / month MMK
+              <DollarSign className="inline w-4 h-4 mr-1" />
+              {formatCurrency(contract.rentalFee)} /{" "}
+              {i18n.language === "mm" ? "လစဉ်" : "month"}
             </p>
 
             <p className="text-stone-600 text-sm mt-1">
@@ -160,17 +181,32 @@ const MyContract: React.FC = () => {
               <h3 className="text-xl font-bold">
                 {selectedContract.contractNumber}
               </h3>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                  selectedContract.contractStatus === "ACTIVE"
+                    ? "bg-green-100 text-green-800"
+                    : selectedContract.contractStatus === "EXPIRED"
+                    ? "bg-red-100 text-red-800"
+                    : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
+                {getStatusTranslation(selectedContract.contractStatus)}
+              </span>
             </div>
 
             {/* Summary */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-stone-600">Start Date</p>
+                <p className="text-sm text-stone-600">
+                  {t("contract.startDate")}
+                </p>
                 <p className="font-semibold">{selectedContract.startDate}</p>
               </div>
 
               <div>
-                <p className="text-sm text-stone-600">End Date</p>
+                <p className="text-sm text-stone-600">
+                  {t("contract.endDate")}
+                </p>
                 <p className="font-semibold">{selectedContract.endDate}</p>
               </div>
 
@@ -178,7 +214,9 @@ const MyContract: React.FC = () => {
                 <p className="text-sm text-stone-600">
                   {t("tenant.monthlyRent")}
                 </p>
-                <p className="font-semibold">{selectedContract.rentalFee}</p>
+                <p className="font-semibold">
+                  {formatCurrency(selectedContract.rentalFee)}
+                </p>
               </div>
 
               <div>
@@ -186,7 +224,7 @@ const MyContract: React.FC = () => {
                   {t("tenant.securityDeposit")}
                 </p>
                 <p className="font-semibold">
-                  {selectedContract.securityDeposit}
+                  {formatCurrency(selectedContract.securityDeposit)}
                 </p>
               </div>
 
@@ -207,19 +245,25 @@ const MyContract: React.FC = () => {
               </div>
 
               <div>
-                <p className="text-sm text-stone-600">Contact Person</p>
+                <p className="text-sm text-stone-600">
+                  {t("contract.contactPerson")}
+                </p>
                 <p className="font-semibold">
                   {selectedContract.tenant.tenantName}
                 </p>
               </div>
 
               <div>
-                <p className="text-sm text-stone-600">Contact Email</p>
+                <p className="text-sm text-stone-600">
+                  {t("contract.contactEmail")}
+                </p>
                 <p>{selectedContract.tenant.email}</p>
               </div>
 
               <div>
-                <p className="text-sm text-stone-600">Contact Phone</p>
+                <p className="text-sm text-stone-600">
+                  {t("contract.contactPhone")}
+                </p>
                 <p>{selectedContract.tenant.phone}</p>
               </div>
             </div>
@@ -240,13 +284,16 @@ const MyContract: React.FC = () => {
 
                 <div className="flex justify-between p-3 bg-stone-50 rounded-lg border">
                   <span>{t("tenant.rentDueDate")}</span>
-                  <span className="font-semibold">15th of each month</span>
+                  <span className="font-semibold">
+                    {t("contract.rentDueDateText")}
+                  </span>
                 </div>
 
                 <div className="flex justify-between p-3 bg-stone-50 rounded-lg border">
                   <span>{t("tenant.lateFee")}</span>
                   <span className="font-semibold">
-                    {selectedContract.gracePeriodDays} days grace
+                    {selectedContract.gracePeriodDays}{" "}
+                    {i18n.language === "mm" ? "ရက်ကြာခွင့်" : "days grace"}
                   </span>
                 </div>
 
@@ -262,7 +309,10 @@ const MyContract: React.FC = () => {
                 <div className="flex justify-between p-3 bg-stone-50 rounded-lg border">
                   <span>{t("tenant.renewalOption")}</span>
                   <span className="font-semibold">
-                    {selectedContract.renewalNoticeDays} days notice
+                    {selectedContract.renewalNoticeDays}{" "}
+                    {i18n.language === "mm"
+                      ? "ရက်ကြိုတင်အသိပေးချက်"
+                      : "days notice"}
                   </span>
                 </div>
               </div>
