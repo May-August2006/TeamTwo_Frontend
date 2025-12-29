@@ -6,6 +6,7 @@ import { paymentApi } from "../../api/paymentApi";
 import { invoiceApi } from "../../api/InvoiceAPI";
 import { useAuth } from "../../context/AuthContext";
 import type { InvoiceDTO, LateFeeResponseDTO } from "../../types";
+import toast from "react-hot-toast";
 
 interface LateFeePaymentFormProps {
   onPaymentRecorded: () => void;
@@ -175,6 +176,7 @@ const LateFeePaymentForm: React.FC<LateFeePaymentFormProps> = ({
       setTimeout(() => {
         onPaymentRecorded();
       }, 1500);
+      toast.success("Late fee payment recorded!");
     } catch (err: any) {
       setError("Failed to record late fee payment.");
     } finally {

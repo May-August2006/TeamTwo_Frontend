@@ -30,7 +30,6 @@
   },
 
   "adminsidebar": {
-
     "userManagement": "User Management",
     "adminDashboard": "Admin Dashboard",
     "adminUser": "Admin User",
@@ -38,7 +37,7 @@
     "dashboard": "Dashboard",
     "masterData": "Master Data Management",
     "branchManagement": "Branch Management",
-   "buildingManagement": "Building Management",
+    "buildingManagement": "Building Management",
     "levelManagement": "Floor Management",
     "unitManagement": "Unit Management",
     "utilityTypeManagement": "Utility Types",
@@ -119,7 +118,6 @@
     "confirmDelete": "Are you sure you want to delete this branch?"
   },
   "buildingManagement": {
-
     "title": "Building Management",
     "searchPlaceholder": "Search buildings by name or code...",
     "addBuilding": "Add Building",
@@ -238,7 +236,6 @@
   
 },
 
-  
   "unitManagement": {
     "subtitle": "Manage all units and their types in your properties",
     "addUnit": "Add Unit",
@@ -274,7 +271,7 @@
     "dueDatePlaceholder": "e.g., 1 for 1st of the month",
     "lateFeePlaceholder": "Enter late fee policy details..."
   },
-  
+
   "tenant": {
     "dashboard": "Dashboard",
     "invoices": "My Invoices",
@@ -380,7 +377,212 @@
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
-    "noData": "No data available"
+    "noData": "No data available",
+    "totalContracts": "Total Contracts",
+    "activeContracts": "Active Contracts",
+    "expiredContracts": "Expired Contracts",
+    "rent": "Rent",
+    "leaseEnd": "Lease End Date"
+  },
+
+  "payment": {
+    "title": "My Payment History",
+    "subtitle": "Track all your payment transactions and receipts",
+    "totalPayments": "Total Payments",
+    "totalAmount": "Total Amount",
+    "lastPayment": "Last Payment",
+    "status": "Status",
+    "active": "Active",
+    "noPayments": "No Payments",
+    "noHistory": "No Payment History",
+    "noHistoryDescription": "You haven't made any payments yet.",
+    "notAvailable": "N/A",
+    "loading": "Loading payment history...",
+    "loadFailed": "Failed to load payment history",
+    "retry": "Retry",
+    "downloadFailed": "Failed to download receipt",
+    "receipt": "Receipt",
+    "forInvoice": "For {{invoiceNumber}}",
+    "table": {
+      "paymentDetails": "Payment Details",
+      "date": "Date",
+      "amount": "Amount",
+      "method": "Method",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "methods": {
+      "CASH": "Cash",
+      "CHECK": "Check",
+      "BANK_TRANSFER": "Bank Transfer",
+      "CREDIT_CARD": "Credit Card",
+      "DEBIT_CARD": "Debit Card",
+      "MOBILE_PAYMENT": "Mobile Payment"
+    }
+  },
+
+  "contract": {
+    "title": "Contracts",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "contactPerson": "Contact Person",
+    "contactEmail": "Contact Email",
+    "contactPhone": "Contact Phone",
+    "rentDueDateText": "15th of each month",
+    "status": {
+      "active": "Active",
+      "expired": "Expired",
+      "terminated": "Terminated",
+      "pending": "Pending",
+      "draft": "Draft"
+    },
+    "loading": "Loading contracts..."
+  },
+
+  "maintenanceT": {
+    "title": "Maintenance Requests",
+    "welcome": "Welcome, {{username}} • Tenant ID: {{tenantId}}",
+    "accessDenied": {
+      "title": "Access Denied",
+      "message": "Please login to access maintenance requests."
+    },
+    "stats": {
+      "availableUnits": "Available Units",
+      "totalRequests": "Total Requests",
+      "completed": "Completed"
+    },
+    "units": {
+      "title": "Your Available Units",
+      "subtitle": "Click on a unit to create maintenance request",
+      "noUnits": {
+        "title": "No Units Available",
+        "description": "You don't have any active rental contracts."
+      },
+      "unitCard": {
+        "type": "Type:",
+        "building": "Building:",
+        "rent": "Rent:",
+        "selected": "✓ Selected - Click to Request",
+        "requestMaintenance": "Request Maintenance"
+      }
+    },
+    "requests": {
+      "title": "Your Maintenance Requests",
+      "loading": "Loading...",
+      "noRequests": {
+        "title": "No Requests Yet",
+        "description": "Select a unit above to submit your first maintenance request."
+      },
+      "submitted": "Submitted:",
+      "assignedTo": "Assigned to:",
+      "yourFeedback": "Your feedback:",
+      "unit": "Unit:"
+    },
+    "modal": {
+      "newRequest": {
+        "title": "New Maintenance Request",
+        "selectedUnit": "Selected Unit: {{unitNumber}}",
+        "unitLocked": "This unit is locked for this request. To choose a different unit, close this modal and select another unit.",
+        "form": {
+          "requestTitle": "Request Title *",
+          "titlePlaceholder": "e.g., Leaking faucet in bathroom",
+          "priority": "Priority",
+          "description": "Description *",
+          "descriptionPlaceholder": "Please describe the issue in detail. Include location, severity, and any other relevant information."
+        },
+        "cancel": "Cancel",
+        "submit": "Submit Request",
+        "validating": "Validating..."
+      },
+      "confirmation": {
+        "title": "Confirm Submission",
+        "message": "Are you sure you want to submit this maintenance request for {{unitNumber}}?",
+        "details": "Request Details:",
+        "cancel": "Cancel",
+        "confirm": "Yes, Submit Request",
+        "submitting": "Submitting..."
+      },
+      "feedback": {
+        "title": "Add Feedback",
+        "label": "Your Feedback *",
+        "placeholder": "Please provide your feedback about the maintenance work...",
+        "cancel": "Cancel",
+        "submit": "Submit Feedback"
+      }
+    },
+    "buttons": {
+      "addFeedback": "Add Feedback",
+      "cancel": "Cancel"
+    },
+    "status": {
+      "PENDING": "Pending",
+      "IN_PROGRESS": "In Progress",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "priority": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "URGENT": "Urgent"
+    },
+    "messages": {
+      "loading": "Loading your information...",
+      "success": {
+        "requestSubmitted": "Maintenance request submitted successfully!",
+        "feedbackSubmitted": "Feedback submitted successfully!"
+      },
+      "error": {
+        "general": "Failed to initialize page",
+        "noTenantId": "Tenant ID not found in token",
+        "loadUnits": "Failed to load available units",
+        "submitRequest": "Failed to submit request",
+        "submitFeedback": "Failed to submit feedback",
+        "validation": {
+          "title": "Please enter a request title",
+          "description": "Please enter a description",
+          "unit": "Please select a unit",
+          "feedback": "Please enter feedback"
+        }
+      }
+    }
+  },
+
+  "units": {
+    "title": "Available Units",
+    "breadcrumb": {
+      "tenant": "Tenant",
+      "availableUnits": "Available Units"
+    },
+    "recentSearches": "Recent Searches",
+    "reapplySearch": "Reapply Search #{{number}}",
+    "messages": {
+      "loading": "Failed to load available units",
+      "accountPending": "Your account is pending approval."
+    },
+    "loginPrompt": {
+      "title": "Login Required",
+      "message": "Please login to continue."
+    }
+  },
+
+  "sidebarT": {
+    "title": "Tenant Portal",
+    "menu": {
+      "dashboard": "Dashboard",
+      "invoices": "My Invoices",
+      "paymentHistory": "Payment History",
+      "contract": "My Contract",
+      "maintenance": "Maintenance",
+      "announcements": "Announcements",
+      "reminders": "Reminders",
+      "lateFees": "Late Fees",
+      "availableUnits": "Available Units"
+    },
+    "user": {
+      "name": "John Tenant",
+      "description": "Retail Store A-102"
+    }
   },
 
   "overview": {
@@ -835,7 +1037,7 @@
     "try_again_later": "Please try again later",
     "more": "more"
   },
-  
+
   "utilityType": {
     "title": "Utility Type Management",
     "subtitle": "Manage utility types and calculation methods for billing configuration.",
@@ -971,6 +1173,15 @@
     "buildingManager": "Building Manager",
     "buildingAccountant": "Building Accountant",
     "assignUser": "Assign {{name}} as {{type}}",
+    "role": "Role:",
+    "defaultPasswordMessage": "A default password will be auto-generated. User will need to reset it on first login.",
+    "checkingEmail": "Checking email availability...",
+    "checkingUsername": "Checking username availability...",
+    "emailAvailable": "✓ Email is available",
+    "emailTaken": "✗ Email is already taken",
+    "usernameAvailable": "✓ Username is available",
+    "usernameTaken": "✗ Username is already taken",
+
     "firstPage": "First Page",
     "previousPage": "Previous Page",
     "nextPage": "Next Page",
@@ -985,9 +1196,16 @@
       "accountants": "Accountants",
       "bod": "Board of Directors",
       "pendingApproval": "Pending Approval",
+      "deactivated": "Deactivated Users"
+    },
+
+    "approvalStatus": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
       "deactivated": "Deactivated"
     },
-    
+
     "roles": {
       "admin": "Admin",
       "manager": "Manager",
@@ -996,6 +1214,19 @@
       "tenant": "Tenant",
       "guest": "Guest"
     },
+
+    "validation": {
+      "usernameRequired": "Username is required",
+      "usernameInvalid": "Username must be 3-20 characters (letters, numbers, underscores only)",
+      "usernameTooLong": "Username cannot exceed {{max}} characters",
+      "usernameExists": "Username already exists",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email address",
+      "emailTooLong": "Email cannot exceed {{max}} characters",
+      "emailExists": "Email already exists",
+      "fullNameRequired": "Full name is required",
+      "fullNameInvalid": "Full name must be 2-30 characters (letters, spaces, dots, apostrophes, hyphens only)",
+      "fullNameTooLong": "Full name cannot exceed {{max}} characters"
     
     "approvalStatus": {
       "pending": "Pending",
@@ -1011,7 +1242,7 @@
       "status": "Status",
       "actions": "Actions"
     },
-    
+
     "form": {
       "fullName": "Full Name",
       "fullNamePlaceholder": "Enter full name",
@@ -1035,6 +1266,52 @@
       "noAvailableBuildingsWithoutManagers": "No available buildings without managers",
       "noAvailableBuildingsWithoutAccountants": "No available buildings without accountants"
     },
+
+    "table": {
+      "user": "User",
+      "role": "Role",
+      "approvalStatus": "Approval Status",
+      "assignment": "Assignment",
+      "status": "Status",
+      "actions": "Actions"
+    },
+
+    "tooltips": {
+      "reApprove": "User is approved - Click to re-approve",
+      "approve": "Approve User",
+      "reReject": "User is rejected - Click to reject again",
+      "reject": "Reject User",
+      "rePending": "User is pending - Click to set pending again",
+      "setPending": "Set User to Pending",
+      "restore": "Restore User",
+      "removeFromBuilding": "Remove from Building",
+      "assignToBuilding": "Assign to Building",
+      "edit": "Edit User",
+      "deactivate": "Deactivate User"
+    },
+
+    "confirm": {
+      "approveTitle": "Approve User",
+      "approve": "Approve",
+      "reApprove": "Are you sure you want to re-approve {{name}}? This will grant them access to the system.",
+      "rejectTitle": "Reject User",
+      "reject": "Reject",
+      "reReject": "Are you sure you want to keep {{name}} rejected? This will deny them access to the system.",
+      "pendingTitle": "Set User to Pending",
+      "setPending": "Set to Pending",
+      "rePending": "Are you sure you want to keep {{name}} in pending status?",
+      "setPendingMessage": "Are you sure you want to set {{name}} to pending status?",
+      "removeAssignmentTitle": "Remove Assignment",
+      "remove": "Remove",
+      "removeAssignment": "Are you sure you want to remove {{name}} from their building assignment?",
+      "deactivateTitle": "Deactivate User",
+      "deactivate": "Deactivate",
+      "deactivateMessage": "Are you sure you want to deactivate {{name}}? They will no longer have access to the system and will be removed from any building assignments.",
+      "restoreTitle": "Restore User",
+      "restore": "Restore",
+      "restoreMessage": "Are you sure you want to restore {{name}}? They will regain access to the system."
+    },
+
     
     "validation": {
       "usernameRequired": "Username is required",
@@ -1079,7 +1356,7 @@
       "userDeactivated": "User deactivated successfully",
       "userRestored": "User restored successfully"
     },
-    
+
     "errors": {
       "loadDataFailed": "Failed to load data",
       "loadUsersFailed": "Failed to load users",
@@ -1097,6 +1374,13 @@
       "deactivateFailed": "Failed to deactivate user",
       "restoreFailed": "Failed to restore user"
     },
+
+    "showingCount": "Showing <1>{{count}}</1> {{tab}}",
+    "guestsDescription": "Users with limited access permissions",
+    "bodDescription": "Board of Directors with system-wide access",
+    "pendingApprovalDescription": "Guest users awaiting approval",
+    "deactivatedDescription": "Users who have been deactivated"
+  },
     
     "confirm": {
       "approveTitle": "Confirm Approval",
@@ -1492,10 +1776,8 @@
       "mmk": "MMK",
       "days": "days"
     }
-  
   },
 
-  
   "paymentList": {
     "title": "Payment Management",
     "subtitle": "View and manage all payment transactions",
@@ -1596,10 +1878,8 @@
     "currency": {
       "mmk": "MMK"
     }
-  }
-,
-
- "auditLog": {
+  },
+  "auditLog": {
     "title": "Payment Audit Log",
     "subtitle": "Track all payment-related activities and changes",
     "loading": "Loading audit logs...",
@@ -1851,60 +2131,58 @@
     }
   },
 
-
   "meterReadingPage": {
     "title": "Meter Readings",
     "subtitle": "Manage all meter readings in one place",
     "adminSubtitle": "(Your assigned building only)",
-    
+
     "buttons": {
       "addNewReading": "Add New Reading",
       "refresh": "Refresh"
     },
-    
+
     "assignedBuilding": {
       "label": "Assigned Building:",
       "description": "You can only access meter readings from your assigned building."
     },
-    
+
     "alerts": {
       "readingSaved": "Meter reading saved successfully",
       "readingDeleted": "Meter reading deleted successfully",
       "deleteConfirm": "Are you sure you want to delete this meter reading?"
     },
-    
+
     "buildingErrors": {
       "noBuildingAssigned": "No building assigned to your account. Please contact administrator.",
       "failedToLoadBuilding": "Failed to load your assigned building. Please contact administrator."
     },
-    
+
     "loadingErrors": {
       "failedToLoadReadings": "Failed to load meter readings",
       "failedToDeleteReading": "Failed to delete meter reading"
     },
-    
+
     "statistics": {
       "totalReadings": "Total Readings",
       "electricity": "Electricity",
       "water": "Water",
       "thisMonth": "This Month"
     },
-    
+
     "tableInfo": {
       "showingReadings": "Showing {count} meter readings",
       "lastUpdated": "Last updated: {time}",
       "noReadings": "No meter readings found"
     },
-    
+
     "error": "Error"
   },
-
 
   "buildingUtilityInvoicePage": {
     "title": "Mall Owner Expense Calculator",
     "subtitle": "Calculate and track mall owner's utility expenses for vacant and unallocated areas",
     "assignedBuildingInfo": "You are assigned to: {buildingName}",
-    
+
     "buttons": {
       "refresh": "Refresh",
       "viewHistory": "View History",
@@ -1917,14 +2195,14 @@
       "markAsPaid": "Mark as Paid",
       "markAsCancelled": "Mark as Cancelled"
     },
-    
+
     "statistics": {
       "totalExpenses": "Total Expenses",
       "totalAmount": "Total Amount",
       "pending": "Pending",
       "paid": "Paid"
     },
-    
+
     "form": {
       "selectBuilding": "Select Building *",
       "periodStart": "Period Start *",
@@ -1934,7 +2212,7 @@
       "expenseDescription": "Expense Description",
       "descriptionPlaceholder": "Enter description for this expense..."
     },
-    
+
     "alerts": {
       "duplicateExpense": "An expense record already exists for {buildingName} for period {periodStart} to {periodEnd}. Please select a different period.",
       "expenseSaved": "Mall owner expense of {amount} saved successfully!",
@@ -1943,7 +2221,7 @@
       "exportSuccess": "Expenses exported as {format} successfully!",
       "noExpensesExport": "No expenses to export"
     },
-    
+
     "errors": {
       "selectBuilding": "Please select a building",
       "periodDates": "Period start date must be before period end date",
@@ -1962,13 +2240,13 @@
       "noAccess": "You can only access CAM calculations for your assigned building",
       "noAccessCalculate": "You can only calculate CAM for your assigned building"
     },
-    
+
     "camPreview": {
       "title": "Mall Owner Expense Calculation for {buildingName}",
       "period": "Period: {startDate} to {endDate}",
       "mallOwnerShare": "Mall Owner's Share:"
     },
-    
+
     "areaBreakdown": {
       "title": "Building Area",
       "totalLeasableArea": "Total Leasable Area:",
@@ -1976,7 +2254,7 @@
       "vacantArea": "Vacant Area:",
       "unallocatedArea": "Unallocated Area:"
     },
-    
+
     "costBreakdown": {
       "title": "CAM Cost Breakdown",
       "generatorFee": "Generator Fee:",
@@ -1984,7 +2262,7 @@
       "otherCAMCosts": "Other CAM Costs:",
       "totalCAMCosts": "Total CAM Costs:"
     },
-    
+
     "distribution": {
       "title": "Distribution",
       "tenantsPay": "Tenants Pay:",
@@ -1992,12 +2270,12 @@
       "occupiedUnits": "For {count} occupied units ({percentage}% of area)",
       "vacantUnits": "For {vacantCount} vacant units + unallocated area ({percentage}% of area)"
     },
-    
+
     "saveExpense": {
       "title": "Save Expense Record",
       "mallOwnerShare": "Mall Owner's Share:"
     },
-    
+
     "expenseHistory": {
       "title": "{role} Mall Owner Expenses",
       "allExpenses": "All Mall Owner Expenses",
@@ -2018,12 +2296,12 @@
       "noExpensesTitle": "No expenses recorded",
       "noExpensesDescription": "Calculate and save mall owner expenses to see them here."
     },
-    
+
     "howItWorks": {
       "title": "How It Works - Correct Calculation",
       "keyPrinciple": "Key Principle:",
       "keyPrincipleText": "Mall owner pays for ALL areas that are NOT occupied by tenants. This includes both vacant units AND any unallocated space in the building.",
-      
+
       "steps": {
         "calculateTotal": "1. Calculate Total CAM",
         "calculateTotalText": "Generator + Transformer + Other CAM costs.",
@@ -2032,7 +2310,7 @@
         "calculateOwnerShare": "3. Calculate Mall Owner Share",
         "calculateOwnerShareText": "Total CAM - Tenants' portion for occupied area."
       },
-      
+
       "example": {
         "title": "Example (5000 sq.ft building):",
         "totalLeasable": "• Total leasable area: {area}",
@@ -2043,28 +2321,27 @@
         "tenantsPay": "→ Tenants pay: {area} × ({totalCost} ÷ {totalArea}) = {amount}",
         "ownerPays": "→ Mall owner pays: {totalCost} - {tenantsPay} = {amount}"
       },
-      
+
       "note": "Note: All expense records are now stored in the database. {roleInfo} The system prevents duplicate entries for the same building and period.",
       "nonAdminNote": "You can only view expenses for your assigned building.",
       "adminNote": "As an administrator, you can view all expenses."
     },
-    
+
     "status": {
       "pending": "PENDING",
       "paid": "PAID",
       "approved": "APPROVED",
       "cancelled": "CANCELLED"
     },
-    
+
     "deleteConfirm": "Are you sure you want to delete this expense record?",
     "success": "Success",
     "error": "Error"
   },
 
-
   "sidebar": {
     "dashboard": "Accountant Dashboard",
-    
+
     "sections": {
       "overview": "Overview",
       "payment": "Payment",
@@ -2072,7 +2349,7 @@
       "auditLog": "Audit Log",
       "billingUtilities": "Billing & Utilities"
     },
-    
+
     "billingUtilities": {
       "utilityCalculation": "Utility Calculation",
       "bulkReadings": "Bulk Readings",
@@ -2082,23 +2359,22 @@
       "lateFee": "Late Fee",
       "overdueOutstanding": "Overdue & Outstanding"
     },
-    
+
     "user": {
       "name": "Accountant User",
       "role": "Accountant"
     }
-  }
-,
+  },
   "bod_home": {
     "loading": "Loading dashboard...",
     "error": "Failed to load dashboard data",
     "retry": "Retry",
-    
+
     "header": {
       "welcome": "Welcome to Dashboard",
       "subtitle": "Board of Directors Overview"
     },
-    
+
     "kpis": {
       "total_units": "Total Units",
       "occupied": "occupied",
@@ -2113,7 +2389,7 @@
       "collection_efficiency": "Collection Efficiency",
       "collection_target": "Target: 95%"
     },
-    
+
     "units_distribution": {
       "title": "Units Distribution",
       "subtitle": "Vacant vs Occupied Units",
@@ -2122,7 +2398,7 @@
       "vacant_units": "Vacant Units",
       "of_total": "of total"
     },
-    
+
     "additional_stats": {
       "active_tenants": "Active Tenants",
       "currently_occupying": "Currently occupying units",
@@ -2131,7 +2407,7 @@
       "overdue_invoices": "Overdue Invoices",
       "outstanding": "outstanding"
     },
-    
+
     "revenue_overview": {
       "title": "Revenue Overview",
       "subtitle": "Monthly and total performance",
@@ -2141,7 +2417,7 @@
       "collection_efficiency": "Collection Efficiency:",
       "active_contracts": "Active Contracts:"
     },
-    
+
     "footer": {
       "data_updated": "Data last updated:"
     }
@@ -2822,4 +3098,3 @@
 
   
 }
-

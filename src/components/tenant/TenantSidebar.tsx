@@ -1,5 +1,4 @@
 /** @format */
-
 import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -31,56 +30,68 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
   isCollapsed,
   onToggleCollapse,
 }) => {
-  const { t } = useTranslation(); // Get the t function here
+  const { t } = useTranslation();
 
-  // Move menuItems inside the component to use the t function
-  const menuItems = [
-    {
-      name: "Dashboard",
-      icon: <Home className="w-5 h-5" />,
-      path: "/tenant",
-    },
-    {
-      name: "My Invoices",
-      icon: <FileText className="w-5 h-5" />,
-      path: "/tenant/invoices",
-    },
-    {
-      name: "Payment History",
-      icon: <CreditCard className="w-5 h-5" />,
-      path: "/tenant/payment-history",
-    },
-    {
-      name: "My Contract",
-      icon: <FileCheck className="w-5 h-5" />,
-      path: "/tenant/contract",
-    },
-    {
-      name: "Maintenance",
-      icon: <Wrench className="w-5 h-5" />,
-      path: "/tenant/maintenance",
-    },
-    {
-      name: "Announcements",
-      icon: <Bell className="w-5 h-5" />,
-      path: "/tenant/announcements",
-    },
-    {
-      name: "Reminders",
-      icon: <Bell className="w-5 h-5" />,
-      path: "/tenant/reminders",
-    },
-    {
-      name: "Late Fees",
-      icon: <FileCheck className="w-5 h-5" />,
-      path: "/tenant/lateFees",
-    },
-    {
-      name: "Available Units",
-      icon: <FileCheck className="w-5 h-5" />,
-      path: "/tenant/availableUnits",
-    },
-  ];
+  // Memoize menuItems to prevent unnecessary re-renders
+  const menuItems = useMemo(
+    () => [
+      {
+        name: t("sidebarT.menu.dashboard"),
+        icon: <Home className="w-5 h-5" />,
+        path: "/tenant",
+        translationKey: "dashboard",
+      },
+      {
+        name: t("sidebarT.menu.invoices"),
+        icon: <FileText className="w-5 h-5" />,
+        path: "/tenant/invoices",
+        translationKey: "invoices",
+      },
+      {
+        name: t("sidebarT.menu.paymentHistory"),
+        icon: <CreditCard className="w-5 h-5" />,
+        path: "/tenant/payment-history",
+        translationKey: "paymentHistory",
+      },
+      {
+        name: t("sidebarT.menu.contract"),
+        icon: <FileCheck className="w-5 h-5" />,
+        path: "/tenant/contract",
+        translationKey: "contract",
+      },
+      {
+        name: t("sidebarT.menu.maintenance"),
+        icon: <Wrench className="w-5 h-5" />,
+        path: "/tenant/maintenance",
+        translationKey: "maintenance",
+      },
+      {
+        name: t("sidebarT.menu.announcements"),
+        icon: <Bell className="w-5 h-5" />,
+        path: "/tenant/announcements",
+        translationKey: "announcements",
+      },
+      {
+        name: t("sidebarT.menu.reminders"),
+        icon: <Bell className="w-5 h-5" />,
+        path: "/tenant/reminders",
+        translationKey: "reminders",
+      },
+      {
+        name: t("sidebarT.menu.lateFees"),
+        icon: <FileCheck className="w-5 h-5" />,
+        path: "/tenant/lateFees",
+        translationKey: "lateFees",
+      },
+      {
+        name: t("sidebarT.menu.availableUnits"),
+        icon: <FileCheck className="w-5 h-5" />,
+        path: "/tenant/availableUnits",
+        translationKey: "availableUnits",
+      },
+    ],
+    [t]
+  );
 
   const isActivePath = (path: string) => {
     if (path === "/tenant") {
@@ -121,7 +132,7 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
               </div>
               <div>
                 <span className="text-lg font-bold text-stone-900">
-                  Tenant Portal
+                  {t("sidebarT.title")}
                 </span>
               </div>
             </div>
@@ -135,6 +146,7 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
             <button
               onClick={onToggleCollapse}
               className="hidden lg:block p-2 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors duration-150"
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               <ChevronRight
                 className={`w-4 h-4 transition-transform duration-300 ${
@@ -145,6 +157,7 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
             <button
               onClick={onClose}
               className="lg:hidden p-2 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors duration-150"
+              aria-label="Close sidebar"
             >
               <X className="w-5 h-5" />
             </button>
@@ -157,6 +170,7 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
             className={`flex-1 p-4 space-y-1 overflow-y-auto ${
               isCollapsed ? "px-2" : ""
             }`}
+            aria-label="Main navigation"
           >
             {menuItems.map((item, index) => (
               <button
@@ -172,6 +186,7 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
                   ${isCollapsed ? "justify-center relative" : ""}
                 `}
                 title={isCollapsed ? item.name : ""}
+                aria-current={isActivePath(item.path) ? "page" : undefined}
               >
                 <div
                   className={`p-2 rounded-lg bg-gradient-to-br from-stone-100 to-stone-50 shadow-sm group-hover:from-blue-50 group-hover:to-blue-100 transition-all duration-200 ${
@@ -203,10 +218,10 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-stone-900 truncate">
-                      John Tenant
+                      {t("sidebarT.user.name")}
                     </p>
                     <p className="text-xs text-stone-500 truncate">
-                      Retail Store A-102
+                      {t("sidebarT.user.description")}
                     </p>
                   </div>
                 </div>
@@ -224,11 +239,11 @@ const TenantSidebar: React.FC<TenantSidebarProps> = ({
       </div>
 
       {/* Mobile Overlay */}
-
       {isOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-40 z-20 lg:hidden"
           onClick={onClose}
+          aria-label="Close sidebar overlay"
         />
       )}
     </>

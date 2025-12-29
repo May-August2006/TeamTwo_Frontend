@@ -1,17 +1,14 @@
 /** @format */
 
 import React, { useEffect, useState } from "react";
-import {
-  CreditCard,
-  CheckCircle,
-  Calendar,
-  Download,
-} from "lucide-react";
+import { CreditCard, CheckCircle, Calendar, Download } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { paymentApi } from "../../api/paymentApi"; // Import your API
 import type { Payment } from "../../types"; // Import your types
 import { generatePaymentReceipt } from "../../utils/pdfGenerator"; // Import the PDF generator
 
 const PaymentHistory: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +24,7 @@ const PaymentHistory: React.FC = () => {
       setLoading(true);
       const data = await paymentApi.getMyPayments(); // Use the new API method
       setPayments(data);
-      
+
       // Calculate totals
       const total = data.reduce((sum, payment) => {
         return sum + (payment.amount || 0); // Added null check
@@ -35,7 +32,7 @@ const PaymentHistory: React.FC = () => {
       setTotalAmount(total);
       setTotalPayments(data.length);
     } catch (err) {
-      setError("Failed to load payment history");
+      setError(t("payment.loadFailed"));
       console.error(err);
     } finally {
       setLoading(false);
@@ -44,18 +41,22 @@ const PaymentHistory: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    // Use Burmese locale for Burmese language, English for others
+    const locale = i18n.language === "mm" ? "my-MM" : "en-US";
+    const options: Intl.DateTimeFormatOptions = {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    };
+    return date.toLocaleDateString(locale, options);
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'MMK',
-      minimumFractionDigits: 0
+    const currency = i18n.language === "mm" ? "MMK" : "USD";
+    return new Intl.NumberFormat(i18n.language === "mm" ? "my-MM" : "en-US", {
+      style: "currency",
+      currency: currency,
+      minimumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -65,7 +66,7 @@ const PaymentHistory: React.FC = () => {
       // Use the same function that works in PaymentListPage
       const receiptBlob = await generatePaymentReceipt(payment);
       const url = window.URL.createObjectURL(receiptBlob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `receipt-${payment.paymentNumber}.pdf`;
       document.body.appendChild(a);
@@ -73,28 +74,20 @@ const PaymentHistory: React.FC = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (err) {
-      alert("Failed to download receipt");
+      alert(t("payment.downloadFailed"));
       console.error(err);
     }
   };
 
   const getPaymentMethodLabel = (method: string) => {
-    const methods: Record<string, string> = {
-      CASH: "Cash",
-      CHECK: "Check",
-      BANK_TRANSFER: "Bank Transfer",
-      CREDIT_CARD: "Credit Card",
-      DEBIT_CARD: "Debit Card",
-      MOBILE_PAYMENT: "Mobile Payment",
-    };
-    return methods[method] || method;
+    return t(`payment.methods.${method}`);
   };
 
   if (loading) {
     return (
       <div className="p-4 sm:p-6 space-y-6 min-h-screen bg-stone-50">
         <div className="flex justify-center items-center h-64">
-          <div className="text-stone-600">Loading payment history...</div>
+          <div className="text-stone-600">{t("payment.loading")}</div>
         </div>
       </div>
     );
@@ -105,11 +98,11 @@ const PaymentHistory: React.FC = () => {
       <div className="p-4 sm:p-6 space-y-6 min-h-screen bg-stone-50">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-700">{error}</p>
-          <button 
+          <button
             onClick={fetchMyPayments}
             className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
-            Retry
+            {t("payment.retry")}
           </button>
         </div>
       </div>
@@ -121,33 +114,41 @@ const PaymentHistory: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">My Payment History</h2>
-          <p className="text-stone-600 mt-1">
-            Track all your payment transactions and receipts
-          </p>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
+            {t("payment.title")}
+          </h2>
+          <p className="text-stone-600 mt-1">{t("payment.subtitle")}</p>
         </div>
       </div>
 
       {/* Payment Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 text-center hover:shadow-xl transition duration-150">
-          <p className="text-sm text-stone-600">Total Payments</p>
-          <p className="text-2xl font-bold text-stone-900 mt-1">{totalPayments}</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 text-center hover:shadow-xl transition duration-150">
-          <p className="text-sm text-stone-600">Total Amount</p>
-          <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(totalAmount)}</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 text-center hover:shadow-xl transition duration-150">
-          <p className="text-sm text-stone-600">Last Payment</p>
+          <p className="text-sm text-stone-600">{t("payment.totalPayments")}</p>
           <p className="text-2xl font-bold text-stone-900 mt-1">
-            {payments.length > 0 ? formatDate(payments[0].paymentDate) : "N/A"}
+            {totalPayments}
           </p>
         </div>
         <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 text-center hover:shadow-xl transition duration-150">
-          <p className="text-sm text-stone-600">Status</p>
+          <p className="text-sm text-stone-600">{t("payment.totalAmount")}</p>
           <p className="text-2xl font-bold text-green-600 mt-1">
-            {payments.length > 0 ? "Active" : "No Payments"}
+            {formatCurrency(totalAmount)}
+          </p>
+        </div>
+        <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 text-center hover:shadow-xl transition duration-150">
+          <p className="text-sm text-stone-600">{t("payment.lastPayment")}</p>
+          <p className="text-2xl font-bold text-stone-900 mt-1">
+            {payments.length > 0
+              ? formatDate(payments[0].paymentDate)
+              : t("payment.notAvailable")}
+          </p>
+        </div>
+        <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-6 text-center hover:shadow-xl transition duration-150">
+          <p className="text-sm text-stone-600">{t("payment.status")}</p>
+          <p className="text-2xl font-bold text-green-600 mt-1">
+            {payments.length > 0
+              ? t("payment.active")
+              : t("payment.noPayments")}
           </p>
         </div>
       </div>
@@ -157,8 +158,12 @@ const PaymentHistory: React.FC = () => {
         <div className="bg-white rounded-xl shadow-lg border border-stone-200 p-8 text-center">
           <div className="max-w-md mx-auto">
             <CreditCard className="w-16 h-16 text-stone-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-stone-900 mb-2">No Payment History</h3>
-            <p className="text-stone-600 mb-4">You haven't made any payments yet.</p>
+            <h3 className="text-xl font-semibold text-stone-900 mb-2">
+              {t("payment.noHistory")}
+            </h3>
+            <p className="text-stone-600 mb-4">
+              {t("payment.noHistoryDescription")}
+            </p>
           </div>
         </div>
       ) : (
@@ -168,35 +173,40 @@ const PaymentHistory: React.FC = () => {
               <thead className="bg-stone-100">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    Payment Details
+                    {t("payment.table.paymentDetails")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    Date
+                    {t("payment.table.date")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    Amount
+                    {t("payment.table.amount")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    Method
+                    {t("payment.table.method")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    Status
+                    {t("payment.table.status")}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-stone-700 uppercase tracking-wider">
-                    Actions
+                    {t("payment.table.actions")}
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-stone-200">
                 {payments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-red-50/50 transition duration-150">
+                  <tr
+                    key={payment.id}
+                    className="hover:bg-red-50/50 transition duration-150"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <p className="text-sm font-semibold text-stone-900">
                           {payment.paymentNumber}
                         </p>
                         <p className="text-sm text-stone-500">
-                          For {payment.invoiceNumber}
+                          {t("payment.forInvoice", {
+                            invoiceNumber: payment.invoiceNumber,
+                          })}
                         </p>
                       </div>
                     </td>
@@ -214,7 +224,9 @@ const PaymentHistory: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
                       <div className="flex items-center space-x-1">
                         <CreditCard className="w-4 h-4 text-stone-400" />
-                        <span>{getPaymentMethodLabel(payment.paymentMethod)}</span>
+                        <span>
+                          {getPaymentMethodLabel(payment.paymentMethod)}
+                        </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -224,12 +236,12 @@ const PaymentHistory: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button 
+                      <button
                         onClick={() => handleDownloadReceipt(payment)}
                         className="text-red-600 hover:text-red-800 font-semibold transition duration-150 flex items-center space-x-1"
                       >
                         <Download className="w-4 h-4" />
-                        <span>Receipt</span>
+                        <span>{t("payment.receipt")}</span>
                       </button>
                     </td>
                   </tr>

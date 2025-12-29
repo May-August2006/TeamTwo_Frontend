@@ -1,6 +1,6 @@
 /** @format */
-
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Unit, UnitSearchParams } from "../../types/unit";
 import { UnitCard } from "./UnitCard";
 import { UnitCardSkeleton } from "../common/skeletons/UnitCardSkeleton";
