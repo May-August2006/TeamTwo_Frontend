@@ -117,25 +117,57 @@ const LevelManagement: React.FC = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!levelToDelete) return;
+  if (!levelToDelete) return;
 
-    try {
-      setDeleting(true);
-      await levelApi.delete(levelToDelete.id);
-      showNotification('success', t('notification.floorDeleted', 'Floor "{{name}}" deleted successfully!', { name: levelToDelete.levelName }), t('common.deleted', "Deleted"));
-      loadLevels();
-    } catch (error: any) {
-      console.error("Error deleting level:", error);
+  try {
+    setDeleting(true);
+    await levelApi.delete(levelToDelete.id);
+    showNotification('success', t('notification.floorDeleted', 'Floor "{{name}}" deleted successfully!', { name: levelToDelete.levelName }), t('common.deleted', "Deleted"));
+    loadLevels();
+  } catch (error: any) {
+    console.error("Error deleting level:", error);
+    
+    // Handle foreign key constraint error specifically for levels
+    if (error.response?.data?.message?.includes('foreign key constraint') || 
+        error.message?.includes('foreign key constraint') ||
+        error.response?.data?.message?.includes('Cannot delete or update a parent row') ||
+        error.response?.status === 409) {
+      
       showNotification('error', 
-        error.response?.data?.message || t('error.deleteFloorFailed', "Failed to delete floor. Please try again."), 
+        t('error.cannotDeleteFloor', 'Cannot delete floor because it has units or tenants associated with it. Please delete all units and tenants under this floor first.'), 
         t('error.deleteFailed', "Delete Failed")
       );
-    } finally {
-      setDeleting(false);
-      setShowDeleteConfirm(false);
-      setLevelToDelete(null);
+      
+    } else if (error.response?.status === 404) {
+      showNotification('error', 
+        t('error.floorNotFound', 'Floor not found. It may have been deleted already.'), 
+        t('error.deleteFailed', "Delete Failed")
+      );
+    } else if (error.response?.data?.message) {
+      // Show backend error message if available
+      showNotification('error', 
+        error.response.data.message, 
+        t('error.deleteFailed', "Delete Failed")
+      );
+    } else if (error.message?.includes('Network Error')) {
+      // Handle network errors
+      showNotification('error', 
+        t('error.networkError', 'Network error. Please check your connection and try again.'), 
+        t('error.deleteFailed', "Delete Failed")
+      );
+    } else {
+      // Generic error fallback
+      showNotification('error', 
+        t('error.deleteFloorFailed', "Failed to delete floor. Please try again."), 
+        t('error.deleteFailed', "Delete Failed")
+      );
     }
-  };
+  } finally {
+    setDeleting(false);
+    setShowDeleteConfirm(false);
+    setLevelToDelete(null);
+  }
+};
 
   const handleDeleteCancel = () => {
     setShowDeleteConfirm(false);

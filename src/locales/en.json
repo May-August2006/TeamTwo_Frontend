@@ -94,9 +94,12 @@
     "deleteConfirmation": "Are you sure you want to delete this branch? This action cannot be undone.",
     "deleting": "Deleting...",
     "loading": "Loading Branch Management...",
+    
     "errors": {
       "loadFailed": "Failed to load branches",
-      "deleteFailed": "Failed to delete branch"
+      "deleteFailed": "Failed to delete branch",
+      "cannotDeleteHasBuildings": "Cannot delete branch because it has buildings associated with it. Please delete all buildings, levels, and units under this branch first.",
+      "networkError": "Network error. Please check your connection and try again."
     },
     "success": {
       "deleted": "Branch deleted successfully"
@@ -135,29 +138,105 @@
     "clearFilters": "Clear Filters",
     "noResults": "No Buildings Found",
           "generator": "Generator",
-      "transformer": "Transformer"
+      "transformer": "Transformer",
+
+    
+  "error": {
+    "loadBranchesFailed": "Failed to load branches. Please try again.",
+    "loadBuildingsFailed": "Failed to load buildings. Please try again.",
+    "deleteBuildingFailed": "Failed to delete building. Please try again.",
+    "cannotDeleteBuilding": "Cannot delete building because it has floors, shops, or tenants associated with it. Please delete all floors, shops, and tenants under this building first.",
+    "buildingNotFound": "Building not found. It may have been deleted already.",
+    "networkError": "Network error. Please check your connection and try again."
+  },
+  "notification": {
+    "buildingDeleted": "Building \"{{name}}\" deleted successfully!"
+  },
+  "warning": {
+    "deleteBuilding": "Deleting this building will also remove all associated floors, shops, and tenant information. This action may affect financial records and reporting."
+  },
+  "confirmation": {
+    "deleteBuildingTitle": "Delete Building",
+    "deleteBuilding": "Are you sure you want to delete the building \"{{name}}\"? This action cannot be undone."
+  },
+  "tooltip": {
+    "editBuilding": "Edit building",
+    "deleteBuilding": "Delete building"
+  }
+
   },
 
+
+  "error": {
+    "loadBranchesFailed": "Failed to load branches. Please try again.",
+    "loadBuildingsFailed": "Failed to load buildings. Please try again.",
+    "loadFloorsFailed": "Failed to load floors. Please try again.",
+    "deleteFloorFailed": "Failed to delete floor. Please try again.",
+    "cannotDeleteFloor": "Cannot delete floor because it has units or tenants associated with it. Please delete all units and tenants under this floor first.",
+    "floorNotFound": "Floor not found. It may have been deleted already.",
+    "networkError": "Network error. Please check your connection and try again.",
+    "deleteFailed": "Delete Failed"
+  },
+  "notification": {
+    "floorDeleted": "Floor \"{{name}}\" deleted successfully!",
+    "floorCreatedTitle": "Floor Created",
+    "floorUpdatedTitle": "Floor Updated"
+  },
+  "warning": {
+    "deleteFloor": "Deleting a floor will also remove all units and related information associated with this floor."
+  },
+  "confirmation": {
+    "deleteFloorTitle": "Delete Floor",
+    "deleteFloor": "Are you sure you want to delete the floor \"{{name}}\"? This action cannot be undone and will remove all associated data."
+  },
+  "tooltip": {
+    "editFloor": "Edit floor",
+    "deleteFloor": "Delete floor"
+  },
   "levelManagement": {
+    "title": "Floor Management",
     "subtitle": "Manage all floors within your buildings",
     "addFloor": "Add New Floor",
+    "searchPlaceholder": "Search floors by name or building...",
     "allBranches": "All Branches",
     "allBuildings": "All Buildings",
     "clearFilters": "Clear Filters",
+    "floorNumber": "Floor Number",
+    "totalUnits": "Total Units",
     "noFloors": "No Floors Yet",
     "noResults": "No Floors Found",
-
-    "title": "Floor Management",
-    "searchPlaceholder": "Search floors by name or building...",
-    "addLevel": "Add Level",
-    "levelNumber": "Level Number",
-    "floor": "Floor",
-    "totalRooms": "Total Rooms",
-    "noLevels": "No levels yet",
-    "noLevelsFound": "No levels found",
-    "addFirstLevel": "Add Your First Level",
     "confirmDelete": "Are you sure you want to delete this level?"
   },
+  "common": {
+    "loadingFloorManagement": "Loading Floor Management...",
+    "showingXofY": "Showing {{count}} of {{total}} floors",
+    "clearSearch": "Clear search",
+    "pageInfo": "Page {{current}} of {{total}}",
+    "firstPage": "First page",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "lastPage": "Last page",
+    "cancel": "Cancel",
+    "deleting": "Deleting...",
+    "created": "Created",
+    "success": "Success",
+    "error": "Error",
+    "deleted": "Deleted",
+    "groundFloor": "Ground Floor",
+    "firstFloor": "1st Floor",
+    "secondFloor": "2nd Floor",
+    "thirdFloor": "3rd Floor",
+    "nthFloor": "{{n}}th Floor",
+    "unit": "unit",
+    "units": "units",
+    "note": "Note",
+    "tip": "Tip",
+    "deleteFloor": "Delete Floor",
+    "addYourFirst": "Add Your First Floor",
+    "noMatchesFilters": "No floors match your filters",
+    "clearFiltersShowAll": "Clear filters and show all floors"
+  
+},
 
   
   "unitManagement": {

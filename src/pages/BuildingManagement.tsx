@@ -125,33 +125,42 @@ const BuildingManagement: React.FC = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!buildingToDelete) return;
+  if (!buildingToDelete) return;
 
-    try {
-      setDeleting(true);
-      await buildingApi.delete(buildingToDelete.id);
-      showSuccess(t('notification.buildingDeleted', 'Building "{{name}}" deleted successfully!', { name: buildingToDelete.buildingName }));
-      loadBuildings();
-    } catch (error: any) {
-      console.error("Error deleting building:", error);
+  try {
+    setDeleting(true);
+    await buildingApi.delete(buildingToDelete.id);
+    showSuccess(t('notification.buildingDeleted', 'Building "{{name}}" deleted successfully!', { name: buildingToDelete.buildingName }));
+    loadBuildings();
+  } catch (error: any) {
+    console.error("Error deleting building:", error);
+    
+    // Handle foreign key constraint error specifically for buildings
+    if (error.response?.data?.message?.includes('foreign key constraint') || 
+        error.message?.includes('foreign key constraint') ||
+        error.response?.data?.message?.includes('Cannot delete or update a parent row') ||
+        error.response?.status === 409) {
       
-      if (error.response?.status === 409) {
-        showError(t('error.cannotDeleteBuilding', 'Cannot delete building. It may have associated shops or tenants.'));
-      } else if (error.response?.status === 404) {
-        showError(t('error.buildingNotFound', 'Building not found. It may have been deleted already.'));
-      } else if (error.response?.data?.message) {
-        showError(error.response.data.message);
-      } else if (error.message?.includes('Network Error')) {
-        showError(t('error.networkError', 'Network error. Please check your connection and try again.'));
-      } else {
-        showError(t('error.deleteBuildingFailed', 'Failed to delete building. Please try again.'));
-      }
-    } finally {
-      setDeleting(false);
-      setShowDeleteConfirm(false);
-      setBuildingToDelete(null);
+      showError(t('error.cannotDeleteBuilding', 'Cannot delete building because it has floors, shops, or tenants associated with it. Please delete all floors, shops, and tenants under this building first.'));
+      
+    } else if (error.response?.status === 404) {
+      showError(t('error.buildingNotFound', 'Building not found. It may have been deleted already.'));
+    } else if (error.response?.data?.message) {
+      // Show backend error message if available
+      showError(error.response.data.message);
+    } else if (error.message?.includes('Network Error')) {
+      // Handle network errors
+      showError(t('error.networkError', 'Network error. Please check your connection and try again.'));
+    } else {
+      // Generic error fallback
+      showError(t('error.deleteBuildingFailed', 'Failed to delete building. Please try again.'));
     }
-  };
+  } finally {
+    setDeleting(false);
+    setShowDeleteConfirm(false);
+    setBuildingToDelete(null);
+  }
+};
 
   const handleDeleteCancel = () => {
     setShowDeleteConfirm(false);

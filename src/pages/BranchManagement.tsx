@@ -59,30 +59,44 @@ const BranchManagement: React.FC = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!branchToDelete) return;
+  if (!branchToDelete) return;
 
-    try {
-      setDeleting(true);
-      const response = await branchApi.delete(branchToDelete.id);
-      if (response.data.success) {
-        showSuccess(t('branchManagement.success.deleted'));
-        loadBranches();
-      } else {
-        showError(response.data.message || t('branchManagement.errors.deleteFailed'));
-      }
-    } catch (error: any) {
-      console.error("Error deleting branch:", error);
-      if (error.response?.data?.message) {
-        showError(error.response.data.message);
-      } else {
-        showError(t('branchManagement.errors.deleteFailed'));
-      }
-    } finally {
-      setDeleting(false);
-      setShowDeleteConfirm(false);
-      setBranchToDelete(null);
+  try {
+    setDeleting(true);
+    const response = await branchApi.delete(branchToDelete.id);
+    if (response.data.success) {
+      showSuccess(t('branchManagement.success.deleted'));
+      loadBranches();
+    } else {
+      // Handle server-side error messages
+      showError(response.data.message || t('branchManagement.errors.deleteFailed'));
     }
-  };
+  } catch (error: any) {
+    console.error("Error deleting branch:", error);
+    
+    // Handle foreign key constraint error specifically
+    if (error.response?.data?.message?.includes('foreign key constraint') || 
+        error.message?.includes('foreign key constraint') ||
+        error.response?.data?.message?.includes('Cannot delete or update a parent row')) {
+      
+      showError(t('branchManagement.errors.cannotDeleteHasBuildings'));
+      
+    } else if (error.response?.data?.message) {
+      // Show backend error message if available
+      showError(error.response.data.message);
+    } else if (error.message?.includes('Network Error')) {
+      // Handle network errors
+      showError(t('branchManagement.errors.networkError'));
+    } else {
+      // Generic error fallback
+      showError(t('branchManagement.errors.deleteFailed'));
+    }
+  } finally {
+    setDeleting(false);
+    setShowDeleteConfirm(false);
+    setBranchToDelete(null);
+  }
+};
 
   const handleDeleteCancel = () => {
     setShowDeleteConfirm(false);
