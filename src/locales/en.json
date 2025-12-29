@@ -1202,7 +1202,7 @@
     "approvalStatus": {
       "pending": "Pending",
       "approved": "Approved",
-      "rejected": "Rejected"
+      "rejected": "Rejected",
       "deactivated": "Deactivated"
     },
 
@@ -1227,7 +1227,7 @@
       "fullNameRequired": "Full name is required",
       "fullNameInvalid": "Full name must be 2-30 characters (letters, spaces, dots, apostrophes, hyphens only)",
       "fullNameTooLong": "Full name cannot exceed {{max}} characters"
-    
+    },
     "approvalStatus": {
       "pending": "Pending",
       "approved": "Approved",
@@ -1417,8 +1417,7 @@
       "edit": "Edit",
       "deactivate": "Deactivate"
     }
-  },
-
+,
   "units": {
     "title": "Unit",
     "errors": {

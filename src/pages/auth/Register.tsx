@@ -4,6 +4,7 @@ import { useState, type FormEvent, type JSX } from "react";
 import API from "../../api/api.js";
 import type { AxiosError } from "axios"; // ✅ Import AxiosError type
 import { Button } from "../../components/common/ui/Button.js";
+import Logo from '../../assets/SeinGayHarLogo.png';
 
 interface RegisterResponse {
   username: string;
@@ -67,9 +68,16 @@ export default function Register(): JSX.Element {
     <div className="min-h-screen bg-[#E5E8EB] flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-[#E5E8EB] overflow-hidden">
         {/* Header */}
-        <div className="bg-[#0D1B2A] px-8 py-6 text-center">
+        <div className="bg-[#1E40AF] px-8 py-6 text-center">
+          <div className="flex justify-center mb-4">
+            <img 
+              src={Logo} 
+              alt="Sein Gay Har Logo" 
+              className="h-16 w-auto"
+            />
+          </div>
           <h2 className="text-2xl font-bold text-white">Create Account</h2>
-          <p className="text-[#E5E8EB] opacity-80 mt-2">
+          <p className="text-[#E5E8EB] opacity-90 mt-2">
             Join Sein Gay Har Mall Management
           </p>
         </div>
@@ -77,7 +85,7 @@ export default function Register(): JSX.Element {
         {/* Form */}
         <form onSubmit={handleRegister} className="p-8 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-[#0D1B2A] mb-2">
+            <label className="block text-sm font-medium text-[#1E293B] mb-2">
               Full Name
             </label>
             <input
@@ -85,12 +93,12 @@ export default function Register(): JSX.Element {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
-              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D32F2F] focus:border-[#D32F2F] transition-all duration-200 bg-white"
+              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#0D1B2A] mb-2">
+            <label className="block text-sm font-medium text-[#1E293B] mb-2">
               Username
             </label>
             <input
@@ -98,12 +106,12 @@ export default function Register(): JSX.Element {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D32F2F] focus:border-[#D32F2F] transition-all duration-200 bg-white"
+              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#0D1B2A] mb-2">
+            <label className="block text-sm font-medium text-[#1E293B] mb-2">
               Email Address
             </label>
             <input
@@ -112,12 +120,12 @@ export default function Register(): JSX.Element {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D32F2F] focus:border-[#D32F2F] transition-all duration-200 bg-white"
+              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#0D1B2A] mb-2">
+            <label className="block text-sm font-medium text-[#1E293B] mb-2">
               Password
             </label>
             <input
@@ -126,14 +134,14 @@ export default function Register(): JSX.Element {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D32F2F] focus:border-[#D32F2F] transition-all duration-200 bg-white"
+              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
             />
           </div>
 
           <Button
             type="submit"
             loading={loading}
-            className="w-full bg-[#D32F2F] hover:bg-[#B71C1C] text-white py-3 text-base font-medium"
+            className="w-full bg-[#1E40AF] hover:bg-[#1E3A8A] text-white py-3 text-base font-medium"
           >
             Create Account
           </Button>
@@ -154,11 +162,11 @@ export default function Register(): JSX.Element {
 
         {/* Footer */}
         <div className="bg-[#F8F9FA] px-8 py-4 border-t border-[#E5E8EB] text-center">
-          <p className="text-[#0D1B2A] opacity-70 text-sm">
+          <p className="text-[#1E293B] opacity-80 text-sm">
             Already have an account?{" "}
             <a 
               href="/login" 
-              className="text-[#D32F2F] hover:text-[#B71C1C] font-medium transition-colors duration-200"
+              className="text-[#1E40AF] hover:text-[#1E3A8A] font-medium transition-colors duration-200"
             >
               Sign in here
             </a>

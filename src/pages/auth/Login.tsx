@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthContext.js";
 import API from "../../api/api.js";
 import type { AxiosError } from "axios"; // ✅ Import AxiosError type
 import { Button } from "../../components/common/ui/Button.js";
+import Logo from '../../assets/SeinGayHarLogo.png';
 
 // Interface for login response from backend
 interface LoginResponse {
@@ -81,24 +82,16 @@ export default function Login(): JSX.Element {
     <div className="min-h-screen bg-[#E5E8EB] flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg border border-[#E5E8EB] overflow-hidden">
         {/* Header */}
-        <div className="bg-[#0D1B2A] px-8 py-8 text-center">
-          <div className="mb-4">
-            <svg
-              className="w-12 h-12 mx-auto text-[#D32F2F]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
+        <div className="bg-[#1E40AF] px-8 py-6 text-center">
+          <div className="flex justify-center mb-4">
+            <img 
+              src={Logo} 
+              alt="Sein Gay Har Logo" 
+              className="h-16 w-auto"
+            />
           </div>
           <h2 className="text-2xl font-bold text-white">Welcome Back</h2>
-          <p className="text-[#E5E8EB] opacity-80 mt-2">
+          <p className="text-[#E5E8EB] opacity-90 mt-2">
             Sign in to your account
           </p>
         </div>
@@ -106,7 +99,7 @@ export default function Login(): JSX.Element {
         {/* Form */}
         <form onSubmit={handleLogin} className="p-8 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-[#0D1B2A] mb-2">
+            <label className="block text-sm font-medium text-[#1E293B] mb-2">
               Username
             </label>
             <input
@@ -114,12 +107,12 @@ export default function Login(): JSX.Element {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D32F2F] focus:border-[#D32F2F] transition-all duration-200 bg-white"
+              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#0D1B2A] mb-2">
+            <label className="block text-sm font-medium text-[#1E293B] mb-2">
               Password
             </label>
             <input
@@ -128,7 +121,7 @@ export default function Login(): JSX.Element {
               value={passwordHash}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D32F2F] focus:border-[#D32F2F] transition-all duration-200 bg-white"
+              className="w-full border border-[#E5E8EB] rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1E40AF] focus:border-[#1E40AF] transition-all duration-200 bg-white"
             />
           </div>
 
@@ -136,15 +129,15 @@ export default function Login(): JSX.Element {
             <label className="flex items-center">
               <input
                 type="checkbox"
-                className="rounded border-[#E5E8EB] text-[#D32F2F] focus:ring-[#D32F2F]"
+                className="rounded border-[#E5E8EB] text-[#1E40AF] focus:ring-[#1E40AF]"
               />
-              <span className="ml-2 text-[#0D1B2A] opacity-70">
+              <span className="ml-2 text-[#1E293B] opacity-80">
                 Remember me
               </span>
             </label>
             <a
               href="/forgot-password"
-              className="text-[#D32F2F] hover:text-[#B71C1C] transition-colors duration-200"
+              className="text-[#1E40AF] hover:text-[#1E3A8A] transition-colors duration-200 font-medium"
             >
               Forgot password?
             </a>
@@ -153,7 +146,7 @@ export default function Login(): JSX.Element {
           <Button
             type="submit"
             loading={loading}
-            className="w-full bg-[#D32F2F] hover:bg-[#B71C1C] text-white py-3 text-base font-medium"
+            className="w-full bg-[#1E40AF] hover:bg-[#1E3A8A] text-white py-3 text-base font-medium"
           >
             Sign In
           </Button>
@@ -170,11 +163,11 @@ export default function Login(): JSX.Element {
 
         {/* Footer */}
         <div className="bg-[#F8F9FA] px-8 py-6 border-t border-[#E5E8EB] text-center">
-          <p className="text-[#0D1B2A] opacity-70 text-sm">
+          <p className="text-[#1E293B] opacity-80 text-sm">
             Don't have an account?{" "}
             <a
               href="/register"
-              className="text-[#D32F2F] hover:text-[#B71C1C] font-medium transition-colors duration-200"
+              className="text-[#1E40AF] hover:text-[#1E3A8A] font-medium transition-colors duration-200"
             >
               Create one here
             </a>

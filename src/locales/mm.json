@@ -1237,7 +1237,7 @@
     "approvalStatus": {
       "pending": "ဆိုင်းငံ့ထားသည်",
       "approved": "အတည်ပြုပြီး",
-      "rejected": "ငြင်းပယ်သည်"
+      "rejected": "ငြင်းပယ်သည်",
       "accountants": "ငွေစာရင်းကိုင်များ",
       "bod": "ဒါရိုက်တာများအဖွဲ့",
       "pendingApproval": "အတည်ပြုချက် စောင့်ဆိုင်းနေ",
@@ -1289,11 +1289,6 @@
       "chooseBuilding": "အဆောက်အဦတစ်ခုရွေးချယ်ပါ...",
       "noAvailableBuildingsWithoutManagers": "မန်နေဂျာမရှိသောအဆောက်အဦများမရှိပါ",
       "noAvailableBuildingsWithoutAccountants": "စာရင်းကိုင်မရှိသောအဆောက်အဦများမရှိပါ"
-    
-    "approvalStatus": {
-      "pending": "စောင့်ဆိုင်းနေ",
-      "approved": "အတည်ပြုပြီး",
-      "rejected": "ငြင်းပယ်ပြီး"
     },
 
     "table": {
@@ -2666,7 +2661,7 @@
     },
     "buttons": {
       "create": "ယူနစ်ဖန်တီးရန်",
-      "update": "ယူန�်ပြုပြင်ရန်"
+      "update": "ယူန ်ပြုပြင်ရန်"
     },
     "errors": {
       "unitNumberRequired": "ယူနစ်နံပါတ် လိုအပ်ပါသည်",
