@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type {  Contract, Lease } from '../../types/contract';
+import type {  Contract, } from '../../types/contract';
 import { contractApi } from '../../api/ContractAPI';
 import { ContractList } from '../../components/contracts/ContractList';
 import { Button } from '../../components/common/ui/Button';

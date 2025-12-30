@@ -649,6 +649,7 @@
     "title": "Appointment Management",
     "subtitle": "Manage and track all your appointments",
     "loading": "Loading appointments...",
+        "statusUpdateConfirm": "Update Confirm",
     "loadingDetails": "Loading appointment details...",
     "notFound": "Appointment Not Found",
     "notFoundDesc": "The appointment you're looking for doesn't exist.",
@@ -672,8 +673,8 @@
     "markConfirmed": "Mark as CONFIRMED",
     "markCompleted": "Mark as COMPLETED",
     "markCancelled": "Mark as CANCELLED",
-    "lastUpdated": "Last updated: {date} at {time}",
-    "markedAs": "Appointment marked as {status}",
+    "lastUpdated": "Last updated: {{date}} at {{time}}",
+    "markedAs": "Appointment marked as {{status}}",
     "updateFailed": "Failed to update status",
     "totalAppointments": "Total Appointments",
     "confirmed": "Confirmed",
@@ -685,14 +686,14 @@
     "page": "Page",
     "noAppointments": "No Appointments Yet",
     "noAppointmentsDesc": "When new appointments are scheduled, they will appear here automatically.",
-    "showingPerPage": "Showing {count} appointments per page",
+    "showingPerPage": "Showing {{count}} appointments per page",
     "first": "First",
     "previous": "Previous",
     "next": "Next",
     "last": "Last",
     "connected": "Live updates connected",
     "disconnected": "Connection offline",
-    "markAs": "Mark as {status}"
+    "markAs": "Mark as {{status}}"
   },
 
   "leases": {
@@ -1039,6 +1040,7 @@
   },
 
   "utilityType": {
+    "characters": "characters",
     "title": "Utility Type Management",
     "subtitle": "Manage utility types and calculation methods for billing configuration.",
     "addButton": "Add Utility Type",
@@ -1049,6 +1051,7 @@
     "cancel": "Cancel",
     "close":"Close",
     "continue": "Continue",
+    "charactersRemaining": "characters remaining",
 
     "loading": "Loading Utility Types...",
     "confirmAction": "Confirm Action",
@@ -1492,6 +1495,7 @@
 
   "forms": {
     "common": {
+      "allowed": "Allowed",
       "required": "Required",
       "cancel": "Cancel",
       "save": "Save",
@@ -1620,6 +1624,22 @@
         "description": "Floor names are automatically capitalized for consistency. Each floor number must be unique within a building. Buildings have a maximum floor capacity."
       }
     }
+  },
+
+  "validation": {
+    "phoneRequired": "Phone number is required",
+    "phoneNumbersOnly": "Phone number must contain only numbers",
+    "phoneMinLength": "Phone number must be at least {{min}} digits",
+    "phoneMaxLength": "Phone number cannot exceed {{max}} digits",
+    "dateRequired": "Preferred date is required",
+    "dateNotPast": "Date cannot be in the past",
+    "timeRequired": "Preferred time is required",
+    "timeRange": "Time must be between 9:00 AM and 4:59 PM",
+    "timeRangeHint": "Available hours: 9:00 AM - 4:59 PM",
+    "purposeRequired": "Purpose is required",
+    "purposeMaxLength": "Purpose cannot exceed {{max}} characters",
+    "notesMaxLength": "Notes cannot exceed {{max}} characters",
+    "minLength": "Min {{min}} characters"
   },
 
   "spaceType": {

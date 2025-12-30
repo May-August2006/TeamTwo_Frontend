@@ -203,11 +203,7 @@ export const MonthlyCollectionReport: React.FC<MonthlyCollectionReportProps> = (
       {/* Sticky Header */}
       <div 
         ref={headerRef}
-        className={`bg-white p-6 rounded-lg border border-gray-200 transition-all duration-300 ${
-          isSticky 
-            ? 'fixed top-0 left-0 right-0 z-50 shadow-lg rounded-none border-t-0 border-x-0' 
-            : ''
-        }`}
+        className={`bg-white p-6 rounded-lg border border-gray-200 transition-all duration-300 `}
       >
         <div className={`flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 ${isSticky ? 'container mx-auto' : ''}`}>
           <div>
@@ -294,7 +290,7 @@ export const MonthlyCollectionReport: React.FC<MonthlyCollectionReportProps> = (
       </div>
 
       {/* Add padding when header is sticky to prevent content from jumping under it */}
-      {isSticky && <div className="h-24"></div>}
+      {/* {isSticky && <div className="h-24"></div>} */}
 
       {/* Month Selector */}
       <div className="bg-white p-6 rounded-lg border border-gray-200">

@@ -787,25 +787,6 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
               </div>
             )}
 
-            {contract.agreedToTerms && contract.termsAgreementTimestamp && (
-              <div className="flex items-start space-x-4 p-4 border border-green-200 rounded-lg bg-green-50">
-                <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-green-900">Terms Accepted</span>
-                    <span className="text-sm text-green-500">{formatDateTime(contract.termsAgreementTimestamp)}</span>
-                  </div>
-                  <p className="text-sm text-green-700 mt-1">
-                    Terms and conditions were accepted by tenant
-                  </p>
-                  {contract.termsAgreementVersion && (
-                    <p className="text-xs text-green-600 mt-1">
-                      Agreement Version: {contract.termsAgreementVersion}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
 
             {contract.contractStatus === 'TERMINATED' && terminationDate && (
               <div className="flex items-start space-x-4 p-4 border border-red-200 rounded-lg bg-red-50">
@@ -832,12 +813,12 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
         {activeTab === 'terms' && (
           <div className="space-y-6">
             {/* Basic  Lease Information */}
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            {/* <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
               <h3 className="text-lg font-semibold text-blue-900 mb-3">Basic  Lease Information</h3>
               <pre className="text-sm text-blue-800 whitespace-pre-wrap font-mono">
                 {termsAndConditions.basicTerms}
               </pre>
-            </div>
+            </div> */}
 
             {/* Standard Terms and Conditions */}
             <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -869,94 +850,6 @@ This agreement shall be governed by the laws of the Republic of the Union of Mya
                 </pre>
               </div>
             </div>
-
-            {/* Terms Agreement Status */}
-            <div className={`p-4 rounded-lg border ${
-              contract.agreedToTerms 
-                ? 'bg-green-50 border-green-200' 
-                : 'bg-yellow-50 border-yellow-200'
-            }`}>
-              <div className="flex items-start">
-                <div className={`flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center ${
-                  contract.agreedToTerms ? 'bg-green-100' : 'bg-yellow-100'
-                }`}>
-                  {contract.agreedToTerms ? (
-                    <svg className="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  ) : (
-                    <svg className="h-4 w-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </div>
-                <div className="ml-3">
-                  <h3 className={`text-sm font-medium ${
-                    contract.agreedToTerms ? 'text-green-800' : 'text-yellow-800'
-                  }`}>
-                    {contract.agreedToTerms ? 'Terms and Conditions Accepted' : 'Terms and Conditions Pending'}
-                  </h3>
-                  <div className={`mt-2 text-sm ${contract.agreedToTerms ? 'text-green-700' : 'text-yellow-700'}`}>
-                    {contract.agreedToTerms ? (
-                      <div className="space-y-1">
-                        <p>
-                          Tenant has agreed to the terms and conditions of this Lease.
-                          {contract.termsAgreementTimestamp && (
-                            <span> Agreement timestamp: {formatDateTime(contract.termsAgreementTimestamp)}</span>
-                          )}
-                        </p>
-                        {contract.termsAgreementVersion && (
-                          <p className="text-xs">Agreement Version: {contract.termsAgreementVersion}</p>
-                        )}
-                      </div>
-                    ) : (
-                      <p>
-                        Tenant has not yet agreed to the terms and conditions of this Lease.
-                        This is required for the  Lease to be fully valid.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Utilities Summary */}
-            {contract.includedUtilities && contract.includedUtilities.length > 0 && (
-              <div className="border border-gray-200 rounded-lg overflow-hidden">
-                <div className="bg-gray-50 p-4 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900">Included Utilities</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Utilities covered by this  Lease agreement
-                  </p>
-                </div>
-                <div className="p-4 bg-white">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {contract.includedUtilities.map(utility => (
-                      <div key={utility.id} className="flex items-center p-3 bg-gray-50 rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{utility.utilityName}</p>
-                          {utility.description && (
-                            <p className="text-xs text-gray-600 mt-1">{utility.description}</p>
-                          )}
-                        </div>
-                        {utility.ratePerUnit && (
-                          <div className="text-right">
-                            <p className="text-sm font-semibold text-green-600">
-                              {formatCurrency(utility.ratePerUnit)}
-                            </p>
-                            {utility.calculationMethod && (
-                              <p className="text-xs text-blue-600">
-                                {utility.calculationMethod.replace('_', ' ')}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

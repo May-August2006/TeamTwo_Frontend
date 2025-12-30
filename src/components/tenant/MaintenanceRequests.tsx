@@ -140,7 +140,7 @@ const TenantMaintenancePage: React.FC = () => {
       setIsSubmitModalOpen(false);
 
       // Show success message
-      setSuccessMessage(t("maintenance.messages.success.requestSubmitted"));
+      setSuccessMessage(t("maintenanceT.messages.success.requestSubmitted"));
 
       // Reset form
       setNewRequest({
