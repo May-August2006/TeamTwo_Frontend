@@ -18,7 +18,7 @@ type ReportType =
   | 'VACANT_OCCUPIED_UNITS' 
   | 'CONTRACT_HISTORY'
   | 'MONTHLY_BILLING_SUMMARY' 
-  | 'UTILITY_CONSUMPTION' 
+  
   | 'OUTSTANDING_BALANCES' 
   | 'REVENUE_BY_CATEGORY' 
   | 'EXPENSE_VS_REVENUE'
@@ -60,12 +60,6 @@ export const ReportsPage: React.FC = () => {
       icon: "💰"
     },
     {
-      id: 'UTILITY_CONSUMPTION' as ReportType,
-      title: t('reports.utilityConsumption', "Utility Consumption"),
-      description: t('reports.utilityConsumptionDesc', "Detailed breakdown of utility usage and costs"),
-      icon: "⚡"
-    },
-    {
     id: 'OUTSTANDING_BALANCES' as ReportType,
     title: t('reports.outstandingBalances', "Outstanding Balances"),
     description: t('reports.outstandingBalancesDesc', "List of all tenants with unpaid invoices"),
@@ -105,8 +99,7 @@ export const ReportsPage: React.FC = () => {
         return <VacantOccupiedUnitsReport onBack={handleBackToReports} />;
         case 'REVENUE_BY_CATEGORY':  // Add this case
       return <RentalRevenueByBusinessTypeReport onBack={handleBackToReports} />;
-      case 'UTILITY_CONSUMPTION':
-  return <UtilityConsumptionReport onBack={handleBackToReports} />;
+     
         case 'OUTSTANDING_BALANCES':
   return <OutstandingBalancesReport onBack={handleBackToReports} />;
       case 'MONTHLY_BILLING_SUMMARY':
