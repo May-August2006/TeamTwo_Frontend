@@ -66,12 +66,18 @@ const MyContract: React.FC = () => {
   }, []);
 
   const formatCurrency = (amount: number) => {
-    const currency = i18n.language === "mm" ? "MMK" : "USD";
-    return new Intl.NumberFormat(i18n.language === "mm" ? "my-MM" : "en-US", {
+    // Always use MMK for currency display, regardless of language
+    const currency = "MMK";
+    const locale = i18n.language === "mm" ? "my-MM" : "en-US";
+    
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency: currency,
       minimumFractionDigits: 0,
-    }).format(amount);
+      currencyDisplay: "code", // This will show "MMK" instead of symbol
+    })
+    .format(amount)
+    .replace("MMK", "MMK "); // Add space after MMK for better readability
   };
 
   if (loading) {
