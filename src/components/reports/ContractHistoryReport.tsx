@@ -134,7 +134,7 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
       filtered = filtered.filter(item =>
         item.contractNumber?.toLowerCase().includes(term) ||
         item.tenantName?.toLowerCase().includes(term) ||
-        item.roomNumber?.toLowerCase().includes(term) ||
+        item.unitNumber?.toLowerCase().includes(term) ||
         item.actionType?.toLowerCase().includes(term) ||
         item.description?.toLowerCase().includes(term) ||
         item.changedByUsername?.toLowerCase().includes(term)
@@ -675,7 +675,7 @@ export const ContractHistoryReport: React.FC<ContractHistoryReportProps> = ({ on
                     
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {record.roomNumber}
+                        {record.unitNumber}
                       </div>
                       <div className="text-sm text-gray-500">
                         {record.buildingName}
