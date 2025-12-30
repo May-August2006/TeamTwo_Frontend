@@ -14,6 +14,12 @@ export default function AppointmentDetailPage() {
   const managerId = Number(localStorage.getItem("userId"));
   const { t } = useTranslation();
 
+  // Confirmation modal state
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingUpdate, setPendingUpdate] = useState<{
+    status: string;
+  } | null>(null);
+
   useEffect(() => {
     const loadAppointment = async () => {
       if (!id) return;
@@ -43,6 +49,13 @@ export default function AppointmentDetailPage() {
     }
   };
 
+  const handleStatusButtonClick = (status: string) => {
+    if (!appointment) return;
+    
+    setPendingUpdate({ status });
+    setShowConfirmModal(true);
+  };
+
   const updateStatus = async (status: string) => {
     if (!appointment) return;
     
@@ -52,11 +65,18 @@ export default function AppointmentDetailPage() {
       // Update UI immediately
       setAppointment(prev => prev ? { ...prev, status } : null);
       
-      // Optional: Show success message
-      alert(t('appointments.markedAs', "Appointment marked as {status}", { status }));
+      setShowConfirmModal(false);
+      setPendingUpdate(null);
     } catch (err) {
       console.error("Status update failed:", err);
-      alert(t('appointments.updateFailed', "Failed to update status"));
+      // Show error in modal instead of alert
+      setPendingUpdate(prev => prev ? { ...prev, error: "Failed to update status" } : null);
+    }
+  };
+
+  const confirmStatusUpdate = () => {
+    if (pendingUpdate) {
+      updateStatus(pendingUpdate.status);
     }
   };
 
@@ -133,236 +153,304 @@ export default function AppointmentDetailPage() {
   }
 
   return (
-    <div className="p-4 sm:p-8 min-h-screen bg-gradient-to-br from-stone-50 to-stone-100">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-3 px-5 py-3 bg-white text-stone-700 rounded-xl hover:bg-stone-50 transition duration-200 font-medium shadow-sm border border-stone-200 hover:shadow-md"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            {t('appointments.backToList', "Back to Appointments")}
-          </button>
-          
-          <div className="flex items-center gap-3">
-            <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(appointment.status)}`}>
-              <span>{getStatusIcon(appointment.status)}</span>
-              {appointment.status}
-            </span>
-          </div>
-        </div>
-
-        {/* Main Content Card */}
-        <div className="bg-white rounded-2xl border border-stone-200 shadow-lg overflow-hidden">
-          {/* Header Section */}
-          <div className="bg-gradient-to-r from-stone-900 to-stone-700 p-6 text-white">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold mb-2">{appointment.guestName}</h1>
-                <p className="text-stone-200 flex items-center gap-2">
-                  <span>📧</span>
-                  {appointment.guestEmail}
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="text-lg font-semibold text-stone-100">{appointment.appointmentDate}</div>
-                <div className="text-stone-200 flex items-center gap-2 justify-end">
-                  <span>🕒</span>
-                  {formatTime(appointment.appointmentTime)}
-                </div>
-              </div>
+    <>
+      {/* Confirmation Modal */}
+      {showConfirmModal && pendingUpdate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 transition-opacity duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all duration-200 scale-100 opacity-100">
+            <div className="flex justify-between items-center p-6 border-b border-stone-200">
+              <h3 className="text-xl font-bold text-stone-900">
+                {t('appointments.statusUpdate', "Status Update")}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setPendingUpdate(null);
+                }}
+                className="p-2 hover:bg-stone-100 rounded-full transition-colors duration-200"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-stone-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
             </div>
-          </div>
-
-          {/* Details Grid */}
-          <div className="p-6 sm:p-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Left Column */}
-              <div className="space-y-6">
-                {/* Contact Information */}
-                <div className="border border-stone-200 rounded-xl p-5 bg-white shadow-sm">
-                  <h3 className="text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
-                    <span className="text-stone-500">👤</span>
-                    {t('appointments.contactInfo', "Contact Information")}
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
-                      <div className="text-2xl text-stone-400">📞</div>
-                      <div>
-                        <p className="text-sm text-stone-600">
-                          {t('appointments.phoneNumber', "Phone Number")}
-                        </p>
-                        <p className="font-semibold text-stone-900">
-                          {appointment.guestPhone || t('appointments.notProvided', "Not provided")}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
-                      <div className="text-2xl text-stone-400">📧</div>
-                      <div>
-                        <p className="text-sm text-stone-600">
-                          {t('appointments.emailAddress', "Email Address")}
-                        </p>
-                        <p className="font-semibold text-stone-900 break-all">{appointment.guestEmail}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Location Information */}
-                <div className="border border-stone-200 rounded-xl p-5 bg-white shadow-sm">
-                  <h3 className="text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
-                    <span className="text-stone-500">🏢</span>
-                    {t('appointments.locationDetails', "Location Details")}
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
-                      <div className="text-2xl text-stone-400">🏛️</div>
-                      <div>
-                        <p className="text-sm text-stone-600">
-                          {t('appointments.branch', "Branch")}
-                        </p>
-                        <p className="font-semibold text-stone-900">
-                          {appointment.branchName || t('appointments.notSpecified', "Not specified")}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
-                      <div className="text-2xl text-stone-400">🏬</div>
-                      <div>
-                        <p className="text-sm text-stone-600">
-                          {t('appointments.building', "Building")}
-                        </p>
-                        <p className="font-semibold text-stone-900">
-                          {appointment.buildingName || t('appointments.notSpecified', "Not specified")}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
-                      <div className="text-2xl text-stone-400">📑</div>
-                      <div>
-                        <p className="text-sm text-stone-600">
-                          {t('appointments.level', "Level")}
-                        </p>
-                        <p className="font-semibold text-stone-900">
-                          {appointment.levelName || t('appointments.notSpecified', "Not specified")}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column */}
-              <div className="space-y-6">
-                {/* Appointment Details */}
-                <div className="border border-stone-200 rounded-xl p-5 bg-white shadow-sm">
-                  <h3 className="text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
-                    <span className="text-stone-500">📅</span>
-                    {t('appointments.appointmentDetails', "Appointment Details")}
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
-                      <div className="text-2xl text-stone-400">📍</div>
-                      <div>
-                        <p className="text-sm text-stone-600">
-                          {t('appointments.unit', "Unit")}
-                        </p>
-                        <p className="font-semibold text-stone-900">{appointment.unitNumber || t('appointments.notSpecified', "Not specified")}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
-                      <div className="text-2xl text-stone-400">🎯</div>
-                      <div>
-                        <p className="text-sm text-stone-600">
-                          {t('appointments.purpose', "Purpose")}
-                        </p>
-                        <p className="font-semibold text-stone-900">{appointment.purpose}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
-                      <div className="text-2xl text-stone-400">📅</div>
-                      <div>
-                        <p className="text-sm text-stone-600">
-                          {t('appointments.dateTime', "Date & Time")}
-                        </p>
-                        <p className="font-semibold text-stone-900">
-                          {appointment.appointmentDate} at {formatTime(appointment.appointmentTime)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Notes Section */}
-                <div className="border border-stone-200 rounded-xl p-5 bg-amber-50 shadow-sm">
-                  <h3 className="text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
-                    <span className="text-stone-500">📝</span>
-                    {t('appointments.additionalNotes', "Additional Notes")}
-                  </h3>
-                  {appointment.notes ? (
-                    <div className="space-y-3">
-                      <p className="text-amber-900 leading-relaxed whitespace-pre-wrap bg-amber-100 p-4 rounded-xl border border-amber-200">
-                        {appointment.notes}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="text-center py-6">
-                      <div className="text-4xl mb-3">📄</div>
-                      <p className="text-amber-700 font-medium">
-                        {t('appointments.noNotes', "No additional notes")}
-                      </p>
-                      <p className="text-amber-600 text-sm mt-1">
-                        {t('appointments.noNotesDesc', "No notes were provided for this appointment")}
-                      </p>
-                    </div>
+            
+            <div className="p-6">
+              <div className="mb-6">
+                <p className="text-stone-700 mb-4">
+                  {t('appointments.markedAs', "Appointment marked as {status}", { status: pendingUpdate.status })}
+                </p>
+                <div className="bg-stone-50 p-4 rounded-lg">
+                  <p className="font-medium text-stone-900">
+                    {appointment.guestName}
+                  </p>
+                  <p className="text-sm text-stone-600 mt-1">
+                    New Status:{" "}
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(pendingUpdate.status)}`}>
+                      {pendingUpdate.status}
+                    </span>
+                  </p>
+                  {'error' in pendingUpdate && (
+                    <p className="text-red-600 text-sm mt-2">
+                      {pendingUpdate.error}
+                    </p>
                   )}
                 </div>
               </div>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setPendingUpdate(null);
+                  }}
+                  className="px-4 py-2.5 text-sm font-medium text-stone-700 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors duration-200 focus:ring-2 focus:ring-stone-300 focus:ring-offset-2"
+                >
+                  {t('appointments.cancel', "Cancel")}
+                </button>
+                <button
+                  onClick={confirmStatusUpdate}
+                  className={`px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-offset-2 ${getStatusButtonColor(pendingUpdate.status)}`}
+                >
+                  {t('appointments.confirm', "Confirm")}
+                </button>
+              </div>
             </div>
           </div>
         </div>
+      )}
 
-        {/* Action Buttons */}
-        <div className="mt-8 flex flex-wrap gap-3 justify-center">
-          <button
-            onClick={() => updateStatus("CONFIRMED")}
-            className={`px-5 py-2.5 rounded-lg text-white font-medium transition-all duration-200 focus:ring-2 focus:ring-offset-2 ${getStatusButtonColor("CONFIRMED")} shadow-sm hover:shadow-md`}
-          >
-            {t('appointments.markConfirmed', "Mark as CONFIRMED")}
-          </button>
-          <button
-            onClick={() => updateStatus("COMPLETED")}
-            className={`px-5 py-2.5 rounded-lg text-white font-medium transition-all duration-200 focus:ring-2 focus:ring-offset-2 ${getStatusButtonColor("COMPLETED")} shadow-sm hover:shadow-md`}
-          >
-            {t('appointments.markCompleted', "Mark as COMPLETED")}
-          </button>
-          <button
-            onClick={() => updateStatus("CANCELLED")}
-            className={`px-5 py-2.5 rounded-lg text-white font-medium transition-all duration-200 focus:ring-2 focus:ring-offset-2 ${getStatusButtonColor("CANCELLED")} shadow-sm hover:shadow-md`}
-          >
-            {t('appointments.markCancelled', "Mark as CANCELLED")}
-          </button>
-        </div>
+      <div className="p-4 sm:p-8 min-h-screen bg-gradient-to-br from-stone-50 to-stone-100">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-3 px-5 py-3 bg-white text-stone-700 rounded-xl hover:bg-stone-50 transition duration-200 font-medium shadow-sm border border-stone-200 hover:shadow-md"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              {t('appointments.backToList', "Back to Appointments")}
+            </button>
+            
+            <div className="flex items-center gap-3">
+              <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(appointment.status)}`}>
+                <span>{getStatusIcon(appointment.status)}</span>
+                {appointment.status}
+              </span>
+            </div>
+          </div>
 
-        {/* Last Updated */}
-        <div className="mt-6 text-center">
-          <p className="text-sm text-stone-500">
-            {t('appointments.lastUpdated', "Last updated: {date} at {time}", {
-              date: new Date().toLocaleDateString(),
-              time: new Date().toLocaleTimeString()
-            })}
-          </p>
+          {/* Main Content Card */}
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-lg overflow-hidden">
+            {/* Header Section */}
+            <div className="bg-gradient-to-r from-stone-900 to-stone-700 p-6 text-white">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold mb-2">{appointment.guestName}</h1>
+                  <p className="text-stone-200 flex items-center gap-2">
+                    <span>📧</span>
+                    {appointment.guestEmail}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-lg font-semibold text-stone-100">{appointment.appointmentDate}</div>
+                  <div className="text-stone-200 flex items-center gap-2 justify-end">
+                    <span>🕒</span>
+                    {formatTime(appointment.appointmentTime)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Details Grid */}
+            <div className="p-6 sm:p-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column */}
+                <div className="space-y-6">
+                  {/* Contact Information */}
+                  <div className="border border-stone-200 rounded-xl p-5 bg-white shadow-sm">
+                    <h3 className="text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
+                      <span className="text-stone-500">👤</span>
+                      {t('appointments.contactInfo', "Contact Information")}
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
+                        <div className="text-2xl text-stone-400">📞</div>
+                        <div>
+                          <p className="text-sm text-stone-600">
+                            {t('appointments.phoneNumber', "Phone Number")}
+                          </p>
+                          <p className="font-semibold text-stone-900">
+                            {appointment.guestPhone || t('appointments.notProvided', "Not provided")}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
+                        <div className="text-2xl text-stone-400">📧</div>
+                        <div>
+                          <p className="text-sm text-stone-600">
+                            {t('appointments.emailAddress', "Email Address")}
+                          </p>
+                          <p className="font-semibold text-stone-900 break-all">{appointment.guestEmail}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Location Information */}
+                  <div className="border border-stone-200 rounded-xl p-5 bg-white shadow-sm">
+                    <h3 className="text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
+                      <span className="text-stone-500">🏢</span>
+                      {t('appointments.locationDetails', "Location Details")}
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
+                        <div className="text-2xl text-stone-400">🏛️</div>
+                        <div>
+                          <p className="text-sm text-stone-600">
+                            {t('appointments.branch', "Branch")}
+                          </p>
+                          <p className="font-semibold text-stone-900">
+                            {appointment.branchName || t('appointments.notSpecified', "Not specified")}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
+                        <div className="text-2xl text-stone-400">🏬</div>
+                        <div>
+                          <p className="text-sm text-stone-600">
+                            {t('appointments.building', "Building")}
+                          </p>
+                          <p className="font-semibold text-stone-900">
+                            {appointment.buildingName || t('appointments.notSpecified', "Not specified")}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
+                        <div className="text-2xl text-stone-400">📑</div>
+                        <div>
+                          <p className="text-sm text-stone-600">
+                            {t('appointments.level', "Level")}
+                          </p>
+                          <p className="font-semibold text-stone-900">
+                            {appointment.levelName || t('appointments.notSpecified', "Not specified")}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column */}
+                <div className="space-y-6">
+                  {/* Appointment Details */}
+                  <div className="border border-stone-200 rounded-xl p-5 bg-white shadow-sm">
+                    <h3 className="text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
+                      <span className="text-stone-500">📅</span>
+                      {t('appointments.appointmentDetails', "Appointment Details")}
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
+                        <div className="text-2xl text-stone-400">📍</div>
+                        <div>
+                          <p className="text-sm text-stone-600">
+                            {t('appointments.unit', "Unit")}
+                          </p>
+                          <p className="font-semibold text-stone-900">{appointment.unitNumber || t('appointments.notSpecified', "Not specified")}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
+                        <div className="text-2xl text-stone-400">🎯</div>
+                        <div>
+                          <p className="text-sm text-stone-600">
+                            {t('appointments.purpose', "Purpose")}
+                          </p>
+                          <p className="font-semibold text-stone-900">{appointment.purpose}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 p-4 bg-stone-50 rounded-xl border border-stone-100">
+                        <div className="text-2xl text-stone-400">📅</div>
+                        <div>
+                          <p className="text-sm text-stone-600">
+                            {t('appointments.dateTime', "Date & Time")}
+                          </p>
+                          <p className="font-semibold text-stone-900">
+                            {appointment.appointmentDate} at {formatTime(appointment.appointmentTime)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notes Section */}
+                  <div className="border border-stone-200 rounded-xl p-5 bg-amber-50 shadow-sm">
+                    <h3 className="text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
+                      <span className="text-stone-500">📝</span>
+                      {t('appointments.additionalNotes', "Additional Notes")}
+                    </h3>
+                    {appointment.notes ? (
+                      <div className="space-y-3">
+                        <p className="text-amber-900 leading-relaxed whitespace-pre-wrap bg-amber-100 p-4 rounded-xl border border-amber-200">
+                          {appointment.notes}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6">
+                        <div className="text-4xl mb-3">📄</div>
+                        <p className="text-amber-700 font-medium">
+                          {t('appointments.noNotes', "No additional notes")}
+                        </p>
+                        <p className="text-amber-600 text-sm mt-1">
+                          {t('appointments.noNotesDesc', "No notes were provided for this appointment")}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="mt-8 flex flex-wrap gap-3 justify-center">
+            <button
+              onClick={() => handleStatusButtonClick("CONFIRMED")}
+              className={`px-5 py-2.5 rounded-lg text-white font-medium transition-all duration-200 focus:ring-2 focus:ring-offset-2 ${getStatusButtonColor("CONFIRMED")} shadow-sm hover:shadow-md`}
+            >
+              {t('appointments.markConfirmed', "Mark as CONFIRMED")}
+            </button>
+            <button
+              onClick={() => handleStatusButtonClick("COMPLETED")}
+              className={`px-5 py-2.5 rounded-lg text-white font-medium transition-all duration-200 focus:ring-2 focus:ring-offset-2 ${getStatusButtonColor("COMPLETED")} shadow-sm hover:shadow-md`}
+            >
+              {t('appointments.markCompleted', "Mark as COMPLETED")}
+            </button>
+            <button
+              onClick={() => handleStatusButtonClick("CANCELLED")}
+              className={`px-5 py-2.5 rounded-lg text-white font-medium transition-all duration-200 focus:ring-2 focus:ring-offset-2 ${getStatusButtonColor("CANCELLED")} shadow-sm hover:shadow-md`}
+            >
+              {t('appointments.markCancelled', "Mark as CANCELLED")}
+            </button>
+          </div>
+
+          {/* Last Updated */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-stone-500">
+              {t('appointments.lastUpdated', "Last updated: {date} at {time}", {
+                date: new Date().toLocaleDateString(),
+                time: new Date().toLocaleTimeString()
+              })}
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
